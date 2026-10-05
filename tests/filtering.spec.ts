@@ -220,14 +220,50 @@ describe('C-14 Pending filters go first', () => {
     return { m, box }
   }
 
-  it('applies a pending filter before a page change and builds on it', async () => {
-    const { m, box } = withPagination()
-    await type(m, 'name', 'ali')
-    box.slot!.nextPage()
-    expect(reasons(m.events)).toEqual(['filter', 'page'])
-    expect(m.events[1][0].filters).toEqual(m.events[0][0].filters)
-    expect(m.events[0][0].page).toBe(1)
-    expect(m.events[1][0].page).toBe(2)
+  it.each([
+    ['nextPage', (slot: PaginationSlotProps) => slot.nextPage()],
+    ['previousPage', (slot: PaginationSlotProps) => slot.previousPage()],
+    ['setPage', (slot: PaginationSlotProps) => slot.setPage(7)]
+  ])(
+    'drops %s when flushing a pending filter changed the filters: one filter update, page 1',
+    async (_name, act) => {
+      const { m, box } = withPagination()
+      await type(m, 'name', 'ali')
+      act(box.slot!)
+      expect(reasons(m.events)).toEqual(['filter'])
+      expect(m.events[0][0].filters).toEqual([rule('name', 'Contains', 'ali')])
+      expect(m.events[0][0].page).toBe(1)
+      vi.advanceTimersByTime(5000)
+      expect(m.events).toHaveLength(1)
+    }
+  )
+
+  it('still changes the page when the pending text changes no filter', async () => {
+    const slot: { next?: () => void } = {}
+    const withSlot = mountIt(
+      {
+        ...base,
+        filterDebounce: 1000,
+        totalRows: 100,
+        query: makeQuery({
+          page: 3,
+          filters: [rule('name', 'Contains', 'ali')]
+        })
+      },
+      {
+        slots: {
+          pagination: ((p: PaginationSlotProps) => {
+            slot.next = p.nextPage
+            return h('i')
+          }) as never
+        }
+      }
+    )
+    // `ali,` stands for the same rule as `ali`: flushing it changes nothing.
+    await type(withSlot, 'name', 'ali,')
+    slot.next!()
+    expect(reasons(withSlot.events)).toEqual(['page'])
+    expect(withSlot.events[0][0].page).toBe(4)
   })
 
   it('applies a pending filter before a sort', async () => {
@@ -239,17 +275,32 @@ describe('C-14 Pending filters go first', () => {
     expect(m.events[1][0].sort).toEqual({ field: 'age', direction: 'asc' })
   })
 
-  it('applies a pending filter before a page size change and before clear all', async () => {
+  it('applies a pending filter before a page size change and builds on it', async () => {
     const { m, box } = withPagination()
     await type(m, 'name', 'ali')
     box.slot!.setPageSize(20)
     expect(reasons(m.events)).toEqual(['filter', 'pageSize'])
     expect(m.events[1][0].filters).toEqual([rule('name', 'Contains', 'ali')])
+    expect(m.events[1][0].pageSize).toBe(20)
+    expect(m.events[1][0].page).toBe(1)
+  })
+
+  it('does not apply a pending filter before clear all: it discards the typed text', async () => {
+    const { m, box } = withPagination()
+    await type(m, 'name', 'ali')
+    box.slot!.setPageSize(20)
+    expect(reasons(m.events)).toEqual(['filter', 'pageSize'])
 
     await type(m, 'age', '5')
     await m.wrapper.find('.bh-clear-all-button').trigger('click')
     await flush()
-    expect(reasons(m.events).slice(2)).toContain('reset')
+    // the full sequence: no `filter` for the pending `age` text
+    expect(reasons(m.events)).toEqual(['filter', 'pageSize', 'reset'])
+    expect(m.events[2][0]).toEqual(makeQuery({ page: 1, pageSize: 20 }))
+    // the pending text is gone: from the input and from the debounce timer
+    expect((input(m, 'age').element as HTMLInputElement).value).toBe('')
+    vi.advanceTimersByTime(5000)
+    expect(reasons(m.events)).toEqual(['filter', 'pageSize', 'reset'])
   })
 })
 
