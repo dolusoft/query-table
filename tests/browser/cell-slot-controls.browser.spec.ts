@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 
 import VueServerTable from '../../src/index'
-import { el, makeQuery } from '../support/helpers'
+import { el, makeQuery } from '../support/fixtures'
 
 // A cell slot is consumer markup, and a table's most common cell contents are
 // a selection checkbox and a link. Their default actions (toggle, navigate)

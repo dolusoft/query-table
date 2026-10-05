@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
-import SkinDemo from '../demo/SkinDemo.vue'
+import Overview from '../../playground/examples/Overview.vue'
 import { el } from '../support/helpers'
 
 const rowIds = () =>
@@ -12,8 +12,8 @@ const rowIds = () =>
 const input = (field: string) =>
   page.getByCSS(`th[data-field="${field}"] .bh-filter-input`)
 
-test('the demo serves real pages and sorts the whole dataset', async () => {
-  await render(SkinDemo)
+test('the overview example serves real pages and sorts the whole dataset', async () => {
+  await render(Overview)
   await expect
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 14')
@@ -39,8 +39,8 @@ test('the demo serves real pages and sorts the whole dataset', async () => {
   expect(rowIds()).toEqual(Array.from({ length: 50 }, (_, i) => 200 - i))
 })
 
-test('demo filters use emitted shortcuts, update totals, and recover from empty results', async () => {
-  await render(SkinDemo)
+test('overview filters use emitted shortcuts, update totals, and recover from empty results', async () => {
+  await render(Overview)
   const geometry = () =>
     [...document.querySelectorAll('th[data-field], .bh-filter-input')].map(
       element => {
