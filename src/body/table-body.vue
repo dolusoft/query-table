@@ -8,8 +8,7 @@ import type {
 } from '../contract'
 import { useCellView } from './use-cell-view'
 import type { ColumnEntry } from '../core/use-columns'
-import { pinAttrs } from '../pin/pin'
-import { utilityKey } from '../pin/use-header-geometry'
+import { pinAttrs, utilityKey } from '../pin/pin'
 
 const props = defineProps<{
   rows: T[]

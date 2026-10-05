@@ -20,6 +20,7 @@ import { useFilterDrafts } from './filter/use-filter-drafts'
 import TableHeader from './header/table-header.vue'
 import TablePagination from './pagination/table-pagination.vue'
 import { usePagination } from './pagination/use-pagination'
+import { utilityKey } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
 import { useColumnResize } from './resize/use-column-resize'
 import { useSort } from './sort/use-sort'
@@ -103,18 +104,27 @@ const {
 })
 
 const tableEl = shallowRef<HTMLTableElement | null>(null)
-const { widths, offsets } = useHeaderGeometry({
+const { widths, tableWidth, offsets } = useHeaderGeometry({
   table: tableEl,
-  entries: () => entries.value,
-  utilities: () => utilities.value,
-  hasPinned: () => hasPinned.value,
-  resizable: () =>
-    props.resizable &&
-    entries.value.some(entry => entry.column.resizable !== false)
+  cells: () => [
+    ...utilities.value.map(utility => ({
+      key: utilityKey(utility),
+      pinned: hasPinned.value
+    })),
+    ...entries.value.map(({ column }) => ({
+      key: column.field,
+      pinned: column.pinned === 'left'
+    }))
+  ],
+  active: () =>
+    hasPinned.value ||
+    (props.resizable &&
+      entries.value.some(entry => entry.column.resizable !== false))
 })
 const resize = useColumnResize({
   resizable: () => props.resizable,
   measuredWidth: field => widths.value[field],
+  tableWidth: () => tableWidth.value,
   emit: payload => emit('columnResize', payload)
 })
 
@@ -122,8 +132,7 @@ provideTableContext({
   drafts,
   sort,
   resize,
-  labels: () => labels.value,
-  tableWidth: () => widths.value.table ?? 0
+  labels: () => labels.value
 })
 
 const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({

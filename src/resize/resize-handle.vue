@@ -4,18 +4,17 @@ import { minWidthOf } from './use-column-resize'
 import { columnName } from '../core/labels'
 import { useTableContext } from '../core/table-context'
 
-defineProps<{ column: Column }>()
+const props = defineProps<{ column: Column }>()
 
-const { resize, labels, tableWidth } = useTableContext()
+const { resize, labels } = useTableContext()
 
-// A focusable vertical separator (C-48): the value is the column width in
-// pixels, from `minWidth` to `maxWidth` (or, without one, the table width,
-// which bounds what the current layout shows).
-const maxOf = (column: Column, now: number) =>
-  column.maxWidth ?? Math.max(now, Math.round(tableWidth()))
+// One listener object per handle, made once; it reads the current column.
+const on = resize.listeners(() => props.column)
 </script>
 
 <template>
+  <!-- A focusable vertical separator (C-48): the value is the column width in
+       pixels, from `minWidth` to `maxWidth` (or the table width). -->
   <div
     class="qt-resize-handle"
     role="separator"
@@ -24,14 +23,7 @@ const maxOf = (column: Column, now: number) =>
     :aria-label="labels().resizeColumn(columnName(column))"
     :aria-valuenow="resize.widthOf(column)"
     :aria-valuemin="minWidthOf(column)"
-    :aria-valuemax="maxOf(column, resize.widthOf(column))"
-    @pointerdown="resize.onPointer($event, column)"
-    @pointermove="resize.onPointer($event, column)"
-    @pointerup="resize.onPointer($event, column)"
-    @pointercancel="resize.onPointer($event, column)"
-    @lostpointercapture="resize.onPointer($event, column)"
-    @keydown="resize.onKeyDown($event, column)"
-    @dblclick="resize.autofit($event, column)"
-    @click.stop
+    :aria-valuemax="resize.maxOf(column)"
+    v-on="on"
   />
 </template>

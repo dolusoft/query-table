@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type {
   Column,
   FilterDatetimeSlotProps,
@@ -13,8 +11,7 @@ import { rulesOf } from '../core/query'
 import { useTableContext } from '../core/table-context'
 import type { Utility } from '../core/use-columns'
 import FilterCell from '../filter/filter-cell.vue'
-import { pinAttrs } from '../pin/pin'
-import { utilityKey } from '../pin/use-header-geometry'
+import { pinAttrs, utilityKey } from '../pin/pin'
 import ResizeHandle from '../resize/resize-handle.vue'
 import { ariaSort } from '../sort/sort'
 import SortButton from '../sort/sort-button.vue'
@@ -54,22 +51,15 @@ const utilityAttrs = (utility: Utility) =>
   pinAttrs(props.hasPinned, props.offsets[utilityKey(utility)])
 
 // The only inline styles of a header cell: the column width (or the drag
-// preview, C-49) and the pin offset (C-47).
-const cellStyle = computed(() => (column: Column) => {
+// preview, C-49) and the pin offset (C-47), with `data-pinned`.
+const cellAttrs = (column: Column) => {
   const preview = resize.preview.value
-  const width =
+  return pinAttrs(
+    column.pinned === 'left',
+    props.offsets[column.field],
     preview?.field === column.field ? `${preview.width}px` : column.width
-  const offset =
-    column.pinned === 'left' ? props.offsets[column.field] : undefined
-  const style: Record<string, string> = {}
-  if (width) {
-    style.width = width
-  }
-  if (offset !== undefined) {
-    style['--qt-pin-left'] = `${offset}px`
-  }
-  return Object.keys(style).length > 0 ? style : undefined
-})
+  )
+}
 
 const headerSlotProps = (column: Column): HeaderSlotProps => ({
   column,
@@ -121,9 +111,8 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
       :data-sort="sort.sortOf(column) ?? undefined"
       :data-sortable="sort.isSortable(column) ? '' : undefined"
       :data-filtered="isFiltered(column) ? '' : undefined"
-      :data-pinned="column.pinned === 'left' ? '' : undefined"
       :aria-sort="ariaSort(sort.sortOf(column))"
-      :style="cellStyle(column)"
+      v-bind="cellAttrs(column)"
     >
       <!-- C-51: the header slot replaces the label only. -->
       <slot

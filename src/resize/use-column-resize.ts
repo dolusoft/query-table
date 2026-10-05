@@ -10,6 +10,8 @@ export interface ColumnResizeOptions {
   resizable: () => boolean
   /** Measured width of a header cell, by `field`. */
   measuredWidth: (field: string) => number | undefined
+  /** Measured width of the table. */
+  tableWidth: () => number
   emit: (payload: ColumnResizePayload) => void
 }
 
@@ -156,18 +158,8 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     }
   }
 
-  const autofit = (event: Event, column: Column) => {
-    const th = cellOf(event)
-    if (th) {
-      commit(
-        column,
-        th.getBoundingClientRect().width,
-        autofitWidth(th, column.field)
-      )
-    }
-  }
-
-  const onKeyDown = (event: KeyboardEvent, column: Column) => {
+  /** Arrow keys step the width, Enter fits it; both from the rendered width. */
+  const onKey = (event: KeyboardEvent, column: Column) => {
     const { key } = event
     if (drag) {
       if (key === 'Escape') {
@@ -178,16 +170,50 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
       return
     }
     const sign = key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0
-    if (key === 'Enter') {
+    const th = cellOf(event)
+    if (th && (sign || key === 'Enter' || event.type === 'dblclick')) {
       event.preventDefault()
-      autofit(event, column)
-    } else if (sign) {
-      event.preventDefault()
-      const from =
-        cellOf(event)?.getBoundingClientRect().width ?? widthOf(column)
-      commit(column, from, Math.round(from) + sign * (event.shiftKey ? 50 : 10))
+      const from = th.getBoundingClientRect().width
+      commit(
+        column,
+        from,
+        sign
+          ? Math.round(from) + sign * (event.shiftKey ? 50 : 10)
+          : autofitWidth(th, column.field)
+      )
     }
   }
+
+  /**
+   * The listeners of one handle, as one `v-on` object made once per handle.
+   * Pointer capture sends every drag event to the handle itself.
+   */
+  const listeners = (column: () => Column) => {
+    const pointer = (event: PointerEvent) => {
+      onPointer(event, column())
+    }
+    const key = (event: Event) => {
+      onKey(event as KeyboardEvent, column())
+    }
+    return {
+      pointerdown: pointer,
+      pointermove: pointer,
+      pointerup: pointer,
+      pointercancel: pointer,
+      lostpointercapture: pointer,
+      keydown: key,
+      dblclick: key,
+      // The handle sits inside the header cell: a click never sorts.
+      click: (event: Event) => {
+        event.stopPropagation()
+      }
+    }
+  }
+
+  /** `aria-valuemax`: `maxWidth`, or else the table width (what can show). */
+  const maxOf = (column: Column) =>
+    column.maxWidth ??
+    Math.max(widthOf(column), Math.round(options.tableWidth()))
 
   onBeforeUnmount(() => {
     if (drag) {
@@ -196,14 +222,7 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     }
   })
 
-  return {
-    preview,
-    isResizable,
-    widthOf,
-    onPointer,
-    onKeyDown,
-    autofit
-  }
+  return { preview, isResizable, widthOf, maxOf, listeners }
 }
 
 export type ColumnResize = ReturnType<typeof useColumnResize>

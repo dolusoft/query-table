@@ -6,90 +6,72 @@ import {
   type ShallowRef
 } from 'vue'
 
-import type { ColumnEntry, Utility } from '../core/use-columns'
+/** A drawn header cell, in order: its key (`field`, or the utility) and pin. */
+interface HeaderCellKey {
+  key: string
+  pinned: boolean
+}
 
 export interface HeaderGeometryOptions {
   /** The `table` element once it is mounted. */
   table: ShallowRef<HTMLTableElement | null>
-  entries: () => ColumnEntry[]
-  utilities: () => Utility[]
-  /** Some visible column is pinned (C-46). */
-  hasPinned: () => boolean
-  /** Some header cell has a resize handle (C-48). */
-  resizable: () => boolean
+  /** The header cells as drawn: utilities first, then the columns. */
+  cells: () => HeaderCellKey[]
+  /** Some column is pinned (C-46) or has a resize handle (C-48). */
+  active: () => boolean
 }
-
-/** Key of a header cell: the column `field`, or the utility it holds. */
-export const utilityKey = (utility: Utility) => `utility:${utility}`
 
 type Numbers = Readonly<Record<string, number>>
 
-const sameNumbers = (a: Numbers, b: Numbers) => {
-  const keys = Object.keys(a)
-  return (
-    keys.length === Object.keys(b).length &&
-    keys.every(key => a[key] === b[key])
-  )
-}
+/** One string per map: compares two maps in one step. */
+const signature = (numbers: Numbers) => JSON.stringify(numbers)
 
 /**
  * Measured header geometry (C-47, C-48): the rendered width of every header
  * cell and, for the pinned cells, the cumulative left offset written as
- * `--qt-pin-left`. One `ResizeObserver` watches the header cells; it reports
- * width changes from any cause (a resize, a font that loads, a container that
- * narrows) in one batched callback, after layout, so reading the cells there
- * forces no extra layout. A change of the drawn columns re-observes the cells
- * after the render. Nothing is measured while no column is pinned or
- * resizable, and the observer is disconnected on unmount.
+ * `--qt-pin-left`. One `ResizeObserver` watches the header cells and the
+ * table; it reports width changes from any cause (a resize, a font that
+ * loads, a container that narrows) in one batched callback, after layout, so
+ * reading the cells there forces no extra layout. The observer is rebuilt
+ * only when the drawn cells change, not when a width does. Nothing is
+ * measured while inactive, and the observer is disconnected on unmount.
  */
 export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
-  /** Rendered width of each header cell, by key; `table` is the table's. */
+  /** Rendered width of each header cell, by key. */
   const widths = shallowRef<Numbers>({})
+  /** Rendered width of the table. */
+  const tableWidth = shallowRef(0)
   /** `--qt-pin-left` of each pinned cell, by key, in pixels. */
   const offsets = shallowRef<Numbers>({})
   let observer: ResizeObserver | null = null
 
-  const headerCells = (): HTMLTableCellElement[] => {
-    const row = options.table.value?.querySelector(':scope > thead > tr')
-    return row
-      ? [...row.querySelectorAll<HTMLTableCellElement>(':scope > th')]
-      : []
-  }
-
-  const keyOf = (cell: HTMLTableCellElement, index: number) =>
-    cell.dataset.field ??
-    (options.utilities()[index] ? utilityKey(options.utilities()[index]) : '')
-
   const measure = () => {
     const table = options.table.value
-    if (!table) {
+    const row = table?.querySelector(':scope > thead > tr')
+    if (!table || !row) {
       return
     }
-    const next: Record<string, number> = {
-      table: table.getBoundingClientRect().width
-    }
-    headerCells().forEach((cell, index) => {
-      next[keyOf(cell, index)] = cell.getBoundingClientRect().width
-    })
-    if (!sameNumbers(next, widths.value)) {
-      widths.value = next
-    }
-    const pinnedKeys = options.hasPinned()
-      ? [
-          ...options.utilities().map(utilityKey),
-          ...options
-            .entries()
-            .filter(entry => entry.column.pinned === 'left')
-            .map(entry => entry.column.field)
-        ]
-      : []
+    tableWidth.value = table.getBoundingClientRect().width
+    const cells = options.cells()
+    const next: Record<string, number> = {}
     const nextOffsets: Record<string, number> = {}
     let left = 0
-    for (const key of pinnedKeys) {
-      nextOffsets[key] = left
-      left += next[key] ?? 0
+    ;[...row.children].forEach((cell, index) => {
+      const drawn = cells[index]
+      if (drawn) {
+        const width = cell.getBoundingClientRect().width
+        next[drawn.key] = width
+        if (drawn.pinned) {
+          nextOffsets[drawn.key] = left
+          left += width
+        }
+      }
+    })
+    // Only a real change re-renders the cells that read these.
+    if (signature(next) !== signature(widths.value)) {
+      widths.value = next
     }
-    if (!sameNumbers(nextOffsets, offsets.value)) {
+    if (signature(nextOffsets) !== signature(offsets.value)) {
       offsets.value = nextOffsets
     }
   }
@@ -97,32 +79,36 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
   const observe = () => {
     observer?.disconnect()
     observer = null
-    const active = options.hasPinned() || options.resizable()
-    if (!active || typeof ResizeObserver === 'undefined') {
-      // Only a real change re-renders the cells that read the offsets.
+    const table = options.table.value
+    if (!table || !options.active() || typeof ResizeObserver === 'undefined') {
       if (Object.keys(offsets.value).length > 0) {
         offsets.value = {}
       }
       return
     }
     observer = new ResizeObserver(measure)
-    const table = options.table.value
-    if (table) {
-      observer.observe(table)
+    observer.observe(table)
+    for (const cell of table.querySelector(':scope > thead > tr')?.children ??
+      []) {
+      observer.observe(cell)
     }
-    headerCells().forEach(cell => observer!.observe(cell))
     measure()
   }
 
-  // The drawn cells change with the columns, their order, pinning and the
-  // utilities: observe the new cells once they are rendered.
+  // Re-observe once the drawn cells change (columns, order, pinning,
+  // utilities), after they are rendered. A width written back does not
+  // change this key, so it does not rebuild the observer.
   watch(
-    () => [
-      options.table.value,
-      options.entries(),
-      options.utilities(),
-      options.hasPinned(),
-      options.resizable()
+    [
+      // A getter, not the ref: a shallow ref among the sources forces the
+      // callback on every trigger, rebuilding the observer for nothing.
+      () => options.table.value,
+      options.active,
+      () =>
+        options
+          .cells()
+          .map(cell => (cell.pinned ? `${cell.key}*` : cell.key))
+          .join('|')
     ],
     () => {
       void nextTick(observe)
@@ -135,5 +121,5 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     observer = null
   })
 
-  return { widths, offsets }
+  return { widths, tableWidth, offsets }
 }

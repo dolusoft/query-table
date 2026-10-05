@@ -1,5 +1,5 @@
 import axe from 'axe-core'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 
@@ -227,6 +227,126 @@ describe('C-49 Dragging a handle', () => {
     for (const row of rowsOfLefts) {
       expect(row).toEqual(rowsOfLefts[0])
     }
+  })
+})
+
+/** Presses a handle and moves it, without releasing. */
+const press = async (handle: Element, dx: number) => {
+  const box = handle.getBoundingClientRect()
+  const init = {
+    bubbles: true,
+    clientY: box.top + box.height / 2,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+    button: 0,
+    buttons: 1
+  }
+  const x = box.left + box.width / 2
+  handle.dispatchEvent(new PointerEvent('pointerdown', { ...init, clientX: x }))
+  handle.dispatchEvent(
+    new PointerEvent('pointermove', { ...init, clientX: x + dx })
+  )
+  await frames()
+}
+
+describe('C-49 Dragging a handle: ends without a release', () => {
+  test.each(['pointercancel', 'lostpointercapture'])(
+    '%s ends the drag with no event and no preview',
+    async type => {
+      const { resized } = await renderPinned({ resizable: true })
+      const th = el('thead th[data-field="age"]')
+      const start = th.getBoundingClientRect().width
+      const handle = th.querySelector('.qt-resize-handle')!
+      await press(handle, 70)
+      expect(th.getBoundingClientRect().width).toBeGreaterThan(start + 40)
+      handle.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, pointerId: 1 })
+      )
+      await frames()
+      expect(resized).toEqual([])
+      expect(th.getBoundingClientRect().width).toBeCloseTo(start, 0)
+      // A later release of the same pointer does nothing either.
+      handle.dispatchEvent(
+        new PointerEvent('pointerup', {
+          bubbles: true,
+          pointerId: 1,
+          clientX: 900
+        })
+      )
+      expect(resized).toEqual([])
+    }
+  )
+
+  test('unmounting during a drag cancels it and disconnects the observer', async () => {
+    const disconnect = vi.spyOn(ResizeObserver.prototype, 'disconnect')
+    const { resized } = await renderPinned({ resizable: true })
+    await press(el('thead th[data-field="age"] .qt-resize-handle'), 50)
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => errors.push(event.error)
+    window.addEventListener('error', onError)
+    disconnect.mockClear()
+    cleanup()
+    await frames(3)
+    window.removeEventListener('error', onError)
+    expect(disconnect).toHaveBeenCalled()
+    expect(resized).toEqual([])
+    expect(errors).toEqual([])
+    disconnect.mockRestore()
+  })
+})
+
+describe('C-47 Pin offsets: hidden columns and the footer', () => {
+  test('a written-back width re-measures without rebuilding the observer', async () => {
+    const { rerender } = await renderPinned({ resizable: true })
+    const observe = vi.spyOn(ResizeObserver.prototype, 'observe')
+    await rerender({
+      resizable: true,
+      columns: wide().map(column =>
+        column.field === 'id' ? { ...column, width: '150px' } : column
+      )
+    })
+    await frames(3)
+    expect(observe).not.toHaveBeenCalled()
+    const id = el('thead th[data-field="id"]')
+    expect(offsetOf(el('thead th[data-field="name"]'))).toBeCloseTo(
+      offsetOf(id) + id.getBoundingClientRect().width,
+      1
+    )
+    observe.mockRestore()
+  })
+
+  test('a hidden pinned column takes no offset and leaves no gap', async () => {
+    await renderPinned({
+      columns: [
+        { field: 'id', title: 'ID', width: '80px', pinned: 'left', hide: true },
+        ...wide().slice(1)
+      ]
+    })
+    expect(document.querySelector('[data-field="id"]')).toBeNull()
+    const header = [...el('thead tr').querySelectorAll('[data-pinned]')]
+    // The utility cell, then Name right after it.
+    expect(header.map(offsetOf)).toEqual([
+      0,
+      header[0].getBoundingClientRect().width
+    ])
+    const rowsOfLefts = pinnedLefts()
+    for (const row of rowsOfLefts) {
+      expect(row).toEqual(rowsOfLefts[0])
+    }
+  })
+
+  test('the footer cell spanning the utilities stays in line while scrolling', async () => {
+    await renderPinned()
+    const footerCell = el('.qt-footer tr > [data-pinned]')
+    const utilityHead = el('thead tr > [data-pinned]')
+    const before = left(footerCell)
+    expect(before).toBeCloseTo(left(utilityHead), 0)
+    scroller().scrollLeft = 300
+    await frames()
+    expect(scroller().scrollLeft).toBeGreaterThan(200)
+    expect(left(footerCell)).toBeCloseTo(before, 0)
+    expect(left(footerCell)).toBeCloseTo(left(utilityHead), 0)
   })
 })
 

@@ -15,8 +15,6 @@ export interface TableContext {
   sort: SortActions
   resize: ColumnResize
   labels: () => TableLabels
-  /** Measured width of the table, in pixels. */
-  tableWidth: () => number
 }
 
 const tableContextKey: InjectionKey<TableContext> = Symbol('query-table')
