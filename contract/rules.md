@@ -104,7 +104,7 @@ The `bh-pagination` block is drawn when `pagination` is not `false`, the `pagina
 
 ### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for rows that have an `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for rows that have an `id`.
 
 ### C-27 Cell slots
 

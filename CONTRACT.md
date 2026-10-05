@@ -22,7 +22,7 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `pagination` | `boolean \| PaginationOptions` |  | `true` | `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
-| `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row for expansion state: a property name or a function. Without it the row index is the identity and the state resets whenever `rows` changes. |
+| `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
 | `truncate` | `boolean` |  | `true` | Cut long text to `truncateMaxLength` characters. Defaults to `true`. |
 | `truncateMaxLength` | `number` |  | `150` | Characters kept when `truncate` is on. Defaults to `150`. |
 
@@ -215,9 +215,12 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
   /**
-   * Identity of a row for expansion state: a property name or a function.
-   * Without it the row index is the identity and the state resets whenever
-   * `rows` changes.
+   * Identity of a row, for expansion state and for the rendered row (a row
+   * keeps the state of its `subtable` components when `rows` reorder): a
+   * property name or a function. A string is a direct property read, not a
+   * dotted path; use the function form for a nested value. Keys must be
+   * unique. Without it the row index is the identity and the expansion state
+   * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
   /** Cut long text to `truncateMaxLength` characters. Defaults to `true`. */
@@ -469,7 +472,7 @@ The `bh-pagination` block is drawn when `pagination` is not `false`, the `pagina
 
 #### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for rows that have an `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for rows that have an `id`.
 
 #### C-27 Cell slots
 

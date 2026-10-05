@@ -386,7 +386,7 @@ defineExpose(exposed)
           <tr v-if="loading && slots.loader" class="bh-loader-row">
             <td :colspan="columnCount"><slot name="loader" /></td>
           </tr>
-          <template v-for="(row, i) in rows" :key="i">
+          <template v-for="(row, i) in rows" :key="keyOf(row, i)">
             <tr
               :data-row-index="i"
               :data-expanded="isExpanded(row, i) ? '' : undefined"
