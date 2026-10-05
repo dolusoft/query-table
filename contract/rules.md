@@ -56,7 +56,7 @@ Enter in a filter input applies that input now. With `filterDebounce: 0` every k
 
 ### C-14 Pending filters go first
 
-A pending filter is applied before any other action (page, page size, sort, clear all). The action is built on the result, so the consumer sees a `filter` update followed by the action's update, the second one containing the first one's filters.
+A pending filter is applied before a page size change or a sort. The action is built on the result, so the consumer sees a `filter` update followed by the action's update, the second one containing the first one's filters. A page action (`setPage`, `nextPage`, `previousPage`) is dropped when applying the pending filter changed the filters: the page asked for belongs to the old filters, so the consumer sees one `filter` update, on page 1. A pending text that changes no filter does not drop it. Clear all does not apply what is pending, it discards it (C-22).
 
 ### C-15 Operator shortcuts
 

@@ -155,24 +155,25 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
   }
 
   /** Applies the draft of `field` to the query. */
-  const commit = (field: string) => {
+  const commit = (field: string): boolean => {
     cancel(field)
     const column = columnOf(field)
     if (!column) {
-      return
+      return false
     }
     const base = options.base()
     const rules: FilterRule[] = parseDraft(column, draftOf(field)).map(
       rule => ({ field, condition: rule.condition, value: rule.value })
     )
     if (sameRules(rulesOf(base.filters, field), rules)) {
-      return
+      return false
     }
     const next = cloneQuery(base)
     next.page = 1
     next.filters = replaceRules(base.filters, field, rules)
     emitted.set(field, [...(emitted.get(field) ?? []), rules])
     options.update(next, 'filter')
+    return true
   }
 
   const schedule = (field: string) => {
@@ -201,10 +202,13 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     }
   }
 
-  const flushAll = () => {
+  /** Applies every pending draft; `true` when any of them changed the filters. */
+  const flushAll = (): boolean => {
+    let changed = false
     for (const field of [...timers.keys()]) {
-      commit(field)
+      changed = commit(field) || changed
     }
+    return changed
   }
 
   const setCondition = (field: string, condition: FilterCondition | null) => {

@@ -119,7 +119,11 @@ const setPage = (page: number) => {
   if (!paging.value || !Number.isFinite(page)) {
     return
   }
-  drafts.flushAll()
+  // A pending filter that changed the filters moves the table to page 1:
+  // the page asked for belongs to the old filters, so the click is dropped.
+  if (drafts.flushAll()) {
+    return
+  }
   const current = base()
   const count = pageCountFor(current.pageSize)
   let target = Math.max(1, Math.trunc(page))
@@ -133,8 +137,10 @@ const nextPage = () => {
   if (!paging.value) {
     return
   }
-  // A pending filter goes first and resets the page: build on its result.
-  drafts.flushAll()
+  // See `setPage`: a pending filter that changed the filters ends the action.
+  if (drafts.flushAll()) {
+    return
+  }
   const current = base()
   const count = pageCountFor(current.pageSize)
   const canGo =
@@ -150,7 +156,9 @@ const previousPage = () => {
   if (!paging.value) {
     return
   }
-  drafts.flushAll()
+  if (drafts.flushAll()) {
+    return
+  }
   setPage(base().page - 1)
 }
 
@@ -336,7 +344,9 @@ watch(
 
 const exposed: VueServerTableExpose = {
   collapseAll: () => expanded.value.clear(),
-  flushPendingFilters: () => drafts.flushAll()
+  flushPendingFilters: () => {
+    drafts.flushAll()
+  }
 }
 defineExpose(exposed)
 </script>
