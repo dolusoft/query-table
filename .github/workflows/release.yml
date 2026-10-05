@@ -1,0 +1,139 @@
+name: Release
+
+# Publishes a version: push a tag `v<version>` that equals the `version` in
+# package.json (see CONTRIBUTING.md, "Releasing"). The job runs every check
+# of CI, packs the package and attaches the tarball to a GitHub Release,
+# then checks that the asset URL answers. Optionally it tells one consumer
+# repository about the release with a `repository_dispatch`:
+#
+#   secret   CONSUMER_DISPATCH_TOKEN  a token allowed to dispatch to that repo
+#   variable CONSUMER_REPO            `owner/name` of that repo
+#
+# Without both the dispatch step is skipped and the release still succeeds.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Tag matches package.json
+        id: version
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Tag $TAG does not match package.json version $version (expected v$version)."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm knip
+      - run: pnpm contract:check
+      - run: pnpm playground:build
+      - run: pnpm test:coverage
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 5
+      - run: pnpm test:browser
+        timeout-minutes: 5
+      - run: pnpm check:renders
+        timeout-minutes: 5
+      # Builds dist/; the checks below and the pack use that build.
+      - run: pnpm check:package
+      - run: pnpm check:size
+      - run: pnpm api:check
+
+      - name: Pack
+        id: pack
+        run: |
+          mkdir -p release
+          pnpm pack --pack-destination release
+          file="$(ls release/*.tgz)"
+          if [ "$(echo "$file" | wc -l)" -ne 1 ]; then
+            echo "::error::Expected one tarball in release/, found: $file"
+            exit 1
+          fi
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$file")" >> "$GITHUB_OUTPUT"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: ${{ steps.pack.outputs.file }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            # A re-run of the same tag replaces the asset, nothing else.
+            gh release upload "$TAG" "$FILE" --clobber
+          else
+            gh release create "$TAG" "$FILE" --title "$TAG" --generate-notes --verify-tag
+          fi
+
+      - name: Check the asset URL
+        id: asset
+        env:
+          NAME: ${{ steps.pack.outputs.name }}
+        run: |
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"
+          for attempt in 1 2 3 4 5 6; do
+            status="$(curl -sSL -o /dev/null -w '%{http_code}' "$url" || true)"
+            echo "attempt $attempt: $status $url"
+            if [ "$status" = "200" ]; then
+              echo "url=$url" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::The release asset does not answer 200: $url"
+          exit 1
+
+      - name: Tell the consumer repository
+        env:
+          DISPATCH_TOKEN: ${{ secrets.CONSUMER_DISPATCH_TOKEN }}
+          CONSUMER_REPO: ${{ vars.CONSUMER_REPO }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TARBALL_URL: ${{ steps.asset.outputs.url }}
+        run: |
+          if [ -z "$DISPATCH_TOKEN" ] || [ -z "$CONSUMER_REPO" ]; then
+            echo "CONSUMER_DISPATCH_TOKEN or CONSUMER_REPO is not set: no dispatch."
+            exit 0
+          fi
+          payload="$(jq -n --arg version "$VERSION" --arg url "$TARBALL_URL" \
+            '{event_type: "query-table-released", client_payload: {version: $version, tarballUrl: $url}}')"
+          echo "$payload" | GH_TOKEN="$DISPATCH_TOKEN" gh api \
+            --method POST "repos/$CONSUMER_REPO/dispatches" --input -
+          echo "Dispatched query-table-released $VERSION to $CONSUMER_REPO."

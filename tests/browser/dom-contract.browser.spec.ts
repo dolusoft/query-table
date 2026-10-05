@@ -16,6 +16,7 @@ import { columns, makeQuery, rows, rule } from '../support/fixtures'
 const slots = {
   'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger),
   empty: () => h('span', 'nothing'),
+  loading: () => h('span', 'loading'),
   subtable: () => h('b', 'detail'),
   pagination: () => h('span', 'pages')
 }
@@ -140,6 +141,14 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   await renderTable({ rows: [], totalRows: 0 })
   await expect
     .element(document.querySelector<HTMLElement>('.qt-empty-row'))
+    .toBeInTheDocument()
+  collect()
+  cleanup()
+
+  // Loading over the rows (C-52).
+  await renderTable({ loading: true, hasSubtable: true })
+  await expect
+    .element(document.querySelector<HTMLElement>('.qt-loading-row'))
     .toBeInTheDocument()
   collect()
   cleanup()

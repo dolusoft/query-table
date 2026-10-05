@@ -64,7 +64,7 @@ const parseSegment = (
  * Turn the text of a filter input into rules. Segments without an operator use
  * `base`. Input that yields no segment (empty, `*`, `!`, `!*`) gives `[]`.
  */
-export function parseFilterInput(
+export function parseShortcuts(
   raw: string,
   base: FilterCondition = 'Contains'
 ): ParsedRule[] {
@@ -94,7 +94,7 @@ export const hasShortcut = (condition: FilterCondition): boolean =>
   condition in shortcutForms
 
 /**
- * The text that parses back to `rules`: the inverse of `parseFilterInput`.
+ * The text that parses back to `rules`: the inverse of `parseShortcuts`.
  * Conditions without a shortcut (`Equal`, comparisons) are written as plain
  * text, so the caller must pass their condition as the parse `base`.
  */
@@ -131,5 +131,5 @@ export function previewCondition(
   if (text === '!') {
     return 'NotEqual'
   }
-  return parseFilterInput(text, base)[0]?.condition ?? base
+  return parseShortcuts(text, base)[0]?.condition ?? base
 }

@@ -156,12 +156,17 @@ export interface PaginationSlotProps {
 }
 
 // @public
+export function parseFilterInput(text: string, column: Column, condition?: FilterCondition | null): FilterRule[];
+
+// @public
 export type QueryChangeReason = 'page' | 'pageSize' | 'sort' | 'filter' | 'reset';
 
 // @public
 export interface QueryTableExpose {
     collapseAll(): void;
+    expandAll(): void;
     flushPendingFilters(): void;
+    focusFilter(field: string): boolean;
 }
 
 // @public (undocumented)
@@ -212,6 +217,7 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
     labels?: Partial<TableLabels>;
+    loading?: boolean;
     pagination?: PaginationOptions;
     query: TableQuery;
     resizable?: boolean;
@@ -238,6 +244,7 @@ export interface TableSlots<T> {
     [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
     empty?(): unknown;
+    loading?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;
     subtable?(props: SubtableSlotProps<T>): unknown;
     toolbar?(props: ToolbarSlotProps): unknown;

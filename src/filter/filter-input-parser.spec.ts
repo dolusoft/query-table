@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { FilterCondition } from '../contract'
 import {
   hasShortcut,
-  parseFilterInput,
+  parseShortcuts,
   previewCondition,
   serializeFilterRules
 } from './filter-input-parser'
@@ -18,17 +18,17 @@ describe('C-15 operator shortcuts parse into clean rules', () => {
     ['!foo*', 'NotContains', 'foo'],
     ['!*foo', 'NotContains', 'foo']
   ])('%s is %s of "%s"', (input, condition, value) => {
-    expect(parseFilterInput(input)).toEqual([{ condition, value }])
+    expect(parseShortcuts(input)).toEqual([{ condition, value }])
   })
 
   it('a segment without an operator takes the base condition', () => {
-    expect(parseFilterInput('foo')).toEqual([
+    expect(parseShortcuts('foo')).toEqual([
       { condition: 'Contains', value: 'foo' }
     ])
-    expect(parseFilterInput('foo', 'Equal')).toEqual([
+    expect(parseShortcuts('foo', 'Equal')).toEqual([
       { condition: 'Equal', value: 'foo' }
     ])
-    expect(parseFilterInput('foo', 'StartsWith')).toEqual([
+    expect(parseShortcuts('foo', 'StartsWith')).toEqual([
       { condition: 'StartsWith', value: 'foo' }
     ])
   })
@@ -36,19 +36,19 @@ describe('C-15 operator shortcuts parse into clean rules', () => {
   it.each(['', '   ', '*', '**', '!', '!*', '!**', ',', ' , ', '*,*'])(
     'input %j makes no rule',
     input => {
-      expect(parseFilterInput(input)).toEqual([])
+      expect(parseShortcuts(input)).toEqual([])
     }
   )
 
   it('trims the input and the segments', () => {
-    expect(parseFilterInput('  a , b  ', 'Equal')).toEqual([
+    expect(parseShortcuts('  a , b  ', 'Equal')).toEqual([
       { condition: 'Equal', value: 'a' },
       { condition: 'Equal', value: 'b' }
     ])
   })
 
   it('skips empty segments between commas', () => {
-    expect(parseFilterInput('a,,*,b', 'Equal').map(r => r.value)).toEqual([
+    expect(parseShortcuts('a,,*,b', 'Equal').map(r => r.value)).toEqual([
       'a',
       'b'
     ])
@@ -56,14 +56,14 @@ describe('C-15 operator shortcuts parse into clean rules', () => {
 
   it('keeps the known limits: no escape, a comma always splits, only the outer stars count', () => {
     // current behavior, pinned on purpose
-    expect(parseFilterInput('\\*face', 'Equal')).toEqual([
+    expect(parseShortcuts('\\*face', 'Equal')).toEqual([
       { condition: 'Equal', value: '\\*face' }
     ])
-    expect(parseFilterInput('a\\,b', 'Equal').map(r => r.value)).toEqual([
+    expect(parseShortcuts('a\\,b', 'Equal').map(r => r.value)).toEqual([
       'a\\',
       'b'
     ])
-    expect(parseFilterInput('a*b', 'Equal')).toEqual([
+    expect(parseShortcuts('a*b', 'Equal')).toEqual([
       { condition: 'Equal', value: 'a*b' }
     ])
   })
@@ -71,7 +71,7 @@ describe('C-15 operator shortcuts parse into clean rules', () => {
 
 describe('C-17 several rules for one field', () => {
   it('a,b gives one rule per segment, each with its own condition', () => {
-    expect(parseFilterInput('!*youtube*,vimeo*')).toEqual([
+    expect(parseShortcuts('!*youtube*,vimeo*')).toEqual([
       { condition: 'NotContains', value: 'youtube' },
       { condition: 'StartsWith', value: 'vimeo' }
     ])
@@ -119,14 +119,12 @@ describe('serializeFilterRules', () => {
           { condition: second, value: values[1] },
           { condition: first, value: values[2] }
         ]
-        expect(parseFilterInput(serializeFilterRules(rules))).toEqual(rules)
+        expect(parseShortcuts(serializeFilterRules(rules))).toEqual(rules)
       }
     }
     // A plain condition needs to be the base.
     const plain = [{ condition: 'Equal' as const, value: 'a' }]
-    expect(parseFilterInput(serializeFilterRules(plain), 'Equal')).toEqual(
-      plain
-    )
+    expect(parseShortcuts(serializeFilterRules(plain), 'Equal')).toEqual(plain)
   })
 })
 

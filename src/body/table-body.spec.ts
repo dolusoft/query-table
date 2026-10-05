@@ -450,10 +450,31 @@ describe('C-37 Footer rows', () => {
   })
 })
 
-describe('C-38 Empty slot', () => {
+describe('C-38 Empty and loading', () => {
   const slots = {
     empty: '<span class="none">nothing</span>'
   }
+
+  it('hides the empty state while loading, and shows it when loading ends without rows', async () => {
+    const m = mountIt(
+      { rows: [], loading: true },
+      { slots: { ...slots, loading: '<i class="wait">wait</i>' } }
+    )
+    const root = () => m.wrapper.find('.qt-datatable')
+    expect(m.wrapper.find('.qt-empty-row').exists()).toBe(false)
+    expect(root().attributes('data-empty')).toBe(undefined)
+    expect(m.wrapper.find('.qt-loading-row .wait').exists()).toBe(true)
+    await m.wrapper.setProps({ loading: false })
+    expect(m.wrapper.find('.qt-empty-row .none').exists()).toBe(true)
+    expect(root().attributes('data-empty')).toBe('')
+    expect(m.wrapper.find('.qt-loading-row').exists()).toBe(false)
+  })
+
+  it('hides the empty state while loading without a loading slot too', () => {
+    const m = mountIt({ rows: [], loading: true }, { slots })
+    expect(m.wrapper.find('.qt-empty-row').exists()).toBe(false)
+    expect(m.wrapper.findAll('tbody tr')).toHaveLength(0)
+  })
 
   it('shows the empty slot whenever there are no rows, and hides it when rows arrive', async () => {
     const m = mountIt({ rows: [] }, { slots })
@@ -474,5 +495,127 @@ describe('C-38 Empty slot', () => {
       { slots }
     )
     expect(m.wrapper.find('.qt-empty-row td').attributes('colspan')).toBe('6')
+  })
+})
+
+describe('C-52 Loading state', () => {
+  const loadingSlot = { loading: '<i class="wait">wait</i>' }
+  const root = (m: Mounted) => m.wrapper.find('.qt-datatable')
+
+  it('marks the root with data-loading and aria-busy only while loading', async () => {
+    const m = mountIt({}, { slots: loadingSlot })
+    expect(root(m).attributes('data-loading')).toBe(undefined)
+    expect(root(m).attributes('aria-busy')).toBe(undefined)
+    await m.wrapper.setProps({ loading: true })
+    expect(root(m).attributes('data-loading')).toBe('')
+    expect(root(m).attributes('aria-busy')).toBe('true')
+    await m.wrapper.setProps({ loading: false })
+    expect(root(m).attributes('data-loading')).toBe(undefined)
+    expect(root(m).attributes('aria-busy')).toBe(undefined)
+  })
+
+  it('keeps the rows, their elements and the focus, and emits nothing', async () => {
+    const m = mountIt(
+      { hasSubtable: true, rowKey: 'id' },
+      { slots: loadingSlot }
+    )
+    const before = m.wrapper.findAll('tr[data-row-index]').map(r => r.element)
+    const button = m.wrapper.findAll<HTMLButtonElement>('.qt-expand')[2]
+    button.element.focus()
+    expect(document.activeElement).toBe(button.element)
+    await m.wrapper.setProps({ loading: true })
+    const during = m.wrapper.findAll('tr[data-row-index]').map(r => r.element)
+    expect(during).toEqual(before)
+    expect(during.every((row, i) => row === before[i])).toBe(true)
+    expect(document.activeElement).toBe(button.element)
+    await m.wrapper.setProps({ loading: false })
+    expect(document.activeElement).toBe(button.element)
+    expect(m.events).toEqual([])
+  })
+
+  it('ends the body with one loading row that spans every column and has no style', () => {
+    const m = mountIt(
+      { loading: true, hasSubtable: true, hasRightPanel: true },
+      { slots: loadingSlot }
+    )
+    const bodyRows = m.wrapper.findAll('tbody > tr')
+    const last = bodyRows[bodyRows.length - 1]
+    expect(bodyRows).toHaveLength(6)
+    expect(last.classes()).toEqual(['qt-loading-row'])
+    expect(last.attributes('style')).toBe(undefined)
+    const cells = last.findAll('td')
+    expect(cells).toHaveLength(1)
+    expect(cells[0].attributes('colspan')).toBe('6')
+    expect(cells[0].attributes('style')).toBe(undefined)
+    expect(cells[0].find('.wait').exists()).toBe(true)
+  })
+
+  it('draws nothing for loading without the slot', () => {
+    const m = mountIt({ loading: true })
+    expect(m.wrapper.find('.qt-loading-row').exists()).toBe(false)
+    expect(m.wrapper.findAll('tbody > tr')).toHaveLength(5)
+  })
+
+  it('blocks no interaction: a sort while loading emits as usual', async () => {
+    const m = mountIt({ loading: true, sortable: true }, { slots: loadingSlot })
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
+    expect(m.events.map(([query, reason]) => [query.sort, reason])).toEqual([
+      [{ field: 'name', direction: 'asc' }, 'sort']
+    ])
+  })
+
+  it('emits no cellContextMenu for the loading row', async () => {
+    const seen: unknown[] = []
+    const m = mountIt(
+      { loading: true, onCellContextMenu: (p: unknown) => seen.push(p) },
+      { slots: loadingSlot }
+    )
+    await m.wrapper.find('.qt-loading-row .wait').trigger('contextmenu')
+    expect(seen).toEqual([])
+  })
+})
+
+describe('C-55 expandAll', () => {
+  const expose = (m: Mounted) =>
+    m.wrapper.vm as unknown as { expandAll(): void; collapseAll(): void }
+  const expandedIndexes = (m: Mounted) =>
+    m.wrapper
+      .findAll('tr[data-expanded]')
+      .map(row => row.attributes('data-row-index'))
+
+  it('opens every row given, by rowKey, and emits nothing', async () => {
+    const m = mountIt({ hasSubtable: true, rowKey: 'id' }, { slots: subtable })
+    expose(m).expandAll()
+    await flush()
+    expect(expandedIndexes(m)).toEqual(['0', '1', '2', '3', '4'])
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(5)
+    expose(m).collapseAll()
+    await flush()
+    expect(expandedIndexes(m)).toEqual([])
+    expect(m.events).toEqual([])
+  })
+
+  it('does not open rows that arrive later, and keeps the rows that stay', async () => {
+    const m = mountIt({ hasSubtable: true, rowKey: 'id' }, { slots: subtable })
+    expose(m).expandAll()
+    await flush()
+    const rows = propsOf(m).rows as Array<{ id: number }>
+    // Rows 4 and 5 stay, two new rows come.
+    await m.wrapper.setProps({
+      rows: [
+        rows[3],
+        rows[4],
+        { id: 6, name: 'Fay', age: 20, joined: '2024-06-01' },
+        { id: 7, name: 'Gus', age: 21, joined: '2024-07-01' }
+      ]
+    })
+    expect(expandedIndexes(m)).toEqual(['0', '1'])
+  })
+
+  it('does nothing without hasSubtable', async () => {
+    const m = mountIt({ rowKey: 'id' })
+    expose(m).expandAll()
+    await m.wrapper.setProps({ hasSubtable: true })
+    expect(expandedIndexes(m)).toEqual([])
   })
 })

@@ -50,6 +50,8 @@ const query = ref(props.initialQuery)
 const first = answer(props.initialQuery)
 const rows = ref(first.rows)
 const total = ref(first.total)
+// Flipped by the `.toggle-loading` button (the `loading` scenario).
+const loading = ref(false)
 
 const update = (next: TableQuery) => {
   const started = performance.now()
@@ -68,11 +70,15 @@ const update = (next: TableQuery) => {
 </script>
 
 <template>
+  <button type="button" class="toggle-loading" @click="loading = !loading">
+    Loading
+  </button>
   <QueryTable
     :query="query"
     :columns="columns"
     :rows="rows"
     :total-rows="total"
+    :loading="loading"
     sortable
     filterable
     :filter-debounce="filterDebounce"
@@ -91,5 +97,6 @@ const update = (next: TableQuery) => {
         Next
       </button>
     </template>
+    <template #loading>Loading</template>
   </QueryTable>
 </template>

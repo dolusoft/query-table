@@ -144,6 +144,13 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   totalRows?: number | null
   /** Rows of totals drawn in a `tfoot`. */
   footerRows?: FooterRow[]
+  /**
+   * The consumer is fetching. The root gets `data-loading` and
+   * `aria-busy="true"`, the rows given stay drawn, the empty state is not
+   * shown and the `loading` slot is drawn as the last row of the body. The
+   * table blocks no interaction. Defaults to `false`.
+   */
+  loading?: boolean
   /** Allow sorting from the headers (needs column `sortable`). Defaults to `false`. */
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
@@ -348,8 +355,13 @@ export interface TableSlots<T> {
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
-  /** Shown when there are no rows. */
+  /** Shown when there are no rows and `loading` is off. */
   empty?(): unknown
+  /**
+   * Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last
+   * row of the body. The rows stay; place the row over them in your CSS.
+   */
+  loading?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
   /**
@@ -366,6 +378,17 @@ export interface TableSlots<T> {
 export interface QueryTableExpose {
   /** Close every expanded row. */
   collapseAll(): void
+  /**
+   * Open every row in `rows` (needs `hasSubtable`). Rows that arrive later
+   * are not opened, and nothing is fetched.
+   */
+  expandAll(): void
+  /**
+   * Move focus to the filter of a column: its filter input, or the first
+   * focusable element the `filter-datetime` slot draws. Returns `false` when
+   * nothing took focus (no filter drawn for the field, a disabled select).
+   */
+  focusFilter(field: string): boolean
   /**
    * Apply typed-but-not-yet-applied filter text now. Every `update:query` it
    * causes has been emitted when the call returns.

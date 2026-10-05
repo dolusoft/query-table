@@ -63,6 +63,7 @@ const update = (next: TableQuery, reason: QueryChangeReason) => {
       <FilterMenu :menu="menu" />
     </template>
     <template #empty>No results.</template>
+    <template #loading>Loading…</template>
     <template #pagination="page">
       <TablePager :page="page" />
     </template>

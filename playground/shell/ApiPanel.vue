@@ -50,6 +50,11 @@ const groups = computed(() => {
       rows: pick(contractApi.exposed, props.members.exposed)
     },
     {
+      title: 'Functions',
+      typeLabel: 'Signature',
+      rows: pick(contractApi.functions, props.members.functions)
+    },
+    {
       title: 'Types',
       typeLabel: 'Kind',
       rows: pick(contractApi.types, props.members.types).map<Row>(type => ({

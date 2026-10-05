@@ -283,6 +283,22 @@ const scenarios: Scenario[] = [
     }
   },
   {
+    // `loading` on, then off, over 100 rows (C-52): no update, and only the
+    // root and the body re-render, once per flip.
+    name: 'loading',
+    pageSize: 100,
+    expectedUpdates: 0,
+    act: async () => {
+      const toggle = document.querySelector<HTMLElement>('.toggle-loading')
+      if (!toggle) {
+        throw new Error('no loading toggle')
+      }
+      await userEvent.click(toggle)
+      await frame()
+      await userEvent.click(toggle)
+    }
+  },
+  {
     // 100 rows a page over the same 1000: three clicks on "Next".
     name: 'page',
     pageSize: 100,
