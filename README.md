@@ -10,7 +10,7 @@ The table ships no CSS. It renders plain markup with a small, stable set of `qt-
 pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.11/dolusoft-query-table-2.2.11.tgz
 ```
 
-Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 24 or newer (`engines`).
+Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
 
 ## Usage
 

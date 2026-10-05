@@ -32,8 +32,8 @@ const blank: Readonly<Draft> = Object.freeze({ text: '', condition: null })
 
 /**
  * How many emitted rule sets per field are remembered for the echo check
- * (C-18). An answer to an older emit than this is treated as an outside
- * change.
+ * (C-18). Older emits are only counted (`forgotten`): their answers are
+ * recognised by order, not by content.
  */
 const emittedLimit = 8
 
@@ -48,6 +48,9 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
   // returns them in order; they are the table's own words, not an outside
   // change, and must not touch the draft.
   const emitted = new Map<string, FilterRule[][]>()
+  // Emits per field that fell out of `emitted` and are still unanswered.
+  // Answers come in order, so the next ones that match nothing are theirs.
+  const forgotten = new Map<string, number>()
 
   const columnOf = (field: string) =>
     options.columns().find(column => column.field === field)
@@ -84,10 +87,10 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     const next = cloneQuery(base)
     next.page = 1
     next.filters = replaceRules(base.filters, field, rules)
-    emitted.set(
-      field,
-      [...(emitted.get(field) ?? []), rules].slice(-emittedLimit)
-    )
+    const sent = [...(emitted.get(field) ?? []), rules]
+    const over = Math.max(0, sent.length - emittedLimit)
+    emitted.set(field, sent.slice(over))
+    forgotten.set(field, (forgotten.get(field) ?? 0) + over)
     options.update(next, 'filter')
     return true
   }
@@ -170,6 +173,7 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     delete drafts[field]
     seen.delete(field)
     emitted.delete(field)
+    forgotten.delete(field)
   }
 
   /** Brings drafts in line with rules that changed from outside. */
@@ -201,6 +205,14 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
         // Our own emit came back (possibly late): older ones are answered
         // too, newer ones are still on their way. The draft stays as typed.
         emitted.set(field, pending.slice(echo + 1))
+        forgotten.delete(field)
+        continue
+      }
+      const late = forgotten.get(field) ?? 0
+      if (late > 0) {
+        // The answer to an emit that is no longer remembered. The newer ones
+        // are still in `emitted` and on their way: keep them, keep the draft.
+        forgotten.set(field, late - 1)
         continue
       }
       // A different set of rules: the consumer has moved on from what we sent.

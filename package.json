@@ -17,7 +17,14 @@
     }
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=22.12"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=24",
+      "onFail": "error"
+    }
   },
   "packageManager": "pnpm@12.4.1",
   "repository": {
@@ -56,11 +63,11 @@
     "analyze:build:json": "node scripts/analyze-build.mjs",
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
     "check:size": "node scripts/consumer-size.mjs --check",
-    "check:package": "node scripts/check-no-css.mjs && publint && attw --pack . --profile esm-only",
+    "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint && attw --pack . --profile esm-only",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
     "contract:check": "node scripts/gen-contract.mjs --check",
-    "api:check": "api-extractor run",
+    "api:check": "node scripts/check-dist-fresh.mjs && api-extractor run",
     "api:update": "api-extractor run --local"
   },
   "devDependencies": {

@@ -366,11 +366,28 @@ describe('C-18 The echo memory is bounded', () => {
     expect(drafts.draftOf('name').text).toBe('abcdefghij')
   })
 
-  it('reads an answer older than that as an outside change', async () => {
+  it('keeps the draft when answers come in order, forgotten ones included', async () => {
     const { drafts, query, updates } = typeTen()
-    query.value = updates[0].query
+    // Answers 1 and 2 are older than the memory; 3 to 10 are still in it.
+    // None of them may rewind the input, so there is no cascade of rewinds.
+    for (const sent of updates) {
+      query.value = sent.query
+      await nextTick()
+      expect(drafts.draftOf('name').text).toBe('abcdefghij')
+    }
+  })
+
+  it('reads a change as an outside one once every forgotten answer is in', async () => {
+    const { drafts, query, updates } = typeTen()
+    for (const sent of updates.slice(0, 3)) {
+      query.value = sent.query
+      await nextTick()
+    }
+    query.value = makeQuery({
+      filters: [{ field: 'name', condition: 'Contains', value: 'zed' }]
+    })
     await nextTick()
-    expect(drafts.draftOf('name').text).toBe('a')
+    expect(drafts.draftOf('name').text).toBe('zed')
   })
 })
 

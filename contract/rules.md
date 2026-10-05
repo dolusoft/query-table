@@ -28,7 +28,7 @@ A user action produces at most one `update:query` of its own. A pending filter a
 
 ### C-07 Header sort
 
-A header click on a sortable column emits reason `sort`. The click cycles ascending, descending, none: the first click sorts ascending, the next on the same column descending, the next removes the sort (`sort: null`, so the query has no sort entry for that field). A click on a column that is not the sorted one starts at ascending. The page is kept. A click does nothing when the table or the column is not sortable.
+A header click on a sortable column emits reason `sort`. The click cycles ascending, descending, none: the first click sorts ascending, the next on the same column descending, the next removes the sort: `sort: null` means no sort at all, since the query holds a single sort. A click on a column that is not the sorted one starts at ascending. The page is kept. A click does nothing when the table or the column is not sortable.
 
 ### C-08 Sort from the filter menu
 
@@ -72,7 +72,7 @@ Rules of one `field` combine with OR, or with AND when all of them are negative 
 
 ### C-18 The input follows outside changes
 
-When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. This holds when the consumer answers late: an echo of an earlier emit never overwrites what the user has typed since. The table remembers the last eight emits of a column; an answer older than that counts as an outside change. Removing the rules from outside empties the input and removes the label.
+When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. This holds when the consumer answers late: an echo of an earlier emit never overwrites what the user has typed since. The table remembers the last eight emits of a column and only counts the older ones that are still unanswered: answers come in order, so the first answers that match nothing remembered are taken as those, and neither they nor the emits still in flight touch the input. Any other change is an outside change. Removing the rules from outside empties the input and removes the label.
 
 ### C-19 An ignored update changes nothing
 

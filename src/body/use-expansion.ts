@@ -15,7 +15,7 @@ export interface ExpansionOptions<T extends object> {
  * when `rows` changes; with a key, keys of rows no longer supplied are
  * dropped. A row may also arrive with a boolean `isExpanded` field: it seeds
  * the state each time `rows` changes, `true` opens the row and `false` closes
- * it. The consumer's print and report views rely on it (C-26).
+ * it. Print or report style views can seed the expansion this way (C-26).
  */
 export const useExpansion = <T extends object>(
   options: ExpansionOptions<T>

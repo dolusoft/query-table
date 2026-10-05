@@ -38,7 +38,10 @@ describe('package manifest', () => {
   })
 
   it('declares the Node range, no side effects and the pnpm version', () => {
-    expect(manifest.engines).toEqual({ node: '>=24' })
+    expect(manifest.engines).toEqual({ node: '>=22.12' })
+    expect(manifest.devEngines).toEqual({
+      runtime: { name: 'node', version: '>=24', onFail: 'error' }
+    })
     expect(manifest.sideEffects).toBe(false)
     expect(manifest.packageManager).toMatch(/^pnpm@\d+\.\d+\.\d+$/)
   })
