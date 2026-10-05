@@ -15,5 +15,5 @@
     "noEmit": true,
     "paths": { "@/*": ["./tests/browser/*"] }
   },
-  "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "*.config.ts"]
+  "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "test-support/**/*.ts", "tests/**/*.ts", "tests/**/*.vue", "*.config.ts"]
 }

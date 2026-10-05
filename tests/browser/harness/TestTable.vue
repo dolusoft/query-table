@@ -4,12 +4,12 @@ import { ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 
 import FilterMenu from './FilterMenu.vue'
-import VueServerTable from '../../../src/components/index'
 import type {
   QueryChangeReason,
   TableProps,
   TableQuery
 } from '../../../src/contract'
+import VueServerTable from '../../../src/index'
 
 // The consumer around the table: it owns the query (what `v-model:query`
 // does), takes outside changes through the `query` prop, and tells the test

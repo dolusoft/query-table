@@ -8,14 +8,14 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from './helpers'
+} from '../../test-support/mount-table'
 import type {
   Column,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
   FilterRule,
   PaginationSlotProps
-} from '../src/contract'
+} from '../contract'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

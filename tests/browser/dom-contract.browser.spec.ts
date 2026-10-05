@@ -5,8 +5,8 @@ import { h } from 'vue'
 
 import { columns, makeQuery, rows, rule } from './helpers'
 import { domAttributes, domClasses, domInlineStyle } from '../../contract/dom'
-import VueServerTable from '../../src/components/index'
 import type { FilterMenuSlotProps, TableQuery } from '../../src/contract'
+import VueServerTable from '../../src/index'
 
 // C-40: the table renders exactly the classes and attributes of the DOM
 // contract, and every entry of the contract shows up in some state. The table

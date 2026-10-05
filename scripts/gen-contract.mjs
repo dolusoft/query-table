@@ -104,9 +104,7 @@ const checker = createChecker(at('tsconfig.json'), {
   forceUseTs: true,
   schema: { ignore: [] }
 })
-const meta = checker.getComponentMeta(
-  at('src', 'components', 'custom-table.vue')
-)
+const meta = checker.getComponentMeta(at('src', 'vue-server-table.vue'))
 
 const props = meta.props
   .filter(prop => !prop.global)
@@ -207,7 +205,7 @@ const exposedKeysOf = path => {
 }
 sameSet(
   'Exposed keys',
-  exposedKeysOf(at('src', 'components', 'custom-table.vue')),
+  exposedKeysOf(at('src', 'vue-server-table.vue')),
   exposed.map(item => item.name)
 )
 
