@@ -106,9 +106,15 @@ export interface Column {
   pinned?: 'left'
   /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
   resizable?: boolean
-  /** Smallest width a resize gives, in pixels. Defaults to `40`. */
+  /**
+   * Smallest width a resize gives, in pixels. Defaults to `40`. A value that
+   * is not a finite number above `0` counts as unset.
+   */
   minWidth?: number
-  /** Largest width a resize gives, in pixels. No limit by default. */
+  /**
+   * Largest width a resize gives, in pixels. No limit by default. A value that
+   * is not a finite number above `0` counts as unset; a `minWidth` above it wins.
+   */
   maxWidth?: number
   /** Not rendered in the header or the body; its rules in `query` still apply. */
   hide?: boolean

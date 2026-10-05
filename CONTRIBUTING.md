@@ -65,8 +65,8 @@ A release is a version in `package.json` and a tag that names it; the `Release` 
 
    ```bash
    git switch main && git pull
-   git tag v2.2.9
-   git push origin v2.2.9
+   git tag v2.2.10
+   git push origin v2.2.10
    ```
 
 3. The workflow fails when the tag is not `v` plus the `package.json` version. It runs every check of CI, builds, runs `pnpm pack` and creates a GitHub Release for the tag with the tarball (`dolusoft-query-table-<version>.tgz`) attached, then fails unless the asset URL answers 200. Consumers install that URL (see `README.md`).

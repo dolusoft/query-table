@@ -15,11 +15,36 @@ export interface ColumnResizeOptions {
   emit: (payload: ColumnResizePayload) => void
 }
 
-export const minWidthOf = (column: Column) => column.minWidth ?? defaultMinWidth
+/**
+ * A width limit a consumer gave, or `undefined` when it cannot be one. The
+ * types say `number`, but a loosely typed consumer can pass `''`, `NaN`,
+ * `0` or a negative: those count as unset instead of clamping to 0.
+ */
+const limitOf = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : undefined
+
+/**
+ * The smallest width: `Column.minWidth`, else the default 40 (which gives way
+ * to a smaller `Column.maxWidth`, so a maximum alone keeps working).
+ */
+export const minWidthOf = (column: Column) =>
+  limitOf(column.minWidth) ??
+  Math.min(defaultMinWidth, limitOf(column.maxWidth) ?? defaultMinWidth)
+
+/** The largest width, or `undefined` for none. A `minWidth` above it wins. */
+const maxWidthOf = (column: Column) => {
+  const max = limitOf(column.maxWidth)
+  return max === undefined ? undefined : Math.max(max, minWidthOf(column))
+}
 
 export const clampWidth = (column: Column, width: number) =>
   Math.round(
-    Math.min(column.maxWidth ?? Infinity, Math.max(minWidthOf(column), width))
+    Math.min(
+      maxWidthOf(column) ?? Infinity,
+      Math.max(minWidthOf(column), width)
+    )
   )
 
 /** Width of the content of a cell up to `until` (exclusive), padding and border included. */
@@ -212,7 +237,7 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
 
   /** `aria-valuemax`: `maxWidth`, or else the table width (what can show). */
   const maxOf = (column: Column) =>
-    column.maxWidth ??
+    maxWidthOf(column) ??
     Math.max(widthOf(column), Math.round(options.tableWidth()))
 
   onBeforeUnmount(() => {
