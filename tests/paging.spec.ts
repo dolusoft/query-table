@@ -201,6 +201,51 @@ describe('C-08 Sort from the filter menu', () => {
   })
 })
 
+describe('C-08 Sort from the filter menu when sorting is off', () => {
+  const menusOf = (props: Record<string, unknown>) => {
+    const menus: Record<string, FilterMenuSlotProps> = {}
+    const m = mountTable(
+      { filterable: true, ...props },
+      {
+        slots: {
+          'filter-menu': ((menu: FilterMenuSlotProps) => {
+            menus[menu.column.field] = menu
+            return h(menu.trigger)
+          }) as never
+        }
+      }
+    )
+    mounted = m
+    return { menus, m }
+  }
+
+  it('setSort does nothing on a column with sortable: false', async () => {
+    const { menus, m } = menusOf({
+      sortable: true,
+      columns: [
+        { field: 'name', title: 'Name', sortable: false },
+        { field: 'age', title: 'Age', type: 'number' }
+      ]
+    })
+    expect(menus.name.sortable).toBe(false)
+    menus.name.setSort('asc')
+    await flush()
+    expect(m.events).toEqual([])
+    // the sortable column next to it still sorts
+    menus.age.setSort('asc')
+    await flush()
+    expect(reasons(m.events)).toEqual(['sort'])
+  })
+
+  it('setSort does nothing when the table is not sortable', async () => {
+    const { menus, m } = menusOf({ sortable: false })
+    expect(menus.name.sortable).toBe(false)
+    menus.name.setSort('desc')
+    await flush()
+    expect(m.events).toEqual([])
+  })
+})
+
 describe('C-23 Page count and neighbours', () => {
   it.each([
     [45, 10, 5],
