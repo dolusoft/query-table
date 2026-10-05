@@ -108,7 +108,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 ### C-27 Cell slots
 
-`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation.
+`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation. The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 ### C-28 Context menu
 
