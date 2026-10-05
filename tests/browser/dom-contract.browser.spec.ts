@@ -5,7 +5,7 @@ import { h } from 'vue'
 
 import { domAttributes, domClasses, domInlineStyle } from '../../contract/dom'
 import type { FilterMenuSlotProps, TableQuery } from '../../src/contract'
-import VueServerTable from '../../src/index'
+import QueryTable from '../../src/index'
 import { columns, makeQuery, rows, rule } from '../support/fixtures'
 
 // C-40: the table renders exactly the classes and attributes of the DOM
@@ -21,7 +21,7 @@ const slots = {
 }
 
 const renderTable = (props: Record<string, unknown>) =>
-  render(VueServerTable as never, {
+  render(QueryTable as never, {
     props: {
       columns: [
         ...columns(),
@@ -44,7 +44,7 @@ const filtered: TableQuery = makeQuery({
 
 /** Every element the table rendered in the current document. */
 const rendered = () => [
-  ...document.querySelectorAll('.bh-datatable, .bh-datatable *')
+  ...document.querySelectorAll('.qt-datatable, .qt-datatable *')
 ]
 
 interface Seen {
@@ -67,7 +67,7 @@ const attributeEntries = (name: string) =>
 const collect = () => {
   for (const element of rendered()) {
     for (const name of element.classList) {
-      if (!name.startsWith('bh-')) {
+      if (!name.startsWith('qt-')) {
         unknownClasses.push(`${element.tagName.toLowerCase()}.${name}`)
         continue
       }
@@ -129,13 +129,13 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
     ],
     footerRows: [{ cells: [{ field: 'id', text: 'Total' }] }]
   })
-  await userEvent.click(document.querySelector('.bh-expand')!)
+  await userEvent.click(document.querySelector('.qt-expand')!)
   collect()
   cleanup()
 
   await renderTable({ rows: [], totalRows: 0 })
   await expect
-    .element(document.querySelector<HTMLElement>('.bh-empty-row'))
+    .element(document.querySelector<HTMLElement>('.qt-empty-row'))
     .toBeInTheDocument()
   collect()
   cleanup()

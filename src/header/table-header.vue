@@ -53,7 +53,7 @@ const utilities = computed(() =>
       <button
         v-if="filterable && utility === utilities[0]"
         type="button"
-        class="bh-clear-all-button"
+        class="qt-clear-all-button"
         title="Clear all filters"
         aria-label="Clear all filters"
         :disabled="!clearAllEnabled()"
@@ -91,7 +91,7 @@ const utilities = computed(() =>
         :direction="sort.sortOf(column)"
         @click="sort.sortBy(column)"
       />
-      <span v-else class="bh-title">{{ column.title }}</span>
+      <span v-else class="qt-title">{{ column.title }}</span>
 
       <filter-cell
         v-if="hasFilter(column)"

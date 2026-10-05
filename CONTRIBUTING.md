@@ -6,7 +6,7 @@ The table is exercised through tests and shown in the playground (`playground/`,
 
 `src/` is organized by feature, and a feature keeps its own unit tests next to the code (`*.spec.ts`; they never reach `dist`).
 
-- `vue-server-table.vue` is the thin shell: it sets up the composables, provides the header context and draws the table. `index.ts` is the package entry, `contract.ts` holds the public types.
+- `query-table.vue` is the thin shell: it sets up the composables, provides the header context and draws the table. `index.ts` is the package entry, `contract.ts` holds the public types.
 - `core/`: the query and the column helpers, `useQueryEmitter` (the only place that emits `update:query`), `useColumns`, and the context (`table-context.ts`) the header parts read.
 - `filter/`, `sort/`, `pagination/`: one folder per feature, with its pure helpers (`filter-draft.ts`, `sort.ts`), its `use-<feature>` composables and its components (`filter-cell.vue`, `sort-button.vue`, `table-pagination.vue`).
 - `header/` and `body/`: the structural parts of the table (`table-header.vue`, `table-body.vue`, `table-footer.vue`) with `use-expansion.ts` and `use-cell-view.ts`.
@@ -30,7 +30,7 @@ Names: a folder is a feature; structural parts carry a `table-` prefix; composab
 - The skin that gives the plain markup a shadcn-vue look lives in `playground/skin/` (`test-skin.css`, `theme.css`, `mapping.css`, `ui/`). The playground and the browser tests use it; it is never shipped. Regenerate it with `node playground/skin/gen-skin.ts` after editing `theme.css` or `mapping.css`; `playground/skin/skin.spec.ts` fails when the generated file is stale or when the skin selects anything outside the DOM contract. `ui/` is shadcn-vue CLI output (`components.json`, alias `@/ui`); add components with `pnpm dlx shadcn-vue@latest add <name>`.
 - The contract has four mechanisms, each checked in CI:
   - `pnpm contract:check` — `CONTRACT.md` and `contract/api.json` are generated from `src/contract.ts`, `contract/rules.md` and `contract/dom.ts` (`pnpm contract:gen`); it fails when either file is stale. The playground's API panels and `playground/manifest.spec.ts` read `contract/api.json`: the spec fails when an API member or a rule has no page.
-  - `pnpm api:check` — api-extractor compares the built `.d.ts` with `etc/vue-server-table.api.md` (`pnpm api:update` accepts a deliberate change).
+  - `pnpm api:check` — api-extractor compares the built `.d.ts` with `etc/query-table.api.md` (`pnpm api:update` accepts a deliberate change).
   - Behavior rules `C-nn` in `contract/rules.md`: each needs a test with the ID in its name; `tests/contract/contract-traceability.spec.ts` fails otherwise.
   - DOM contract: `tests/browser/dom-contract.browser.spec.ts` compares the rendered classes and attributes with `contract/dom.ts`.
 - `pnpm check:package` also fails if any `.css` ends up in `dist/` or the tarball.

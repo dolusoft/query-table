@@ -34,7 +34,7 @@ afterEach(() => {
 })
 
 const input = (m: Mounted, field: string) =>
-  m.wrapper.find(`th[data-field="${field}"] .bh-filter-input`)
+  m.wrapper.find(`th[data-field="${field}"] .qt-filter-input`)
 
 const type = async (m: Mounted, field: string, text: string) =>
   input(m, field).setValue(text)
@@ -276,7 +276,7 @@ describe('C-14 Pending filters go first', () => {
   it('applies a pending filter before a sort', async () => {
     const { m } = withPagination()
     await type(m, 'name', 'ali')
-    await m.wrapper.find('th[data-field="age"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="age"] .qt-sort').trigger('click')
     expect(reasons(m.events)).toEqual(['filter', 'sort'])
     expect(m.events[1][0].filters).toEqual([rule('name', 'Contains', 'ali')])
     expect(m.events[1][0].sort).toEqual({ field: 'age', direction: 'asc' })
@@ -299,7 +299,7 @@ describe('C-14 Pending filters go first', () => {
     expect(reasons(m.events)).toEqual(['filter', 'pageSize'])
 
     await type(m, 'age', '5')
-    await m.wrapper.find('.bh-clear-all-button').trigger('click')
+    await m.wrapper.find('.qt-clear-all-button').trigger('click')
     await flush()
     // the full sequence: no `filter` for the pending `age` text
     expect(reasons(m.events)).toEqual(['filter', 'pageSize', 'reset'])
@@ -442,7 +442,7 @@ describe('C-17 Several rules for one field', () => {
   it('shows how many rules the input stands for next to the condition', async () => {
     const m = mountIt(base)
     await type(m, 'name', 'a,b')
-    expect(m.wrapper.find('.bh-filter-condition').text()).toBe('Contains (2)')
+    expect(m.wrapper.find('.qt-filter-condition').text()).toBe('Contains (2)')
   })
 })
 
@@ -461,10 +461,10 @@ describe('C-18 The input follows outside changes', () => {
     expect((input(m, 'name').element as HTMLInputElement).value).toBe('foo*')
     expect((input(m, 'age').element as HTMLInputElement).value).toBe('20')
     expect(
-      m.wrapper.find('th[data-field="name"] .bh-filter-condition').text()
+      m.wrapper.find('th[data-field="name"] .qt-filter-condition').text()
     ).toBe('Starts With')
     expect(
-      m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()
+      m.wrapper.find('th[data-field="age"] .qt-filter-condition').text()
     ).toBe('Greater Than (>)')
   })
 
@@ -481,11 +481,11 @@ describe('C-18 The input follows outside changes', () => {
       query: makeQuery({ filters: [rule('name', 'Contains', 'bob')] })
     })
     await flush()
-    expect(m.wrapper.find('.bh-filter-condition').exists()).toBe(true)
+    expect(m.wrapper.find('.qt-filter-condition').exists()).toBe(true)
     await m.setQuery(makeQuery())
     await flush()
     expect((input(m, 'name').element as HTMLInputElement).value).toBe('')
-    expect(m.wrapper.find('.bh-filter-condition').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-filter-condition').exists()).toBe(false)
   })
 
   it('keeps newer typing when a late echo of an earlier emit arrives', async () => {
@@ -564,7 +564,7 @@ describe('C-20 Picking a condition', () => {
     menus.name.setCondition('StartsWith')
     await flush()
     expect(m.events).toEqual([])
-    expect(m.wrapper.find('.bh-filter-condition').text()).toBe('Starts With')
+    expect(m.wrapper.find('.qt-filter-condition').text()).toBe('Starts With')
     await type(m, 'name', 'foo')
     vi.advanceTimersByTime(100)
     expect(m.events[0][0].filters).toEqual([rule('name', 'StartsWith', 'foo')])
@@ -629,7 +629,7 @@ describe('C-21 Clearing one column', () => {
 })
 
 describe('C-22 Clearing all filters', () => {
-  const clearAll = (m: Mounted) => m.wrapper.find('.bh-clear-all-button')
+  const clearAll = (m: Mounted) => m.wrapper.find('.qt-clear-all-button')
 
   it('removes every rule and nothing else, with reason reset', async () => {
     const m = mountIt({
@@ -727,7 +727,7 @@ describe('C-42 Several rules on a column that is not text', () => {
     expect(ageInput(m).readOnly).toBe(true)
     expect(ageInput(m).value).toBe('(2)')
     expect(
-      m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()
+      m.wrapper.find('th[data-field="age"] .qt-filter-condition').text()
     ).toBe('Greater Than (>) (2)')
     vi.advanceTimersByTime(1000)
     expect(m.events).toEqual([])
@@ -771,7 +771,7 @@ describe('C-42 Several rules on a column that is not text', () => {
 
   it('is cleared by clear all', async () => {
     const m = mountIt({ ...base, query: makeQuery({ filters: twoRules }) })
-    await m.wrapper.find('.bh-clear-all-button').trigger('click')
+    await m.wrapper.find('.qt-clear-all-button').trigger('click')
     await flush()
     expect(m.query().filters).toEqual([])
     expect(ageInput(m).readOnly).toBe(false)
@@ -800,7 +800,7 @@ describe('C-42 Several rules on a column that is not text', () => {
     )
     // The slot does not see a value it could echo back by accident.
     expect(box.slot!.value).toBe('')
-    expect(m.wrapper.find('.bh-filter-condition').text()).toBe('After (>) (2)')
+    expect(m.wrapper.find('.qt-filter-condition').text()).toBe('After (>) (2)')
     vi.advanceTimersByTime(1000)
     expect(m.events).toEqual([])
     box.slot!.updateValue('2024-06-01')
@@ -831,7 +831,7 @@ describe('C-42 Several rules on a column that is not text', () => {
     })
     const select = mounted!.wrapper.find('th[data-field="active"] select')
     expect(select.attributes('disabled')).toBeDefined()
-    expect(mounted!.wrapper.find('.bh-filter-condition').text()).toContain(
+    expect(mounted!.wrapper.find('.qt-filter-condition').text()).toContain(
       '(2)'
     )
   })

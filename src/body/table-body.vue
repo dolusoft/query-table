@@ -45,7 +45,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
         <td v-if="hasRightPanel">
           <button
             type="button"
-            class="bh-right-panel-button"
+            class="qt-right-panel-button"
             aria-label="Open right panel"
             @click.stop="emit('rowRightPanelClick', row)"
           >
@@ -67,7 +67,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
         <td v-if="hasSubtable">
           <button
             type="button"
-            class="bh-expand"
+            class="qt-expand"
             :aria-expanded="isExpanded(row, i)"
             aria-label="Expand row"
             @click="toggle(row, i)"
@@ -100,13 +100,13 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
           </td>
         </template>
       </tr>
-      <tr v-if="isExpanded(row, i)" class="bh-subtable-row">
+      <tr v-if="isExpanded(row, i)" class="qt-subtable-row">
         <td :colspan="columnCount">
           <slot name="subtable" :row="row" :row-index="i" />
         </td>
       </tr>
     </template>
-    <tr v-if="rows.length === 0 && slots.empty" class="bh-empty-row">
+    <tr v-if="rows.length === 0 && slots.empty" class="qt-empty-row">
       <td :colspan="columnCount"><slot name="empty" /></td>
     </tr>
   </tbody>

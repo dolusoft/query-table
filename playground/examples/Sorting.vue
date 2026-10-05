@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Column } from '../../src/contract'
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
@@ -22,7 +22,7 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
         query.sort ? `${query.sort.field} ${query.sort.direction}` : 'none'
       }}</code>
     </p>
-    <VueServerTable
+    <QueryTable
       v-model:query="query"
       :columns="columns"
       :rows="result.rows"
@@ -37,6 +37,6 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>

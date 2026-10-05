@@ -14,7 +14,7 @@ const footerText = (row: FooterRow, column: Column) =>
 </script>
 
 <template>
-  <tfoot class="bh-footer">
+  <tfoot class="qt-footer">
     <tr v-for="(footerRow, i) in footerRows" :key="i">
       <td v-if="utilityCount > 0" :colspan="utilityCount" />
       <td

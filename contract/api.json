@@ -276,7 +276,7 @@
     {
       "id": "C-25",
       "title": "Pagination block",
-      "text": "The `bh-pagination` block is drawn when the `pagination` slot is given and there are rows, a positive `totalRows` or `pagination.alwaysShow`. Without the slot nothing is drawn, and the page actions have nobody to call them."
+      "text": "The `qt-pagination` block is drawn when the `pagination` slot is given and there are rows, a positive `totalRows` or `pagination.alwaysShow`. Without the slot nothing is drawn, and the page actions have nobody to call them."
     },
     {
       "id": "C-26",
@@ -321,7 +321,7 @@
     {
       "id": "C-34",
       "title": "Filter menu slot",
-      "text": "The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.bh-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its `aria-label` follows the current `title` of the column. Without the slot there is no filter button."
+      "text": "The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its `aria-label` follows the current `title` of the column. Without the slot there is no filter button."
     },
     {
       "id": "C-35",

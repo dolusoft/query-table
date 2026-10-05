@@ -26,7 +26,7 @@ export const useFilterTrigger = (options: FilterTriggerOptions): Component =>
         'button',
         {
           type: 'button',
-          class: 'bh-filter-button',
+          class: 'qt-filter-button',
           title: 'Filter options',
           'aria-label': `Filter options for ${column.title ?? column.field}`,
           'data-filtered': filtered ? '' : undefined

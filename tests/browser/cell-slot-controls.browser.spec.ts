@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 
-import VueServerTable from '../../src/index'
+import QueryTable from '../../src/index'
 import { el, makeQuery } from '../support/fixtures'
 
 // A cell slot is consumer markup, and a table's most common cell contents are
@@ -19,7 +19,7 @@ const mountWithControls = (onRowClick: (event: MouseEvent) => void) => {
   const Host = defineComponent({
     setup: () => () =>
       h(
-        VueServerTable as never,
+        QueryTable as never,
         {
           query: makeQuery(),
           columns: [

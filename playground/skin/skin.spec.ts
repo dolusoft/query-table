@@ -52,7 +52,7 @@ describe('C-41 the test skin selects only the DOM contract', () => {
 
   it('has selectors to check', () => {
     expect(selectors.length).toBeGreaterThan(20)
-    expect(selectors).toContain('.bh-filter-input')
+    expect(selectors).toContain('.qt-filter-input')
   })
 
   it('uses only contract classes and attributes in a selector', () => {

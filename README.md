@@ -1,13 +1,13 @@
-# vue-server-table
+# Query Table
 
 A thin Vue 3 table for server-side data. It renders the rows you give it and tells you, through `v-model:query`, what the user asked for: a page, a page size, a sort or a filter. Fetching and ordering the data is up to you.
 
-The table ships no CSS. It renders plain markup with a small, stable set of `bh-` classes and `data-*` attributes; style them with your own design system.
+The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system.
 
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/vue-server-table/releases/download/v2.2.6/dolusoft-vue-server-table-2.2.6.tgz
+pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.7/dolusoft-query-table-2.2.7.tgz
 ```
 
 Peer dependency: `vue` 3.5+.
@@ -17,7 +17,7 @@ Peer dependency: `vue` 3.5+.
 ```vue
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
-import VueServerTable, { type TableQuery } from '@dolusoft/vue-server-table'
+import QueryTable, { type TableQuery } from '@dolusoft/query-table'
 
 const columns = [{ field: 'name', title: 'Name' }]
 const query = ref<TableQuery>({ page: 1, pageSize: 10, sort: null, filters: [] })
@@ -32,7 +32,7 @@ watchEffect(async () => {
 </script>
 
 <template>
-  <VueServerTable
+  <QueryTable
     v-model:query="query"
     :columns="columns"
     :rows="rows"
@@ -54,7 +54,7 @@ The library ships no CSS, so the layout algorithm of the `<table>` is yours. Wit
 For large tables set `table-layout: fixed` and give every column a `width` (`Column.width`, which the table writes as an inline `width` on the `th`):
 
 ```css
-.bh-table {
+.qt-table {
   table-layout: fixed;
   width: 100%;
 }

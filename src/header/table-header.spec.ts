@@ -57,7 +57,7 @@ describe('C-31 No styling', () => {
 describe('C-32 State attributes', () => {
   it('sets the root attributes from the state', async () => {
     const m = mountIt({ rows: [] })
-    const root = () => m.wrapper.find('.bh-datatable')
+    const root = () => m.wrapper.find('.qt-datatable')
     expect(root().attributes('data-empty')).toBe('')
     await m.wrapper.setProps({
       rows: makeRows(),
@@ -117,7 +117,7 @@ describe('C-32 State attributes', () => {
 describe('C-34 Filter menu slot', () => {
   it('draws no popover or tooltip and no filter button without the slot', () => {
     const m = mountIt({ filterable: true })
-    expect(m.wrapper.find('.bh-filter-button').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-filter-button').exists()).toBe(false)
     expect(
       m.wrapper.find('[role="tooltip"], [data-popper-placement]').exists()
     ).toBe(false)
@@ -132,12 +132,12 @@ describe('C-34 Filter menu slot', () => {
         }
       }
     )
-    const input = m.wrapper.find('th[data-field="name"] .bh-filter-input')
+    const input = m.wrapper.find('th[data-field="name"] .qt-filter-input')
     const button = input.element.nextElementSibling
-    expect(button?.classList.contains('bh-filter-button')).toBe(true)
+    expect(button?.classList.contains('qt-filter-button')).toBe(true)
     expect(button?.parentElement).toBe(input.element.parentElement)
     // bool columns have no menu
-    expect(m.wrapper.findAll('.bh-filter-button')).toHaveLength(4)
+    expect(m.wrapper.findAll('.qt-filter-button')).toHaveLength(4)
   })
 
   it('gives the slot the column, the rules, the conditions and a trigger that takes attributes', () => {
@@ -168,12 +168,12 @@ describe('C-34 Filter menu slot', () => {
     expect(name.sortDirection).toBe('asc')
     expect(name.sortable).toBe(true)
     expect(name.conditions.length).toBeGreaterThan(3)
-    const button = m.wrapper.find('th[data-field="name"] .bh-filter-button')
+    const button = m.wrapper.find('th[data-field="name"] .qt-filter-button')
     expect(button.attributes('data-extra')).toBe('yes')
     expect(button.classes()).toContain('extra')
     expect(button.attributes('data-filtered')).toBe('')
     expect(
-      m.wrapper.findAll('.bh-filter-button button, button button')
+      m.wrapper.findAll('.qt-filter-button button, button button')
     ).toHaveLength(0)
   })
 
@@ -188,7 +188,7 @@ describe('C-34 Filter menu slot', () => {
     )
     const label = () =>
       m.wrapper
-        .find('th[data-field="name"] .bh-filter-button')
+        .find('th[data-field="name"] .qt-filter-button')
         .attributes('aria-label')
     expect(label()).toBe('Filter options for Name')
     await m.wrapper.setProps({
@@ -199,7 +199,7 @@ describe('C-34 Filter menu slot', () => {
     expect(label()).toBe('Filter options for Isim')
     expect(
       m.wrapper
-        .find('th[data-field="name"] .bh-filter-input')
+        .find('th[data-field="name"] .qt-filter-input')
         .attributes('aria-label')
     ).toBe('Filter Isim')
   })

@@ -1,11 +1,11 @@
 import type { Component } from 'vue'
 
 /**
- * Public contract of `VueServerTable`.
+ * Public contract of `QueryTable`.
  *
  * Every type a consumer can touch lives in this file. The rendered component
  * is described by `TableProps`, `TableEmits`, `TableSlots` and
- * `VueServerTableExpose`; `CONTRACT.md` is generated from this file and from
+ * `QueryTableExpose`; `CONTRACT.md` is generated from this file and from
  * the component, and `contract/rules.md` holds the behavior rules.
  */
 
@@ -231,7 +231,7 @@ export interface FilterMenuSlotProps {
   /**
    * The filter button, as a component to place in your popover trigger:
    * `<PopoverTrigger as-child><trigger /></PopoverTrigger>`. It renders a
-   * single `button.bh-filter-button` and merges the attributes it receives.
+   * single `button.qt-filter-button` and merges the attributes it receives.
    */
   trigger: Component
 }
@@ -273,7 +273,7 @@ export interface TableSlots<T> {
 }
 
 /** What a template ref to the table exposes. */
-export interface VueServerTableExpose {
+export interface QueryTableExpose {
   /** Close every expanded row. */
   collapseAll(): void
   /**

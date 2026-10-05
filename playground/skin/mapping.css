@@ -5,94 +5,94 @@
  * (Table, Input, Button) through `@apply`; colors come from the theme above.
  */
 
-.bh-datatable {
+.qt-datatable {
   @apply bg-background text-sm text-foreground;
 }
 
 /* Table, TableHeader, TableBody, TableRow, TableHead, TableCell, inside the
    `rounded-md border` box of shadcn's data-table example */
-.bh-table-responsive {
+.qt-table-responsive {
   @apply relative w-full overflow-x-auto rounded-md border;
 }
-.bh-table {
+.qt-table {
   @apply w-full caption-bottom text-sm;
 }
-.bh-table thead {
+.qt-table thead {
   @apply [&_tr]:border-b;
 }
-.bh-table tbody {
+.qt-table tbody {
   @apply [&_tr:last-child]:border-0;
 }
-.bh-table tr {
+.qt-table tr {
   @apply border-b transition-colors hover:bg-muted/50;
 }
-.bh-table th {
+.qt-table th {
   @apply h-10 px-2 py-2 text-left align-middle font-medium whitespace-nowrap text-foreground;
 }
-.bh-table td {
+.qt-table td {
   @apply p-2 align-middle whitespace-nowrap tabular-nums;
 }
 /* Vertical column borders: the same border token as the row lines. */
-.bh-table th,
-.bh-table td {
+.qt-table th,
+.qt-table td {
   @apply border-r last:border-r-0;
 }
 
 /* TableFooter */
-.bh-footer {
+.qt-footer {
   @apply border-t bg-muted/50 font-medium [&>tr]:last:border-b-0;
 }
 
 /* Utility columns */
 th:not([data-field]),
-td:has(> .bh-expand),
-td:has(> .bh-right-panel-button) {
+td:has(> .qt-expand),
+td:has(> .qt-right-panel-button) {
   @apply w-8;
 }
 
 /* Sorting */
-.bh-sort {
+.qt-sort {
   @apply inline-flex items-center gap-1 rounded-sm font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;
 }
-.bh-sort-icon {
+.qt-sort-icon {
   @apply shrink-0 text-muted-foreground/40;
 }
-th[data-sort] .bh-sort-icon {
+th[data-sort] .qt-sort-icon {
   @apply text-foreground;
 }
 
 /* Filter row: Input and Button side by side. The condition label shows up
    on the first keystroke; it sits inside the input's end like an inline
    adornment, so the cell, the row and the column never change size. */
-.bh-filter {
+.qt-filter {
   @apply relative mt-1 flex items-center gap-1 font-normal;
 }
-.bh-filter-input {
+.qt-filter-input {
   @apply h-8 w-0 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30;
 }
-th[data-filtered] .bh-filter-input {
+th[data-filtered] .qt-filter-input {
   @apply border-foreground/40;
 }
-.bh-filter-button {
+.qt-filter-button {
   @apply inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50;
 }
-.bh-filter-button[data-filtered] {
+.qt-filter-button[data-filtered] {
   @apply bg-muted text-foreground;
 }
 /* Badge, variant secondary, over the input's end (the button is size-8 + gap-1) */
-.bh-filter-condition {
+.qt-filter-condition {
   @apply pointer-events-none absolute top-1/2 right-10 max-w-[30%] -translate-y-1/2 truncate rounded-sm bg-secondary px-1.5 py-0.5 text-xs leading-none font-medium text-secondary-foreground;
 }
 /* The input always keeps room for the label: any padding that came and went
    with it would change the column's width in the auto table layout. */
-.bh-filter-input {
+.qt-filter-input {
   @apply pr-[calc(30%+--spacing(1))];
 }
 
 /* Icon buttons in the utility columns: Button, variant ghost, size icon-xs */
-.bh-clear-all-button,
-.bh-expand,
-.bh-right-panel-button {
+.qt-clear-all-button,
+.qt-expand,
+.qt-right-panel-button {
   @apply inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50;
 }
 
@@ -100,16 +100,16 @@ th[data-filtered] .bh-filter-input {
 tr[data-expanded] {
   @apply bg-muted/50;
 }
-.bh-subtable-row td {
+.qt-subtable-row td {
   @apply whitespace-normal;
 }
-.bh-empty-row td {
+.qt-empty-row td {
   @apply h-24 text-center text-muted-foreground;
 }
 
 /* Pagination block below the bordered table, as in shadcn's data-table
    example. The consumer's slot content sits inside it; px-2.25 is the cell's
    p-2 plus the 1px border, so the text lines up with the cell text. */
-.bh-pagination {
+.qt-pagination {
   @apply px-2.25 py-4;
 }

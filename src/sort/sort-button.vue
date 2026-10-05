@@ -11,11 +11,11 @@ defineEmits<{ click: [] }>()
 </script>
 
 <template>
-  <button type="button" class="bh-sort" @click="$emit('click')">
+  <button type="button" class="qt-sort" @click="$emit('click')">
     {{ column.title }}
     <svg
       v-if="direction === 'asc'"
-      class="bh-sort-icon"
+      class="qt-sort-icon"
       width="14"
       height="14"
       viewBox="0 0 16 16"
@@ -25,7 +25,7 @@ defineEmits<{ click: [] }>()
     </svg>
     <svg
       v-else-if="direction === 'desc'"
-      class="bh-sort-icon"
+      class="qt-sort-icon"
       width="14"
       height="14"
       viewBox="0 0 16 16"
@@ -35,7 +35,7 @@ defineEmits<{ click: [] }>()
     </svg>
     <svg
       v-else
-      class="bh-sort-icon"
+      class="qt-sort-icon"
       width="14"
       height="14"
       viewBox="0 0 16 16"

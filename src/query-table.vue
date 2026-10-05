@@ -9,7 +9,7 @@ import type {
   TableEmits,
   TableProps,
   TableSlots,
-  VueServerTableExpose
+  QueryTableExpose
 } from './contract'
 import { provideTableContext } from './core/table-context'
 import { useColumns } from './core/use-columns'
@@ -20,7 +20,7 @@ import TablePagination from './pagination/table-pagination.vue'
 import { usePagination } from './pagination/use-pagination'
 import { useSort } from './sort/use-sort'
 
-defineOptions({ name: 'VueServerTable' })
+defineOptions({ name: 'QueryTable' })
 
 const props = withDefaults(defineProps<TableProps<T>>(), {
   rows: () => [],
@@ -92,7 +92,7 @@ const bodySlotNames = () =>
     name => name.startsWith('cell-') || name === 'subtable' || name === 'empty'
   )
 
-const exposed: VueServerTableExpose = {
+const exposed: QueryTableExpose = {
   collapseAll,
   flushPendingFilters: () => {
     drafts.flushAll()
@@ -102,10 +102,10 @@ defineExpose(exposed)
 </script>
 
 <template>
-  <div class="bh-datatable" :data-empty="rows.length === 0 ? '' : undefined">
+  <div class="qt-datatable" :data-empty="rows.length === 0 ? '' : undefined">
     <slot name="toolbar" />
-    <div class="bh-table-responsive">
-      <table class="bh-table">
+    <div class="qt-table-responsive">
+      <table class="qt-table">
         <thead>
           <table-header
             :columns="visibleColumns"

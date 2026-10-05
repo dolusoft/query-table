@@ -20,7 +20,7 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: {
-        'vue-server-table': resolve(import.meta.dirname, 'src/index.ts')
+        'query-table': resolve(import.meta.dirname, 'src/index.ts')
       },
       formats: ['es', 'cjs']
     },

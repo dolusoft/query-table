@@ -99,7 +99,7 @@ describe('C-03 Inputs are never mutated', () => {
       { apply: false }
     )
 
-    await m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     await m.wrapper.find('th[data-field="name"] input').setValue('bo')
     vi.advanceTimersByTime(200)
     await m.wrapper.find('.next-page').trigger('click')
@@ -113,7 +113,7 @@ describe('C-03 Inputs are never mutated', () => {
       filters: [{ field: 'age', condition: 'Equal', value: 25 }]
     })
     const m = mountIt({ query, sortable: true }, { apply: false })
-    await m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     const [emitted] = m.events[0]
     expect(emitted).not.toBe(query)
     expect(emitted.filters).not.toBe(query.filters)
@@ -136,7 +136,7 @@ describe('C-04 One action, one update', () => {
 
   it('makes one update for one click', async () => {
     const m = mountIt({ sortable: true })
-    await m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     expect(reasons(m.events)).toEqual(['sort'])
   })
 

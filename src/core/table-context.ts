@@ -12,7 +12,7 @@ export interface TableContext {
   sort: SortActions
 }
 
-const tableContextKey: InjectionKey<TableContext> = Symbol('vue-server-table')
+const tableContextKey: InjectionKey<TableContext> = Symbol('query-table')
 
 export const provideTableContext = (context: TableContext) => {
   provide(tableContextKey, context)
@@ -21,7 +21,7 @@ export const provideTableContext = (context: TableContext) => {
 export const useTableContext = (): TableContext => {
   const context = inject(tableContextKey)
   if (!context) {
-    throw new Error('Header parts must be rendered inside a VueServerTable')
+    throw new Error('Header parts must be rendered inside a QueryTable')
   }
   return context
 }

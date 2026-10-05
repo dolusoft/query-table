@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { Button } from '@/ui/button'
 
 import type { FilterRule } from '../../src/contract'
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, typedColumns, useFakeServer } from '../scenarios'
@@ -69,7 +69,7 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
         Native date picker (<code>filter-datetime</code> slot)
       </label>
     </div>
-    <VueServerTable
+    <QueryTable
       v-model:query="query"
       :columns="columns"
       :rows="result.rows"
@@ -95,6 +95,6 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>

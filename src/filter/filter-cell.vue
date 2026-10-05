@@ -86,11 +86,11 @@ const pick = (event: Event) => {
 </script>
 
 <template>
-  <div class="bh-filter">
+  <div class="qt-filter">
     <input
       v-if="type === 'string'"
       type="text"
-      class="bh-filter-input"
+      class="qt-filter-input"
       :aria-label="`Filter ${column.title ?? column.field}`"
       :value="drafts.draftOf(column.field).text"
       @input="drafts.onInput(column.field, inputValue($event))"
@@ -99,7 +99,7 @@ const pick = (event: Event) => {
     <input
       v-else-if="type === 'number' || type === 'integer'"
       :type="drafts.multiOf(column.field) ? 'text' : 'number'"
-      class="bh-filter-input"
+      class="qt-filter-input"
       :aria-label="`Filter ${column.title ?? column.field}`"
       :value="inputText()"
       :readonly="drafts.multiOf(column.field) > 0"
@@ -108,7 +108,7 @@ const pick = (event: Event) => {
     />
     <template v-else-if="type === 'bool'">
       <select
-        class="bh-filter-input"
+        class="qt-filter-input"
         :aria-label="`Filter ${column.title ?? column.field}`"
         :value="drafts.draftOf(column.field).text"
         :disabled="drafts.multiOf(column.field) > 0"
@@ -128,7 +128,7 @@ const pick = (event: Event) => {
       <input
         v-else
         :type="drafts.multiOf(column.field) ? 'text' : 'date'"
-        class="bh-filter-input"
+        class="qt-filter-input"
         :aria-label="`Filter ${column.title ?? column.field}`"
         :value="inputText()"
         :readonly="drafts.multiOf(column.field) > 0"
@@ -137,7 +137,7 @@ const pick = (event: Event) => {
       />
     </template>
     <slot v-if="type !== 'bool'" name="filter-menu" v-bind="menuProps()" />
-    <small v-if="labelOf()" class="bh-filter-condition">
+    <small v-if="labelOf()" class="qt-filter-condition">
       {{ labelOf() }}
     </small>
   </div>

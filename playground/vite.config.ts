@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
 // The playground: `pnpm dev` serves it, `pnpm playground:build` writes
-// playground/dist. PLAYGROUND_BASE sets the public path (`/vue-server-table/`
+// playground/dist. PLAYGROUND_BASE sets the public path (`/query-table/`
 // on GitHub Pages); routing uses the URL hash, so any base works. The
 // library build never reads this file.
 export default defineConfig({

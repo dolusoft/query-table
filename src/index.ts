@@ -1,6 +1,6 @@
-import VueServerTable from './vue-server-table.vue'
+import QueryTable from './query-table.vue'
 
-export { VueServerTable }
-export default VueServerTable
+export { QueryTable }
+export default QueryTable
 
 export type * from './contract'

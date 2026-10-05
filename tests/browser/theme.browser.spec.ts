@@ -13,12 +13,12 @@ describe('C-41 the test skin has a light and a dark theme', () => {
   test('the table background differs between data-theme=light and data-theme=dark', async () => {
     const { rerender } = await renderTable({ theme: 'light' })
     expect(document.documentElement.dataset.theme).toBe('light')
-    const light = background('.bh-datatable')
+    const light = background('.qt-datatable')
     expect(colorScheme()).toBe('light')
 
     await rerender({ theme: 'dark' })
     expect(document.documentElement.dataset.theme).toBe('dark')
-    const dark = background('.bh-datatable')
+    const dark = background('.qt-datatable')
     expect(colorScheme()).toBe('dark')
 
     expect(light).not.toBe(dark)
@@ -28,9 +28,9 @@ describe('C-41 the test skin has a light and a dark theme', () => {
 
   test('the text color follows the theme too', async () => {
     const { rerender } = await renderTable({ theme: 'light' })
-    const light = getComputedStyle(el('.bh-table td')).color
+    const light = getComputedStyle(el('.qt-table td')).color
     await rerender({ theme: 'dark' })
-    expect(getComputedStyle(el('.bh-table td')).color).not.toBe(light)
+    expect(getComputedStyle(el('.qt-table td')).color).not.toBe(light)
   })
 
   // No `data-theme` attribute: the OS decides, through `prefers-color-scheme`.
@@ -64,7 +64,7 @@ describe('C-41 the test skin has a light and a dark theme', () => {
           .poll(() => background('.page-size'))
           .toBe(token('--background'))
         expect(background('body')).toBe(token('--background'))
-        expect(background('.bh-datatable')).toBe(token('--background'))
+        expect(background('.qt-datatable')).toBe(token('--background'))
         expect(background('.page-size option')).toBe(token('--popover'))
         expect(getComputedStyle(el('.page-size option')).color).toBe(
           token('--popover-foreground')
@@ -86,22 +86,22 @@ describe('C-41 the test skin has a light and a dark theme', () => {
       const { rerender } = await renderTable()
       expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
       expect(colorScheme()).toBe('light')
-      const light = background('.bh-datatable')
-      const lightText = getComputedStyle(el('.bh-table td')).color
+      const light = background('.qt-datatable')
+      const lightText = getComputedStyle(el('.qt-table td')).color
 
       await emulate('dark')
       expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
       expect(colorScheme()).toBe('dark')
-      const dark = background('.bh-datatable')
+      const dark = background('.qt-datatable')
       expect(dark).not.toBe(light)
       expect(dark).not.toBe('rgba(0, 0, 0, 0)')
-      expect(getComputedStyle(el('.bh-table td')).color).not.toBe(lightText)
+      expect(getComputedStyle(el('.qt-table td')).color).not.toBe(lightText)
 
       // The tokens are the ones data-theme gives when it is set.
       await rerender({ theme: 'dark' })
-      expect(background('.bh-datatable')).toBe(dark)
+      expect(background('.qt-datatable')).toBe(dark)
       await rerender({ theme: 'light' })
-      expect(background('.bh-datatable')).toBe(light)
+      expect(background('.qt-datatable')).toBe(light)
     })
 
     test('data-theme wins over the OS setting', async () => {
