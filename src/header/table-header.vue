@@ -1,34 +1,41 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type {
   Column,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
+  HeaderSlotProps,
   TableQuery
 } from '../contract'
 import { columnTypeOf } from '../core/column'
 import { rulesOf } from '../core/query'
 import { useTableContext } from '../core/table-context'
+import type { Utility } from '../core/use-columns'
 import FilterCell from '../filter/filter-cell.vue'
+import { pinAttrs, utilityKey } from '../pin/pin'
+import ResizeHandle from '../resize/resize-handle.vue'
 import { ariaSort } from '../sort/sort'
 import SortButton from '../sort/sort-button.vue'
 
 const props = defineProps<{
-  /** Columns to draw: the table has already dropped the hidden ones. */
+  /** Columns to draw: hidden ones dropped, pinned ones first. */
   columns: Column[]
   query: TableQuery
   filterable: boolean
-  hasSubtable: boolean
-  hasRightPanel: boolean
+  /** Utility cells before the columns, in order. */
+  utilities: Utility[]
+  /** Pinned cells, utilities included, get `data-pinned` (C-47). */
+  hasPinned: boolean
+  /** `--qt-pin-left` of each pinned cell, by key. */
+  offsets: Readonly<Record<string, number>>
 }>()
 
-defineSlots<{
+const slots = defineSlots<{
   'filter-datetime'?(props: FilterDatetimeSlotProps): unknown
   'filter-menu'?(props: FilterMenuSlotProps): unknown
+  [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined
 }>()
 
-const { drafts, sort, labels } = useTableContext()
+const { drafts, sort, resize, labels } = useTableContext()
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -36,16 +43,32 @@ const isFiltered = (column: Column) =>
 const hasFilter = (column: Column) =>
   props.filterable && column.filterable !== false
 
-// Right panel first, then subtable; the first one hosts the clear-all button.
-const utilities = computed(() =>
-  [
-    props.hasRightPanel ? 'right-panel' : null,
-    props.hasSubtable ? 'subtable' : null
-  ].filter(name => name !== null)
-)
+// The first utility hosts the clear-all button (C-22).
+const hostsClearAll = (utility: Utility) =>
+  props.filterable && utility === props.utilities[0]
 
-const hostsClearAll = (utility: string) =>
-  props.filterable && utility === utilities.value[0]
+const utilityAttrs = (utility: Utility) =>
+  pinAttrs(props.hasPinned, props.offsets[utilityKey(utility)])
+
+// The only inline styles of a header cell: the column width (or the drag
+// preview, C-49) and the pin offset (C-47), with `data-pinned`.
+const cellAttrs = (column: Column) => {
+  const preview = resize.preview.value
+  return pinAttrs(
+    column.pinned === 'left',
+    props.offsets[column.field],
+    preview?.field === column.field ? `${preview.width}px` : column.width
+  )
+}
+
+const headerSlotProps = (column: Column): HeaderSlotProps => ({
+  column,
+  sortDirection: sort.sortOf(column),
+  sortable: sort.isSortable(column),
+  toggleSort: () => {
+    sort.sortBy(column)
+  }
+})
 </script>
 
 <template>
@@ -53,8 +76,8 @@ const hostsClearAll = (utility: string) =>
     <!-- A utility header cell labels nothing; it is a `th` only when it holds
          the clear-all button, and an empty `td` otherwise (C-45). -->
     <template v-for="utility in utilities" :key="utility">
-      <td v-if="!hostsClearAll(utility)" />
-      <th v-else scope="col">
+      <td v-if="!hostsClearAll(utility)" v-bind="utilityAttrs(utility)" />
+      <th v-else scope="col" v-bind="utilityAttrs(utility)">
         <button
           type="button"
           class="qt-clear-all-button"
@@ -89,16 +112,21 @@ const hostsClearAll = (utility: string) =>
       :data-sortable="sort.isSortable(column) ? '' : undefined"
       :data-filtered="isFiltered(column) ? '' : undefined"
       :aria-sort="ariaSort(sort.sortOf(column))"
-      :style="column.width ? { width: column.width } : undefined"
+      v-bind="cellAttrs(column)"
     >
+      <!-- C-51: the header slot replaces the label only. -->
+      <slot
+        v-if="slots[`header-${column.field}`]"
+        :name="`header-${column.field}`"
+        v-bind="headerSlotProps(column)"
+      />
       <sort-button
-        v-if="sort.isSortable(column)"
+        v-else-if="sort.isSortable(column)"
         :column="column"
         :direction="sort.sortOf(column)"
         @click="sort.sortBy(column)"
       />
       <span v-else class="qt-title">{{ column.title }}</span>
-
       <filter-cell
         v-if="hasFilter(column)"
         :column="column"
@@ -112,6 +140,7 @@ const hostsClearAll = (utility: string) =>
           <slot name="filter-menu" v-bind="p" />
         </template>
       </filter-cell>
+      <resize-handle v-if="resize.isResizable(column)" :column="column" />
     </th>
   </tr>
 </template>

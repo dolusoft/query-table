@@ -89,6 +89,12 @@ export const domClasses: ClassEntry[] = [
     on: 'tbody > tr',
     description: 'Row holding the `empty` slot.'
   },
+  {
+    name: 'qt-resize-handle',
+    on: 'th > div',
+    description:
+      'Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS.'
+  },
   { name: 'qt-footer', on: 'tfoot', description: 'Totals block.' },
   {
     name: 'qt-pagination',
@@ -137,15 +143,37 @@ export const domAttributes: AttributeEntry[] = [
     description: 'Present on an expanded row.'
   },
   {
+    name: 'data-pinned',
+    on: 'th, td',
+    description:
+      'Present on every cell of a pinned column (header, body, footer) and, when some column is pinned, on the utility cells. The cell also carries `--qt-pin-left`.'
+  },
+  {
     name: 'aria-sort',
     on: 'th',
     description: '`ascending` or `descending` on the sorted column.'
   }
 ]
 
-/** The only inline style the table writes. */
-export const domInlineStyle = {
-  on: 'th',
-  property: 'width',
-  description: 'Set from `Column.width`, only when the column defines it.'
+export interface InlineStyleEntry {
+  property: string
+  /** CSS selector an element carrying the property must match. */
+  on: string
+  description: string
 }
+
+/** The only inline styles the table writes (C-31). */
+export const domInlineStyles: InlineStyleEntry[] = [
+  {
+    property: 'width',
+    on: 'th[data-field]',
+    description:
+      'Set from `Column.width` when the column defines it, and from the drag preview while a resize is under way.'
+  },
+  {
+    property: '--qt-pin-left',
+    on: '[data-pinned]',
+    description:
+      'Left offset of a pinned cell in pixels: the measured widths of the pinned header cells before it. Use it as `left: var(--qt-pin-left)` next to your own `position: sticky`.'
+  }
+]

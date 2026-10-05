@@ -211,6 +211,18 @@ describe('C-28 Context menu', () => {
     expect(payload.columnIndex).toBe(2)
   })
 
+  it('treats a .once listener as a listener', () => {
+    const m = mountIt({ onCellContextMenuOnce: () => undefined })
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    m.wrapper
+      .find('tbody tr[data-row-index="0"] td[data-field="name"]')
+      .element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
   const rightClick = (target: Element) => {
     const event = new MouseEvent('contextmenu', {
       bubbles: true,
