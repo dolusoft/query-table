@@ -4,11 +4,9 @@
   "project": ["src/**/*.{ts,vue}", "contract/**/*.ts", "scripts/*.mjs", "tests/**/*.ts"],
   "ignore": ["tests/browser/components/ui/**", "tests/browser/lib/utils.ts"],
   "ignoreDependencies": [
-    "@lucide/vue",
     "@vueuse/core",
     "reka-ui",
     "shadcn",
-    "shadcn-vue",
     "tailwindcss",
     "tw-animate-css"
   ],

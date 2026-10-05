@@ -8,7 +8,7 @@ There is no demo app; the table is exercised through tests.
 - The browser tests serve on port 51315. If another clone already holds it, set `VITEST_BROWSER_PORT` to a free port.
 - `pnpm test:browser:inspect` — same tests in a headed Chromium, in watch mode, with Vue DevTools and Vite DevTools attached. The last test's table stays mounted; narrow it with a file filter or `-t`, e.g. `pnpm test:browser:inspect popovers`.
   - Vue DevTools: the green pill at the bottom of the tested page (component tree, state, events, timeline). Client: `http://localhost:51315/__devtools__/`.
-  - Vite DevTools: `http://localhost:51315/__devtools/` (or the dock icon on the tested page). The first visit asks for the one-time code printed in the terminal; the printed `#devframe_otp=` link authorizes directly.
+  - Vite DevTools: `http://localhost:51315/__devtools/` (or the dock icon on the tested page). Client authorization is off in this mode (the server stays on loopback), so there is no one-time code to paste. The module graph lists the modules of the page under test.
   - The Chromium also listens for CDP on `http://127.0.0.1:9333`, so an agent can attach to the page under test.
 - Browser specs run one file at a time (`maxWorkers: 1`): several pages opening at once drop loopback connections on Windows and hang the run.
 - The test skin that gives the plain markup a shadcn-vue look lives in `tests/browser/` (`test-skin.css`, `skin/`, `components/ui/`). It is test-only and never shipped. Regenerate it with `node tests/browser/gen-skin.ts` after editing `skin/theme.css` or `skin/mapping.css`; `tests/skin.spec.ts` fails when the generated file is stale or when the skin selects anything outside the DOM contract. `components/ui/` is shadcn-vue CLI output (`components.json`); add components with `pnpm dlx shadcn-vue@latest add <name>`.
@@ -19,3 +19,19 @@ There is no demo app; the table is exercised through tests.
   - DOM contract: `tests/browser/dom-contract.browser.spec.ts` compares the rendered classes and attributes with `contract/dom.ts`.
 - `pnpm check:package` also fails if any `.css` ends up in `dist/` or the tarball.
 - `pnpm analyze:build` — the library build, written to `node_modules/.cache/analyze-dist` (not `dist/`), with Rolldown devtools output. It then serves Vite DevTools on `http://localhost:9999/__devtools-rolldown/`: modules, chunks, assets, packages and plugins of the build. Stop it with Ctrl+C.
+
+## Measuring
+
+Three scripts write small JSON files to `node_modules/.cache/measure/` (gitignored), so a person or an agent can read numbers instead of a UI. None of them leaves a server running.
+
+- `pnpm measure:renders` — how many times each component re-renders in four fixed scenarios on a 1000-row dataset: `mount`, `filter` (type `Name 1`, Enter), `sort` (name ascending, then descending) and `page` (100 rows a page, three clicks on Next). Output: `renders.json`. The scenarios are in `tests/browser/measure/renders.measure.ts`; they run as the `measure` Vitest project in a real browser (headed like the browser tests, `HEADLESS=1` for no window).
+  - `scenarios.<name>.counts` has `mounts`, `updates` (the `updated` hook, by component) and `triggers` (the first reactive cause of each re-render, from `renderTriggered`); `libraryUpdates` is the sum for the table's own components. Counts are the same on every repetition (the run fails otherwise), so they can be compared across commits. `timings` are medians of five runs and noisy: report them, do not assert on them.
+  - To count something else, add a scenario to the `scenarios` list in that file. The counting is a global mixin (`config.global.mixins`); it needs a development build of Vue, which the test server serves.
+- `pnpm analyze:build:json` — builds the library with Rolldown's devtools output and condenses it into `build.json`: per output format (ES, CJS) the assets with raw and gzip size, chunks, packages, external modules, and every module with its source size, imports and importer count. Use it for "what is in the bundle and what did this change add". `pnpm analyze:build` shows the same data in a UI instead, and keeps its server (ports 9999 and 10000, one per format) until you stop it.
+- `pnpm measure:consumer-size` — builds `dist/` and then two minified apps from `fixtures/consumer/` (one mounts the table, one is the same app without it), both importing the package by name. `consumer-size.json` gives their size and the difference, which is what the package adds to an application (Vue itself excluded by the subtraction).
+
+For anything the scripts do not answer, attach to the page under test in inspect mode (`pnpm test:browser:inspect`):
+
+- Vite DevTools at `http://localhost:51315/__devtools/`, Vue DevTools in the page.
+- CDP at `http://127.0.0.1:9333` (`/json/version` lists the browser WebSocket URL; Playwright `chromium.connectOverCDP('http://127.0.0.1:9333')` works). The table and the Vue DevTools hook (`__VUE_DEVTOOLS_GLOBAL_HOOK__`) live in the tester iframe (the frame whose URL carries `iframeId=`), not in the top frame.
+- Inspect mode keeps the loopback-only dev server up until you stop it. Narrow it with a file filter so the table you want stays mounted, e.g. `pnpm test:browser:inspect popovers`.
