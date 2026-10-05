@@ -51,5 +51,6 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
    scrolls sideways instead of squeezing them. */
 .wide-table :deep(.qt-table) {
   width: max-content;
+  min-width: 100%;
 }
 </style>

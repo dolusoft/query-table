@@ -25,9 +25,13 @@ const maxOf = (column: Column, now: number) =>
     :aria-valuenow="resize.widthOf(column)"
     :aria-valuemin="minWidthOf(column)"
     :aria-valuemax="maxOf(column, resize.widthOf(column))"
-    @pointerdown="resize.onPointerDown($event, column)"
+    @pointerdown="resize.onPointer($event, column)"
+    @pointermove="resize.onPointer($event, column)"
+    @pointerup="resize.onPointer($event, column)"
+    @pointercancel="resize.onPointer($event, column)"
+    @lostpointercapture="resize.onPointer($event, column)"
     @keydown="resize.onKeyDown($event, column)"
-    @dblclick="resize.onDoubleClick($event, column)"
+    @dblclick="resize.autofit($event, column)"
     @click.stop
   />
 </template>

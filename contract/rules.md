@@ -196,7 +196,7 @@ With the table's `resizable` and the column's `resizable` not `false`, the heade
 
 ### C-49 Dragging a handle
 
-Pressing the primary button on a handle captures the pointer. While it moves, the header cell's inline `width` shows the preview, at most once per animation frame; nothing is emitted. Releasing emits one `columnResize` with `field` and the new `width`: whole pixels, clamped to `minWidth` and `maxWidth`. A release at the starting width emits nothing. Escape, or a lost pointer capture, ends the drag without an event and drops the preview. The table keeps no width after the drag: the column shows `Column.width`, so a consumer that does not write the width back sees the column return.
+Pressing the primary button on a handle focuses it and captures the pointer. While it moves, the header cell's inline `width` shows the preview, at most once per animation frame; nothing is emitted. Releasing emits one `columnResize` with `field` and the new `width`: whole pixels, clamped to `minWidth` and `maxWidth`. A release at the starting width emits nothing. Escape, or a lost pointer capture, ends the drag without an event and drops the preview. The table keeps no width after the drag: the column shows `Column.width`, so a consumer that does not write the width back sees the column return.
 
 ### C-50 Keyboard and autofit
 

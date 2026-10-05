@@ -76,6 +76,7 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
    is the column width, and the table grows with its columns. */
 .wide-table :deep(.qt-table) {
   width: max-content;
+  min-width: 100%;
   table-layout: fixed;
 }
 </style>

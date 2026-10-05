@@ -79,7 +79,16 @@ Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their decla
 }
 ```
 
-The scroll container is `.qt-table-responsive`; give the table a width wider than it (for example `width: max-content`) to scroll sideways.
+The scroll container is `.qt-table-responsive`; to scroll sideways, let the table take its columns' widths but never less than the container:
+
+```css
+.qt-table {
+  width: max-content;
+  min-width: 100%;
+}
+```
+
+With `width: 100%` the columns squeeze to fit and nothing scrolls; with `max-content` alone a narrow table stops short of the container's right edge.
 
 ## Resizing columns
 
@@ -89,7 +98,15 @@ With `resizable` the table draws a `qt-resize-handle` separator at the right edg
 <QueryTable :columns="columns" resizable @column-resize="({ field, width }) => (widths[field] = width)" />
 ```
 
-where `columns` turns each saved number into `Column.width` (for example `'180px'`). Use `table-layout: fixed` (see Large tables) so the header width is the column width; with the automatic layout the content can override it. Position the handle with your CSS (`position: absolute` at the right edge of a `position: relative` `th`).
+where `columns` turns each saved number into `Column.width` (for example `'180px'`). Use `table-layout: fixed` (see Large tables) so the header width is the column width; with the automatic layout the content can override it. Style the handle with your CSS: `position: absolute` over the right edge of a `position: relative` `th`, about 8px wide for the pointer, drawing nothing at rest and a 1px line on header hover and on `:focus-visible`. Together with the sizing above:
+
+```css
+.qt-table {
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
+```
 
 ## Header slot
 

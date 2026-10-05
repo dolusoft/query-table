@@ -166,9 +166,9 @@ const drag = async (handle: Element, dx: number, finish: 'up' | 'escape') => {
   if (finish === 'up') {
     fire('pointerup', x + dx)
   } else {
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
-    )
+    // The pressed handle has the focus, so the key goes to it.
+    expect(document.activeElement).toBe(handle)
+    await userEvent.keyboard('{Escape}')
   }
   await frames()
   return preview

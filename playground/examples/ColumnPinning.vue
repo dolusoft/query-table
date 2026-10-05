@@ -66,5 +66,6 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
    scrolls sideways instead of squeezing them. */
 .wide-table :deep(.qt-table) {
   width: max-content;
+  min-width: 100%;
 }
 </style>
