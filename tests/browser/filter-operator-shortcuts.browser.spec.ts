@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 
-import { renderTable, rule, shot, sleep } from './helpers'
+import { renderTable, rule, shot, sleep } from '../support/helpers'
 
 // Operator shortcuts typed into a text column's header filter (`*foo*`,
 // `foo*`, `!foo`), with real keystrokes in a real browser.

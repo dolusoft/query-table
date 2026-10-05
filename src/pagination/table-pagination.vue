@@ -7,11 +7,7 @@ defineSlots<{ pagination(props: PaginationSlotProps): unknown }>()
 </script>
 
 <template>
-  <div
-    class="bh-pagination"
-    :data-page="paginationProps.page"
-    :data-page-size="paginationProps.pageSize"
-  >
+  <div class="bh-pagination">
     <slot name="pagination" v-bind="paginationProps" />
   </div>
 </template>

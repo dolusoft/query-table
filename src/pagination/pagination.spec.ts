@@ -9,7 +9,7 @@ import {
   reasons,
   type MountOptions,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type { PaginationSlotProps } from '../contract'
 
 let mounted: Mounted | null = null
@@ -204,27 +204,8 @@ describe('C-25 Pagination block', () => {
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
   })
 
-  it('carries the page and the page size as data attributes', () => {
-    mounted = mountTable({ query: makeQuery({ page: 2, pageSize: 20 }) })
-    const block = mounted.wrapper.find('.bh-pagination')
-    expect(block.attributes('data-page')).toBe('2')
-    expect(block.attributes('data-page-size')).toBe('20')
-  })
-
-  it('is not drawn with pagination false, and the slot needs to be given', () => {
-    mounted = mountTable({ pagination: false })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
-    mounted.wrapper.unmount()
-
+  it('is not drawn without the pagination slot', () => {
     mounted = mountTable({}, { slots: { pagination: undefined as never } })
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
-  })
-
-  it('emits no page or pageSize update with pagination false', async () => {
-    mounted = mountTable({ pagination: false, sortable: true })
-    await mounted.wrapper
-      .find('th[data-field="name"] .bh-sort')
-      .trigger('click')
-    expect(reasons(mounted.events)).toEqual(['sort'])
   })
 })

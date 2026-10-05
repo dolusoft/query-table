@@ -101,12 +101,12 @@ export const hasShortcut = (condition: FilterCondition): boolean =>
 export function serializeFilterRules(
   rules: ReadonlyArray<{
     condition: FilterCondition
-    value: FilterValue | null
+    value: FilterValue
   }>
 ): string {
   return rules
     .map(rule => {
-      const text = rule.value === null ? '' : String(rule.value)
+      const text = String(rule.value)
       return (shortcutForms[rule.condition] ?? ((v: string) => v))(text)
     })
     .join(',')

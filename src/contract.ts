@@ -24,11 +24,6 @@ export type FilterCondition =
   | 'GreaterThanOrEqual'
   | 'LessThan'
   | 'LessThanOrEqual'
-  | 'IsNull'
-  | 'IsNotNull'
-
-/** Conditions that take no value. Their rule always carries `value: null`. */
-export type UnaryFilterCondition = 'IsNull' | 'IsNotNull'
 
 /**
  * Value of a rule: text columns give a string, `number` and `integer` columns
@@ -49,8 +44,8 @@ export interface FilterRule {
   /** Column `field` the rule applies to. */
   field: string
   condition: FilterCondition
-  /** `null` for `IsNull` and `IsNotNull`; a non-empty value otherwise. */
-  value: FilterValue | null
+  /** A non-empty value. */
+  value: FilterValue
 }
 
 export type SortDirection = 'asc' | 'desc'
@@ -108,8 +103,6 @@ export interface Column {
   filterable?: boolean
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
-  /** Render the cell with `v-html`. Escaping is the consumer's job. Defaults to `false`. */
-  html?: boolean
 }
 
 /** One row of the totals block under the body. */
@@ -138,16 +131,14 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   totalRows?: number | null
   /** Rows of totals drawn in a `tfoot`. */
   footerRows?: FooterRow[]
-  /** Sets `data-loading` and shows the `loader` slot. Defaults to `false`. */
-  loading?: boolean
   /** Allow sorting from the headers (needs column `sortable`). Defaults to `false`. */
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
   filterable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
-  /** `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. */
-  pagination?: boolean | PaginationOptions
+  /** Options of the `pagination` slot. Paging itself is always on. */
+  pagination?: PaginationOptions
   /** Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. */
   hasSubtable?: boolean
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
@@ -161,10 +152,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
-  /** Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. */
-  truncate?: boolean
-  /** Characters kept when `truncate` is on. Defaults to `150`. */
-  truncateMaxLength?: number
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -229,8 +216,8 @@ export interface FilterMenuSlotProps {
   /** Conditions that make sense for the column type. */
   conditions: FilterConditionOption[]
   /**
-   * Pick a condition. With a value typed (or `IsNull`/`IsNotNull`) the filter
-   * is applied; otherwise the pick waits for a value. `null` clears the filter.
+   * Pick a condition. With a value typed the filter is applied; otherwise the
+   * pick waits for a value. `null` clears the filter.
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */
@@ -259,7 +246,6 @@ export interface PaginationSlotProps {
   canPrevious: boolean
   /** `page < pageCount` when the total is known, else `rows.length >= pageSize`. */
   canNext: boolean
-  loading: boolean
   /** Go to a page; clamped to `[1, pageCount]` when the total is known. */
   setPage: (page: number) => void
   nextPage: () => void
@@ -278,14 +264,10 @@ export interface TableSlots<T> {
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
-  /** Shown while `loading`. */
-  loader?(): unknown
-  /** Shown when there are no rows and the table is not loading. */
+  /** Shown when there are no rows. */
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
-  /** Cell content for every column without a `cell-<field>` slot. */
-  cell?(props: CellSlotProps<T>): unknown
   /** Cell content of one column: `cell-${column.field}`. */
   [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined
 }

@@ -26,16 +26,12 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   rows: () => [],
   totalRows: null,
   footerRows: () => [],
-  loading: false,
   sortable: false,
   filterable: false,
   filterDebounce: 100,
-  pagination: true,
   hasSubtable: false,
   hasRightPanel: false,
-  rowKey: undefined,
-  truncate: true,
-  truncateMaxLength: 150
+  rowKey: undefined
 })
 
 const emit = defineEmits<TableEmits<T>>()
@@ -90,15 +86,10 @@ const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
 })
 
 // The slots `table-body` draws: only the ones the consumer gave are passed on,
-// so the body can tell whether a `cell`, `loader` or `empty` slot exists.
+// so the body can tell whether a `cell-<field>` or `empty` slot exists.
 const bodySlotNames = () =>
   Object.keys(rawSlots).filter(
-    name =>
-      name === 'cell' ||
-      name.startsWith('cell-') ||
-      name === 'subtable' ||
-      name === 'loader' ||
-      name === 'empty'
+    name => name.startsWith('cell-') || name === 'subtable' || name === 'empty'
   )
 
 const exposed: VueServerTableExpose = {
@@ -111,13 +102,7 @@ defineExpose(exposed)
 </script>
 
 <template>
-  <div
-    class="bh-datatable"
-    :data-loading="loading ? '' : undefined"
-    :data-empty="rows.length === 0 ? '' : undefined"
-    :data-filtered="query.filters.length > 0 ? '' : undefined"
-    :data-sorted="query.sort !== null ? '' : undefined"
-  >
+  <div class="bh-datatable" :data-empty="rows.length === 0 ? '' : undefined">
     <slot name="toolbar" />
     <div class="bh-table-responsive">
       <table class="bh-table">
@@ -141,11 +126,8 @@ defineExpose(exposed)
           :rows="rows"
           :entries="entries"
           :column-count="columnCount"
-          :loading="loading"
           :has-subtable="hasSubtable"
           :has-right-panel="hasRightPanel"
-          :truncate="truncate"
-          :truncate-max-length="truncateMaxLength"
           :key-of="keyOf"
           :is-expanded="isExpanded"
           :toggle="toggle"
@@ -154,7 +136,7 @@ defineExpose(exposed)
         >
           <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
             <!-- Names are dynamic (cell-<field>); the types only widen here. -->
-            <slot :name="name as 'cell'" v-bind="p as CellSlotProps<T>" />
+            <slot :name="name as 'cell-x'" v-bind="p as CellSlotProps<T>" />
           </template>
         </table-body>
         <table-footer

@@ -20,8 +20,9 @@ export interface SortOptions {
 }
 
 /**
- * Header and menu sorting go through one gate, `sortBy`; `isSortable` tells
- * the callers which columns may use it (C-07).
+ * Header and menu sorting go through one gate, `sortBy`. It does nothing for a
+ * column that is not sortable (C-07); `isSortable` tells the markup which
+ * columns get a sort control.
  */
 export const useSort = (options: SortOptions) => {
   const isSortable = (column: Column) =>
@@ -30,15 +31,18 @@ export const useSort = (options: SortOptions) => {
   const sortOf = (column: Column): SortDirection | null =>
     sortDirectionOf(options.query().sort, column)
 
-  const sortBy = (field: string, direction?: SortDirection) => {
+  const sortBy = (column: Column, direction?: SortDirection) => {
+    if (!isSortable(column)) {
+      return
+    }
     options.flushFilters()
     const current = options.base()
     options.update(
       {
         ...cloneQuery(current),
         sort: {
-          field,
-          direction: direction ?? nextDirection(current.sort, field)
+          field: column.field,
+          direction: direction ?? nextDirection(current.sort, column.field)
         }
       },
       'sort'

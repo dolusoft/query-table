@@ -1,6 +1,6 @@
 {
   "name": "@dolusoft/vue-server-table",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter and paging changes.",
   "private": false,
   "type": "module",
@@ -54,6 +54,7 @@
     "analyze:build": "vite build -c vite.analyze.config.ts",
     "analyze:build:json": "node scripts/analyze-build.mjs",
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
+    "check:size": "node scripts/consumer-size.mjs --check",
     "check:package": "pnpm build && node scripts/check-no-css.mjs && publint && attw --pack . --profile node16",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",

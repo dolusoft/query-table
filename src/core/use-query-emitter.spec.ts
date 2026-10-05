@@ -12,7 +12,7 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -41,7 +41,9 @@ describe('C-01 The table is controlled', () => {
     expect(
       m.wrapper.find('th[data-field="name"]').attributes('data-sort')
     ).toBe('desc')
-    expect(m.wrapper.find('.bh-datatable').attributes('data-filtered')).toBe('')
+    expect(
+      m.wrapper.find('th[data-field="name"]').attributes('data-filtered')
+    ).toBe('')
   })
 
   it('draws an out-of-range page and an unknown field as given', async () => {
@@ -56,7 +58,7 @@ describe('C-01 The table is controlled', () => {
     })
     await flush()
     expect(m.events).toEqual([])
-    expect(m.wrapper.find('.bh-pagination').attributes('data-page')).toBe('99')
+    expect(m.wrapper.find('.page-state').text()).toBe('99/1')
     expect(m.wrapper.find('[data-sort]').exists()).toBe(false)
   })
 })
@@ -157,9 +159,6 @@ describe('C-19 An ignored update changes nothing', () => {
     vi.advanceTimersByTime(200)
     await flush()
     expect(reasons(m.events)).toEqual(['filter'])
-    expect(m.wrapper.find('.bh-datatable').attributes('data-filtered')).toBe(
-      undefined
-    )
     expect((input.element as HTMLInputElement).value).toBe('ali')
     expect(
       m.wrapper.find('th[data-field="name"]').attributes('data-filtered')

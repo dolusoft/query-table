@@ -81,17 +81,6 @@ describe('C-16 Value types: a draft parses into rules', () => {
   })
 })
 
-describe('C-20 Picking a condition: unary conditions need no text', () => {
-  it('IsNull and IsNotNull give one rule without a value', () => {
-    expect(parseDraft(column('number'), draft('', 'IsNull'))).toEqual([
-      { condition: 'IsNull', value: null }
-    ])
-    expect(parseDraft(column(), draft('ignored', 'IsNotNull'))).toEqual([
-      { condition: 'IsNotNull', value: null }
-    ])
-  })
-})
-
 describe('C-18 The input follows outside changes: a draft shows rules', () => {
   it('no rules make a blank draft', () => {
     expect(draftFromRules(column(), [])).toEqual({
@@ -138,10 +127,6 @@ describe('C-18 The input follows outside changes: a draft shows rules', () => {
       text: '5',
       condition: 'GreaterThan'
     })
-    expect(draftFromRules(column('number'), [rule('IsNull', null)])).toEqual({
-      text: '',
-      condition: 'IsNull'
-    })
   })
 })
 
@@ -156,7 +141,7 @@ describe('C-17 Several rules for one field: a read-only count', () => {
 describe('hasContent', () => {
   it('is true for text or for a picked condition', () => {
     expect(hasContent(draft('x'))).toBe(true)
-    expect(hasContent(draft('', 'IsNull'))).toBe(true)
+    expect(hasContent(draft('', 'Equal'))).toBe(true)
   })
 
   it('is false for a blank or whitespace-only draft', () => {

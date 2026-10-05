@@ -6,7 +6,7 @@
  */
 
 .bh-datatable {
-  @apply text-sm text-foreground;
+  @apply bg-background text-sm text-foreground;
 }
 
 /* Table, TableHeader, TableBody, TableRow, TableHead, TableCell */
@@ -38,8 +38,9 @@
 }
 
 /* Utility columns */
-th[data-utility],
-td[data-utility] {
+th:not([data-field]),
+td:has(> .bh-expand),
+td:has(> .bh-right-panel-button) {
   @apply w-8;
 }
 
@@ -88,12 +89,8 @@ tr[data-expanded] {
 .bh-subtable-row td {
   @apply whitespace-normal;
 }
-.bh-empty-row td,
-.bh-loader-row td {
+.bh-empty-row td {
   @apply h-24 text-center text-muted-foreground;
-}
-.bh-datatable[data-loading] tbody {
-  @apply opacity-60;
 }
 
 /* Pagination block: the consumer's slot content sits inside it */

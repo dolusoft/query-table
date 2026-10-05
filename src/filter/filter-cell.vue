@@ -48,11 +48,6 @@ const inputText = () => {
   return count > 0 ? `(${count})` : drafts.draftOf(props.column.field).text
 }
 
-const isDisabled = () => {
-  const { condition } = drafts.draftOf(props.column.field)
-  return condition === 'IsNull' || condition === 'IsNotNull'
-}
-
 const currentCondition = (): FilterCondition | null =>
   rulesOf(props.query.filters, props.column.field)[0]?.condition ??
   drafts.draftOf(props.column.field).condition
@@ -68,12 +63,8 @@ const menuProps = (): FilterMenuSlotProps => {
     clear: () => drafts.clear(column.field),
     sortable: sort.isSortable(column),
     sortDirection: sort.sortOf(column),
-    setSort: direction => {
-      // Same condition as a header click (C-07): no sort where there is no sort.
-      if (sort.isSortable(column)) {
-        sort.sortBy(column.field, direction)
-      }
-    },
+    // `sortBy` does nothing where sorting is off, like a header click (C-07).
+    setSort: direction => sort.sortBy(column, direction),
     trigger
   }
 }
@@ -102,7 +93,6 @@ const pick = (event: Event) => {
       class="bh-filter-input"
       :aria-label="`Filter ${column.title ?? column.field}`"
       :value="drafts.draftOf(column.field).text"
-      :disabled="isDisabled()"
       @input="drafts.onInput(column.field, inputValue($event))"
       @keydown.enter="drafts.flushField(column.field)"
     />
@@ -113,7 +103,6 @@ const pick = (event: Event) => {
       :aria-label="`Filter ${column.title ?? column.field}`"
       :value="inputText()"
       :readonly="drafts.multiOf(column.field) > 0"
-      :disabled="isDisabled()"
       @input="drafts.onInput(column.field, inputValue($event))"
       @keydown.enter="drafts.flushField(column.field)"
     />
@@ -143,7 +132,6 @@ const pick = (event: Event) => {
         :aria-label="`Filter ${column.title ?? column.field}`"
         :value="inputText()"
         :readonly="drafts.multiOf(column.field) > 0"
-        :disabled="isDisabled()"
         @input="drafts.onInput(column.field, inputValue($event))"
         @keydown.enter="drafts.flushField(column.field)"
       />

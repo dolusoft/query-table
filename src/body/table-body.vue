@@ -9,13 +9,10 @@ const props = defineProps<{
   rows: T[]
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
-  /** Cells a full-width row (loader, subtable, empty) spans. */
+  /** Cells a full-width row (subtable, empty) spans. */
   columnCount: number
-  loading: boolean
   hasSubtable: boolean
   hasRightPanel: boolean
-  truncate: boolean
-  truncateMaxLength: number
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
   toggle: (row: T, index: number) => void
@@ -29,25 +26,23 @@ const emit = defineEmits<{
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
-const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
-  truncate: () => props.truncate,
-  maxLength: () => props.truncateMaxLength,
-  slots: rawSlots,
-  onContextMenu: payload => emit('cellContextMenu', payload)
-})
+const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
+  useCellView<T>({
+    slots: rawSlots,
+    rows: () => props.rows,
+    entries: () => props.entries,
+    onContextMenu: payload => emit('cellContextMenu', payload)
+  })
 </script>
 
 <template>
-  <tbody>
-    <tr v-if="loading && slots.loader" class="bh-loader-row">
-      <td :colspan="columnCount"><slot name="loader" /></td>
-    </tr>
+  <tbody @contextmenu="onContextMenu">
     <template v-for="(row, i) in rows" :key="keyOf(row, i)">
       <tr
         :data-row-index="i"
         :data-expanded="isExpanded(row, i) ? '' : undefined"
       >
-        <td v-if="hasRightPanel" data-utility="right-panel">
+        <td v-if="hasRightPanel">
           <button
             type="button"
             class="bh-right-panel-button"
@@ -69,7 +64,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
             </svg>
           </button>
         </td>
-        <td v-if="hasSubtable" data-utility="subtable">
+        <td v-if="hasSubtable">
           <button
             type="button"
             class="bh-expand"
@@ -94,27 +89,14 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
           </button>
         </td>
         <template v-for="entry in entries" :key="entry.column.field">
-          <td
-            v-if="hasCellSlot(entry.column)"
-            v-bind="cellAttrs(row, entry, i)"
-          >
+          <td v-if="hasCellSlot(entry.column)" v-bind="cellAttrs(entry)">
             <slot
-              v-if="slots[`cell-${entry.column.field}`]"
               :name="`cell-${entry.column.field}`"
               v-bind="slotProps(row, entry.column, i)"
             />
-            <slot v-else name="cell" v-bind="slotProps(row, entry.column, i)" />
           </td>
-          <td
-            v-else-if="entry.column.html"
-            v-bind="cellAttrs(row, entry, i, cellText(row, entry.column).title)"
-            v-html="cellText(row, entry.column).text"
-          />
-          <td
-            v-else
-            v-bind="cellAttrs(row, entry, i, cellText(row, entry.column).title)"
-          >
-            {{ cellText(row, entry.column).text }}
+          <td v-else v-bind="cellAttrs(entry)">
+            {{ cellText(row, entry.column) }}
           </td>
         </template>
       </tr>
@@ -124,10 +106,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
         </td>
       </tr>
     </template>
-    <tr
-      v-if="rows.length === 0 && !loading && slots.empty"
-      class="bh-empty-row"
-    >
+    <tr v-if="rows.length === 0 && slots.empty" class="bh-empty-row">
       <td :colspan="columnCount"><slot name="empty" /></td>
     </tr>
   </tbody>

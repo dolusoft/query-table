@@ -19,11 +19,11 @@ export default defineConfig(({ mode }) => {
   // `pnpm measure:renders` (not a test run, so `pnpm test:browser` skips it).
   const browserProject = (name: string, include: string[]) => ({
     extends: true as const,
-    // Tailwind builds the test skin (tests/browser/test-skin.css); the
+    // Tailwind builds the test skin (tests/skin/test-skin.css); the
     // library build never loads it.
     plugins: [tailwindcss(), ...(inspect ? [vueDevTools()] : [])],
     resolve: {
-      alias: { '@': resolve(import.meta.dirname, 'tests/browser') }
+      alias: { '@': resolve(import.meta.dirname, 'tests/skin') }
     },
     // Inspect mode only: no one-time code to paste for a local session.
     // The dev server stays bound to loopback.
@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
       testTimeout: 15_000,
       hookTimeout: 15_000,
       teardownTimeout: 10_000,
-      setupFiles: ['tests/browser/setup.ts'],
+      setupFiles: ['tests/support/setup.ts'],
       // Browser mode serves on this port. The default (63315) falls inside
       // a range Windows reserves for Hyper-V on some machines, and a fixed
       // port gives the inspect mode a stable URL.
@@ -106,14 +106,14 @@ export default defineConfig(({ mode }) => {
             name: 'unit',
             environment: 'happy-dom',
             // Unit specs sit next to the code they test (src/<feature>/);
-            // cross-cutting ones (contract traceability, skin) stay in tests/.
+            // cross-cutting ones (contract traceability, skin) sit in tests/contract and tests/skin.
             include: ['src/**/*.spec.ts', 'tests/**/*.spec.ts'],
             exclude: ['tests/browser/**'],
             css: false
           }
         },
         browserProject('browser', ['tests/browser/**/*.browser.spec.ts']),
-        browserProject('measure', ['tests/browser/measure/**/*.measure.ts'])
+        browserProject('measure', ['tests/measure/**/*.measure.ts'])
       ]
     }
   })

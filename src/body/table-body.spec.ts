@@ -9,8 +9,9 @@ import {
   mountTable,
   propsOf,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type { CellContextMenuPayload, Column } from '../contract'
+import VueServerTable from '../index'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -135,14 +136,13 @@ describe('C-26 Row expansion', () => {
 })
 
 describe('C-27 Cell slots', () => {
-  it('renders cell-<field> for that column and cell for the rest, with the same props', () => {
+  it('renders cell-<field> for that column only, with the row, index, column and value', () => {
     const m = mountIt(
       { columns: makeColumns().slice(0, 3) },
       {
         slots: {
           'cell-name':
-            '<i class="by-field">{{ params.cellValue }}|{{ params.rowIndex }}|{{ params.column.field }}|{{ params.row.id }}</i>',
-          cell: '<u class="generic">{{ params.column.field }}</u>'
+            '<i class="by-field">{{ params.cellValue }}|{{ params.rowIndex }}|{{ params.column.field }}|{{ params.row.id }}</i>'
         }
       }
     )
@@ -150,25 +150,9 @@ describe('C-27 Cell slots', () => {
     expect(m.wrapper.find('td[data-field="name"] .by-field').text()).toBe(
       'Charlie|0|name|1'
     )
-    expect(m.wrapper.findAll('td[data-field="id"] .generic')).toHaveLength(5)
-    expect(m.wrapper.findAll('td[data-field="age"] .generic')).toHaveLength(5)
-    expect(m.wrapper.find('td[data-field="name"] .generic').exists()).toBe(
-      false
-    )
-  })
-
-  it('skips truncation', () => {
-    const long = 'x'.repeat(40)
-    const m = mountIt(
-      {
-        columns: [{ field: 'name' }],
-        rows: [{ name: long }],
-        truncateMaxLength: 10
-      },
-      { slots: { cell: '<span class="full">{{ params.cellValue }}</span>' } }
-    )
-    expect(m.wrapper.find('.full').text()).toBe(long)
-    expect(m.wrapper.find('td').attributes('title')).toBeUndefined()
+    expect(m.wrapper.find('td[data-field="id"] .by-field').exists()).toBe(false)
+    expect(m.wrapper.find('td[data-field="id"]').text()).toBe('1')
+    expect(m.wrapper.find('td[data-field="age"]').text()).toBe('30')
   })
 })
 
@@ -195,6 +179,113 @@ describe('C-28 Context menu', () => {
     expect(payload.cellValue).toBe(40)
     expect(payload.rowIndex).toBe(2)
     expect(payload.columnIndex).toBe(2)
+  })
+
+  const rightClick = (target: Element) => {
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('answers a right click on content inside a cell for that cell', () => {
+    const m = mountIt(
+      { columns: makeColumns().slice(0, 2) },
+      { slots: { 'cell-name': '<b class="inner">{{ params.cellValue }}</b>' } }
+    )
+    const event = rightClick(m.wrapper.findAll('td .inner')[1].element)
+    expect(event.defaultPrevented).toBe(true)
+    const payload = (
+      m.wrapper.emitted('cellContextMenu') as [CellContextMenuPayload<object>][]
+    )[0][0]
+    expect(payload.rowIndex).toBe(1)
+    expect(payload.column.field).toBe('name')
+    expect(payload.cellValue).toBe('alice')
+  })
+
+  it('emits nothing and keeps the browser menu on utility cells, the subtable row and the empty row', async () => {
+    const m = mountIt(
+      { hasSubtable: true, hasRightPanel: true },
+      { slots: { ...subtable, empty: '<i class="none">nothing</i>' } }
+    )
+    await m.wrapper.find('.bh-expand').trigger('click')
+    const targets = [
+      m.wrapper.find('.bh-right-panel-button').element,
+      m.wrapper.find('.bh-expand').element,
+      m.wrapper.find('.bh-subtable-row .detail').element
+    ]
+    for (const target of targets) {
+      expect(rightClick(target).defaultPrevented).toBe(false)
+    }
+    await m.wrapper.setProps({ rows: [] })
+    expect(
+      rightClick(m.wrapper.find('.bh-empty-row .none').element).defaultPrevented
+    ).toBe(false)
+    expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
+  })
+
+  it('leaves the cells of a table nested in a subtable slot to that table', async () => {
+    const inner: CellContextMenuPayload<object>[] = []
+    const m = mountIt(
+      { hasSubtable: true },
+      {
+        slots: {
+          subtable: () =>
+            h(VueServerTable as never, {
+              query: makeQuery(),
+              columns: [{ field: 'name', title: 'Name' }],
+              rows: [{ name: 'inner' }],
+              onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+                inner.push(payload)
+            })
+        }
+      }
+    )
+    await m.wrapper.find('.bh-expand').trigger('click')
+    const cell = m.wrapper.find('.bh-subtable-row td[data-field="name"]')
+    expect(rightClick(cell.element).defaultPrevented).toBe(true)
+    expect(inner).toHaveLength(1)
+    expect(inner[0].cellValue).toBe('inner')
+    expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
+  })
+
+  it('emits for the inner cell and then for the outer cell when a table sits in a cell-<field> slot', () => {
+    const inner: CellContextMenuPayload<object>[] = []
+    const m = mountIt(
+      { columns: makeColumns().slice(0, 2) },
+      {
+        slots: {
+          'cell-name': () =>
+            h(VueServerTable as never, {
+              query: makeQuery(),
+              columns: [{ field: 'label', title: 'Label' }],
+              rows: [{ label: 'inner' }],
+              onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+                inner.push(payload)
+            })
+        }
+      }
+    )
+    const cell = m.wrapper.findAll(
+      'td[data-field="name"] td[data-field="label"]'
+    )[1]
+    const event = rightClick(cell.element)
+    expect(event.defaultPrevented).toBe(true)
+    // The inner table answers for its own cell...
+    expect(inner).toHaveLength(1)
+    expect(inner[0].cellValue).toBe('inner')
+    expect(inner[0].column.field).toBe('label')
+    // ...and the outer table answers for the cell that holds it.
+    const outer = m.wrapper.emitted('cellContextMenu') as [
+      CellContextMenuPayload<object>
+    ][]
+    expect(outer).toHaveLength(1)
+    expect(outer[0][0].event).toBe(event)
+    expect(outer[0][0].rowIndex).toBe(1)
+    expect(outer[0][0].column.field).toBe('name')
+    expect(outer[0][0].columnIndex).toBe(1)
   })
 
   it('columnIndex counts hidden columns, because it indexes columns', () => {
@@ -236,53 +327,18 @@ describe('C-29 Hidden columns', () => {
 })
 
 describe('C-30 Cell text', () => {
-  it('cuts long text with ... and puts the full text into title', () => {
-    const long = 'abcdefghijklmnopqrstuvwxyz'
-    const m = mountIt({
-      columns: [{ field: 'name' }],
-      rows: [{ name: long }, { name: 'short' }],
-      truncateMaxLength: 10
-    })
-    const [first, second] = m.wrapper.findAll('td')
-    expect(first.text()).toBe('abcdefghij...')
-    expect(first.attributes('title')).toBe(long)
-    expect(second.text()).toBe('short')
-    expect(second.attributes('title')).toBeUndefined()
-  })
-
-  it('draws the text whole with truncate off', () => {
+  it('draws long text whole and sets no title', () => {
     const long = 'x'.repeat(300)
     const m = mountIt({
       columns: [{ field: 'name' }],
-      rows: [{ name: long }],
-      truncate: false
-    })
-    expect(m.wrapper.find('td').text()).toBe(long)
-  })
-
-  it('renders html columns as HTML', () => {
-    const m = mountIt({
-      columns: [{ field: 'name', html: true }],
-      rows: [{ name: '<em class="x">hi</em>' }]
-    })
-    expect(m.wrapper.find('td em.x').text()).toBe('hi')
-  })
-
-  it('never cuts an html column, so no tag is left open and the title stays plain', () => {
-    const html = `<a href="/x/${'a'.repeat(200)}">link</a><b>bold</b>`
-    const m = mountIt({
-      columns: [{ field: 'name', html: true }],
-      rows: [{ name: html }],
-      truncateMaxLength: 10
+      rows: [{ name: long }]
     })
     const cell = m.wrapper.find('td')
-    expect(cell.element.innerHTML).toBe(html)
-    expect(cell.find('a').text()).toBe('link')
-    expect(cell.find('b').text()).toBe('bold')
+    expect(cell.text()).toBe(long)
     expect(cell.attributes('title')).toBeUndefined()
   })
 
-  it('escapes the text of other columns', () => {
+  it('escapes the text: markup in a value is drawn as text', () => {
     const m = mountIt({
       columns: [{ field: 'name' }],
       rows: [{ name: '<em class="x">hi</em>' }]
@@ -352,30 +408,21 @@ describe('C-37 Footer rows', () => {
   })
 })
 
-describe('C-38 Loader and empty slots', () => {
+describe('C-38 Empty slot', () => {
   const slots = {
-    loader: '<span class="spin">loading</span>',
     empty: '<span class="none">nothing</span>'
   }
 
-  it('shows the loader while loading and the empty slot otherwise when there are no rows', async () => {
-    const m = mountIt({ rows: [], loading: true }, { slots })
-    expect(m.wrapper.find('.bh-loader-row .spin').exists()).toBe(true)
-    expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
-    await m.wrapper.setProps({ loading: false })
-    expect(m.wrapper.find('.bh-loader-row').exists()).toBe(false)
+  it('shows the empty slot whenever there are no rows, and hides it when rows arrive', async () => {
+    const m = mountIt({ rows: [] }, { slots })
     expect(m.wrapper.find('.bh-empty-row .none').exists()).toBe(true)
-  })
-
-  it('shows neither with rows present, and keeps the rows while loading', () => {
-    const m = mountIt({ loading: true }, { slots })
+    await m.wrapper.setProps({ rows: makeRows() })
     expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
     expect(m.wrapper.findAll('tbody tr[data-row-index]')).toHaveLength(5)
   })
 
   it('draws no row for a slot that is not given', () => {
-    const m = mountIt({ rows: [], loading: true })
-    expect(m.wrapper.find('.bh-loader-row').exists()).toBe(false)
+    const m = mountIt({ rows: [] })
     expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
   })
 

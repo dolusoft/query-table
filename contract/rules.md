@@ -80,7 +80,7 @@ If the consumer does not apply an emitted query, the table keeps drawing the old
 
 ### C-20 Picking a condition
 
-`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `IsNull` and `IsNotNull` apply at once with `value: null` and disable the input. `setCondition(null)` clears the filter.
+`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `setCondition(null)` clears the filter.
 
 ### C-21 Clearing one column
 
@@ -100,7 +100,7 @@ Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `em
 
 ### C-25 Pagination block
 
-The `bh-pagination` block is drawn when `pagination` is not `false`, the `pagination` slot is given, and there are rows, a positive `totalRows` or `pagination.alwaysShow`. With `pagination: false` no `page` or `pageSize` update is ever emitted.
+The `bh-pagination` block is drawn when the `pagination` slot is given and there are rows, a positive `totalRows` or `pagination.alwaysShow`. Without the slot nothing is drawn, and the page actions have nobody to call them.
 
 ### C-26 Row expansion
 
@@ -108,11 +108,11 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 ### C-27 Cell slots
 
-`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation. The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
+`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`. A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 ### C-28 Context menu
 
-Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu.
+Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: the payload has no cell element. To find it, walk up from `event.target` through `closest('td')` until the `td`'s row is a direct child of this table's `tbody`; a plain `event.target.closest('td')` is wrong when slot content holds a nested table, because it returns the inner `td`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only. A table nested in a `cell-<field>` slot emits for its own cell, and then the outer table emits for the outer cell that holds it (the same event, so two `cellContextMenu` events in all).
 
 ### C-29 Hidden columns
 
@@ -120,7 +120,7 @@ A column with `hide` is neither in the header nor in the body or footer. Its rul
 
 ### C-30 Cell text
 
-Cell text is cut to `truncateMaxLength` characters with `...` when `truncate` is on, and the full text goes into `title`. A column with `html` renders its text as HTML and is never cut, so markup is not broken mid-tag and `title` never holds markup. The table does not sanitize that markup: pass trusted HTML, or sanitize it before it reaches `rows`. Values are read from dotted paths.
+Cell text is the value as a string, whole: the table never cuts it and sets no `title`. A missing value draws nothing. The text is escaped: the table never renders a value as HTML. Values are read from dotted paths.
 
 ### C-31 No styling
 
@@ -128,7 +128,7 @@ The table ships no CSS, takes no styling props and writes no inline style except
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading`, `data-empty`, `data-filtered` and `data-sorted` on the root; `data-field`, `data-type`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field`, `data-type` on body cells; `data-row-index`, `data-expanded` on rows; `data-page`, `data-page-size` on the pagination block. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -150,9 +150,9 @@ With `hasRightPanel` a button per row emits `rowRightPanelClick` with the row.
 
 `footerRows` are drawn in a `tfoot`, one cell per visible column, whatever `totalRows` is.
 
-### C-38 Loader and empty slots
+### C-38 Empty slot
 
-The `loader` slot is shown while `loading`, the `empty` slot when there are no rows and the table is not loading.
+The `empty` slot is shown when there are no rows. The table has no loading state: while the consumer fetches, it decides what `rows` holds and whether to show something else.
 
 ### C-39 Column types
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 
-import { columns, el, renderTable, rows, shot } from './helpers'
+import { columns, el, renderTable, rows, shot } from '../support/helpers'
 
 // Acceptance measurements on the real layout the test skin gives the plain
 // table markup. Every number here comes from getBoundingClientRect.
@@ -106,7 +106,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       const bottom = Math.max(...inner.map(r => r.bottom))
       expect(
         Math.abs((top + bottom) / 2 - (outer.top + outer.bottom) / 2),
-        `th ${cell.getAttribute('data-field') ?? cell.getAttribute('data-utility')}`
+        `th ${cell.getAttribute('data-field') ?? 'utility'}`
       ).toBeLessThanOrEqual(1)
     }
   })
@@ -115,7 +115,6 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     await renderTable({
       hasSubtable: true,
       hasRightPanel: true,
-      loading: true,
       rows: rows(3),
       columns: [
         { field: 'id', title: 'ID', type: 'number', width: '90px' },

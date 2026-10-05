@@ -5,7 +5,7 @@
   "typescript": true,
   "tailwind": {
     "config": "",
-    "css": "tests/browser/skin/theme.css",
+    "css": "tests/skin/theme.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
@@ -14,9 +14,9 @@
   "rtl": false,
   "pointer": false,
   "aliases": {
-    "components": "@/components",
+    "components": "@/ui",
     "utils": "@/lib/utils",
-    "ui": "@/components/ui",
+    "ui": "@/ui",
     "lib": "@/lib",
     "composables": "@/composables"
   },

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/ui/button'
 
 import FilterMenu from './FilterMenu.vue'
 import type {
@@ -10,6 +10,7 @@ import type {
   TableQuery
 } from '../../../src/contract'
 import VueServerTable from '../../../src/index'
+import { setTheme, themeFromUrl, type Theme } from '../theme'
 
 // The consumer around the table: it owns the query (what `v-model:query`
 // does), takes outside changes through the `query` prop, and tells the test
@@ -19,7 +20,21 @@ defineOptions({ inheritAttrs: false })
 const props = defineProps<{
   query: TableQuery
   record?: (query: TableQuery, reason: QueryChangeReason) => void
+  /** Pins the test skin to a theme; without it the OS decides. */
+  theme?: Theme
 }>()
+
+// The skin reads `data-theme` on <html>. Put back what the page had (the
+// `?theme=` parameter, see setup.ts) when the harness goes away.
+const pageTheme = themeFromUrl()
+watch(
+  () => props.theme,
+  theme => setTheme(theme ?? pageTheme),
+  {
+    immediate: true
+  }
+)
+onBeforeUnmount(() => setTheme(pageTheme))
 
 const current = ref(props.query)
 watch(

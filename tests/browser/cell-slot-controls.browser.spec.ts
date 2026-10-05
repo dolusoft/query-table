@@ -3,8 +3,8 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 
-import { el, makeQuery } from './helpers'
 import VueServerTable from '../../src/index'
+import { el, makeQuery } from '../support/helpers'
 
 // A cell slot is consumer markup, and a table's most common cell contents are
 // a selection checkbox and a link. Their default actions (toggle, navigate)
@@ -29,7 +29,6 @@ const mountWithControls = (onRowClick: (event: MouseEvent) => void) => {
           ],
           rows: [{ pick: 1, name: 'Ada', plain: 'text' }],
           totalRows: 1,
-          pagination: false,
           // Falls through to the root element: clicks on any row bubble here.
           onClick: onRowClick
         },
