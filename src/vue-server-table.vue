@@ -1,23 +1,22 @@
 <script setup lang="ts" generic="T extends object">
 import { useSlots } from 'vue'
 
+import TableBody from './body/table-body.vue'
+import TableFooter from './body/table-footer.vue'
+import { useExpansion } from './body/use-expansion'
 import ColumnHeader from './components/column-header.vue'
 import type {
-  CellContextMenuPayload,
   CellSlotProps,
-  Column,
   TableEmits,
   TableProps,
   TableSlots,
   VueServerTableExpose
 } from './contract'
-import { columnTypeOf, valueAt } from './core/column'
 import { useColumns } from './core/use-columns'
 import { useQueryEmitter } from './core/use-query-emitter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
 import TablePagination from './pagination/table-pagination.vue'
 import { usePagination } from './pagination/use-pagination'
-import { useExpansion } from './row/use-expansion'
 import { useSort } from './sort/use-sort'
 
 defineOptions({ name: 'VueServerTable' })
@@ -96,66 +95,6 @@ const { entries, visibleColumns, utilityCount, columnCount } = useColumns({
   hasRightPanel: () => props.hasRightPanel
 })
 
-const cellAttrs = (
-  row: T,
-  column: Column,
-  rowIndex: number,
-  columnIndex: number,
-  title?: string
-) => ({
-  'data-field': column.field,
-  'data-type': columnTypeOf(column),
-  title,
-  onContextmenu: (event: MouseEvent) => {
-    event.preventDefault()
-    const payload: CellContextMenuPayload<T> = {
-      event,
-      row,
-      column,
-      cellValue: valueAt(row, column.field),
-      rowIndex,
-      columnIndex
-    }
-    emit('cellContextMenu', payload)
-  }
-})
-
-const hasCellSlot = (column: Column) =>
-  !!rawSlots[`cell-${column.field}`] || !!rawSlots.cell
-
-const cellSlotProps = (
-  row: T,
-  column: Column,
-  rowIndex: number
-): CellSlotProps<T> => ({
-  row,
-  rowIndex,
-  column,
-  cellValue: valueAt(row, column.field)
-})
-
-/**
- * Text of a cell, cut when `truncate` is on, and the full text if it was cut.
- * An `html` column is never cut: a cut can leave a tag open, and the full
- * markup is not fit for a `title`.
- */
-const cellText = (row: T, column: Column) => {
-  // A cell value may be any type; its string form is what the table shows.
-  // eslint-disable-next-line @typescript-eslint/no-base-to-string
-  const full = String(valueAt(row, column.field) ?? '')
-  const cut =
-    props.truncate && !column.html && full.length > props.truncateMaxLength
-  return {
-    text: cut ? full.substring(0, props.truncateMaxLength) + '...' : full,
-    title: cut ? full : undefined
-  }
-}
-
-const footerText = (
-  row: { cells: Array<{ field: string; text: string | number }> },
-  column: Column
-) => row.cells.find(cell => cell.field === column.field)?.text
-
 // ---------------------------------------------------------------------------
 // Expansion
 // ---------------------------------------------------------------------------
@@ -165,6 +104,18 @@ const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
   rowKey: () => props.rowKey,
   enabled: () => props.hasSubtable
 })
+
+// The slots `table-body` draws: only the ones the consumer gave are passed on,
+// so the body can tell whether a `cell`, `loader` or `empty` slot exists.
+const bodySlotNames = () =>
+  Object.keys(rawSlots).filter(
+    name =>
+      name === 'cell' ||
+      name.startsWith('cell-') ||
+      name === 'subtable' ||
+      name === 'loader' ||
+      name === 'empty'
+  )
 
 const exposed: VueServerTableExpose = {
   collapseAll,
@@ -206,135 +157,32 @@ defineExpose(exposed)
             </template>
           </column-header>
         </thead>
-        <tbody>
-          <tr v-if="loading && slots.loader" class="bh-loader-row">
-            <td :colspan="columnCount"><slot name="loader" /></td>
-          </tr>
-          <template v-for="(row, i) in rows" :key="keyOf(row, i)">
-            <tr
-              :data-row-index="i"
-              :data-expanded="isExpanded(row, i) ? '' : undefined"
-            >
-              <td v-if="hasRightPanel" data-utility="right-panel">
-                <button
-                  type="button"
-                  class="bh-right-panel-button"
-                  aria-label="Open right panel"
-                  @click.stop="emit('rowRightPanelClick', row)"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </button>
-              </td>
-              <td v-if="hasSubtable" data-utility="subtable">
-                <button
-                  type="button"
-                  class="bh-expand"
-                  :aria-expanded="isExpanded(row, i)"
-                  aria-label="Expand row"
-                  @click="toggle(row, i)"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <polyline
-                      v-if="isExpanded(row, i)"
-                      points="6 9 12 15 18 9"
-                    />
-                    <polyline v-else points="9 6 15 12 9 18" />
-                  </svg>
-                </button>
-              </td>
-              <template v-for="entry in entries" :key="entry.column.field">
-                <td
-                  v-if="hasCellSlot(entry.column)"
-                  v-bind="cellAttrs(row, entry.column, i, entry.index)"
-                >
-                  <slot
-                    v-if="rawSlots[`cell-${entry.column.field}`]"
-                    :name="`cell-${entry.column.field}`"
-                    v-bind="cellSlotProps(row, entry.column, i)"
-                  />
-                  <slot
-                    v-else
-                    name="cell"
-                    v-bind="cellSlotProps(row, entry.column, i)"
-                  />
-                </td>
-                <td
-                  v-else-if="entry.column.html"
-                  v-bind="
-                    cellAttrs(
-                      row,
-                      entry.column,
-                      i,
-                      entry.index,
-                      cellText(row, entry.column).title
-                    )
-                  "
-                  v-html="cellText(row, entry.column).text"
-                />
-                <td
-                  v-else
-                  v-bind="
-                    cellAttrs(
-                      row,
-                      entry.column,
-                      i,
-                      entry.index,
-                      cellText(row, entry.column).title
-                    )
-                  "
-                >
-                  {{ cellText(row, entry.column).text }}
-                </td>
-              </template>
-            </tr>
-            <tr v-if="isExpanded(row, i)" class="bh-subtable-row">
-              <td :colspan="columnCount">
-                <slot name="subtable" :row="row" :row-index="i" />
-              </td>
-            </tr>
+        <table-body
+          :rows="rows"
+          :entries="entries"
+          :column-count="columnCount"
+          :loading="loading"
+          :has-subtable="hasSubtable"
+          :has-right-panel="hasRightPanel"
+          :truncate="truncate"
+          :truncate-max-length="truncateMaxLength"
+          :key-of="keyOf"
+          :is-expanded="isExpanded"
+          :toggle="toggle"
+          @row-right-panel-click="row => emit('rowRightPanelClick', row)"
+          @cell-context-menu="payload => emit('cellContextMenu', payload)"
+        >
+          <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
+            <!-- Names are dynamic (cell-<field>); the types only widen here. -->
+            <slot :name="name as 'cell'" v-bind="p as CellSlotProps<T>" />
           </template>
-          <tr
-            v-if="rows.length === 0 && !loading && slots.empty"
-            class="bh-empty-row"
-          >
-            <td :colspan="columnCount"><slot name="empty" /></td>
-          </tr>
-        </tbody>
-        <tfoot v-if="footerRows.length > 0" class="bh-footer">
-          <tr v-for="(footerRow, i) in footerRows" :key="i">
-            <td v-if="utilityCount > 0" :colspan="utilityCount" />
-            <td
-              v-for="column in visibleColumns"
-              :key="column.field"
-              :data-field="column.field"
-              :data-type="columnTypeOf(column)"
-            >
-              {{ footerText(footerRow, column) }}
-            </td>
-          </tr>
-        </tfoot>
+        </table-body>
+        <table-footer
+          v-if="footerRows.length > 0"
+          :footer-rows="footerRows"
+          :entries="entries"
+          :utility-count="utilityCount"
+        />
       </table>
     </div>
     <table-pagination v-if="showPagination" :pagination-props="paginationProps">

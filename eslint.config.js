@@ -135,8 +135,9 @@ export default defineConfig([
     languageOptions: { globals: globals.node }
   },
   {
-    // Tests run in happy-dom or a real browser and read Node's `process`.
-    files: ['tests/**'],
+    // Tests run in happy-dom or a real browser and read Node's `process`;
+    // specs sit next to the unit they cover.
+    files: ['tests/**', 'src/**/*.spec.ts'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {
       '@typescript-eslint/naming-convention': namingConvention([
