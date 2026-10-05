@@ -1,50 +1,40 @@
-import path from 'path'
-import process from 'process'
-import { fileURLToPath } from 'url'
+import process from 'node:process'
 
-import tsEslint from '@typescript-eslint/eslint-plugin'
-import tsParser from '@typescript-eslint/parser'
 import importPlugin from 'eslint-plugin-import-x'
 import prettierPlugin from 'eslint-plugin-prettier'
 import pluginVue from 'eslint-plugin-vue'
+import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
+import tseslint from 'typescript-eslint'
 import vueEslintParser from 'vue-eslint-parser'
 
-const fileName = fileURLToPath(import.meta.url)
-
-export default [
+export default defineConfig([
+  globalIgnores([
+    'build',
+    'dist',
+    'coverage',
+    'node_modules',
+    'public',
+    'README.md',
+    'CHANGELOG.md',
+    'components.d.ts',
+    'typed-router.d.ts',
+    'auto-imports.d.ts',
+    'vite.config.ts'
+  ]),
   {
-    files: [
-      'contract/**/*.ts',
-      'src/**/*.js',
-      'src/**/*.ts',
-      'src/**/**/*.ts',
-      'src/**/*.vue',
-      'src/**/**/*.vue',
-      'src/*.vue',
-      '*.config.ts',
-      '*.vue',
-      'eslint.config.js',
-      '*.ts'
-    ],
+    files: ['**/*.{js,ts,vue}'],
+    extends: [pluginVue.configs['flat/base']],
     languageOptions: {
-      parser: vueEslintParser,
+      parser: tseslint.parser,
       parserOptions: {
-        parser: tsParser,
-        tsconfigRootDir: path.dirname(fileName),
-        project: ['./tsconfig.eslint.json'],
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        extraFileExtensions: ['.vue'],
-        ecmaFeatures: {
-          jsx: true
-        }
+        projectService: true,
+        extraFileExtensions: ['.vue']
       },
       globals: globals.browser
     },
     plugins: {
-      '@typescript-eslint': tsEslint,
-      vue: pluginVue,
+      '@typescript-eslint': tseslint.plugin,
       prettier: prettierPlugin,
       'import-x': importPlugin
     },
@@ -116,19 +106,19 @@ export default [
           ]
         }
       ]
-    },
-    ignores: [
-      'build',
-      'dist',
-      'coverage',
-      'node_modules',
-      'public',
-      'README.md',
-      'CHANGELOG.md',
-      'components.d.ts',
-      'typed-router.d.ts',
-      'auto-imports.d.ts',
-      'vite.config.ts'
-    ]
+    }
+  },
+  {
+    // Vue SFCs: vue-eslint-parser reads the template and hands <script> to
+    // the TypeScript parser.
+    files: ['**/*.vue'],
+    languageOptions: {
+      parser: vueEslintParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        projectService: true,
+        extraFileExtensions: ['.vue']
+      }
+    }
   }
-]
+])
