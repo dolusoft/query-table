@@ -89,7 +89,7 @@ const utilities = computed(() =>
         v-if="sort.isSortable(column)"
         :column="column"
         :direction="sort.sortOf(column)"
-        @click="sort.sortBy(column.field)"
+        @click="sort.sortBy(column)"
       />
       <span v-else class="bh-title">{{ column.title }}</span>
 

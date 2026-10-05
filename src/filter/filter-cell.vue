@@ -63,12 +63,8 @@ const menuProps = (): FilterMenuSlotProps => {
     clear: () => drafts.clear(column.field),
     sortable: sort.isSortable(column),
     sortDirection: sort.sortOf(column),
-    setSort: direction => {
-      // Same condition as a header click (C-07): no sort where there is no sort.
-      if (sort.isSortable(column)) {
-        sort.sortBy(column.field, direction)
-      }
-    },
+    // `sortBy` does nothing where sorting is off, like a header click (C-07).
+    setSort: direction => sort.sortBy(column, direction),
     trigger
   }
 }
