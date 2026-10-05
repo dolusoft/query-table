@@ -390,7 +390,6 @@ defineExpose(exposed)
             <tr
               :data-row-index="i"
               :data-expanded="isExpanded(row, i) ? '' : undefined"
-              @click.prevent
             >
               <td v-if="hasRightPanel" data-utility="right-panel">
                 <button
@@ -486,11 +485,7 @@ defineExpose(exposed)
                 </td>
               </template>
             </tr>
-            <tr
-              v-if="isExpanded(row, i)"
-              class="bh-subtable-row"
-              @click.prevent
-            >
+            <tr v-if="isExpanded(row, i)" class="bh-subtable-row">
               <td :colspan="columnCount">
                 <slot name="subtable" :row="row" :row-index="i" />
               </td>
