@@ -136,8 +136,35 @@ describe('C-34 Filter menu slot', () => {
     const button = input.element.nextElementSibling
     expect(button?.classList.contains('qt-filter-button')).toBe(true)
     expect(button?.parentElement).toBe(input.element.parentElement)
-    // bool columns have no menu
     expect(m.wrapper.findAll('.qt-filter-button')).toHaveLength(4)
+  })
+
+  it('does not render the slot in a bool column: the select stands alone, with no filter button', () => {
+    const seen: string[] = []
+    const m = mountIt(
+      {
+        filterable: true,
+        columns: [
+          { field: 'name', title: 'Name' },
+          { field: 'active', title: 'Active', type: 'bool' }
+        ]
+      },
+      {
+        slots: {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
+            seen.push(menu.column.field)
+            return h(menu.trigger)
+          }
+        }
+      }
+    )
+    expect(seen).toEqual(['name'])
+    const cell = m.wrapper.find('th[data-field="active"]')
+    expect(cell.find('select.qt-filter-input').exists()).toBe(true)
+    expect(cell.find('.qt-filter-button').exists()).toBe(false)
+    expect(
+      m.wrapper.find('th[data-field="name"] .qt-filter-button').exists()
+    ).toBe(true)
   })
 
   it('gives the slot the column, the rules, the conditions and a trigger that takes attributes', () => {

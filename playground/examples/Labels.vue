@@ -24,7 +24,7 @@ const columns: Column[] = [
   { field: 'active', title: 'Aktif', type: 'bool' }
 ]
 
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 8 })
+const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
 </script>
 
 <template>

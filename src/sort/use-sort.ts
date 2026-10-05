@@ -37,13 +37,11 @@ export const useSort = (options: SortOptions) => {
     }
     options.flushFilters()
     const current = options.base()
+    const next = direction ?? nextDirection(current.sort, column.field)
     options.update(
       {
         ...cloneQuery(current),
-        sort: {
-          field: column.field,
-          direction: direction ?? nextDirection(current.sort, column.field)
-        }
+        sort: next === null ? null : { field: column.field, direction: next }
       },
       'sort'
     )

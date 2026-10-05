@@ -175,7 +175,8 @@
     }
 }
 
-/* ==== mapping.css ==== */
+/* ==== mapping.css, in the components layer ==== */
+@layer components {
 /*
  * Test skin: maps the table's DOM contract onto shadcn-vue's class strings.
  * Hand-written, but it only selects what contract/dom.ts lists (rule C-41),
@@ -191,6 +192,9 @@
    `rounded-md border` box of shadcn's data-table example */
 .qt-table-responsive {
   @apply relative w-full overflow-x-auto rounded-md border;
+  /* Lets `cqw` in the subtable slot mean the visible width (see the README,
+     "Pinned columns": a subtable row stays in view while the table scrolls). */
+  container-type: inline-size;
 }
 .qt-table {
   @apply w-full caption-bottom text-sm;
@@ -367,4 +371,5 @@ tr[data-expanded] {
    p-2 plus the 1px border, so the text lines up with the cell text. */
 .qt-pagination {
   @apply px-2.25 py-4;
+}
 }

@@ -41,9 +41,8 @@ jobs:
         with:
           persist-credentials: false
 
+      # The pnpm version is the `packageManager` field of package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 12
 
       - uses: actions/setup-node@v4
         with:
@@ -83,7 +82,8 @@ jobs:
         timeout-minutes: 5
       - run: pnpm check:renders
         timeout-minutes: 5
-      # Builds dist/; the checks below and the pack use that build.
+      # One build of dist/; the checks below and the pack use it.
+      - run: pnpm build
       - run: pnpm check:package
       - run: pnpm check:size
       - run: pnpm api:check

@@ -22,13 +22,9 @@ export default defineConfig({
       entry: {
         'query-table': resolve(import.meta.dirname, 'src/index.ts')
       },
-      formats: ['es', 'cjs']
+      // ESM only: every maintained bundler and Node (`require(esm)`) reads it.
+      formats: ['es']
     },
-    rollupOptions: {
-      external,
-      // A named and a default export side by side: say so in the CJS bundle
-      // (`exports.default`) instead of letting the bundler guess.
-      output: { exports: 'named' }
-    }
+    rollupOptions: { external }
   }
 })

@@ -12,7 +12,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | --- | --- | --- | --- | --- |
 | `query` | `TableQuery` | yes |  | The table state, used with `v-model:query`. Required: the table is always controlled. |
 | `columns` | `Column[]` | yes |  | Column definitions. Never mutated. |
-| `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. |
+| `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. With `hasSubtable` a row may carry an optional `isExpanded` boolean to seed its expansion state (for example a print or report view that opens every row). Whenever `rows` changes, `isExpanded: true` opens the row, `isExpanded: false` closes it, and a row without the field (or with any other value) keeps what the state is. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again. The field is not part of `T`; it is read from the row object as given. |
 | `totalRows` | `number \| null` |  | `null` | Total number of rows on the server, `null` when unknown. It only feeds the `pagination` slot; it never decides whether rows are drawn. |
 | `footerRows` | `FooterRow[]` |  | `[]` | Rows of totals drawn in a `tfoot`. |
 | `loading` | `boolean` |  | `false` | The consumer is fetching. The root gets `data-loading` and `aria-busy="true"`, the rows given stay drawn, the empty state is not shown and the `loading` slot is drawn as the last row of the body. The table blocks no interaction. Defaults to `false`. |
@@ -21,7 +21,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `resizable` | `boolean` |  | `false` | Draw a resize handle in the header cells (needs column `resizable`). Defaults to `false`. The table emits `columnResize`; the consumer writes the width back to `Column.width`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
-| `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
+| `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. A row can start expanded with its `isExpanded` field (see `rows`). Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
 | `labels` | `Partial<TableLabels>` |  | `undefined` | Text the table writes for people: accessible names and the options of a bool filter. Give only the entries you want to change; the rest keep their English defaults. |
@@ -41,7 +41,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | --- | --- | --- |
 | `toolbar` | `ToolbarSlotProps` | Content above the table. |
 | `filter-datetime` | `FilterDatetimeSlotProps` | Replaces the date input of `date` and `datetime` filters. |
-| `filter-menu` | `FilterMenuSlotProps` | Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. |
+| `filter-menu` | `FilterMenuSlotProps` | Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. A `bool` column does not render it: its select has no condition to pick. |
 | `subtable` | `SubtableSlotProps<T>` | Content of an expanded row (needs `hasSubtable`). |
 | `empty` | `none` | Shown when there are no rows and `loading` is off. |
 | `loading` | `none` | Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last row of the body. The rows stay; place the row over them in your CSS. |
@@ -64,7 +64,7 @@ Exported from the package entry point next to the component.
 
 | Name | Signature | Description |
 | --- | --- | --- |
-| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number` and `integer`: one rule with a number value; text that is not a finite number gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. |
+| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. |
 
 ## Types
 
@@ -214,7 +214,18 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   query: TableQuery
   /** Column definitions. Never mutated. */
   columns: Column[]
-  /** Rows of the current page, drawn exactly as given. */
+  /**
+   * Rows of the current page, drawn exactly as given.
+   *
+   * With `hasSubtable` a row may carry an optional `isExpanded` boolean to
+   * seed its expansion state (for example a print or report view that opens
+   * every row). Whenever `rows` changes, `isExpanded: true` opens the row,
+   * `isExpanded: false` closes it, and a row without the field (or with any
+   * other value) keeps what the state is. It is a seed, not a binding: the
+   * table never writes it back, and the user's toggles stand until `rows`
+   * changes again. The field is not part of `T`; it is read from the row
+   * object as given.
+   */
   rows?: T[]
   /**
    * Total number of rows on the server, `null` when unknown. It only feeds
@@ -244,7 +255,11 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
   pagination?: PaginationOptions
-  /** Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. */
+  /**
+   * Add a column with an expand button and render the `subtable` slot under
+   * expanded rows. A row can start expanded with its `isExpanded` field (see
+   * `rows`). Defaults to `false`.
+   */
   hasSubtable?: boolean
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
@@ -430,7 +445,11 @@ export interface TableSlots<T> {
   toolbar?(props: ToolbarSlotProps): unknown
   /** Replaces the date input of `date` and `datetime` filters. */
   'filter-datetime'?(props: FilterDatetimeSlotProps): unknown
-  /** Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. */
+  /**
+   * Content of the filter menu of a column; see `FilterMenuSlotProps`.
+   * Without it there is no filter button. A `bool` column does not render it:
+   * its select has no condition to pick.
+   */
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
@@ -508,7 +527,7 @@ A user action produces at most one `update:query` of its own. A pending filter a
 
 #### C-07 Header sort
 
-A header click on a sortable column emits reason `sort`. The first click sorts ascending, the next on the same column descending, and so on. The page is kept. A click does nothing when the table or the column is not sortable.
+A header click on a sortable column emits reason `sort`. The click cycles ascending, descending, none: the first click sorts ascending, the next on the same column descending, the next removes the sort: `sort: null` means no sort at all, since the query holds a single sort. A click on a column that is not the sorted one starts at ascending. The page is kept. A click does nothing when the table or the column is not sortable.
 
 #### C-08 Sort from the filter menu
 
@@ -544,7 +563,7 @@ In a text column the table turns shortcuts into clean rules: `*foo*` Contains, `
 
 #### C-16 Value types
 
-Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule.
+Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`); `2.0` is the whole number `2`.
 
 #### C-17 Several rules for one field
 
@@ -552,11 +571,11 @@ Rules of one `field` combine with OR, or with AND when all of them are negative 
 
 #### C-18 The input follows outside changes
 
-When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. This holds when the consumer answers late: an echo of an earlier emit never overwrites what the user has typed since. Removing the rules from outside empties the input and removes the label.
+When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. This holds when the consumer answers late: an echo of an earlier emit never overwrites what the user has typed since. The table remembers the last eight emits of a column and only counts the older ones that are still unanswered: answers come in order, so the first answers that match nothing remembered are taken as those, and neither they nor the emits still in flight touch the input. Any other change is an outside change. Removing the rules from outside empties the input and removes the label.
 
 #### C-19 An ignored update changes nothing
 
-If the consumer does not apply an emitted query, the table keeps drawing the old one and the text typed in the input stays.
+If the consumer does not apply an emitted query, the table keeps drawing the old one and the text typed in the input stays. The table remembers its own last emit only until the tick ends (C-01); after that every action builds on the `query` the consumer holds. A consumer that applies an emit late, after an `await` for example, makes the next action build on the old query and lose the earlier change. Apply the emitted query to your own copy in the same tick, which `v-model:query` does, and fetch with it afterwards.
 
 #### C-20 Picking a condition
 
@@ -568,7 +587,7 @@ If the consumer does not apply an emitted query, the table keeps drawing the old
 
 #### C-22 Clearing all filters
 
-The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click).
+The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. Text typed into a column that then leaves `columns` goes with it: it no longer enables the button and does not come back when the column does. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click).
 
 #### C-23 Page count and neighbours
 
@@ -584,7 +603,7 @@ The `qt-pagination` block is drawn when the `pagination` slot is given and there
 
 #### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
 
 #### C-27 Cell slots
 
@@ -616,7 +635,7 @@ A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54) a
 
 #### C-34 Filter menu slot
 
-The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button.
+The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select with no condition to pick, so it has no filter button and no menu (the header click still sorts it).
 
 #### C-35 Date filter slot
 
@@ -692,7 +711,7 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 #### C-53 Filter parser
 
-`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
+`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
 
 #### C-54 focusFilter
 

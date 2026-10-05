@@ -36,10 +36,14 @@ export const parseDraft = (column: Column, draft: Draft): Parsed => {
   switch (type) {
     case 'string':
       return parseShortcuts(text, condition)
-    case 'number':
-    case 'integer': {
+    case 'number': {
       const value = Number(text)
       return Number.isFinite(value) ? [{ condition, value }] : []
+    }
+    case 'integer': {
+      // A whole number only: `2.5` is no rule (C-16).
+      const value = Number(text)
+      return Number.isInteger(value) ? [{ condition, value }] : []
     }
     case 'bool':
       return text === 'true' || text === 'false'

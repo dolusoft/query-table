@@ -7,10 +7,10 @@ The table ships no CSS. It renders plain markup with a small, stable set of `qt-
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.10/dolusoft-query-table-2.2.10.tgz
+pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.11/dolusoft-query-table-2.2.11.tgz
 ```
 
-Peer dependency: `vue` 3.5+.
+Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
 
 ## Usage
 
@@ -42,6 +42,22 @@ watchEffect(async () => {
   />
 </template>
 ```
+
+## Applying the query
+
+Take the emitted query into your own copy in the same tick, and fetch with it afterwards: that is what `v-model:query` does. The table remembers its last emit only until the tick ends; after that every action builds on the `query` you hold. A consumer that applies an emit late (after an `await`, say) makes the next click build on the old query and lose the change before it. A consumer that ignores an emit is fine: the table keeps drawing the old query and the typed filter text stays (C-19).
+
+```ts
+// Do: update the model at once, fetch next.
+function onUpdate(next: TableQuery) {
+  query.value = next
+  void load(next)
+}
+```
+
+## Sorting
+
+A header click cycles ascending, descending, none: the third click on the same column sets `sort` to `null`. A click on another column starts at ascending. The sort is a single `{ field, direction }`, so "none" is the absence of the entry.
 
 ## Long text
 
@@ -76,6 +92,19 @@ Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their decla
 .qt-table:has([data-pinned]) {
   border-collapse: separate; /* collapsed borders leave gaps at sticky edges */
   border-spacing: 0;
+}
+```
+
+A row of the `subtable` slot is one cell over every column (`tr.qt-subtable-row > td[colspan]`), so it scrolls sideways with the table and its content can leave the view. The table does not pin it. `position: sticky` on that `td` does nothing, because the cell is as wide as the table; stick a wrapper inside the slot instead, as wide as the visible part. Make the scroller a size container and size the wrapper with `cqw`:
+
+```css
+.qt-table-responsive {
+  container-type: inline-size;
+}
+.subtable-content {
+  position: sticky;
+  left: 0.5rem; /* the cell's padding */
+  width: calc(100cqw - 1rem); /* the visible width minus both paddings */
 }
 ```
 
@@ -154,6 +183,8 @@ A template ref exposes `focusFilter(field)` (returns `false` when the column has
 ## Row identity
 
 Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes. With `row-key` only the rows currently in `rows` keep their expanded state: a row that leaves (another page) and comes back is closed.
+
+A row may carry an `isExpanded` boolean to start open or closed (a print or report view opens every row this way): each time `rows` changes, `true` opens the row, `false` closes it and a row without the field keeps its state. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again.
 
 ## Labels
 

@@ -55,6 +55,21 @@ describe('C-16 Value types: a draft parses into rules', () => {
     expect(parseDraft(column('integer'), draft('Infinity'))).toEqual([])
   })
 
+  it('an integer column rejects a decimal and keeps a whole number', () => {
+    expect(parseDraft(column('integer'), draft('2.5'))).toEqual([])
+    expect(parseDraft(column('integer'), draft('-0.1', 'LessThan'))).toEqual([])
+    expect(parseDraft(column('integer'), draft('-3'))).toEqual([
+      { condition: 'Equal', value: -3 }
+    ])
+    expect(parseDraft(column('integer'), draft('2.0'))).toEqual([
+      { condition: 'Equal', value: 2 }
+    ])
+    // A number column still takes the decimal.
+    expect(parseDraft(column('number'), draft('2.5'))).toEqual([
+      { condition: 'Equal', value: 2.5 }
+    ])
+  })
+
   it('bool columns give boolean values and nothing else', () => {
     expect(parseDraft(column('bool'), draft('true'))).toEqual([
       { condition: 'Equal', value: true }

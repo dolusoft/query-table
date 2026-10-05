@@ -7,8 +7,9 @@ import { parseDraft } from './filter-draft'
  *
  * - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`);
  *   a segment without an operator uses `condition`.
- * - `number` and `integer`: one rule with a number value; text that is not a
- *   finite number gives `[]`.
+ * - `number`: one rule with a number value; text that is not a finite number
+ *   gives `[]`.
+ * - `integer`: the same, but only a whole number; `2.5` gives `[]`.
  * - `bool`: `'true'` or `'false'` gives one rule with a boolean value;
  *   anything else gives `[]`.
  * - `date` and `datetime`: one rule with the trimmed text as its value; the

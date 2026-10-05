@@ -416,6 +416,22 @@ describe('C-16 Value types', () => {
     ).toBe('date')
   })
 
+  it('makes no rule for a decimal in an integer column, and removes the rule it had', async () => {
+    const m = mountIt({
+      ...base,
+      columns: [{ field: 'count', type: 'integer' }]
+    })
+    await type(m, 'count', '7')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([rule('count', 'Equal', 7)])
+    await type(m, 'count', '7.5')
+    vi.advanceTimersByTime(100)
+    await flush()
+    // The decimal is no rule, so the filter of the column goes.
+    expect(m.query().filters).toEqual([])
+  })
+
   it('makes no rule for a text that is not a number', () => {
     const m = mountIt({ ...base, columns: [{ field: 'age', type: 'number' }] })
     // a number input rejects such text itself; set the property directly
@@ -662,6 +678,19 @@ describe('C-22 Clearing all filters', () => {
     expect(clearAll(m).attributes('disabled')).toBeUndefined()
     await type(m, 'name', '')
     expect(clearAll(m).attributes('disabled')).toBeDefined()
+  })
+
+  it('goes back to disabled when the column with the typed text is removed', async () => {
+    const m = mountIt({ ...base, filterDebounce: 1000 })
+    await type(m, 'name', 'abc')
+    expect(clearAll(m).attributes('disabled')).toBeUndefined()
+    await m.wrapper.setProps({
+      columns: makeColumns().filter(column => column.field !== 'name')
+    })
+    await flush()
+    expect(clearAll(m).attributes('disabled')).toBeDefined()
+    vi.advanceTimersByTime(5000)
+    expect(m.events).toEqual([])
   })
 
   it('empties what was typed and never applied', async () => {
