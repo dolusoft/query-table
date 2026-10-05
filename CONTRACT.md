@@ -538,6 +538,10 @@ The test skin selects only classes and attributes of the DOM contract (besides s
 
 A number, integer, date, datetime or bool column has one input and the input holds one value. When `query.filters` holds several rules for such a column (`age > 20` and `age < 40`), the input is read-only and shows the count, `(2)`, and the condition label shows the first condition with the same count. A bool select is disabled. Nothing is emitted and no rule is dropped. The clear action of the column and clear all remove the rules. Picking a condition from the menu, or an `updateValue` of the `filter-datetime` slot, is an explicit edit: it replaces the rules with one (the first rule's value for a pick), and `filter-datetime` receives an empty `value` while the rules stand. Text columns write several rules as `a,b` and are not affected.
 
+#### C-43 A rule the shortcuts cannot say
+
+The input shows an outside rule as the text that reads back as it. A rule whose value has a star, a comma or a leading `!` and whose condition is `Equal` (or another condition without a shortcut) has no such text: the input shows the value as it is (`a*`), and nothing is emitted. This is a known limit, kept on purpose: there is no escape syntax. The rule stays in `query` until the user edits the input, and the text is then read as shortcuts (`a*` is `StartsWith` `a`), so it replaces the rule.
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
