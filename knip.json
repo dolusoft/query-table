@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/components/index.ts", "contract/dom.ts", "scripts/*.mjs"],
+  "entry": ["src/index.ts", "contract/dom.ts", "scripts/*.mjs"],
   "project": ["src/**/*.{ts,vue}", "contract/**/*.ts", "scripts/*.mjs", "test-support/**/*.ts", "tests/**/*.ts"],
   "ignore": ["tests/browser/components/ui/**", "tests/browser/lib/utils.ts"],
   "ignoreDependencies": [
@@ -11,6 +11,6 @@
     "tw-animate-css"
   ],
   "ignoreIssues": {
-    "src/components/*.vue": ["types"]
+    "src/**/*.vue": ["types"]
   }
 }

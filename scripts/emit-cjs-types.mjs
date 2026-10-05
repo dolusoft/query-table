@@ -2,9 +2,10 @@
 // Node's ESM and CJS module modes (checked by `attw --profile node16`).
 //
 // 1. vue-tsc writes relative imports the way the sources spell them
-//    (`../model/column-model`, `./custom-table.vue`). Node16 ESM requires
-//    explicit extensions, and TypeScript resolves `./custom-table.vue` to
-//    `custom-table.d.vue.ts` rather than the emitted `custom-table.vue.d.ts`.
+//    (`../core/query`, `./vue-server-table.vue`). Node16 ESM requires
+//    explicit extensions, and TypeScript resolves `./vue-server-table.vue` to
+//    `vue-server-table.d.vue.ts` rather than the emitted
+//    `vue-server-table.vue.d.ts`.
 //    Every relative specifier therefore gets a `.js` suffix, which TypeScript
 //    maps back to the matching .d.ts.
 // 2. The package is "type": "module", so every .d.ts is read as ESM, which

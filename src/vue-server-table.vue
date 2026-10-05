@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends object">
 import { computed, ref, useSlots, watch } from 'vue'
 
-import ColumnHeader from './column-header.vue'
+import ColumnHeader from './components/column-header.vue'
 import type {
   CellContextMenuPayload,
   CellSlotProps,
@@ -14,11 +14,11 @@ import type {
   TableQuery,
   TableSlots,
   VueServerTableExpose
-} from '../contract'
-import { columnTypeOf, valueAt } from '../core/column'
-import { cloneQuery, sameQuery } from '../core/query'
-import { useFilterDrafts } from '../filter/use-filter-drafts'
-import { nextDirection } from '../sort/sort'
+} from './contract'
+import { columnTypeOf, valueAt } from './core/column'
+import { cloneQuery, sameQuery } from './core/query'
+import { useFilterDrafts } from './filter/use-filter-drafts'
+import { nextDirection } from './sort/sort'
 
 defineOptions({ name: 'VueServerTable' })
 

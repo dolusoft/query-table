@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 
-import VueServerTable from '../../../src/components/index'
 import type { Column, TableQuery } from '../../../src/contract'
+import VueServerTable from '../../../src/index'
 
 // A consumer that behaves like a server-backed page: it owns the query, and
 // every `update:query` answers with the rows a server would send (filtered,
