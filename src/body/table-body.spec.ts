@@ -135,14 +135,13 @@ describe('C-26 Row expansion', () => {
 })
 
 describe('C-27 Cell slots', () => {
-  it('renders cell-<field> for that column and cell for the rest, with the same props', () => {
+  it('renders cell-<field> for that column only, with the row, index, column and value', () => {
     const m = mountIt(
       { columns: makeColumns().slice(0, 3) },
       {
         slots: {
           'cell-name':
-            '<i class="by-field">{{ params.cellValue }}|{{ params.rowIndex }}|{{ params.column.field }}|{{ params.row.id }}</i>',
-          cell: '<u class="generic">{{ params.column.field }}</u>'
+            '<i class="by-field">{{ params.cellValue }}|{{ params.rowIndex }}|{{ params.column.field }}|{{ params.row.id }}</i>'
         }
       }
     )
@@ -150,25 +149,9 @@ describe('C-27 Cell slots', () => {
     expect(m.wrapper.find('td[data-field="name"] .by-field').text()).toBe(
       'Charlie|0|name|1'
     )
-    expect(m.wrapper.findAll('td[data-field="id"] .generic')).toHaveLength(5)
-    expect(m.wrapper.findAll('td[data-field="age"] .generic')).toHaveLength(5)
-    expect(m.wrapper.find('td[data-field="name"] .generic').exists()).toBe(
-      false
-    )
-  })
-
-  it('skips truncation', () => {
-    const long = 'x'.repeat(40)
-    const m = mountIt(
-      {
-        columns: [{ field: 'name' }],
-        rows: [{ name: long }],
-        truncateMaxLength: 10
-      },
-      { slots: { cell: '<span class="full">{{ params.cellValue }}</span>' } }
-    )
-    expect(m.wrapper.find('.full').text()).toBe(long)
-    expect(m.wrapper.find('td').attributes('title')).toBeUndefined()
+    expect(m.wrapper.find('td[data-field="id"] .by-field').exists()).toBe(false)
+    expect(m.wrapper.find('td[data-field="id"]').text()).toBe('1')
+    expect(m.wrapper.find('td[data-field="age"]').text()).toBe('30')
   })
 })
 

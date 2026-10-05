@@ -90,11 +90,11 @@ const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
 })
 
 // The slots `table-body` draws: only the ones the consumer gave are passed on,
-// so the body can tell whether a `cell`, `loader` or `empty` slot exists.
+// so the body can tell whether a `cell-<field>`, `loader` or `empty` slot
+// exists.
 const bodySlotNames = () =>
   Object.keys(rawSlots).filter(
     name =>
-      name === 'cell' ||
       name.startsWith('cell-') ||
       name === 'subtable' ||
       name === 'loader' ||
@@ -154,7 +154,7 @@ defineExpose(exposed)
         >
           <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
             <!-- Names are dynamic (cell-<field>); the types only widen here. -->
-            <slot :name="name as 'cell'" v-bind="p as CellSlotProps<T>" />
+            <slot :name="name as 'cell-x'" v-bind="p as CellSlotProps<T>" />
           </template>
         </table-body>
         <table-footer

@@ -201,7 +201,6 @@ export interface TableSlots<T> {
     'filter-datetime'?(props: FilterDatetimeSlotProps): unknown;
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
-    cell?(props: CellSlotProps<T>): unknown;
     empty?(): unknown;
     loader?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;

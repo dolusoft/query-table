@@ -45,7 +45,6 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `loader` | `none` | Shown while `loading`. |
 | `empty` | `none` | Shown when there are no rows and the table is not loading. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
-| `cell` | `CellSlotProps<T>` | Cell content for every column without a `cell-<field>` slot. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
 ### Exposed
@@ -341,8 +340,6 @@ export interface TableSlots<T> {
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
-  /** Cell content for every column without a `cell-<field>` slot. */
-  cell?(props: CellSlotProps<T>): unknown
   /** Cell content of one column: `cell-${column.field}`. */
   [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined
 }
@@ -471,7 +468,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-27 Cell slots
 
-`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation. The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
+`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`. A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 #### C-28 Context menu
 

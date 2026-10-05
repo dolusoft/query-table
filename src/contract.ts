@@ -279,8 +279,6 @@ export interface TableSlots<T> {
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
-  /** Cell content for every column without a `cell-<field>` slot. */
-  cell?(props: CellSlotProps<T>): unknown
   /** Cell content of one column: `cell-${column.field}`. */
   [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined
 }

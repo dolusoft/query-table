@@ -7,14 +7,14 @@ import type { ColumnEntry } from '../core/use-columns'
 export interface CellViewOptions<T extends object> {
   truncate: () => boolean
   maxLength: () => number
-  /** The slots the body received: `cell` and `cell-<field>` are looked up. */
+  /** The slots the body received: `cell-<field>` is looked up. */
   slots: Slots
   onContextMenu: (payload: CellContextMenuPayload<T>) => void
 }
 
 /**
  * What a body cell shows: its text (cut when `truncate` is on), its
- * attributes, the props for a `cell` slot and the context menu event
+ * attributes, the props for a `cell-<field>` slot and the context menu event
  * (C-27, C-28, C-30, C-37).
  */
 export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
@@ -58,7 +58,7 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
   })
 
   const hasCellSlot = (column: Column) =>
-    !!options.slots[`cell-${column.field}`] || !!options.slots.cell
+    !!options.slots[`cell-${column.field}`]
 
   const slotProps = (
     row: T,

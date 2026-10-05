@@ -99,11 +99,9 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
             v-bind="cellAttrs(row, entry, i)"
           >
             <slot
-              v-if="slots[`cell-${entry.column.field}`]"
               :name="`cell-${entry.column.field}`"
               v-bind="slotProps(row, entry.column, i)"
             />
-            <slot v-else name="cell" v-bind="slotProps(row, entry.column, i)" />
           </td>
           <td
             v-else-if="entry.column.html"
