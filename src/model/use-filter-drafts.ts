@@ -47,7 +47,7 @@ const blank: Readonly<Draft> = Object.freeze({ text: '', condition: null })
 type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>
 
 /** The rules a draft stands for. */
-export const parseDraft = (column: Column, draft: Draft): Parsed => {
+const parseDraft = (column: Column, draft: Draft): Parsed => {
   const type = columnTypeOf(column)
   if (isUnaryCondition(draft.condition)) {
     return [{ condition: draft.condition, value: null }]
@@ -82,7 +82,7 @@ const isPlainText = (value: string) =>
   !value.startsWith('!')
 
 /** The draft that shows `rules` (the inverse of `parseDraft`). */
-export const draftFromRules = (
+const draftFromRules = (
   column: Column,
   rules: readonly FilterRule[]
 ): Draft => {

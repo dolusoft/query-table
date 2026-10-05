@@ -34,7 +34,7 @@ export const valueAt = (row: object, path: string): unknown =>
       row
     )
 
-export const sameRule = (a: FilterRule, b: FilterRule): boolean =>
+const sameRule = (a: FilterRule, b: FilterRule): boolean =>
   a.field === b.field && a.condition === b.condition && a.value === b.value
 
 export const sameRules = (
