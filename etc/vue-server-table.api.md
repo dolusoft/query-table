@@ -182,8 +182,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     rows?: T[];
     sortable?: boolean;
     totalRows?: number | null;
-    truncate?: boolean;
-    truncateMaxLength?: number;
 }
 
 // @public

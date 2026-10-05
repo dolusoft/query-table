@@ -219,28 +219,15 @@ describe('C-29 Hidden columns', () => {
 })
 
 describe('C-30 Cell text', () => {
-  it('cuts long text with ... and puts the full text into title', () => {
-    const long = 'abcdefghijklmnopqrstuvwxyz'
-    const m = mountIt({
-      columns: [{ field: 'name' }],
-      rows: [{ name: long }, { name: 'short' }],
-      truncateMaxLength: 10
-    })
-    const [first, second] = m.wrapper.findAll('td')
-    expect(first.text()).toBe('abcdefghij...')
-    expect(first.attributes('title')).toBe(long)
-    expect(second.text()).toBe('short')
-    expect(second.attributes('title')).toBeUndefined()
-  })
-
-  it('draws the text whole with truncate off', () => {
+  it('draws long text whole and sets no title', () => {
     const long = 'x'.repeat(300)
     const m = mountIt({
       columns: [{ field: 'name' }],
-      rows: [{ name: long }],
-      truncate: false
+      rows: [{ name: long }]
     })
-    expect(m.wrapper.find('td').text()).toBe(long)
+    const cell = m.wrapper.find('td')
+    expect(cell.text()).toBe(long)
+    expect(cell.attributes('title')).toBeUndefined()
   })
 
   it('renders html columns as HTML', () => {
@@ -251,18 +238,16 @@ describe('C-30 Cell text', () => {
     expect(m.wrapper.find('td em.x').text()).toBe('hi')
   })
 
-  it('never cuts an html column, so no tag is left open and the title stays plain', () => {
+  it('keeps the markup of an html column whole', () => {
     const html = `<a href="/x/${'a'.repeat(200)}">link</a><b>bold</b>`
     const m = mountIt({
       columns: [{ field: 'name', html: true }],
-      rows: [{ name: html }],
-      truncateMaxLength: 10
+      rows: [{ name: html }]
     })
     const cell = m.wrapper.find('td')
     expect(cell.element.innerHTML).toBe(html)
     expect(cell.find('a').text()).toBe('link')
     expect(cell.find('b').text()).toBe('bold')
-    expect(cell.attributes('title')).toBeUndefined()
   })
 
   it('escapes the text of other columns', () => {

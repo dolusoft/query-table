@@ -23,8 +23,6 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
-| `truncate` | `boolean` |  | `true` | Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. |
-| `truncateMaxLength` | `number` |  | `150` | Characters kept when `truncate` is on. Defaults to `150`. |
 
 ### Events
 
@@ -217,10 +215,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
-  /** Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. */
-  truncate?: boolean
-  /** Characters kept when `truncate` is on. Defaults to `150`. */
-  truncateMaxLength?: number
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -480,7 +474,7 @@ A column with `hide` is neither in the header nor in the body or footer. Its rul
 
 #### C-30 Cell text
 
-Cell text is cut to `truncateMaxLength` characters with `...` when `truncate` is on, and the full text goes into `title`. A column with `html` renders its text as HTML and is never cut, so markup is not broken mid-tag and `title` never holds markup. The table does not sanitize that markup: pass trusted HTML, or sanitize it before it reaches `rows`. Values are read from dotted paths.
+Cell text is the value as a string, whole: the table never cuts it and sets no `title`. A missing value draws nothing. A column with `html` renders its text as HTML. The table does not sanitize that markup: pass trusted HTML, or sanitize it before it reaches `rows`. Values are read from dotted paths.
 
 #### C-31 No styling
 

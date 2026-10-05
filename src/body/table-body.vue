@@ -5,7 +5,7 @@ import type { CellContextMenuPayload, TableSlots } from '../contract'
 import { useCellView } from './use-cell-view'
 import type { ColumnEntry } from '../core/use-columns'
 
-const props = defineProps<{
+defineProps<{
   rows: T[]
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
@@ -14,8 +14,6 @@ const props = defineProps<{
   loading: boolean
   hasSubtable: boolean
   hasRightPanel: boolean
-  truncate: boolean
-  truncateMaxLength: number
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
   toggle: (row: T, index: number) => void
@@ -30,8 +28,6 @@ const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
 const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
-  truncate: () => props.truncate,
-  maxLength: () => props.truncateMaxLength,
   slots: rawSlots,
   onContextMenu: payload => emit('cellContextMenu', payload)
 })
@@ -105,14 +101,11 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
           </td>
           <td
             v-else-if="entry.column.html"
-            v-bind="cellAttrs(row, entry, i, cellText(row, entry.column).title)"
-            v-html="cellText(row, entry.column).text"
+            v-bind="cellAttrs(row, entry, i)"
+            v-html="cellText(row, entry.column)"
           />
-          <td
-            v-else
-            v-bind="cellAttrs(row, entry, i, cellText(row, entry.column).title)"
-          >
-            {{ cellText(row, entry.column).text }}
+          <td v-else v-bind="cellAttrs(row, entry, i)">
+            {{ cellText(row, entry.column) }}
           </td>
         </template>
       </tr>

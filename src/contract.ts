@@ -156,10 +156,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
-  /** Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. */
-  truncate?: boolean
-  /** Characters kept when `truncate` is on. Defaults to `150`. */
-  truncateMaxLength?: number
 }
 
 /** Payload of the `cellContextMenu` event. */

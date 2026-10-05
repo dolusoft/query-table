@@ -120,7 +120,7 @@ A column with `hide` is neither in the header nor in the body or footer. Its rul
 
 ### C-30 Cell text
 
-Cell text is cut to `truncateMaxLength` characters with `...` when `truncate` is on, and the full text goes into `title`. A column with `html` renders its text as HTML and is never cut, so markup is not broken mid-tag and `title` never holds markup. The table does not sanitize that markup: pass trusted HTML, or sanitize it before it reaches `rows`. Values are read from dotted paths.
+Cell text is the value as a string, whole: the table never cuts it and sets no `title`. A missing value draws nothing. A column with `html` renders its text as HTML. The table does not sanitize that markup: pass trusted HTML, or sanitize it before it reaches `rows`. Values are read from dotted paths.
 
 ### C-31 No styling
 

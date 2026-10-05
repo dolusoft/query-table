@@ -33,9 +33,7 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   pagination: true,
   hasSubtable: false,
   hasRightPanel: false,
-  rowKey: undefined,
-  truncate: true,
-  truncateMaxLength: 150
+  rowKey: undefined
 })
 
 const emit = defineEmits<TableEmits<T>>()
@@ -144,8 +142,6 @@ defineExpose(exposed)
           :loading="loading"
           :has-subtable="hasSubtable"
           :has-right-panel="hasRightPanel"
-          :truncate="truncate"
-          :truncate-max-length="truncateMaxLength"
           :key-of="keyOf"
           :is-expanded="isExpanded"
           :toggle="toggle"
