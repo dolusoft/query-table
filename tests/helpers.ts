@@ -67,6 +67,12 @@ export interface Mounted {
   query: () => TableQuery
   /** What a consumer does from outside: replace the query. */
   setQuery: (query: TableQuery) => Promise<void>
+  /**
+   * What a slow consumer does: apply an earlier emitted query later, in a tick
+   * of its own (use with `apply: false`; the default applies in the tick of
+   * the emit).
+   */
+  applyEmitted: (index: number) => Promise<void>
 }
 
 export interface MountOptions {
@@ -110,7 +116,11 @@ export const mountTable = (
     wrapper,
     events,
     query: () => (wrapper.props() as { query: TableQuery }).query,
-    setQuery: query => wrapper.setProps({ query })
+    setQuery: query => wrapper.setProps({ query }),
+    applyEmitted: async index => {
+      await nextTick()
+      await wrapper.setProps({ query: events[index][0] })
+    }
   }
 }
 
