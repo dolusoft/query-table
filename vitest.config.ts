@@ -50,7 +50,14 @@ export default defineConfig(({ mode }) => {
           resolve: {
             alias: { '@': resolve(import.meta.dirname, 'tests/browser') }
           },
-          devtools: inspect,
+          // Inspect mode only: no one-time code to paste for a local session.
+          // The dev server stays bound to loopback.
+          devtools: inspect ? { clientAuth: false } : false,
+          // Vitest adds its `ssr` and `__vitest__` environments ahead of the
+          // `client` one, and the Vite DevTools UI reads the first environment
+          // in the list. Without this line its module graph shows "0 of 0"
+          // while the browser tests run in `client`.
+          environments: { client: {} },
           test: {
             name: 'browser',
             include: ['tests/browser/**/*.browser.spec.ts'],
