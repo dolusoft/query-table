@@ -88,3 +88,8 @@ sw.*
 
 # Vim swap files
 *.swp
+
+# Browser test screenshots (inspection only, never baselines)
+tests/browser/__screenshots__/
+# Vitest browser-mode failure screenshots and attachments
+.vitest/
