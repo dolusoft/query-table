@@ -14,7 +14,7 @@
   "rtl": false,
   "pointer": false,
   "aliases": {
-    "components": "@/components",
+    "components": "@/ui",
     "utils": "@/lib/utils",
     "ui": "@/ui",
     "lib": "@/lib",

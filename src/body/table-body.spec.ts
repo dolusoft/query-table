@@ -251,6 +251,43 @@ describe('C-28 Context menu', () => {
     expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
   })
 
+  it('emits for the inner cell and then for the outer cell when a table sits in a cell-<field> slot', () => {
+    const inner: CellContextMenuPayload<object>[] = []
+    const m = mountIt(
+      { columns: makeColumns().slice(0, 2) },
+      {
+        slots: {
+          'cell-name': () =>
+            h(VueServerTable as never, {
+              query: makeQuery(),
+              columns: [{ field: 'label', title: 'Label' }],
+              rows: [{ label: 'inner' }],
+              onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+                inner.push(payload)
+            })
+        }
+      }
+    )
+    const cell = m.wrapper.findAll(
+      'td[data-field="name"] td[data-field="label"]'
+    )[1]
+    const event = rightClick(cell.element)
+    expect(event.defaultPrevented).toBe(true)
+    // The inner table answers for its own cell...
+    expect(inner).toHaveLength(1)
+    expect(inner[0].cellValue).toBe('inner')
+    expect(inner[0].column.field).toBe('label')
+    // ...and the outer table answers for the cell that holds it.
+    const outer = m.wrapper.emitted('cellContextMenu') as [
+      CellContextMenuPayload<object>
+    ][]
+    expect(outer).toHaveLength(1)
+    expect(outer[0][0].event).toBe(event)
+    expect(outer[0][0].rowIndex).toBe(1)
+    expect(outer[0][0].column.field).toBe('name')
+    expect(outer[0][0].columnIndex).toBe(1)
+  })
+
   it('columnIndex counts hidden columns, because it indexes columns', () => {
     const columns: Column[] = [
       { field: 'id', hide: true },

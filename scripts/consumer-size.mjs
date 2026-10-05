@@ -109,6 +109,12 @@ if (process.argv.includes('--check')) {
   const budget = JSON.parse(
     readFileSync(join(root, 'scripts', 'consumer-size-budget.json'), 'utf8')
   )
+  if (typeof budget.maxGzipBytes !== 'number') {
+    console.error(
+      '[measure:consumer-size] scripts/consumer-size-budget.json has no numeric `maxGzipBytes`: the check has no budget to compare with.'
+    )
+    process.exit(1)
+  }
   const cost = result.packageCost.gzipBytes
   if (cost > budget.maxGzipBytes) {
     console.error(

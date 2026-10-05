@@ -32,9 +32,13 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
   /**
    * One listener on the `tbody` serves every cell (C-28): a listener per cell
    * would be a new closure per cell on every render. The cell is the nearest
-   * `td` whose row is a direct child of this body, so a table nested in a cell
-   * or in a subtable answers for its own cells. Only a data cell counts: it
-   * carries `data-field`, and its row carries `data-row-index`.
+   * `td` whose row is a direct child of this body. A table nested in a
+   * subtable row: the walk ends on the subtable `td`, which has no
+   * `data-field`, so this body stays quiet and the inner table answers for its
+   * own cells. A table nested in a `cell-<field>` slot: the inner table emits
+   * for its cell, then this body emits for the outer cell that holds it (the
+   * same as a listener on every cell did). Only a data cell counts: it carries
+   * `data-field`, and its row carries `data-row-index`.
    */
   const onContextMenu = (event: MouseEvent) => {
     const body = event.currentTarget as Element
