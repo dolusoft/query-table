@@ -261,6 +261,20 @@ describe('C-30 Cell text', () => {
     expect(m.wrapper.find('td em.x').text()).toBe('hi')
   })
 
+  it('never cuts an html column, so no tag is left open and the title stays plain', () => {
+    const html = `<a href="/x/${'a'.repeat(200)}">link</a><b>bold</b>`
+    const m = mountIt({
+      columns: [{ field: 'name', html: true }],
+      rows: [{ name: html }],
+      truncateMaxLength: 10
+    })
+    const cell = m.wrapper.find('td')
+    expect(cell.element.innerHTML).toBe(html)
+    expect(cell.find('a').text()).toBe('link')
+    expect(cell.find('b').text()).toBe('bold')
+    expect(cell.attributes('title')).toBeUndefined()
+  })
+
   it('escapes the text of other columns', () => {
     const m = mountIt({
       columns: [{ field: 'name' }],
