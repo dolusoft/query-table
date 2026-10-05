@@ -1,8 +1,9 @@
 import process from 'node:process'
 
+import js from '@eslint/js'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import importPlugin from 'eslint-plugin-import-x'
-import prettierPlugin from 'eslint-plugin-prettier'
+import prettierRecommended from 'eslint-plugin-prettier/recommended'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
@@ -47,7 +48,14 @@ export default defineConfig([
   ]),
   {
     files: ['**/*.{js,mjs,ts,vue}'],
-    extends: [pluginVue.configs['flat/base']],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommendedTypeChecked,
+      pluginVue.configs['flat/recommended'],
+      // Last of the shared sets: turns off formatting rules that conflict
+      // with prettier and adds the prettier/prettier rule.
+      prettierRecommended
+    ],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -58,11 +66,9 @@ export default defineConfig([
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      prettier: prettierPlugin,
       'import-x': importPlugin
     },
     rules: {
-      'prettier/prettier': 'error',
       'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
       '@typescript-eslint/consistent-type-imports': [
@@ -91,6 +97,9 @@ export default defineConfig([
       'vue/singleline-html-element-content-newline': 'off',
       'vue/multiline-html-element-content-newline': 'off',
       'vue/no-multiple-template-root': 'off',
+      // A column with `html: true` renders its text as markup by contract
+      // (see contract/rules.md); that is the feature, not an oversight.
+      'vue/no-v-html': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
@@ -114,6 +123,7 @@ export default defineConfig([
     // Plain JavaScript (scripts, eslint.config.js) is outside tsconfig.json,
     // so it gets no type information. It runs in Node.
     files: ['**/*.{js,mjs}'],
+    extends: [tseslint.configs.disableTypeChecked],
     languageOptions: {
       parserOptions: { projectService: false },
       globals: globals.node

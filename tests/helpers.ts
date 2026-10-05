@@ -94,7 +94,10 @@ export const mountTable = (
     )
   )
 
+  // Declared first because the `onUpdate:query` handler below reads it, so
+  // `const` cannot be used.
   let wrapper: VueWrapper
+  // eslint-disable-next-line prefer-const
   wrapper = mount(VueServerTable as unknown as Component, {
     props: {
       columns: makeColumns(),
@@ -110,8 +113,8 @@ export const mountTable = (
       ...props
     },
     attachTo: document.body,
-    slots: slots as never
-  })
+    slots: slots
+  }) as VueWrapper
   return {
     wrapper,
     events,

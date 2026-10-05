@@ -35,7 +35,7 @@ const renderTable = (props: Record<string, unknown>) =>
       filterable: true,
       ...props
     } as never,
-    slots: slots as never
+    slots: slots
   })
 
 const filtered: TableQuery = makeQuery({
@@ -116,7 +116,7 @@ const collect = () => {
 test('C-40 the rendered DOM matches the DOM contract in every state', async () => {
   // A full table: sorted, filtered, with both utility columns, a footer, an
   // expanded row and a column that defines a width.
-  renderTable({
+  await renderTable({
     hasSubtable: true,
     hasRightPanel: true,
     query: filtered,
@@ -134,14 +134,14 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   collect()
   cleanup()
 
-  renderTable({ loading: true, rows: [] })
+  await renderTable({ loading: true, rows: [] })
   await expect
     .element(document.querySelector<HTMLElement>('.bh-loader-row'))
     .toBeInTheDocument()
   collect()
   cleanup()
 
-  renderTable({ rows: [], totalRows: 0 })
+  await renderTable({ rows: [], totalRows: 0 })
   await expect
     .element(document.querySelector<HTMLElement>('.bh-empty-row'))
     .toBeInTheDocument()

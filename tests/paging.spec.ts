@@ -27,10 +27,10 @@ const mountPaged = (
   mounted = mountTable(props, {
     ...options,
     slots: {
-      pagination: ((slot: PaginationSlotProps) => {
+      pagination: (slot: PaginationSlotProps) => {
         box.slot = slot
         return h('i', { class: 'paged' })
-      }) as never,
+      },
       ...options.slots
     }
   })
@@ -184,10 +184,10 @@ describe('C-08 Sort from the filter menu', () => {
       { filterable: true, sortable: true, query: makeQuery({ page: 2 }) },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             menus[menu.column.field] = menu
             return h(menu.trigger)
-          }) as never
+          }
         }
       }
     )
@@ -208,10 +208,10 @@ describe('C-08 Sort from the filter menu when sorting is off', () => {
       { filterable: true, ...props },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             menus[menu.column.field] = menu
             return h(menu.trigger)
-          }) as never
+          }
         }
       }
     )
@@ -338,7 +338,7 @@ describe('C-25 Pagination block', () => {
     expect(block.attributes('data-page-size')).toBe('20')
   })
 
-  it('is not drawn with pagination false, and the slot needs to be given', async () => {
+  it('is not drawn with pagination false, and the slot needs to be given', () => {
     mounted = mountTable({ pagination: false })
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
     mounted.wrapper.unmount()

@@ -159,7 +159,7 @@ describe('C-12 Enter and zero debounce', () => {
     expect(m.events).toHaveLength(1)
   })
 
-  it('applies every keystroke synchronously with filterDebounce 0', async () => {
+  it('applies every keystroke synchronously with filterDebounce 0', () => {
     const m = mountIt({ ...base, filterDebounce: 0 })
     const field = input(m, 'name')
     field.element.dispatchEvent(new Event('input'))
@@ -217,10 +217,10 @@ describe('C-14 Pending filters go first', () => {
       },
       {
         slots: {
-          pagination: ((slot: PaginationSlotProps) => {
+          pagination: (slot: PaginationSlotProps) => {
             box.slot = slot
             return h('i')
-          }) as never
+          }
         }
       }
     )
@@ -259,10 +259,10 @@ describe('C-14 Pending filters go first', () => {
       },
       {
         slots: {
-          pagination: ((p: PaginationSlotProps) => {
+          pagination: (p: PaginationSlotProps) => {
             slot.next = p.nextPage
             return h('i')
-          }) as never
+          }
         }
       }
     )
@@ -350,10 +350,10 @@ describe('C-15 Operator shortcuts', () => {
     const menus: Record<string, FilterMenuSlotProps> = {}
     const m = mountIt(base, {
       slots: {
-        'filter-menu': ((menu: FilterMenuSlotProps) => {
+        'filter-menu': (menu: FilterMenuSlotProps) => {
           menus[menu.column.field] = menu
           return h(menu.trigger)
-        }) as never
+        }
       }
     })
     await type(m, 'name', 'foo,*bar')
@@ -415,7 +415,7 @@ describe('C-16 Value types', () => {
     ).toBe('date')
   })
 
-  it('makes no rule for a text that is not a number', async () => {
+  it('makes no rule for a text that is not a number', () => {
     const m = mountIt({ ...base, columns: [{ field: 'age', type: 'number' }] })
     // a number input rejects such text itself; set the property directly
     const field = input(m, 'age').element as HTMLInputElement
@@ -620,10 +620,10 @@ describe('C-21 Clearing one column', () => {
       },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             menus[menu.column.field] = menu
             return h(menu.trigger)
-          }) as never
+          }
         }
       }
     )
@@ -685,7 +685,7 @@ describe('C-22 Clearing all filters', () => {
     expect((input(m, 'name').element as HTMLInputElement).value).toBe('')
   })
 
-  it('is enabled with rules that came from outside', async () => {
+  it('is enabled with rules that came from outside', () => {
     const m = mountIt({
       ...base,
       query: makeQuery({ filters: [rule('ghost', 'Equal', 1)] })
@@ -704,10 +704,10 @@ describe('C-35 Date filter slot', () => {
       },
       {
         slots: {
-          'filter-datetime': ((slot: FilterDatetimeSlotProps) => {
+          'filter-datetime': (slot: FilterDatetimeSlotProps) => {
             box.slot = slot
             return h('span', { class: 'custom-date' }, String(slot.value))
-          }) as never
+          }
         }
       }
     )
@@ -790,7 +790,7 @@ describe('C-42 Several rules on a column that is not text', () => {
     expect(ageInput(m).readOnly).toBe(false)
   })
 
-  it('is replaced by one rule when the filter-datetime slot edits a date column', async () => {
+  it('is replaced by one rule when the filter-datetime slot edits a date column', () => {
     const box: { slot: FilterDatetimeSlotProps | null } = { slot: null }
     const rules = [
       rule('joined', 'GreaterThan', '2024-01-01'),
@@ -804,10 +804,10 @@ describe('C-42 Several rules on a column that is not text', () => {
       },
       {
         slots: {
-          'filter-datetime': ((slot: FilterDatetimeSlotProps) => {
+          'filter-datetime': (slot: FilterDatetimeSlotProps) => {
             box.slot = slot
             return h('span', { class: 'custom-date' }, String(slot.value))
-          }) as never
+          }
         }
       }
     )
@@ -834,7 +834,7 @@ describe('C-42 Several rules on a column that is not text', () => {
     expect(ageInput(m).readOnly).toBe(false)
   })
 
-  it('disables a bool select that holds several rules', async () => {
+  it('disables a bool select that holds several rules', () => {
     mountIt({
       ...base,
       columns: [{ field: 'active', type: 'bool' }],

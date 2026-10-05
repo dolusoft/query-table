@@ -80,8 +80,8 @@ describe('C-26 Row expansion', () => {
       { hasSubtable: true, rowKey: 'id' },
       {
         slots: {
-          subtable: ((p: { row: { name: string } }) =>
-            h(Probe, { name: p.row.name })) as never
+          subtable: (p: { row: { name: string } }) =>
+            h(Probe, { name: p.row.name })
         }
       }
     )
@@ -115,7 +115,7 @@ describe('C-26 Row expansion', () => {
     expect(m.wrapper.find('.detail').exists()).toBe(false)
   })
 
-  it('seeds the state from a row with isExpanded set', async () => {
+  it('seeds the state from a row with isExpanded set', () => {
     const rows = makeRows().map((row, i) => ({ ...row, isExpanded: i === 3 }))
     const m = mountIt({ hasSubtable: true, rows }, { slots: subtable })
     expect(m.wrapper.find('.detail').text()).toBe('Dave')
@@ -177,7 +177,7 @@ describe('C-27 Cell slots', () => {
 })
 
 describe('C-28 Context menu', () => {
-  it('emits cellContextMenu with the payload and suppresses the browser menu', async () => {
+  it('emits cellContextMenu with the payload and suppresses the browser menu', () => {
     const m = mountIt()
     const cell = m.wrapper.find(
       'tbody tr[data-row-index="2"] td[data-field="age"]'
@@ -254,7 +254,7 @@ describe('C-30 Cell text', () => {
     expect(second.attributes('title')).toBeUndefined()
   })
 
-  it('draws the text whole with truncate off', async () => {
+  it('draws the text whole with truncate off', () => {
     const long = 'x'.repeat(300)
     const m = mountIt({
       columns: [{ field: 'name' }],
@@ -321,7 +321,7 @@ describe('C-31 No styling', () => {
       ],
       footerRows: [{ cells: [{ field: 'id', text: 1 }] }]
     })
-    const styled = m.wrapper.element.querySelectorAll('[style]')
+    const styled = (m.wrapper.element as Element).querySelectorAll('[style]')
     expect(styled).toHaveLength(1)
     expect(styled[0].tagName).toBe('TH')
     expect(styled[0].getAttribute('data-field')).toBe('id')
@@ -424,8 +424,7 @@ describe('C-34 Filter menu slot', () => {
       { filterable: true },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) =>
-            h(menu.trigger)) as never
+          'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger)
         }
       }
     )
@@ -450,10 +449,10 @@ describe('C-34 Filter menu slot', () => {
       },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             seen.push(menu)
             return h(menu.trigger, { 'data-extra': 'yes', class: 'extra' })
-          }) as never
+          }
         }
       }
     )
@@ -479,8 +478,7 @@ describe('C-34 Filter menu slot', () => {
       { filterable: true },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) =>
-            h(menu.trigger)) as never
+          'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger)
         }
       }
     )
@@ -508,10 +506,10 @@ describe('C-34 Filter menu slot', () => {
       { filterable: true },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             seen.push(menu)
             return h(menu.trigger)
-          }) as never
+          }
         }
       }
     )
@@ -587,7 +585,7 @@ describe('C-38 Loader and empty slots', () => {
     expect(m.wrapper.find('.bh-empty-row .none').exists()).toBe(true)
   })
 
-  it('shows neither with rows present, and keeps the rows while loading', async () => {
+  it('shows neither with rows present, and keeps the rows while loading', () => {
     const m = mountIt({ loading: true }, { slots })
     expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
     expect(m.wrapper.findAll('tbody tr[data-row-index]')).toHaveLength(5)
