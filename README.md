@@ -47,6 +47,21 @@ watchEffect(async () => {
 
 The table draws every cell value in full and never cuts it. To shorten long text, style the cells with your own CSS (`text-overflow: ellipsis` with a fixed width, or `line-clamp`), or render the cell yourself with a `cell-<field>` slot.
 
+## Large tables
+
+The library ships no CSS, so the layout algorithm of the `<table>` is yours. With the browser default, `table-layout: auto`, every column width is worked out from all rows, and the browser lays the whole table out again whenever anything inside it changes, even a single character typed into a filter input. On a table with thousands of rows on one page that shows as a freeze after each keystroke.
+
+For large tables set `table-layout: fixed` and give every column a `width` (`Column.width`, which the table writes as an inline `width` on the `th`):
+
+```css
+.bh-table {
+  table-layout: fixed;
+  width: 100%;
+}
+```
+
+Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout after a filter input changed took 82-152 ms with `auto` and 31 ms with `fixed`. Without widths a `fixed` table splits the width evenly, so set them. Small tables, a few dozen rows, do not need any of this.
+
 ## Row identity
 
 Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes.
