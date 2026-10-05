@@ -33,4 +33,18 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm knip
       - run: pnpm test:coverage
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # Downloads Chromium only on a cache miss; system libraries are always
+      # installed because the runner image does not keep them between jobs.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:browser
       - run: pnpm check:package
