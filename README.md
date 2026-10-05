@@ -7,7 +7,7 @@ The table ships no CSS. It renders plain markup with a small, stable set of `bh-
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/vue-server-table/releases/download/v2.2.5/dolusoft-vue-server-table-2.2.5.tgz
+pnpm add https://github.com/dolusoft/vue-server-table/releases/download/v2.2.6/dolusoft-vue-server-table-2.2.6.tgz
 ```
 
 Peer dependency: `vue` 3.5+.

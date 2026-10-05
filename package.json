@@ -1,6 +1,6 @@
 {
   "name": "@dolusoft/vue-server-table",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter and paging changes.",
   "private": false,
   "type": "module",
