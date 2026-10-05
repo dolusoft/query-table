@@ -47,3 +47,5 @@ export const useSort = (options: SortOptions) => {
 
   return { isSortable, sortOf, sortBy }
 }
+
+export type SortActions = ReturnType<typeof useSort>

@@ -4,7 +4,6 @@ import { useSlots } from 'vue'
 import TableBody from './body/table-body.vue'
 import TableFooter from './body/table-footer.vue'
 import { useExpansion } from './body/use-expansion'
-import ColumnHeader from './components/column-header.vue'
 import type {
   CellSlotProps,
   TableEmits,
@@ -12,9 +11,11 @@ import type {
   TableSlots,
   VueServerTableExpose
 } from './contract'
+import { provideTableContext } from './core/table-context'
 import { useColumns } from './core/use-columns'
 import { useQueryEmitter } from './core/use-query-emitter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
+import TableHeader from './header/table-header.vue'
 import TablePagination from './pagination/table-pagination.vue'
 import { usePagination } from './pagination/use-pagination'
 import { useSort } from './sort/use-sort'
@@ -75,7 +76,7 @@ const { paginationProps, showPagination } = usePagination({
 // Sorting
 // ---------------------------------------------------------------------------
 
-const { sortBy } = useSort({
+const sort = useSort({
   sortable: () => props.sortable,
   query: () => props.query,
   base,
@@ -84,6 +85,8 @@ const { sortBy } = useSort({
     drafts.flushAll()
   }
 })
+
+provideTableContext({ drafts, sort })
 
 // ---------------------------------------------------------------------------
 // Columns and rows
@@ -138,16 +141,12 @@ defineExpose(exposed)
     <div class="bh-table-responsive">
       <table class="bh-table">
         <thead>
-          <column-header
+          <table-header
             :columns="visibleColumns"
             :query="query"
-            :sortable="sortable"
             :filterable="filterable"
             :has-subtable="hasSubtable"
             :has-right-panel="hasRightPanel"
-            :drafts="drafts"
-            @sort="field => sortBy(field)"
-            @set-sort="sortBy"
           >
             <template v-if="rawSlots['filter-datetime']" #filter-datetime="p">
               <slot name="filter-datetime" v-bind="p" />
@@ -155,7 +154,7 @@ defineExpose(exposed)
             <template v-if="rawSlots['filter-menu']" #filter-menu="p">
               <slot name="filter-menu" v-bind="p" />
             </template>
-          </column-header>
+          </table-header>
         </thead>
         <table-body
           :rows="rows"
