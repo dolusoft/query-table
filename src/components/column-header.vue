@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
+import { type Component, computed, defineComponent, h } from 'vue'
 
 import IconFilter from './icon-filter.vue'
 import type {
@@ -75,7 +75,7 @@ const currentCondition = (column: Column): FilterCondition | null =>
 // does not remount the button on every render. It reads reactive state when it
 // renders, so it still updates: the column is looked up by `field` in the
 // current `columns` on each render, not captured, so a new title shows at once.
-const triggers = new Map<string, ReturnType<typeof defineComponent>>()
+const triggers = new Map<string, Component>()
 const triggerFor = (first: Column) => {
   let trigger = triggers.get(first.field)
   if (!trigger) {

@@ -36,7 +36,11 @@ const update = (next: TableQuery, reason: QueryChangeReason) => {
 </script>
 
 <template>
-  <VueServerTable v-bind="$attrs as unknown as TableProps" :query="current" @update:query="update">
+  <VueServerTable
+    v-bind="$attrs as unknown as TableProps"
+    :query="current"
+    @update:query="update"
+  >
     <template #filter-menu="menu">
       <FilterMenu :menu="menu" />
     </template>
@@ -50,7 +54,9 @@ const update = (next: TableQuery, reason: QueryChangeReason) => {
             class="page-size h-7 rounded-lg border border-input bg-transparent px-2 text-[0.8rem]"
             :value="page.pageSize"
             @change="
-              page.setPageSize(Number(($event.target as HTMLSelectElement).value))
+              page.setPageSize(
+                Number(($event.target as HTMLSelectElement).value)
+              )
             "
           >
             <option v-for="n in page.pageSizeOptions" :key="n" :value="n">

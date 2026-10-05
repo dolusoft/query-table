@@ -96,7 +96,9 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     expect(cells.length).toBeGreaterThanOrEqual(6)
     for (const cell of cells) {
       const outer = cell.getBoundingClientRect()
-      const inner = [...cell.children].map(child => child.getBoundingClientRect())
+      const inner = [...cell.children].map(child =>
+        child.getBoundingClientRect()
+      )
       if (inner.length === 0) {
         continue
       }
@@ -125,7 +127,8 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     await userEvent.click(el('.bh-expand'))
     const styled = [...el('.bh-datatable').querySelectorAll('[style]')].filter(
       // The filter popover and the shadcn controls are the consumer's.
-      node => !node.closest('[data-slot]') && node.getAttribute('data-slot') === null
+      node =>
+        !node.closest('[data-slot]') && node.getAttribute('data-slot') === null
     )
     expect(styled.map(node => node.tagName)).toEqual(['TH'])
     expect(styled[0].getAttribute('data-field')).toBe('id')
@@ -139,7 +142,12 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       hasSubtable: true,
       hasRightPanel: true,
       footerRows: [
-        { cells: [{ field: 'id', text: 'Total' }, { field: 'age', text: 110 }] }
+        {
+          cells: [
+            { field: 'id', text: 'Total' },
+            { field: 'age', text: 110 }
+          ]
+        }
       ],
       query: {
         page: 2,

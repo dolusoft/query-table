@@ -83,20 +83,24 @@ try {
     const strings = new Map(
       events.filter(e => e.action === 'StringRef').map(e => [e.id, e.content])
     )
-    const REF = '$ref:'
+    const refPrefix = '$ref:'
     const text = value => {
       if (typeof value !== 'string') {
         return null
       }
-      return value.startsWith(REF)
-        ? (strings.get(value.slice(REF.length)) ?? '')
+      return value.startsWith(refPrefix)
+        ? (strings.get(value.slice(refPrefix.length)) ?? '')
         : value
     }
 
     // The source of each module after its last transform.
     const sourceOf = new Map()
     for (const event of events) {
-      if (event.action === 'HookTransformCallEnd' && event.content != null) {
+      if (
+        event.action === 'HookTransformCallEnd' &&
+        event.content !== undefined &&
+        event.content !== null
+      ) {
         sourceOf.set(
           `${event.build_id}|${event.module_id}`,
           text(event.content)
