@@ -31,10 +31,11 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
     ]
   },
   {
-    label: 'Age between 30 and 40 (two rules)',
+    // Rules of one field combine with OR (C-17).
+    label: 'Age under 25 or over 45 (two rules)',
     filters: [
-      { field: 'age', condition: 'GreaterThanOrEqual', value: 30 },
-      { field: 'age', condition: 'LessThanOrEqual', value: 40 }
+      { field: 'age', condition: 'LessThan', value: 25 },
+      { field: 'age', condition: 'GreaterThan', value: 45 }
     ]
   },
   {

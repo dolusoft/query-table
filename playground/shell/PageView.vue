@@ -36,7 +36,9 @@ watch(
   <article class="flex max-w-6xl flex-col gap-8">
     <header>
       <h1 class="text-2xl font-semibold tracking-tight">{{ page.title }}</h1>
-      <p class="pt-1 text-sm text-muted-foreground">{{ page.summary }}</p>
+      <p class="pt-1 text-sm text-muted-foreground">
+        {{ page.summary.replaceAll('`', '') }}
+      </p>
     </header>
     <section aria-label="Example">
       <component :is="example" :key="page.id" />

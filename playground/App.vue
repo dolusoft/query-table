@@ -50,7 +50,8 @@ const themes = ['system', 'light', 'dark'] as const
       </div>
     </aside>
     <main class="min-w-0 flex-1 p-4 md:p-8">
-      <RouterView />
+      <!-- A new page instance per route: each page mounts its own example. -->
+      <RouterView :key="$route.path" />
     </main>
   </div>
 </template>
