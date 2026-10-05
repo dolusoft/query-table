@@ -36,6 +36,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm knip
       - run: pnpm contract:check
+      - run: pnpm playground:build
       - run: pnpm test:coverage
 
       - name: Resolve Playwright version

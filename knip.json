@@ -1,15 +1,21 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/index.ts", "contract/dom.ts", "scripts/*.mjs"],
-  "project": ["src/**/*.{ts,vue}", "contract/**/*.ts", "scripts/*.mjs", "tests/**/*.ts"],
-  "ignore": ["tests/skin/ui/**", "tests/skin/lib/utils.ts"],
-  "ignoreDependencies": [
-    "@vueuse/core",
-    "reka-ui",
-    "shadcn",
-    "tailwindcss",
-    "tw-animate-css"
+  "entry": [
+    "src/index.ts",
+    "contract/dom.ts",
+    "scripts/*.mjs",
+    "playground/examples/*.vue",
+    "playground/skin/gen-skin.ts"
   ],
+  "project": [
+    "src/**/*.{ts,vue}",
+    "contract/**/*.ts",
+    "scripts/*.mjs",
+    "tests/**/*.ts",
+    "playground/**/*.{ts,vue}"
+  ],
+  "ignore": ["playground/skin/ui/**"],
+  "ignoreDependencies": ["shadcn", "tailwindcss", "tw-animate-css"],
   "ignoreIssues": {
     "src/**/*.vue": ["types"]
   }

@@ -19,11 +19,11 @@ export default defineConfig(({ mode }) => {
   // `pnpm measure:renders` (not a test run, so `pnpm test:browser` skips it).
   const browserProject = (name: string, include: string[]) => ({
     extends: true as const,
-    // Tailwind builds the test skin (tests/skin/test-skin.css); the
+    // Tailwind builds the test skin (playground/skin/test-skin.css); the
     // library build never loads it.
     plugins: [tailwindcss(), ...(inspect ? [vueDevTools()] : [])],
     resolve: {
-      alias: { '@': resolve(import.meta.dirname, 'tests/skin') }
+      alias: { '@': resolve(import.meta.dirname, 'playground/skin') }
     },
     // Inspect mode only: no one-time code to paste for a local session.
     // The dev server stays bound to loopback.
@@ -107,8 +107,12 @@ export default defineConfig(({ mode }) => {
             name: 'unit',
             environment: 'happy-dom',
             // Unit specs sit next to the code they test (src/<feature>/);
-            // cross-cutting ones (contract traceability, skin) sit in tests/contract and tests/skin.
-            include: ['src/**/*.spec.ts', 'tests/**/*.spec.ts'],
+            // cross-cutting ones sit in tests/contract (traceability) and playground/ (skin, manifest, fake server).
+            include: [
+              'src/**/*.spec.ts',
+              'tests/**/*.spec.ts',
+              'playground/**/*.spec.ts'
+            ],
             exclude: ['tests/browser/**'],
             css: false
           }
