@@ -29,7 +29,6 @@ const mountWithControls = (onRowClick: (event: MouseEvent) => void) => {
           ],
           rows: [{ pick: 1, name: 'Ada', plain: 'text' }],
           totalRows: 1,
-          pagination: false,
           // Falls through to the root element: clicks on any row bubble here.
           onClick: onRowClick
         },

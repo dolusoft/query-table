@@ -19,7 +19,7 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
-| `pagination` | `boolean \| PaginationOptions` |  | `true` | `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. |
+| `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
@@ -198,8 +198,8 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   filterable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
-  /** `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. */
-  pagination?: boolean | PaginationOptions
+  /** Options of the `pagination` slot. Paging itself is always on. */
+  pagination?: PaginationOptions
   /** Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. */
   hasSubtable?: boolean
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
@@ -452,7 +452,7 @@ Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `em
 
 #### C-25 Pagination block
 
-The `bh-pagination` block is drawn when `pagination` is not `false`, the `pagination` slot is given, and there are rows, a positive `totalRows` or `pagination.alwaysShow`. With `pagination: false` no `page` or `pageSize` update is ever emitted.
+The `bh-pagination` block is drawn when the `pagination` slot is given and there are rows, a positive `totalRows` or `pagination.alwaysShow`. Without the slot nothing is drawn, and the page actions have nobody to call them.
 
 #### C-26 Row expansion
 

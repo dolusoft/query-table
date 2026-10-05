@@ -139,8 +139,8 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   filterable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
-  /** `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. */
-  pagination?: boolean | PaginationOptions
+  /** Options of the `pagination` slot. Paging itself is always on. */
+  pagination?: PaginationOptions
   /** Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. */
   hasSubtable?: boolean
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */

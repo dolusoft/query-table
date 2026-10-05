@@ -204,20 +204,8 @@ describe('C-25 Pagination block', () => {
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
   })
 
-  it('is not drawn with pagination false, and the slot needs to be given', () => {
-    mounted = mountTable({ pagination: false })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
-    mounted.wrapper.unmount()
-
+  it('is not drawn without the pagination slot', () => {
     mounted = mountTable({}, { slots: { pagination: undefined as never } })
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
-  })
-
-  it('emits no page or pageSize update with pagination false', async () => {
-    mounted = mountTable({ pagination: false, sortable: true })
-    await mounted.wrapper
-      .find('th[data-field="name"] .bh-sort')
-      .trigger('click')
-    expect(reasons(mounted.events)).toEqual(['sort'])
   })
 })

@@ -175,7 +175,7 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
     loading?: boolean;
-    pagination?: boolean | PaginationOptions;
+    pagination?: PaginationOptions;
     query: TableQuery;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rows?: T[];

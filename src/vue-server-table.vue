@@ -30,7 +30,6 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   sortable: false,
   filterable: false,
   filterDebounce: 100,
-  pagination: true,
   hasSubtable: false,
   hasRightPanel: false,
   rowKey: undefined

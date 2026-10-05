@@ -100,7 +100,7 @@ Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `em
 
 ### C-25 Pagination block
 
-The `bh-pagination` block is drawn when `pagination` is not `false`, the `pagination` slot is given, and there are rows, a positive `totalRows` or `pagination.alwaysShow`. With `pagination: false` no `page` or `pageSize` update is ever emitted.
+The `bh-pagination` block is drawn when the `pagination` slot is given and there are rows, a positive `totalRows` or `pagination.alwaysShow`. Without the slot nothing is drawn, and the page actions have nobody to call them.
 
 ### C-26 Row expansion
 
