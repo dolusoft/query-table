@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cdp } from 'vitest/browser'
+import { cdp, page, userEvent } from 'vitest/browser'
 
 import { el, renderTable } from '../support/helpers'
 
@@ -42,6 +42,44 @@ describe('C-41 the test skin has a light and a dark theme', () => {
       })
 
     afterEach(() => emulate(''))
+
+    test.each([
+      { os: 'dark', theme: undefined, active: 'dark' },
+      { os: 'light', theme: undefined, active: 'light' },
+      { os: 'light', theme: 'dark', active: 'dark' },
+      { os: 'dark', theme: 'light', active: 'light' }
+    ] as const)(
+      'native pagination and popover follow $active (OS=$os, override=$theme)',
+      async ({ os, theme, active }) => {
+        await emulate(os)
+        const { filterButton } = await renderTable({ theme })
+        const token = (name: string) =>
+          getComputedStyle(document.documentElement)
+            .getPropertyValue(name)
+            .trim()
+        expect(getComputedStyle(el('.page-size')).colorScheme).toBe(active)
+        // An inherited dark scheme alone is insufficient on Windows Chromium:
+        // the select surface must be opaque or its native popup can stay white.
+        await expect
+          .poll(() => background('.page-size'))
+          .toBe(token('--background'))
+        expect(background('body')).toBe(token('--background'))
+        expect(background('.bh-datatable')).toBe(token('--background'))
+        expect(background('.page-size option')).toBe(token('--popover'))
+        expect(getComputedStyle(el('.page-size option')).color).toBe(
+          token('--popover-foreground')
+        )
+        await userEvent.click(filterButton('name'))
+        await expect.element(page.getByText('Filter Condition')).toBeVisible()
+        expect(background('[data-slot="popover-content"]')).toBe(
+          token('--popover')
+        )
+        expect(
+          getComputedStyle(el('[data-slot="popover-content"]')).color
+        ).toBe(token('--popover-foreground'))
+        await userEvent.keyboard('{Escape}')
+      }
+    )
 
     test('prefers-color-scheme dark gives the dark tokens, light the light ones', async () => {
       await emulate('light')
