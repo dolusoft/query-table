@@ -51,6 +51,56 @@ td:has(> .qt-right-panel-button) {
   @apply w-8;
 }
 
+/* Pinned columns: the table writes `data-pinned` and the measured offset
+   `--qt-pin-left`; sticky positioning, the layer and an opaque background
+   are the skin's. The header and footer sit above the body cells. */
+.qt-table [data-pinned] {
+  @apply sticky left-(--qt-pin-left) z-10 bg-background;
+}
+.qt-table thead [data-pinned] {
+  @apply z-20;
+}
+.qt-table tbody tr:hover > [data-pinned],
+.qt-table tr[data-expanded] > [data-pinned],
+.qt-footer [data-pinned] {
+  /* muted/50 over the page background, opaque: what the other cells show */
+  @apply bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))];
+}
+/* Collapsed borders belong to the table, not to the cell: they stay behind
+   when a sticky cell moves and let the scrolled cells show through. With a
+   pinned column the table separates its borders and draws the row lines on
+   the cells. */
+.qt-table:has([data-pinned]) {
+  @apply border-separate border-spacing-0;
+}
+.qt-table:has([data-pinned]) :is(th, td) {
+  @apply border-b;
+}
+.qt-table:has([data-pinned]) tbody:last-child > tr:last-child > td,
+.qt-table:has([data-pinned]) .qt-footer > tr:last-child > td {
+  @apply border-b-0;
+}
+/* A shadow on the last pinned cell shows where the scrolled part starts. */
+.qt-table [data-pinned]:not(:has(+ [data-pinned])) {
+  @apply shadow-[1px_0_0_var(--border),4px_0_6px_-4px_var(--border)];
+}
+
+/* Resize handle: an 8px hit area over the right edge of the header cell,
+   invisible at rest; a 1px line on header hover, the ring on keyboard focus. */
+.qt-table th[data-field]:not([data-pinned]) {
+  @apply relative;
+}
+.qt-resize-handle {
+  @apply absolute inset-y-0 -right-1 z-30 w-2 cursor-col-resize touch-none outline-none select-none after:absolute after:inset-y-2 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-transparent focus-visible:after:bg-ring;
+}
+/* The last handle stays inside the table, or it widens the scroll area. */
+.qt-table th:last-child > .qt-resize-handle {
+  @apply right-0;
+}
+.qt-table th:hover > .qt-resize-handle:not(:focus-visible) {
+  @apply after:bg-border;
+}
+
 /* Sorting */
 .qt-sort {
   @apply inline-flex items-center gap-1 rounded-sm font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;

@@ -32,6 +32,20 @@ export const peopleColumns = (): Column[] => [
   { field: 'joined', title: 'Joined', type: 'date' }
 ]
 
+/**
+ * A list wider than the page: ID and Name pinned to the left, the rest with
+ * widths that make the table scroll sideways.
+ */
+export const wideColumns = (): Column[] => [
+  { field: 'id', title: 'ID', type: 'number', width: '80px', pinned: 'left' },
+  { field: 'name', title: 'Name', width: '160px', pinned: 'left' },
+  { field: 'city', title: 'City', width: '220px' },
+  { field: 'age', title: 'Age', type: 'number', width: '200px' },
+  { field: 'salary', title: 'Salary', type: 'number', width: '220px' },
+  { field: 'joined', title: 'Joined', type: 'date', width: '220px' },
+  { field: 'active', title: 'Active', type: 'bool', width: '200px' }
+]
+
 /** One column of every filter type, and a hidden column. */
 export const typedColumns = (): Column[] => [
   { field: 'id', title: 'ID', type: 'integer', width: '90px' },

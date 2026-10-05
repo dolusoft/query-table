@@ -62,6 +62,56 @@ For large tables set `table-layout: fixed` and give every column a `width` (`Col
 
 Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout after a filter input changed took 82-152 ms with `auto` and 31 ms with `fixed`. Without widths a `fixed` table splits the width evenly, so set them. Small tables, a few dozen rows, do not need any of this.
 
+## Pinned columns
+
+Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their declared order, and when any column is pinned the utility cells (expand, select) are pinned too. The table marks every pinned `th` and `td` with `data-pinned` and writes its left offset, measured from the rendered widths, as the inline custom property `--qt-pin-left`. Making the cells stick is your CSS:
+
+```css
+.qt-table [data-pinned] {
+  position: sticky;
+  left: var(--qt-pin-left);
+  z-index: 1;
+  background: white; /* opaque, so scrolled cells pass underneath */
+}
+.qt-table:has([data-pinned]) {
+  border-collapse: separate; /* collapsed borders leave gaps at sticky edges */
+  border-spacing: 0;
+}
+```
+
+The scroll container is `.qt-table-responsive`; to scroll sideways, let the table take its columns' widths but never less than the container:
+
+```css
+.qt-table {
+  width: max-content;
+  min-width: 100%;
+}
+```
+
+With `width: 100%` the columns squeeze to fit and nothing scrolls; with `max-content` alone a narrow table stops short of the container's right edge.
+
+## Resizing columns
+
+With `resizable` the table draws a `qt-resize-handle` separator at the right edge of every header cell (opt a column out with `resizable: false`). Drag it, or focus it and use the arrow keys (10 px, 50 px with Shift); Enter or a double click fits the column to its widest rendered content, Escape cancels a drag. Widths stay between `minWidth` (default 40) and `maxWidth`. The table keeps no width: it emits `column-resize` with `{ field, width }` and you write it back:
+
+```vue
+<QueryTable :columns="columns" resizable @column-resize="({ field, width }) => (widths[field] = width)" />
+```
+
+where `columns` turns each saved number into `Column.width` (for example `'180px'`). Use `table-layout: fixed` (see Large tables) so the header width is the column width; with the automatic layout the content can override it. Style the handle with your CSS: `position: absolute` over the right edge of a `position: relative` `th`, about 8px wide for the pointer, drawing nothing at rest and a 1px line on header hover and on `:focus-visible`. Together with the sizing above:
+
+```css
+.qt-table {
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
+```
+
+## Header slot
+
+`header-<field>` replaces the title (or sort button) of a header cell. It receives `{ column, sortDirection, sortable, toggleSort }`; call `toggleSort` from your own button to keep sorting.
+
 ## Row identity
 
 Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes. With `row-key` only the rows currently in `rows` keep their expanded state: a row that leaves (another page) and comes back is closed.

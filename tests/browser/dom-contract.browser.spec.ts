@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
 import { h } from 'vue'
 
-import { domAttributes, domClasses, domInlineStyle } from '../../contract/dom'
+import { domAttributes, domClasses, domInlineStyles } from '../../contract/dom'
 import type { FilterMenuSlotProps, TableQuery } from '../../src/contract'
 import QueryTable from '../../src/index'
 import { columns, makeQuery, rows, rule } from '../support/fixtures'
@@ -120,9 +120,10 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
     hasRightPanel: true,
     query: filtered,
     rowKey: 'id',
+    resizable: true,
     columns: [
       { field: 'id', title: 'ID', type: 'number', width: '80px' },
-      { field: 'name', title: 'Name' },
+      { field: 'name', title: 'Name', pinned: 'left' },
       { field: 'age', title: 'Age', type: 'number' },
       { field: 'joined', title: 'Joined', type: 'date' },
       { field: 'active', title: 'Active', type: 'bool', sortable: false }
@@ -130,6 +131,9 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
     footerRows: [{ cells: [{ field: 'id', text: 'Total' }] }]
   })
   await userEvent.click(document.querySelector('.qt-expand')!)
+  // The pin offsets are measured after layout.
+  await new Promise(resolve => requestAnimationFrame(resolve))
+  await new Promise(resolve => requestAnimationFrame(resolve))
   collect()
   cleanup()
 
@@ -161,12 +165,23 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
     ).toBe(true)
   }
 
-  // The one inline style: width on a header cell.
+  // C-31: only the listed inline styles, each on its element, and each one
+  // written by some state.
   expect(seen.styled.length).toBeGreaterThan(0)
+  const writtenStyles = new Set<string>()
   for (const element of seen.styled) {
-    expect(element.matches(domInlineStyle.on)).toBe(true)
     const style = (element as HTMLElement).style
-    expect(style.length).toBe(1)
-    expect(style.item(0)).toBe(domInlineStyle.property)
+    for (let i = 0; i < style.length; i++) {
+      const property = style.item(i)
+      const entry = domInlineStyles.find(e => e.property === property)
+      expect(entry, `inline ${property}`).toBeDefined()
+      expect(element.matches(entry!.on), `${property} on ${entry!.on}`).toBe(
+        true
+      )
+      writtenStyles.add(property)
+    }
   }
+  expect([...writtenStyles].sort()).toEqual(
+    domInlineStyles.map(entry => entry.property).sort()
+  )
 })

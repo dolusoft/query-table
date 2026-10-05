@@ -17,6 +17,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `footerRows` | `FooterRow[]` |  | `[]` | Rows of totals drawn in a `tfoot`. |
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
+| `resizable` | `boolean` |  | `false` | Draw a resize handle in the header cells (needs column `resizable`). Defaults to `false`. The table emits `columnResize`; the consumer writes the width back to `Column.width`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
@@ -31,6 +32,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `update:query` | `[query: TableQuery, reason: QueryChangeReason]` | The user changed the query. `reason` says how. The query is a new object with new `filters` and rule objects; apply it with `v-model:query`. |
 | `rowRightPanelClick` | `[row: T]` | The right-panel button of a row was clicked. |
 | `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
+| `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
 
 ### Slots
 
@@ -42,6 +44,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `subtable` | `SubtableSlotProps<T>` | Content of an expanded row (needs `hasSubtable`). |
 | `empty` | `none` | Shown when there are no rows. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
+| `header-<field>` | `((props: HeaderSlotProps) => unknown)` | Header content of one column: `header-${column.field}`. It replaces the sort button or the title only; the header cell, its filter row and its resize handle stay. Draw a sort control with `toggleSort` if you want one. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
 ### Exposed
@@ -151,10 +154,23 @@ export interface Column {
   /** Defaults to `'string'`. Case-insensitive at runtime. */
   type?: ColumnType
   /**
-   * Header width, any CSS length. It is the only inline style the table ever
-   * writes, and only when this is set.
+   * Header width, any CSS length, written as the header cell's inline
+   * `width`. A resizable column takes the pixel width of a `columnResize`
+   * event back here (`${width}px`): the table keeps no width of its own.
    */
   width?: string
+  /**
+   * `'left'` keeps the column at the start of the table: pinned columns are
+   * drawn first, in their order, and their cells get `data-pinned` and the
+   * `--qt-pin-left` offset. Sticky positioning is the consumer's CSS.
+   */
+  pinned?: 'left'
+  /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
+  resizable?: boolean
+  /** Smallest width a resize gives, in pixels. Defaults to `40`. */
+  minWidth?: number
+  /** Largest width a resize gives, in pixels. No limit by default. */
+  maxWidth?: number
   /** Not rendered in the header or the body; its rules in `query` still apply. */
   hide?: boolean
   /** Show a filter input for this column (needs table `filterable`). Defaults to `true`. */
@@ -193,6 +209,12 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
   filterable?: boolean
+  /**
+   * Draw a resize handle in the header cells (needs column `resizable`).
+   * Defaults to `false`. The table emits `columnResize`; the consumer writes
+   * the width back to `Column.width`.
+   */
+  resizable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -233,6 +255,8 @@ export interface TableLabels {
   filterInput: (column: string) => string
   /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
   filterOptions: (column: string) => string
+  /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
+  resizeColumn: (column: string) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */
@@ -254,6 +278,14 @@ export interface CellContextMenuPayload<T> {
   columnIndex: number
 }
 
+/** Payload of the `columnResize` event. */
+export interface ColumnResizePayload {
+  /** `field` of the resized column. */
+  field: string
+  /** New width in whole pixels, within the column's `minWidth` and `maxWidth`. */
+  width: number
+}
+
 /** Events of the table. */
 export type TableEmits<T> = {
   /**
@@ -268,6 +300,12 @@ export type TableEmits<T> = {
    * suppressed; without one the table emits nothing and keeps it.
    */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
+  /**
+   * The user resized a column: on release of a drag, on an arrow key or on
+   * autofit. Write `width` back to the column (`Column.width`), or the column
+   * keeps its old width.
+   */
+  columnResize: [payload: ColumnResizePayload]
 }
 
 export interface CellSlotProps<T> {
@@ -275,6 +313,16 @@ export interface CellSlotProps<T> {
   rowIndex: number
   column: Column
   cellValue: unknown
+}
+
+export interface HeaderSlotProps {
+  column: Column
+  /** Direction this column is sorted in, `null` when it is not the sorted one. */
+  sortDirection: SortDirection | null
+  /** Sorting by this column is possible (table and column `sortable`). */
+  sortable: boolean
+  /** Sort by this column as a header click does (C-07); does nothing when not `sortable`. */
+  toggleSort: () => void
 }
 
 export interface SubtableSlotProps<T> {
@@ -365,6 +413,12 @@ export interface TableSlots<T> {
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
+  /**
+   * Header content of one column: `header-${column.field}`. It replaces the
+   * sort button or the title only; the header cell, its filter row and its
+   * resize handle stay. Draw a sort control with `toggleSort` if you want one.
+   */
+  [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined
   /** Cell content of one column: `cell-${column.field}`. */
   [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined
 }
@@ -497,7 +551,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-28 Context menu
 
-When the consumer listens to `cellContextMenu`, right-clicking a cell emits it with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: the payload has no cell element. To find it, walk up from `event.target` through `closest('td')` until the `td`'s row is a direct child of this table's `tbody`; a plain `event.target.closest('td')` is wrong when slot content holds a nested table, because it returns the inner `td`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only. A table nested in a `cell-<field>` slot emits for its own cell, and then the outer table emits for the outer cell that holds it (the same event, so two `cellContextMenu` events in all).
+When the consumer listens to `cellContextMenu` (with or without the `.once` modifier, which Vue passes as `onCellContextMenuOnce`), right-clicking a cell emits it with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: the payload has no cell element. To find it, walk up from `event.target` through `closest('td')` until the `td`'s row is a direct child of this table's `tbody`; a plain `event.target.closest('td')` is wrong when slot content holds a nested table, because it returns the inner `td`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only. A table nested in a `cell-<field>` slot emits for its own cell, and then the outer table emits for the outer cell that holds it (the same event, so two `cellContextMenu` events in all).
 
 #### C-29 Hidden columns
 
@@ -509,11 +563,11 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 #### C-31 No styling
 
-The table ships no CSS, takes no styling props and writes no inline style except `width` on the header cell of a column that defines it.
+The table ships no CSS and takes no styling props. It writes two inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), and the custom property `--qt-pin-left` on a pinned cell (C-47). The custom property carries a measured number; `position: sticky`, `z-index` and backgrounds are the consumer's CSS.
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column and on the utility cells while some column is pinned; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -561,11 +615,35 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 #### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and resize handles and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
 
 #### C-45 Header semantics
 
 Every header cell of a column is a `th` with `scope="col"`, and so is the utility cell that holds the clear-all button. A utility header cell with nothing in it (the right panel or subtable column without that button) is an empty `td`: an empty `th` would be a header without a name. A sortable header is a `button` inside the `th` whose text is the column `title`; a column without a `title` gives the button its `field` as `aria-label`, so the button always has a name.
+
+#### C-46 Pinned columns come first
+
+A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned they are pinned too.
+
+#### C-47 Pin offsets
+
+Every cell of a pinned column (header, body, footer) and, while some column is pinned, every utility cell (the footer's cell that spans them included) carries `data-pinned` and the inline custom property `--qt-pin-left`: the sum, in pixels, of the rendered widths of the pinned header cells before it, so the first is `0px`. The widths are measured, not read from `Column.width`. They are measured again, in one batch after layout, whenever a header cell changes size (a resize, a font that loads, a container that narrows) and after the drawn columns change (order, visibility, pinning, utilities). The table measures nothing while no column is pinned or resizable, and stops on unmount. It writes no `position`, `left`, `z-index` or background: with `position: sticky; left: var(--qt-pin-left)` in the consumer's CSS the pinned cells of header, body and footer stay in line while the table scrolls sideways.
+
+#### C-48 Resize handle
+
+With the table's `resizable` and the column's `resizable` not `false`, the header cell ends with a `div.qt-resize-handle`, outside the sort button and the filter row. It is focusable (`tabindex="0"`), `role="separator"` with `aria-orientation="vertical"`, named by `labels.resizeColumn`, and reports the width in pixels: `aria-valuenow` is the rendered width (the preview during a drag), `aria-valuemin` the column's `minWidth` (default 40), `aria-valuemax` its `maxWidth` or, without one, the larger of the width and the table's width. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`.
+
+#### C-49 Dragging a handle
+
+Pressing the primary button on a handle focuses it and captures the pointer. While it moves, the header cell's inline `width` shows the preview, at most once per animation frame; nothing is emitted. Releasing emits one `columnResize` with `field` and the new `width`: whole pixels, clamped to `minWidth` and `maxWidth`. A release at the starting width emits nothing. Escape, or a lost pointer capture, ends the drag without an event and drops the preview. The table keeps no width after the drag: the column shows `Column.width`, so a consumer that does not write the width back sees the column return.
+
+#### C-50 Keyboard and autofit
+
+On a focused handle, ArrowRight and ArrowLeft emit `columnResize` with the rendered width plus or minus 10 pixels, 50 with Shift, clamped as in C-49. Enter and a double click emit the autofit width: the widest rendered content of the column among the header label and its cells in the rows given (not the server's other rows), with the cell's padding and border, rounded up and clamped. A width equal to the rendered one emits nothing. Enter departs from the WAI-ARIA window splitter pattern, where Enter collapses the pane and restores it: a column has no collapsed state to restore (hiding is `Column.hide`, the consumer's), and fitting to content is what a double click on a column edge does in spreadsheets, so Enter is its keyboard equivalent. The table recommends `table-layout: fixed` with a table width (for example `width: max-content; min-width: 100%`): with the automatic layout the browser may draw a column wider than its header width.
+
+#### C-51 Header slot
+
+The `header-<field>` slot replaces the label of one column header: the sort button or the title. It receives `column`, `sortDirection`, `sortable` and `toggleSort`, which sorts as a header click does (C-07) and does nothing when `sortable` is false. The `th` stays with its attributes (`data-sort`, `aria-sort`, `data-pinned`, the width), and so do the filter row and the resize handle. The slot is not drawn inside a `button`, so a control in it is never a nested button.
 
 ## DOM contract
 
@@ -590,6 +668,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-right-panel-button` | `td > button` | Right panel button of a row. |
 | `qt-subtable-row` | `tbody > tr` | Row holding the `subtable` slot of an expanded row. |
 | `qt-empty-row` | `tbody > tr` | Row holding the `empty` slot. |
+| `qt-resize-handle` | `th > div` | Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS. |
 | `qt-footer` | `tfoot` | Totals block. |
 | `qt-pagination` | `div` | Block around the `pagination` slot. |
 
@@ -604,11 +683,17 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-filtered` | `th, .qt-filter-button` | Present when the column has at least one rule. |
 | `data-row-index` | `tbody > tr` | Index of the row in `rows`. The table reads it to tell which row was right-clicked. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
+| `data-pinned` | `th, td` | Present on every cell of a pinned column (header, body, footer) and, when some column is pinned, on the utility cells. The cell also carries `--qt-pin-left`. |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 
 ### Inline style
 
-The only inline style is `width` on `th`: Set from `Column.width`, only when the column defines it.
+These are the only inline styles the table writes. A custom property carries data; positioning, layers and backgrounds stay in your CSS.
+
+| Property | Element | Description |
+| --- | --- | --- |
+| `width` | `th[data-field]` | Set from `Column.width` when the column defines it, and from the drag preview while a resize is under way. |
+| `--qt-pin-left` | `[data-pinned]` | Left offset of a pinned cell in pixels: the measured widths of the pinned header cells before it. Use it as `left: var(--qt-pin-left)` next to your own `position: sticky`. |
 
 ## How the contract is kept
 
