@@ -29,7 +29,12 @@ async function onChange(params) {
 </script>
 
 <template>
-  <VueServerTable :rows="rows" :columns="columns" :total-rows="total" @change="onChange" />
+  <VueServerTable
+    :rows="rows"
+    :columns="columns"
+    :total-rows="total"
+    @change="onChange"
+  />
 </template>
 ```
 
