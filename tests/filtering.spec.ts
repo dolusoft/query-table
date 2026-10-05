@@ -831,3 +831,20 @@ describe('C-42 Several rules on a column that is not text', () => {
     expect(mounted!.wrapper.find('.bh-filter-condition').text()).toContain('(2)')
   })
 })
+
+describe('C-43 A rule the shortcuts cannot say', () => {
+  it('shows an external Equal rule with a star as typed, emits nothing, and reads the text as a shortcut once edited', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({ filters: [rule('name', 'Equal', 'a*')] })
+    })
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('a*')
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
+    // Touching the text, even retyping it, reads `a*` as StartsWith `a`.
+    await type(m, 'name', 'a*')
+    vi.advanceTimersByTime(100)
+    expect(m.events[0][0].filters).toEqual([rule('name', 'StartsWith', 'a')])
+  })
+})
