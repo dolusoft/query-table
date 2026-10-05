@@ -169,7 +169,7 @@ interface Scenario {
 }
 
 const sortButton = (field: string) =>
-  document.querySelector<HTMLElement>(`th[data-field="${field}"] .bh-sort`)
+  document.querySelector<HTMLElement>(`th[data-field="${field}"] .qt-sort`)
 
 const once = async (scenario: Scenario): Promise<Run> => {
   const applied: number[] = []
@@ -257,7 +257,7 @@ const scenarios: Scenario[] = [
     expectedUpdates: 1,
     act: async () => {
       const input = document.querySelector<HTMLInputElement>(
-        'th[data-field="name"] .bh-filter-input'
+        'th[data-field="name"] .qt-filter-input'
       )
       if (!input) {
         throw new Error('no name filter input')

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
@@ -14,8 +14,8 @@ const { query, result } = useFakeServer(createDemoRows(), {
 
 <template>
   <!-- A fixed layout keeps the columns still while rows change. -->
-  <div class="[&_.bh-table]:table-fixed">
-    <VueServerTable
+  <div class="[&_.qt-table]:table-fixed">
+    <QueryTable
       v-model:query="query"
       :columns="columns"
       :rows="result.rows"
@@ -37,6 +37,6 @@ const { query, result } = useFakeServer(createDemoRows(), {
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
@@ -21,7 +21,7 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
 </script>
 
 <template>
-  <VueServerTable
+  <QueryTable
     v-model:query="query"
     :columns="columns"
     :rows="result.rows"
@@ -37,5 +37,5 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
     <template #pagination="page">
       <TablePager :page="page" />
     </template>
-  </VueServerTable>
+  </QueryTable>
 </template>

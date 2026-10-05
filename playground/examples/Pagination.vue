@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 
@@ -22,7 +22,7 @@ const totalRows = computed(() =>
       <input v-model="totalKnown" type="checkbox" />
       The server reports the total
     </label>
-    <VueServerTable
+    <QueryTable
       v-model:query="query"
       :columns="columns"
       :rows="result.rows"
@@ -37,6 +37,6 @@ const totalRows = computed(() =>
           {{ page.pageCount ?? 'unknown' }}
         </p>
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>

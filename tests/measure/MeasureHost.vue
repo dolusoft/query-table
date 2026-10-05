@@ -2,7 +2,7 @@
 import { nextTick, ref } from 'vue'
 
 import type { Column, TableQuery } from '../../src/contract'
-import VueServerTable from '../../src/index'
+import QueryTable from '../../src/index'
 
 // A consumer that behaves like a server-backed page: it owns the query, and
 // every `update:query` answers with the rows a server would send (filtered,
@@ -68,7 +68,7 @@ const update = (next: TableQuery) => {
 </script>
 
 <template>
-  <VueServerTable
+  <QueryTable
     :query="query"
     :columns="columns"
     :rows="rows"
@@ -91,5 +91,5 @@ const update = (next: TableQuery) => {
         Next
       </button>
     </template>
-  </VueServerTable>
+  </QueryTable>
 </template>

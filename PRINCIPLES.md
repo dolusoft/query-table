@@ -1,0 +1,109 @@
+# Principles
+
+These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
+
+The behavior rules (`C-nn`) are in [contract/rules.md](contract/rules.md); the generated contract is [CONTRACT.md](CONTRACT.md).
+
+## P1 The table renders, the consumer fetches
+
+The table draws the rows it is given and reports, through `update:query`, what the user asked for. Fetching, caching, persistence, permissions and page layout belong to the consumer.
+
+Why: server-side data is the premise of the package. Any data logic inside the table becomes a second source of truth next to the server's.
+
+Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in `src/` (`no-restricted-globals`, `no-restricted-properties` in `eslint.config.js`).
+
+## P2 Lasting state is controlled; internal state is short-lived
+
+Lasting state comes in as props: the query, and later column widths and pinning. The table keeps only UI state with a clear lifetime: typed filter text, focus, a drag preview, row expansion. It never writes to its inputs.
+
+Why: two owners of one state drift apart. A consumer restoring a route or a saved view must be able to set everything that matters.
+
+Check: C-01 and C-03; the C-03 test mounts the table with deeply frozen `query`, `columns` and `rows` and drives every action.
+
+## P3 Every emitted update is defined
+
+One user action gives one `update:query` of its own; nothing is emitted on mount; the order of updates and their `reason` are specified. The only case of two updates is a pending filter applied before the action that needs it.
+
+Why: every update is a request to the consumer's server. An extra or reordered update is a wasted or wrong request.
+
+Check: C-02, C-04, C-13 and C-14 and their tests.
+
+## P4 The query is a typed, transport-free protocol
+
+`TableQuery` is plain JSON: numbers, strings, booleans, arrays and objects. It says nothing about HTTP, URLs or a backend, and the table never evaluates it.
+
+Why: the query is the API between the consumer and its backend, not only between the consumer and the table. It must survive a URL, a storage entry or a message unchanged.
+
+Check: the C-03 test that sends every emitted query through a JSON round trip; `pnpm api:check` for the type.
+
+## P5 No CSS, no styling props
+
+The package ships no stylesheet and takes no styling props. The only inline style is `width` on a header cell whose column defines it. A future geometry value (a pinned column's offset) may only be added as a listed `--qt-*` custom property that carries data; positioning, z-index and backgrounds stay in the consumer's CSS.
+
+Why: every product has its own design system. A library that owns any of the look forces overrides.
+
+Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; C-31 asserts the only inline style; `contract/dom.ts` lists the inline style the DOM test allows.
+
+## P6 The DOM is public API
+
+The classes in `contract/dom.ts` (all `qt-*`), its `data-*` attributes and `aria-sort` are the only hooks a skin may select. Each one is rendered by some state of the table.
+
+Why: consumer CSS depends on them. Markup that is not listed is markup nobody promised.
+
+Check: C-40 (`tests/browser/dom-contract.browser.spec.ts`) and C-41 (`playground/skin/skin.spec.ts`).
+
+## P7 Native semantics first, then ARIA; no hardcoded text
+
+The table uses real `table`, `th scope="col"` and `button` elements before ARIA. Every text it writes for people comes from the `labels` prop, with English defaults. A control always has a name: a sort button without a title is named by its field.
+
+Why: products are localised, and accessibility that only works in English is not accessibility.
+
+Check: C-44 (a test fails on a literal `aria-label="` in any `src/**/*.vue`) and C-45; an axe-core scan of the table in light and dark themes (`tests/browser/accessibility.browser.spec.ts`).
+
+## P8 Performance is a budget
+
+The package has a size budget and a render budget. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows.
+
+Why: tables with thousands of rows on a page are a real use. A regression that nobody measures ships.
+
+Check: `pnpm check:size` (`scripts/consumer-size-budget.json`); `pnpm check:renders` (`scripts/render-budget.json`); C-26 for the pruning and C-28 for the single `tbody` listener.
+
+## P9 One small, typed surface
+
+The public surface is `src/contract.ts` and the entry `src/index.ts`, nothing else. Releases are patch versions; a breaking change is decided explicitly before it is made.
+
+Why: a version number only means something when the surface it versions is enumerable.
+
+Check: `pnpm api:check` (`etc/query-table.api.md`) and `pnpm contract:check`.
+
+## P10 Extension order: slot, event, prop, method
+
+A slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`.
+
+Why: slots and events keep the table thin; props and methods grow it.
+
+Check: review, backed by the playground manifest: `playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers.
+
+## P11 No runtime dependencies
+
+`vue` is the only peer dependency and there are no runtime dependencies. The playground and its skin are never part of the package.
+
+Why: every dependency lands in the consumer's bundle and is a supply-chain risk.
+
+Check: `tests/contract/package-manifest.spec.ts` (`dependencies` empty, `vue` the only peer, only `dist` published); `pnpm knip`.
+
+## P12 Rule, test, code and generated docs move together
+
+A behavior change starts as a rule in `contract/rules.md`, gets a test that asserts the behavior, then the code, then the generated `CONTRACT.md` and the playground page. A rule ID in a test name is traceability, not coverage: the test must assert the behavior.
+
+Why: a rule without a test rots, and a hand-edited document lies.
+
+Check: `tests/contract/contract-traceability.spec.ts`, `pnpm contract:check` and `playground/manifest.spec.ts`.
+
+## P13 Page layout is out of scope
+
+Panes, menus, popovers, tooltips and scroll containers belong to the consumer. The table hands out what they need (the `filter-menu` slot, its `trigger`), never draws them.
+
+Why: layout is where products differ most, and a table that draws overlays fights the page it sits in.
+
+Check: review; C-34 states that the table draws no popover and no tooltip.

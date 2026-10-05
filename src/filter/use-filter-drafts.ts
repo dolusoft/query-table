@@ -218,7 +218,11 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
 
   const dirty = () => Object.values(drafts).some(hasContent)
 
+  /** Clear all has something to do: a rule in `query` or typed text (C-22). */
+  const canClearAll = () => options.query().filters.length > 0 || dirty()
+
   return {
+    canClearAll,
     draftOf,
     onInput,
     flushField,

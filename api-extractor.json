@@ -19,7 +19,7 @@
   },
   "apiReport": {
     "enabled": true,
-    "reportFileName": "vue-server-table.api.md",
+    "reportFileName": "query-table.api.md",
     "reportFolder": "<projectFolder>/etc/",
     "reportTempFolder": "<projectFolder>/temp/"
   },

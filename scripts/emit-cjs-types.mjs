@@ -2,17 +2,17 @@
 // Node's ESM and CJS module modes (checked by `attw --profile node16`).
 //
 // 1. vue-tsc writes relative imports the way the sources spell them
-//    (`../core/query`, `./vue-server-table.vue`). Node16 ESM requires
-//    explicit extensions, and TypeScript resolves `./vue-server-table.vue` to
-//    `vue-server-table.d.vue.ts` rather than the emitted
-//    `vue-server-table.vue.d.ts`.
+//    (`../core/query`, `./query-table.vue`). Node16 ESM requires
+//    explicit extensions, and TypeScript resolves `./query-table.vue` to
+//    `query-table.d.vue.ts` rather than the emitted
+//    `query-table.vue.d.ts`.
 //    Every relative specifier therefore gets a `.js` suffix, which TypeScript
 //    maps back to the matching .d.ts.
 // 2. The package is "type": "module", so every .d.ts is read as ESM, which
 //    misdescribes the CJS build ("masquerading as ESM"). TypeScript reads a
 //    declaration as CommonJS only when it ends in .d.cts, so each .d.ts gets a
 //    .d.cts twin whose relative specifiers end in `.cjs`. The CJS bundle uses
-//    named exports (`exports.VueServerTable`, `exports.default`), which the
+//    named exports (`exports.QueryTable`, `exports.default`), which the
 //    twin describes as they are.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

@@ -3,11 +3,11 @@
 // `pnpm measure:consumer-size`; never part of the package.
 import { createApp, h } from 'vue'
 
-import VueServerTable from '@dolusoft/vue-server-table'
+import QueryTable from '@dolusoft/query-table'
 
 createApp({
   render: () =>
-    h(VueServerTable, {
+    h(QueryTable, {
       query: { page: 1, pageSize: 10, sort: null, filters: [] },
       columns: [{ field: 'name', title: 'Name' }],
       rows: [{ name: 'a' }],

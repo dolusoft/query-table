@@ -99,7 +99,7 @@ describe('C-03 Inputs are never mutated', () => {
       { apply: false }
     )
 
-    await m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     await m.wrapper.find('th[data-field="name"] input').setValue('bo')
     vi.advanceTimersByTime(200)
     await m.wrapper.find('.next-page').trigger('click')
@@ -113,12 +113,34 @@ describe('C-03 Inputs are never mutated', () => {
       filters: [{ field: 'age', condition: 'Equal', value: 25 }]
     })
     const m = mountIt({ query, sortable: true }, { apply: false })
-    await m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     const [emitted] = m.events[0]
     expect(emitted).not.toBe(query)
     expect(emitted.filters).not.toBe(query.filters)
     expect(emitted.filters[0]).not.toBe(query.filters[0])
     expect(emitted.filters).toEqual(query.filters)
+  })
+
+  it('emits plain data: every query survives a JSON round trip unchanged', async () => {
+    vi.useFakeTimers()
+    const m = mountIt({
+      sortable: true,
+      filterable: true,
+      columns: [
+        ...makeColumns(),
+        { field: 'active', title: 'Active', type: 'bool' }
+      ]
+    })
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] input').setValue('*bo*,al')
+    await m.wrapper.find('th[data-field="age"] input').setValue('25')
+    await m.wrapper.find('th[data-field="active"] select').setValue('true')
+    vi.advanceTimersByTime(200)
+    await m.wrapper.find('.next-page').trigger('click')
+    expect(m.events.length).toBeGreaterThan(3)
+    for (const [query] of m.events) {
+      expect(JSON.parse(JSON.stringify(query))).toStrictEqual(query)
+    }
   })
 })
 
@@ -136,7 +158,7 @@ describe('C-04 One action, one update', () => {
 
   it('makes one update for one click', async () => {
     const m = mountIt({ sortable: true })
-    await m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     expect(reasons(m.events)).toEqual(['sort'])
   })
 

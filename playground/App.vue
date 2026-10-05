@@ -18,7 +18,7 @@ const themes = ['system', 'light', 'dark'] as const
     <aside
       class="shrink-0 border-b p-4 md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0"
     >
-      <p class="pb-1 text-sm font-semibold">vue-server-table</p>
+      <p class="pb-1 text-sm font-semibold">Query Table</p>
       <p class="pb-4 text-xs text-muted-foreground">Playground</p>
       <nav class="flex flex-wrap gap-1 md:flex-col">
         <RouterLink

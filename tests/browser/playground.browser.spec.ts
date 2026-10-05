@@ -6,11 +6,11 @@ import Overview from '../../playground/examples/Overview.vue'
 import { el } from '../support/helpers'
 
 const rowIds = () =>
-  [...document.querySelectorAll('.bh-table tbody tr')].map(row =>
+  [...document.querySelectorAll('.qt-table tbody tr')].map(row =>
     Number(row.querySelector('td')?.textContent)
   )
 const input = (field: string) =>
-  page.getByCSS(`th[data-field="${field}"] .bh-filter-input`)
+  page.getByCSS(`th[data-field="${field}"] .qt-filter-input`)
 
 test('the overview example serves real pages and sorts the whole dataset', async () => {
   await render(Overview)
@@ -33,16 +33,16 @@ test('the overview example serves real pages and sorts the whole dataset', async
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 4')
   expect(rowIds()).toHaveLength(50)
-  await userEvent.click(page.getByCSS('th[data-field="id"] .bh-sort'))
+  await userEvent.click(page.getByCSS('th[data-field="id"] .qt-sort'))
   expect(rowIds()).toEqual(Array.from({ length: 50 }, (_, i) => i + 1))
-  await userEvent.click(page.getByCSS('th[data-field="id"] .bh-sort'))
+  await userEvent.click(page.getByCSS('th[data-field="id"] .qt-sort'))
   expect(rowIds()).toEqual(Array.from({ length: 50 }, (_, i) => 200 - i))
 })
 
 test('overview filters use emitted shortcuts, update totals, and recover from empty results', async () => {
   await render(Overview)
   const geometry = () =>
-    [...document.querySelectorAll('th[data-field], .bh-filter-input')].map(
+    [...document.querySelectorAll('th[data-field], .qt-filter-input')].map(
       element => {
         const { x, y, width, height } = element.getBoundingClientRect()
         return { x, y, width, height }
@@ -55,11 +55,11 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 2')
   expect(
-    [...document.querySelectorAll('.bh-table tbody tr td:nth-child(2)')].every(
+    [...document.querySelectorAll('.qt-table tbody tr td:nth-child(2)')].every(
       cell => ['Alice', 'Bob'].includes(cell.textContent ?? '')
     )
   ).toBe(true)
-  await userEvent.click(page.getByCSS('th[data-field="age"] .bh-filter-button'))
+  await userEvent.click(page.getByCSS('th[data-field="age"] .qt-filter-button'))
   await userEvent.click(
     page.getByRole('button', { name: 'Greater Than (>)', exact: true })
   )
@@ -69,7 +69,7 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 1')
   expect(rowIds()).toHaveLength(7)
-  expect(el('.bh-table tbody tr td:nth-child(2)').textContent).toBe('Bob')
+  expect(el('.qt-table tbody tr td:nth-child(2)').textContent).toBe('Bob')
   expect(geometry()).toEqual(initialGeometry)
   await userEvent.fill(input('name'), 'zzz')
   await userEvent.keyboard('{Enter}')
