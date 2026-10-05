@@ -54,6 +54,9 @@ jobs:
         timeout-minutes: 5
       - run: pnpm test:browser
         timeout-minutes: 5
+      # Render counts against scripts/render-budget.json (PRINCIPLES.md P8).
+      - run: pnpm check:renders
+        timeout-minutes: 5
       - run: pnpm check:package
       # check:package built dist/; fails when the package cost passes the budget.
       - run: pnpm check:size

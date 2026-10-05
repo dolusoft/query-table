@@ -98,9 +98,6 @@ export default defineConfig([
       'vue/singleline-html-element-content-newline': 'off',
       'vue/multiline-html-element-content-newline': 'off',
       'vue/no-multiple-template-root': 'off',
-      // A column with `html: true` renders its text as markup by contract
-      // (see contract/rules.md); that is the feature, not an oversight.
-      'vue/no-v-html': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
@@ -176,6 +173,37 @@ export default defineConfig([
             }
           ]
         }
+      ],
+      // PRINCIPLES.md P1: the table renders, the consumer fetches and
+      // persists. No network or storage access in the library.
+      'no-restricted-globals': [
+        'error',
+        ...['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource'].map(
+          name => ({
+            name,
+            message: 'The table does not fetch; the consumer does (P1).'
+          })
+        ),
+        ...['localStorage', 'sessionStorage', 'indexedDB'].map(name => ({
+          name,
+          message: 'The table does not persist state; the consumer does (P1).'
+        }))
+      ],
+      'no-restricted-properties': [
+        'error',
+        ...[
+          'fetch',
+          'XMLHttpRequest',
+          'localStorage',
+          'sessionStorage',
+          'indexedDB'
+        ].flatMap(property =>
+          ['window', 'globalThis', 'self'].map(object => ({
+            object,
+            property,
+            message: 'No network or storage access in the library (P1).'
+          }))
+        )
       ]
     }
   }

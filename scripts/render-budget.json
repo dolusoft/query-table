@@ -1,0 +1,9 @@
+{
+  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.7. Raise it only on purpose, in the change that adds the renders.",
+  "scenarios": {
+    "mount": { "queryUpdates": 0, "maxLibraryUpdates": 0 },
+    "filter": { "queryUpdates": 1, "maxLibraryUpdates": 50 },
+    "sort": { "queryUpdates": 2, "maxLibraryUpdates": 18 },
+    "page": { "queryUpdates": 3, "maxLibraryUpdates": 24 }
+  }
+}
