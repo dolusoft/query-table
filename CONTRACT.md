@@ -457,7 +457,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-28 Context menu
 
-Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu.
+Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: take the cell element from `event.target.closest('td')`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only.
 
 #### C-29 Hidden columns
 
@@ -550,11 +550,11 @@ The classes and attributes below are the only hooks a skin can select. The table
 | Attribute | Element | Description |
 | --- | --- | --- |
 | `data-empty` | `.bh-datatable` | Present when there are no rows. |
-| `data-field` | `th, td` | The column `field`, on header, body and footer cells. |
+| `data-field` | `th, td` | The column `field`, on header, body and footer cells. The table reads it on a body cell to tell which column was right-clicked. |
 | `data-sort` | `th` | `asc` or `desc` on the sorted column. |
 | `data-sortable` | `th` | Present when the header can sort. |
 | `data-filtered` | `th, .bh-filter-button` | Present when the column has at least one rule. |
-| `data-row-index` | `tbody > tr` | Index of the row in `rows`. |
+| `data-row-index` | `tbody > tr` | Index of the row in `rows`. The table reads it to tell which row was right-clicked. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 

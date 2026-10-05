@@ -5,7 +5,7 @@ import type { CellContextMenuPayload, TableSlots } from '../contract'
 import { useCellView } from './use-cell-view'
 import type { ColumnEntry } from '../core/use-columns'
 
-defineProps<{
+const props = defineProps<{
   rows: T[]
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
@@ -26,14 +26,17 @@ const emit = defineEmits<{
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
-const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
-  slots: rawSlots,
-  onContextMenu: payload => emit('cellContextMenu', payload)
-})
+const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
+  useCellView<T>({
+    slots: rawSlots,
+    rows: () => props.rows,
+    entries: () => props.entries,
+    onContextMenu: payload => emit('cellContextMenu', payload)
+  })
 </script>
 
 <template>
-  <tbody>
+  <tbody @contextmenu="onContextMenu">
     <template v-for="(row, i) in rows" :key="keyOf(row, i)">
       <tr
         :data-row-index="i"
@@ -86,16 +89,13 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
           </button>
         </td>
         <template v-for="entry in entries" :key="entry.column.field">
-          <td
-            v-if="hasCellSlot(entry.column)"
-            v-bind="cellAttrs(row, entry, i)"
-          >
+          <td v-if="hasCellSlot(entry.column)" v-bind="cellAttrs(entry)">
             <slot
               :name="`cell-${entry.column.field}`"
               v-bind="slotProps(row, entry.column, i)"
             />
           </td>
-          <td v-else v-bind="cellAttrs(row, entry, i)">
+          <td v-else v-bind="cellAttrs(entry)">
             {{ cellText(row, entry.column) }}
           </td>
         </template>

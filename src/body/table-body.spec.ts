@@ -11,6 +11,7 @@ import {
   type Mounted
 } from '../../test-support/mount-table'
 import type { CellContextMenuPayload, Column } from '../contract'
+import VueServerTable from '../index'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -178,6 +179,76 @@ describe('C-28 Context menu', () => {
     expect(payload.cellValue).toBe(40)
     expect(payload.rowIndex).toBe(2)
     expect(payload.columnIndex).toBe(2)
+  })
+
+  const rightClick = (target: Element) => {
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('answers a right click on content inside a cell for that cell', () => {
+    const m = mountIt(
+      { columns: makeColumns().slice(0, 2) },
+      { slots: { 'cell-name': '<b class="inner">{{ params.cellValue }}</b>' } }
+    )
+    const event = rightClick(m.wrapper.findAll('td .inner')[1].element)
+    expect(event.defaultPrevented).toBe(true)
+    const payload = (
+      m.wrapper.emitted('cellContextMenu') as [CellContextMenuPayload<object>][]
+    )[0][0]
+    expect(payload.rowIndex).toBe(1)
+    expect(payload.column.field).toBe('name')
+    expect(payload.cellValue).toBe('alice')
+  })
+
+  it('emits nothing and keeps the browser menu on utility cells, the subtable row and the empty row', async () => {
+    const m = mountIt(
+      { hasSubtable: true, hasRightPanel: true },
+      { slots: { ...subtable, empty: '<i class="none">nothing</i>' } }
+    )
+    await m.wrapper.find('.bh-expand').trigger('click')
+    const targets = [
+      m.wrapper.find('.bh-right-panel-button').element,
+      m.wrapper.find('.bh-expand').element,
+      m.wrapper.find('.bh-subtable-row .detail').element
+    ]
+    for (const target of targets) {
+      expect(rightClick(target).defaultPrevented).toBe(false)
+    }
+    await m.wrapper.setProps({ rows: [] })
+    expect(
+      rightClick(m.wrapper.find('.bh-empty-row .none').element).defaultPrevented
+    ).toBe(false)
+    expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
+  })
+
+  it('leaves the cells of a table nested in a subtable slot to that table', async () => {
+    const inner: CellContextMenuPayload<object>[] = []
+    const m = mountIt(
+      { hasSubtable: true },
+      {
+        slots: {
+          subtable: () =>
+            h(VueServerTable as never, {
+              query: makeQuery(),
+              columns: [{ field: 'name', title: 'Name' }],
+              rows: [{ name: 'inner' }],
+              onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+                inner.push(payload)
+            })
+        }
+      }
+    )
+    await m.wrapper.find('.bh-expand').trigger('click')
+    const cell = m.wrapper.find('.bh-subtable-row td[data-field="name"]')
+    expect(rightClick(cell.element).defaultPrevented).toBe(true)
+    expect(inner).toHaveLength(1)
+    expect(inner[0].cellValue).toBe('inner')
+    expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
   })
 
   it('columnIndex counts hidden columns, because it indexes columns', () => {

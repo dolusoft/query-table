@@ -112,7 +112,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 ### C-28 Context menu
 
-Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu.
+Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: take the cell element from `event.target.closest('td')`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only.
 
 ### C-29 Hidden columns
 

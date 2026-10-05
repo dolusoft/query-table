@@ -107,7 +107,8 @@ export const domAttributes: AttributeEntry[] = [
   {
     name: 'data-field',
     on: 'th, td',
-    description: 'The column `field`, on header, body and footer cells.'
+    description:
+      'The column `field`, on header, body and footer cells. The table reads it on a body cell to tell which column was right-clicked.'
   },
   {
     name: 'data-sort',
@@ -127,7 +128,8 @@ export const domAttributes: AttributeEntry[] = [
   {
     name: 'data-row-index',
     on: 'tbody > tr',
-    description: 'Index of the row in `rows`.'
+    description:
+      'Index of the row in `rows`. The table reads it to tell which row was right-clicked.'
   },
   {
     name: 'data-expanded',
