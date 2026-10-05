@@ -1,0 +1,85 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { describe, expect, it } from 'vitest'
+
+import { domAttributes, domClasses } from '../contract/dom'
+import { buildSkin, skinPath } from './browser/gen-skin'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
+
+/**
+ * The selectors of a stylesheet: the text before each `{` that opens a style
+ * rule. `@apply` lines hold utility names, not selectors, and at-rules
+ * (`@theme`, `@layer`, `@custom-variant`, `@import`) are skipped.
+ */
+const selectorsOf = (css: string): string[] => {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@apply[^;]*;/g, '')
+  const found: string[] = []
+  let prelude = ''
+  for (const char of text) {
+    if (char === '{') {
+      const selector = prelude.trim()
+      if (selector !== '' && !selector.startsWith('@')) {
+        found.push(...selector.split(',').map(part => part.trim()))
+      }
+      prelude = ''
+    } else if (char === '}' || char === ';') {
+      prelude = ''
+    } else {
+      prelude += char
+    }
+  }
+  return found
+}
+
+// The theme the shadcn-vue CLI writes styles the page itself.
+const themeSelectors = new Set([':root', '.dark', '*', 'body'])
+
+const classNames = new Set(domClasses.map(entry => entry.name))
+const attributeNames = new Set(domAttributes.map(entry => entry.name))
+
+describe('C-41 the test skin selects only the DOM contract', () => {
+  const skin = read(skinPath)
+  const selectors = selectorsOf(skin)
+
+  it('has selectors to check', () => {
+    expect(selectors.length).toBeGreaterThan(20)
+    expect(selectors).toContain('.bh-filter-input')
+  })
+
+  it('uses only contract classes and attributes in a selector', () => {
+    const outside: string[] = []
+    for (const selector of selectors) {
+      if (themeSelectors.has(selector)) {
+        continue
+      }
+      for (const match of selector.matchAll(/\.([\w-]+)/g)) {
+        if (!classNames.has(match[1])) {
+          outside.push(`${selector}: class .${match[1]}`)
+        }
+      }
+      for (const match of selector.matchAll(/\[([\w-]+)/g)) {
+        if (!attributeNames.has(match[1])) {
+          outside.push(`${selector}: attribute [${match[1]}]`)
+        }
+      }
+      // An id, or a class-less selector made of anything but plain elements.
+      if (/#[\w-]/.test(selector)) {
+        outside.push(`${selector}: id`)
+      }
+    }
+    expect(outside).toEqual([])
+  })
+
+  it('has no hand-written color: the theme comes from the shadcn-vue CLI output', () => {
+    const mapping = read(join(here, 'browser', 'skin', 'mapping.css'))
+    expect(mapping).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|hsl|oklch)a?\(/i)
+  })
+
+  it('is generated from skin/theme.css and skin/mapping.css', () => {
+    expect(skin).toBe(buildSkin())
+  })
+})

@@ -1,77 +1,123 @@
-import { expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 
-import { renderTable, rows, shot, sleep } from './helpers'
+import { renderTable, rows, rule, shot, sleep } from './helpers'
 
 // Real keystrokes, real timers, real focus. happy-dom's `setValue` writes the
 // whole value in one input event and has no focus model worth testing.
 
-test('typing a word key by key emits once, after the debounce from the last key', async () => {
-  const { filterInput, filterOf, changes, t0 } = await renderTable({
-    filterDebounce: 150
-  })
-  const input = filterInput('name')
-  // Take the time of the last key from the input event itself: the moment
-  // `keyboard()` resolves is later by the driver round trip, which made the
-  // measured gap fall below the debounce on slower machines.
-  let lastKeyAt = 0
-  input.element().addEventListener('input', () => (lastKeyAt = performance.now() - t0))
-  await userEvent.click(input)
-  await userEvent.keyboard('ali')
-  await sleep(100)
-  // Still inside the debounce window: nothing yet.
-  expect(changes).toHaveLength(0)
-  await expect.poll(() => changes.length).toBe(1)
-  await sleep(300)
-  expect(changes).toHaveLength(1)
-  expect(changes[0].at - lastKeyAt).toBeGreaterThanOrEqual(140)
-  expect(changes[0].payload).toMatchObject({
-    change_type: 'filter',
-    current_page: 1
-  })
-  expect(filterOf(changes[0], 'name')).toMatchObject({
-    value: 'ali',
-    condition: 'Contains'
+describe('C-09 typing in a header filter', () => {
+  test('typing a word key by key applies once, after the debounce from the last key', async () => {
+    const { filterInput, updates, t0 } = await renderTable({
+      filterDebounce: 150
+    })
+    const input = filterInput('name')
+    // Take the time of the last key from the input event itself: the moment
+    // `keyboard()` resolves is later by the driver round trip, which made the
+    // measured gap fall below the debounce on slower machines.
+    let lastKeyAt = 0
+    input
+      .element()
+      .addEventListener('input', () => (lastKeyAt = performance.now() - t0))
+    await userEvent.click(input)
+    await userEvent.keyboard('ali')
+    await sleep(100)
+    // Still inside the debounce window: nothing yet.
+    expect(updates).toHaveLength(0)
+    await expect.poll(() => updates.length).toBe(1)
+    await sleep(300)
+    expect(updates).toHaveLength(1)
+    expect(updates[0].at - lastKeyAt).toBeGreaterThanOrEqual(140)
+    expect(updates[0].reason).toBe('filter')
+    expect(updates[0].query.page).toBe(1)
+    expect(updates[0].query.filters).toEqual([rule('name', 'Contains', 'ali')])
   })
 })
 
-test('Enter flushes the pending debounce immediately', async () => {
-  const { filterInput, filterOf, changes, t0 } = await renderTable({
-    filterDebounce: 2000
+describe('C-12 Enter in a header filter', () => {
+  test('flushes the pending debounce immediately', async () => {
+    // Long on purpose: the update can only come from Enter if it arrives
+    // before the debounce could have fired, and that bound has to hold even
+    // when the machine is slow. Nothing below measures a short wall-clock gap.
+    const DEBOUNCE = 3000
+    const { filterInput, updates, t0 } = await renderTable({
+      filterDebounce: DEBOUNCE
+    })
+    // Times of the last key and of Enter come from the events themselves, not
+    // from when the driver call resolves. The capture listener on the document
+    // runs before the table's own handler.
+    let lastKeyAt = 0
+    let enterAt = Number.POSITIVE_INFINITY
+    const input = filterInput('name')
+    input
+      .element()
+      .addEventListener('input', () => (lastKeyAt = performance.now() - t0))
+    document.addEventListener(
+      'keydown',
+      event => {
+        if (event.key === 'Enter') {
+          enterAt = performance.now() - t0
+        }
+      },
+      true
+    )
+    await userEvent.click(input)
+    await userEvent.keyboard('bob')
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => updates.length).toBe(1)
+    // Caused by Enter: after the Enter key, and before the debounce of the
+    // last key was due.
+    expect(updates[0].at).toBeGreaterThanOrEqual(enterAt)
+    expect(updates[0].at - lastKeyAt).toBeLessThan(DEBOUNCE)
+    expect(updates[0].query.filters).toEqual([rule('name', 'Contains', 'bob')])
+    // The flushed timer must not fire a second time: wait until it would have
+    // been due, plus a margin.
+    await sleep(
+      Math.max(0, lastKeyAt + DEBOUNCE + 300 - (performance.now() - t0))
+    )
+    expect(updates).toHaveLength(1)
   })
-  await userEvent.click(filterInput('name'))
-  await userEvent.keyboard('bob')
-  const beforeEnter = performance.now() - t0
-  await userEvent.keyboard('{Enter}')
-  await expect.poll(() => changes.length).toBe(1)
-  expect(changes[0].at - beforeEnter).toBeLessThan(1000)
-  expect(filterOf(changes[0], 'name').value).toBe('bob')
-  // The flushed timer must not fire a second time.
-  await sleep(2200)
-  expect(changes).toHaveLength(1)
 })
 
-test('focus and caret stay in the filter input while the server answers with new rows', async () => {
-  const { screen, filterInput, changes } = await renderTable()
-  const input = filterInput('name')
-  const el = input.element() as HTMLInputElement
-  await userEvent.click(input)
-  await userEvent.keyboard('Na')
-  await expect.poll(() => changes.length).toBe(1)
-  // What a consumer does in its change handler: replace the rows.
-  await screen.rerender({ rows: rows(2), totalRows: 2 })
-  expect(document.activeElement).toBe(el)
-  await userEvent.keyboard('me')
-  expect(el.value).toBe('Name')
-  expect(el.selectionStart).toBe(4)
-  await expect.poll(() => changes.length).toBe(2)
-  await shot('filter-focus-after-rerender')
+describe('C-18 the input while the server answers', () => {
+  test('focus and caret stay in the filter input when new rows arrive', async () => {
+    const { rerender, filterInput, updates } = await renderTable()
+    const input = filterInput('name')
+    const el = input.element() as HTMLInputElement
+    await userEvent.click(input)
+    await userEvent.keyboard('Na')
+    await expect.poll(() => updates.length).toBe(1)
+    // What a consumer does after it applied the query: replace the rows.
+    await rerender({ rows: rows(2), totalRows: 2 })
+    expect(document.activeElement).toBe(el)
+    await userEvent.keyboard('me')
+    expect(el.value).toBe('Name')
+    expect(el.selectionStart).toBe(4)
+    await expect.poll(() => updates.length).toBe(2)
+    await shot('filter-focus-after-rerender')
+  })
+
+  test('a query change from outside rewrites the input', async () => {
+    const { rerender, filterInput } = await renderTable()
+    await rerender({
+      query: {
+        page: 1,
+        pageSize: 10,
+        sort: null,
+        filters: [rule('name', 'StartsWith', 'zed')]
+      }
+    })
+    await expect
+      .poll(() => (filterInput('name').element() as HTMLInputElement).value)
+      .toBe('zed*')
+  })
 })
 
 test('Tab moves focus from one header filter input to the next', async () => {
   const { filterInput } = await renderTable()
   await userEvent.click(filterInput('id'))
-  // id input -> id filter button -> name input
+  // id input -> id filter button -> name sort button -> name input
+  await userEvent.tab()
   await userEvent.tab()
   await userEvent.tab()
   expect(document.activeElement).toBe(filterInput('name').element())

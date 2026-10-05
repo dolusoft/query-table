@@ -1,0 +1,102 @@
+/*
+ * Test skin: maps the table's DOM contract onto shadcn-vue's class strings.
+ * Hand-written, but it only selects what contract/dom.ts lists (rule C-41),
+ * and every value comes from the shadcn-vue components added by the CLI
+ * (Table, Input, Button) through `@apply`; colors come from the theme above.
+ */
+
+.bh-datatable {
+  @apply text-sm text-foreground;
+}
+
+/* Table, TableHeader, TableBody, TableRow, TableHead, TableCell */
+.bh-table-responsive {
+  @apply relative w-full overflow-x-auto;
+}
+.bh-table {
+  @apply w-full caption-bottom text-sm;
+}
+.bh-table thead {
+  @apply [&_tr]:border-b;
+}
+.bh-table tbody {
+  @apply [&_tr:last-child]:border-0;
+}
+.bh-table tr {
+  @apply border-b transition-colors hover:bg-muted/50;
+}
+.bh-table th {
+  @apply h-10 px-2 py-2 text-left align-middle font-medium whitespace-nowrap text-foreground;
+}
+.bh-table td {
+  @apply p-2 align-middle whitespace-nowrap;
+}
+
+/* TableFooter */
+.bh-footer {
+  @apply border-t bg-muted/50 font-medium [&>tr]:last:border-b-0;
+}
+
+/* Utility columns */
+th[data-utility],
+td[data-utility] {
+  @apply w-8;
+}
+
+/* Sorting */
+.bh-sort {
+  @apply inline-flex items-center gap-1 font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;
+}
+.bh-sort-icon {
+  @apply shrink-0 text-muted-foreground/40;
+}
+th[data-sort] .bh-sort-icon {
+  @apply text-foreground;
+}
+
+/* Filter row: Input and Button side by side */
+.bh-filter {
+  @apply mt-1 flex flex-wrap items-center gap-1 font-normal;
+}
+.bh-filter-input {
+  @apply h-8 w-0 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30;
+}
+th[data-filtered] .bh-filter-input {
+  @apply border-foreground/40;
+}
+.bh-filter-button {
+  @apply inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50;
+}
+.bh-filter-button[data-filtered] {
+  @apply bg-muted text-foreground;
+}
+.bh-filter-condition {
+  @apply basis-full text-xs text-muted-foreground;
+}
+
+/* Icon buttons in the utility columns: Button, variant ghost, size icon-xs */
+.bh-clear-all-button,
+.bh-expand,
+.bh-right-panel-button {
+  @apply inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50;
+}
+
+/* Row states */
+tr[data-expanded] {
+  @apply bg-muted/50;
+}
+.bh-subtable-row td {
+  @apply whitespace-normal;
+}
+.bh-empty-row td,
+.bh-loader-row td {
+  @apply h-24 text-center text-muted-foreground;
+}
+.bh-datatable[data-loading] tbody {
+  @apply opacity-60;
+}
+
+/* Pagination block: the consumer's slot content sits inside it */
+.bh-pagination {
+  @apply border-t p-2;
+}
