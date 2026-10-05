@@ -3,7 +3,8 @@
 // table, and the same app without it), both against the built `dist/` through
 // the package `exports`, and writes the difference to
 // node_modules/.cache/measure/consumer-size.json. Run after `pnpm build`
-// (the package script does).
+// (the package script does). `--check` also compares the gzip package cost with
+// scripts/consumer-size-budget.json and exits 1 when it is over.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
@@ -99,5 +100,23 @@ for (const [label, entry] of [
 ]) {
   console.log(
     `${label.padEnd(15)} ${String(entry.bytes).padStart(8)} ${String(entry.gzipBytes).padStart(8)} ${String(entry.brotliBytes).padStart(8)}`
+  )
+}
+
+// `--check` (CI): fail when the package cost, minified + gzip, is over the
+// budget in scripts/consumer-size-budget.json.
+if (process.argv.includes('--check')) {
+  const budget = JSON.parse(
+    readFileSync(join(root, 'scripts', 'consumer-size-budget.json'), 'utf8')
+  )
+  const cost = result.packageCost.gzipBytes
+  if (cost > budget.maxGzipBytes) {
+    console.error(
+      `[measure:consumer-size] package cost ${cost} B gzip is over the budget of ${budget.maxGzipBytes} B (measured ${budget.measuredGzipBytes} B when it was set). Shrink the build, or raise scripts/consumer-size-budget.json on purpose.`
+    )
+    process.exit(1)
+  }
+  console.log(
+    `[measure:consumer-size] within budget: ${cost} B gzip of ${budget.maxGzipBytes} B`
   )
 }
