@@ -36,10 +36,15 @@ const selectorsOf = (css: string): string[] => {
 }
 
 // The theme the shadcn-vue CLI writes styles the page itself.
-const themeSelectors = new Set([':root', '.dark', '*', 'body'])
+const themeSelectors = new Set([':root', '*', 'body'])
 
 const classNames = new Set(domClasses.map(entry => entry.name))
-const attributeNames = new Set(domAttributes.map(entry => entry.name))
+// `data-theme` is the page's switch for the skin's light and dark theme, set
+// by whoever renders the table, never by the table.
+const attributeNames = new Set([
+  ...domAttributes.map(entry => entry.name),
+  'data-theme'
+])
 
 describe('C-41 the test skin selects only the DOM contract', () => {
   const skin = read(skinPath)
@@ -77,6 +82,13 @@ describe('C-41 the test skin selects only the DOM contract', () => {
   it('has no hand-written color: the theme comes from the shadcn-vue CLI output', () => {
     const mapping = read(join(here, 'mapping.css'))
     expect(mapping).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|hsl|oklch)a?\(/i)
+  })
+
+  it('follows the OS theme and lets data-theme on <html> override it', () => {
+    expect(skin).toContain('@media (prefers-color-scheme: dark)')
+    expect(skin).toContain(':root:not([data-theme="light"])')
+    expect(skin).toContain(':root[data-theme="dark"]')
+    expect(skin).not.toMatch(/^\.dark \{/m)
   })
 
   it('is generated from theme.css and mapping.css', () => {

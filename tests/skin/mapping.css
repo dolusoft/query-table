@@ -6,7 +6,7 @@
  */
 
 .bh-datatable {
-  @apply text-sm text-foreground;
+  @apply bg-background text-sm text-foreground;
 }
 
 /* Table, TableHeader, TableBody, TableRow, TableHead, TableCell */
