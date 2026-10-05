@@ -1,13 +1,6 @@
-import { h } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 
-import type {
-  Column,
-  FilterDatetimeSlotProps,
-  FilterMenuSlotProps,
-  FilterRule,
-  PaginationSlotProps
-} from '../src/contract'
 import {
   flush,
   makeColumns,
@@ -16,6 +9,13 @@ import {
   reasons,
   type Mounted
 } from './helpers'
+import type {
+  Column,
+  FilterDatetimeSlotProps,
+  FilterMenuSlotProps,
+  FilterRule,
+  PaginationSlotProps
+} from '../src/contract'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -97,7 +97,10 @@ describe('C-10 Other rules pass through', () => {
     const other = rule('age', 'GreaterThan', 20)
     const hidden = rule('secret', 'Equal', 'x')
     const unknown = rule('ghost', 'NotEqual', 'y')
-    const columns: Column[] = [...makeColumns(), { field: 'secret', hide: true }]
+    const columns: Column[] = [
+      ...makeColumns(),
+      { field: 'secret', hide: true }
+    ]
     const m = mountIt({
       ...base,
       columns,
@@ -180,7 +183,9 @@ describe('C-13 flushPendingFilters', () => {
     await type(m, 'name', 'ali')
     await type(m, 'age', '25')
     expect(m.events).toEqual([])
-    ;(m.wrapper.vm as unknown as { flushPendingFilters: () => void }).flushPendingFilters()
+    ;(
+      m.wrapper.vm as unknown as { flushPendingFilters: () => void }
+    ).flushPendingFilters()
     expect(reasons(m.events)).toEqual(['filter', 'filter'])
     expect(m.events[1][0].filters).toEqual([
       rule('name', 'Contains', 'ali'),
@@ -192,7 +197,9 @@ describe('C-13 flushPendingFilters', () => {
 
   it('does nothing when nothing is pending', () => {
     const m = mountIt(base)
-    ;(m.wrapper.vm as unknown as { flushPendingFilters: () => void }).flushPendingFilters()
+    ;(
+      m.wrapper.vm as unknown as { flushPendingFilters: () => void }
+    ).flushPendingFilters()
     expect(m.events).toEqual([])
   })
 })
@@ -403,9 +410,9 @@ describe('C-16 Value types', () => {
     vi.advanceTimersByTime(100)
     await flush()
     expect(m.query().filters).toEqual([rule('joined', 'Equal', '2024-01-10')])
-    expect(m.wrapper.find('th[data-field="joined"] input').attributes('type')).toBe(
-      'date'
-    )
+    expect(
+      m.wrapper.find('th[data-field="joined"] input').attributes('type')
+    ).toBe('date')
   })
 
   it('makes no rule for a text that is not a number', async () => {
@@ -453,12 +460,12 @@ describe('C-18 The input follows outside changes', () => {
     await flush()
     expect((input(m, 'name').element as HTMLInputElement).value).toBe('foo*')
     expect((input(m, 'age').element as HTMLInputElement).value).toBe('20')
-    expect(m.wrapper.find('th[data-field="name"] .bh-filter-condition').text()).toBe(
-      'Starts With'
-    )
-    expect(m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()).toBe(
-      'Greater Than (>)'
-    )
+    expect(
+      m.wrapper.find('th[data-field="name"] .bh-filter-condition').text()
+    ).toBe('Starts With')
+    expect(
+      m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()
+    ).toBe('Greater Than (>)')
   })
 
   it('writes a plain Contains rule as plain text', async () => {
@@ -577,7 +584,10 @@ describe('C-20 Picking a condition', () => {
 
   it('clears the filter with null', async () => {
     const m = mountIt(
-      { ...base, query: makeQuery({ filters: [rule('name', 'Contains', 'a')] }) },
+      {
+        ...base,
+        query: makeQuery({ filters: [rule('name', 'Contains', 'a')] })
+      },
       { slots }
     )
     menus.name.setCondition(null)
@@ -705,7 +715,9 @@ describe('C-35 Date filter slot', () => {
     expect(m.wrapper.find('input[type="date"]').exists()).toBe(false)
     box.slot!.updateValue('2024-05-01')
     vi.advanceTimersByTime(100)
-    expect(m.events[0][0].filters).toEqual([rule('joined', 'Equal', '2024-05-01')])
+    expect(m.events[0][0].filters).toEqual([
+      rule('joined', 'Equal', '2024-05-01')
+    ])
     await flush()
     expect(m.wrapper.find('.custom-date').text()).toBe('2024-05-01')
   })
@@ -727,9 +739,9 @@ describe('C-42 Several rules on a column that is not text', () => {
     await flush()
     expect(ageInput(m).readOnly).toBe(true)
     expect(ageInput(m).value).toBe('(2)')
-    expect(m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()).toBe(
-      'Greater Than (>) (2)'
-    )
+    expect(
+      m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()
+    ).toBe('Greater Than (>) (2)')
     vi.advanceTimersByTime(1000)
     expect(m.events).toEqual([])
   })
@@ -755,7 +767,11 @@ describe('C-42 Several rules on a column that is not text', () => {
 
   it('is cleared by the clear action of the column', async () => {
     const m = mountIt(
-      { ...base, query: makeQuery({ page: 2, filters: twoRules }), totalRows: 100 },
+      {
+        ...base,
+        query: makeQuery({ page: 2, filters: twoRules }),
+        totalRows: 100
+      },
       { slots: menuSlot }
     )
     menus.age.clear()
@@ -828,7 +844,9 @@ describe('C-42 Several rules on a column that is not text', () => {
     })
     const select = mounted!.wrapper.find('th[data-field="active"] select')
     expect(select.attributes('disabled')).toBeDefined()
-    expect(mounted!.wrapper.find('.bh-filter-condition').text()).toContain('(2)')
+    expect(mounted!.wrapper.find('.bh-filter-condition').text()).toContain(
+      '(2)'
+    )
   })
 })
 

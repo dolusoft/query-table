@@ -93,7 +93,7 @@ export const mountTable = (
       ([, slot]) => slot !== undefined
     )
   )
-  // eslint-disable-next-line prefer-const
+
   let wrapper: VueWrapper
   wrapper = mount(VueServerTable as unknown as Component, {
     props: {

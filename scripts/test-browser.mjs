@@ -94,10 +94,14 @@ const runOnce = () =>
 
 for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   const result = await runOnce()
-  if (result.code === 0 && !result.timedOut) process.exit(0)
+  if (result.code === 0 && !result.timedOut) {
+    process.exit(0)
+  }
 
   const stalled = result.timedOut || result.lostConnection
-  if (!stalled) process.exit(result.code)
+  if (!stalled) {
+    process.exit(result.code)
+  }
 
   const reason = result.timedOut
     ? `no result within ${attemptTimeoutMs / 1000}s`
