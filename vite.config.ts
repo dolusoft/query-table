@@ -28,7 +28,10 @@ export default defineConfig({
       formats: ['es', 'cjs']
     },
     rollupOptions: {
-      external
+      external,
+      // A named and a default export side by side: say so in the CJS bundle
+      // (`exports.default`) instead of letting the bundler guess.
+      output: { exports: 'named' }
     }
   }
 })

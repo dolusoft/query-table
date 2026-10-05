@@ -51,10 +51,12 @@
     "test:browser:headless": "vitest run --project browser --browser.headless",
     "test:browser:inspect": "vitest --project browser --mode inspect --watch",
     "analyze:build": "vite build -c vite.analyze.config.ts",
-    "check:package": "pnpm build && publint && attw --pack . --profile node16",
+    "check:package": "pnpm build && node scripts/check-no-css.mjs && publint && attw --pack . --profile node16",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
-    "contract:check": "node scripts/gen-contract.mjs --check"
+    "contract:check": "node scripts/gen-contract.mjs --check",
+    "api:check": "pnpm build && api-extractor run",
+    "api:update": "pnpm build && api-extractor run --local"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

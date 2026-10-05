@@ -45,7 +45,7 @@ export const deepFreeze = <V>(value: V): V => {
 
 // The paging controls a consumer would put in the `pagination` slot: a page
 // size select and previous/next buttons fed by the slot props.
-export const paginationSlot = `
+const paginationSlot = `
   <select
     class="page-size"
     :value="params.pageSize"

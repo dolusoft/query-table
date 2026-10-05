@@ -1,5 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/components/index.ts", "contract/dom.ts", "scripts/*.mjs"],
+  "project": ["src/**/*.{ts,vue}", "contract/**/*.ts", "scripts/*.mjs", "tests/**/*.ts"],
   "ignoreIssues": {
     "src/components/*.vue": ["types"]
   }
