@@ -35,7 +35,6 @@ export default defineConfig(({ mode }) => {
             environment: 'happy-dom',
             include: ['tests/**/*.spec.ts'],
             exclude: ['tests/browser/**'],
-            setupFiles: ['tests/setup.ts'],
             css: false
           }
         },
