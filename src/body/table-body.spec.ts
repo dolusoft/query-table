@@ -11,7 +11,7 @@ import {
   type Mounted
 } from '../../tests/support/mount-table'
 import type { CellContextMenuPayload, Column } from '../contract'
-import VueServerTable from '../index'
+import QueryTable from '../index'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -27,26 +27,30 @@ afterEach(() => {
 const subtable = { subtable: '<b class="detail">{{ params.row.name }}</b>' }
 
 describe('C-26 Row expansion', () => {
-  const buttons = (m: Mounted) => m.wrapper.findAll('.bh-expand')
+  const buttons = (m: Mounted) => m.wrapper.findAll('.qt-expand')
 
   it('shows the subtable slot under the row and flips data-expanded', async () => {
     const m = mountIt({ hasSubtable: true }, { slots: subtable })
     await buttons(m)[1].trigger('click')
-    expect(m.wrapper.findAll('.bh-subtable-row')).toHaveLength(1)
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(1)
     expect(m.wrapper.find('.detail').text()).toBe('alice')
     expect(
       m.wrapper.find('tr[data-row-index="1"]').attributes('data-expanded')
     ).toBe('')
     expect(buttons(m)[1].attributes('aria-expanded')).toBe('true')
     await buttons(m)[1].trigger('click')
-    expect(m.wrapper.find('.bh-subtable-row').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-subtable-row').exists()).toBe(false)
   })
 
-  it('works for rows that have a truthy id', async () => {
-    const m = mountIt({ hasSubtable: true }, { slots: subtable })
-    expect(makeRows().every(row => row.id > 0)).toBe(true)
+  it('works for every row, with or without an id', async () => {
+    const rows = [{ name: 'no id' }, { id: 0, name: 'zero id' }]
+    const m = mountIt({ hasSubtable: true, rows }, { slots: subtable })
     await buttons(m)[0].trigger('click')
-    expect(m.wrapper.find('.detail').text()).toBe('Charlie')
+    await buttons(m)[1].trigger('click')
+    expect(m.wrapper.findAll('.detail').map(d => d.text())).toEqual([
+      'no id',
+      'zero id'
+    ])
   })
 
   it('keys the state by rowKey, so it follows the row when rows reorder', async () => {
@@ -56,7 +60,7 @@ describe('C-26 Row expansion', () => {
     expect(m.wrapper.find('.detail').text()).toBe('Charlie')
     expect(
       m.wrapper
-        .find('.bh-subtable-row')
+        .find('.qt-subtable-row')
         .element.previousElementSibling?.getAttribute('data-row-index')
     ).toBe('4')
   })
@@ -104,6 +108,15 @@ describe('C-26 Row expansion', () => {
     expect(m.wrapper.find('.detail').text()).toBe('Bob')
   })
 
+  it('keeps only the keys of the supplied rows, so a row that leaves and comes back is closed', async () => {
+    const m = mountIt({ hasSubtable: true, rowKey: 'id' }, { slots: subtable })
+    await buttons(m)[0].trigger('click')
+    await m.wrapper.setProps({ rows: makeRows().slice(1) })
+    expect(m.wrapper.find('.detail').exists()).toBe(false)
+    await m.wrapper.setProps({ rows: makeRows() })
+    expect(m.wrapper.find('.detail').exists()).toBe(false)
+  })
+
   it('resets by index when there is no rowKey and rows change', async () => {
     const m = mountIt({ hasSubtable: true }, { slots: subtable })
     await buttons(m)[0].trigger('click')
@@ -116,22 +129,22 @@ describe('C-26 Row expansion', () => {
     const rows = makeRows().map((row, i) => ({ ...row, isExpanded: i === 3 }))
     const m = mountIt({ hasSubtable: true, rows }, { slots: subtable })
     expect(m.wrapper.find('.detail').text()).toBe('Dave')
-    expect(m.wrapper.findAll('.bh-subtable-row')).toHaveLength(1)
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(1)
   })
 
   it('collapseAll closes every row', async () => {
     const m = mountIt({ hasSubtable: true }, { slots: subtable })
     await buttons(m)[0].trigger('click')
     await buttons(m)[1].trigger('click')
-    expect(m.wrapper.findAll('.bh-subtable-row')).toHaveLength(2)
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(2)
     ;(m.wrapper.vm as unknown as { collapseAll: () => void }).collapseAll()
     await flush()
-    expect(m.wrapper.find('.bh-subtable-row').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-subtable-row').exists()).toBe(false)
   })
 
   it('draws no expand button without hasSubtable', () => {
     const m = mountIt({}, { slots: subtable })
-    expect(m.wrapper.find('.bh-expand').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-expand').exists()).toBe(false)
   })
 })
 
@@ -157,8 +170,25 @@ describe('C-27 Cell slots', () => {
 })
 
 describe('C-28 Context menu', () => {
-  it('emits cellContextMenu with the payload and suppresses the browser menu', () => {
+  // The table answers right clicks only for a consumer that listens.
+  const listen = { onCellContextMenu: () => undefined }
+
+  it('emits nothing and keeps the browser menu when nobody listens', () => {
     const m = mountIt()
+    const cell = m.wrapper.find(
+      'tbody tr[data-row-index="2"] td[data-field="age"]'
+    )
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    cell.element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
+  })
+
+  it('emits cellContextMenu with the payload and suppresses the browser menu', () => {
+    const m = mountIt(listen)
     const cell = m.wrapper.find(
       'tbody tr[data-row-index="2"] td[data-field="age"]'
     )
@@ -192,7 +222,7 @@ describe('C-28 Context menu', () => {
 
   it('answers a right click on content inside a cell for that cell', () => {
     const m = mountIt(
-      { columns: makeColumns().slice(0, 2) },
+      { columns: makeColumns().slice(0, 2), ...listen },
       { slots: { 'cell-name': '<b class="inner">{{ params.cellValue }}</b>' } }
     )
     const event = rightClick(m.wrapper.findAll('td .inner')[1].element)
@@ -210,18 +240,18 @@ describe('C-28 Context menu', () => {
       { hasSubtable: true, hasRightPanel: true },
       { slots: { ...subtable, empty: '<i class="none">nothing</i>' } }
     )
-    await m.wrapper.find('.bh-expand').trigger('click')
+    await m.wrapper.find('.qt-expand').trigger('click')
     const targets = [
-      m.wrapper.find('.bh-right-panel-button').element,
-      m.wrapper.find('.bh-expand').element,
-      m.wrapper.find('.bh-subtable-row .detail').element
+      m.wrapper.find('.qt-right-panel-button').element,
+      m.wrapper.find('.qt-expand').element,
+      m.wrapper.find('.qt-subtable-row .detail').element
     ]
     for (const target of targets) {
       expect(rightClick(target).defaultPrevented).toBe(false)
     }
     await m.wrapper.setProps({ rows: [] })
     expect(
-      rightClick(m.wrapper.find('.bh-empty-row .none').element).defaultPrevented
+      rightClick(m.wrapper.find('.qt-empty-row .none').element).defaultPrevented
     ).toBe(false)
     expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
   })
@@ -233,7 +263,7 @@ describe('C-28 Context menu', () => {
       {
         slots: {
           subtable: () =>
-            h(VueServerTable as never, {
+            h(QueryTable as never, {
               query: makeQuery(),
               columns: [{ field: 'name', title: 'Name' }],
               rows: [{ name: 'inner' }],
@@ -243,8 +273,8 @@ describe('C-28 Context menu', () => {
         }
       }
     )
-    await m.wrapper.find('.bh-expand').trigger('click')
-    const cell = m.wrapper.find('.bh-subtable-row td[data-field="name"]')
+    await m.wrapper.find('.qt-expand').trigger('click')
+    const cell = m.wrapper.find('.qt-subtable-row td[data-field="name"]')
     expect(rightClick(cell.element).defaultPrevented).toBe(true)
     expect(inner).toHaveLength(1)
     expect(inner[0].cellValue).toBe('inner')
@@ -254,11 +284,11 @@ describe('C-28 Context menu', () => {
   it('emits for the inner cell and then for the outer cell when a table sits in a cell-<field> slot', () => {
     const inner: CellContextMenuPayload<object>[] = []
     const m = mountIt(
-      { columns: makeColumns().slice(0, 2) },
+      { columns: makeColumns().slice(0, 2), ...listen },
       {
         slots: {
           'cell-name': () =>
-            h(VueServerTable as never, {
+            h(QueryTable as never, {
               query: makeQuery(),
               columns: [{ field: 'label', title: 'Label' }],
               rows: [{ label: 'inner' }],
@@ -293,7 +323,7 @@ describe('C-28 Context menu', () => {
       { field: 'id', hide: true },
       { field: 'name', title: 'Name' }
     ]
-    const m = mountIt({ columns })
+    const m = mountIt({ columns, ...listen })
     m.wrapper
       .find('td[data-field="name"]')
       .element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
@@ -361,14 +391,14 @@ describe('C-30 Cell text', () => {
 describe('C-36 Right panel', () => {
   it('emits rowRightPanelClick with the row', async () => {
     const m = mountIt({ hasRightPanel: true })
-    await m.wrapper.findAll('.bh-right-panel-button')[3].trigger('click')
+    await m.wrapper.findAll('.qt-right-panel-button')[3].trigger('click')
     const emitted = m.wrapper.emitted('rowRightPanelClick')!
     expect(emitted).toHaveLength(1)
     expect(emitted[0][0]).toBe(propsOf(m).rows[3])
   })
 
   it('draws no button without hasRightPanel', () => {
-    expect(mountIt().wrapper.find('.bh-right-panel-button').exists()).toBe(
+    expect(mountIt().wrapper.find('.qt-right-panel-button').exists()).toBe(
       false
     )
   })
@@ -415,15 +445,15 @@ describe('C-38 Empty slot', () => {
 
   it('shows the empty slot whenever there are no rows, and hides it when rows arrive', async () => {
     const m = mountIt({ rows: [] }, { slots })
-    expect(m.wrapper.find('.bh-empty-row .none').exists()).toBe(true)
+    expect(m.wrapper.find('.qt-empty-row .none').exists()).toBe(true)
     await m.wrapper.setProps({ rows: makeRows() })
-    expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-empty-row').exists()).toBe(false)
     expect(m.wrapper.findAll('tbody tr[data-row-index]')).toHaveLength(5)
   })
 
   it('draws no row for a slot that is not given', () => {
     const m = mountIt({ rows: [] })
-    expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
+    expect(m.wrapper.find('.qt-empty-row').exists()).toBe(false)
   })
 
   it('spans the utility columns too', () => {
@@ -431,6 +461,6 @@ describe('C-38 Empty slot', () => {
       { rows: [], hasSubtable: true, hasRightPanel: true },
       { slots }
     )
-    expect(m.wrapper.find('.bh-empty-row td').attributes('colspan')).toBe('6')
+    expect(m.wrapper.find('.qt-empty-row td').attributes('colspan')).toBe('6')
   })
 })

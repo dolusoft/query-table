@@ -9,6 +9,7 @@ import type {
 } from '../contract'
 import { conditionLabel, filterConditions } from './filter-conditions'
 import { useFilterTrigger } from './use-filter-trigger'
+import { columnName } from '../core/labels'
 import { rulesOf } from '../core/query'
 import { useTableContext } from '../core/table-context'
 
@@ -23,13 +24,16 @@ defineSlots<{
   'filter-menu'?(props: FilterMenuSlotProps): unknown
 }>()
 
-const { drafts, sort } = useTableContext()
+const { drafts, sort, labels } = useTableContext()
+
+const inputName = () => labels().filterInput(columnName(props.column))
 
 const isFiltered = () =>
   rulesOf(props.query.filters, props.column.field).length > 0
 
 const trigger = useFilterTrigger({
   column: () => props.column,
+  labels,
   isFiltered
 })
 
@@ -86,12 +90,12 @@ const pick = (event: Event) => {
 </script>
 
 <template>
-  <div class="bh-filter">
+  <div class="qt-filter">
     <input
       v-if="type === 'string'"
       type="text"
-      class="bh-filter-input"
-      :aria-label="`Filter ${column.title ?? column.field}`"
+      class="qt-filter-input"
+      :aria-label="inputName()"
       :value="drafts.draftOf(column.field).text"
       @input="drafts.onInput(column.field, inputValue($event))"
       @keydown.enter="drafts.flushField(column.field)"
@@ -99,8 +103,8 @@ const pick = (event: Event) => {
     <input
       v-else-if="type === 'number' || type === 'integer'"
       :type="drafts.multiOf(column.field) ? 'text' : 'number'"
-      class="bh-filter-input"
-      :aria-label="`Filter ${column.title ?? column.field}`"
+      class="qt-filter-input"
+      :aria-label="inputName()"
       :value="inputText()"
       :readonly="drafts.multiOf(column.field) > 0"
       @input="drafts.onInput(column.field, inputValue($event))"
@@ -108,15 +112,15 @@ const pick = (event: Event) => {
     />
     <template v-else-if="type === 'bool'">
       <select
-        class="bh-filter-input"
-        :aria-label="`Filter ${column.title ?? column.field}`"
+        class="qt-filter-input"
+        :aria-label="inputName()"
         :value="drafts.draftOf(column.field).text"
         :disabled="drafts.multiOf(column.field) > 0"
         @change="pick($event)"
       >
-        <option value="">All</option>
-        <option value="true">True</option>
-        <option value="false">False</option>
+        <option value="">{{ labels().boolAll }}</option>
+        <option value="true">{{ labels().boolTrue }}</option>
+        <option value="false">{{ labels().boolFalse }}</option>
       </select>
     </template>
     <template v-else>
@@ -128,8 +132,8 @@ const pick = (event: Event) => {
       <input
         v-else
         :type="drafts.multiOf(column.field) ? 'text' : 'date'"
-        class="bh-filter-input"
-        :aria-label="`Filter ${column.title ?? column.field}`"
+        class="qt-filter-input"
+        :aria-label="inputName()"
         :value="inputText()"
         :readonly="drafts.multiOf(column.field) > 0"
         @input="drafts.onInput(column.field, inputValue($event))"
@@ -137,7 +141,7 @@ const pick = (event: Event) => {
       />
     </template>
     <slot v-if="type !== 'bool'" name="filter-menu" v-bind="menuProps()" />
-    <small v-if="labelOf()" class="bh-filter-condition">
+    <small v-if="labelOf()" class="qt-filter-condition">
       {{ labelOf() }}
     </small>
   </div>

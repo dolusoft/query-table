@@ -11,6 +11,8 @@ export interface CellViewOptions<T extends object> {
   rows: () => T[]
   /** The drawn columns, to find the one a context menu event belongs to. */
   entries: () => ColumnEntry[]
+  /** Someone listens to `cellContextMenu`; without one the menu is left alone. */
+  listening: () => boolean
   onContextMenu: (payload: CellContextMenuPayload<T>) => void
 }
 
@@ -41,6 +43,10 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
    * `data-field`, and its row carries `data-row-index`.
    */
   const onContextMenu = (event: MouseEvent) => {
+    // Without a listener the event has no use: keep the browser menu (C-28).
+    if (!options.listening()) {
+      return
+    }
     const body = event.currentTarget as Element
     let cell = (event.target as Element | null)?.closest('td') ?? null
     while (cell && cell.parentElement?.parentElement !== body) {

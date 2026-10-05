@@ -9,7 +9,7 @@ import type {
   TableProps,
   TableQuery
 } from '../../src/contract'
-import VueServerTable from '../../src/index'
+import QueryTable from '../../src/index'
 
 // The consumer around the table in the browser tests: it owns the query
 // (what `v-model:query` does), takes outside changes through the `query`
@@ -54,7 +54,7 @@ const update = (next: TableQuery, reason: QueryChangeReason) => {
 </script>
 
 <template>
-  <VueServerTable
+  <QueryTable
     v-bind="$attrs as unknown as TableProps"
     :query="current"
     @update:query="update"
@@ -66,5 +66,5 @@ const update = (next: TableQuery, reason: QueryChangeReason) => {
     <template #pagination="page">
       <TablePager :page="page" />
     </template>
-  </VueServerTable>
+  </QueryTable>
 </template>

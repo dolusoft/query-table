@@ -74,7 +74,7 @@ describe('C-07 Header sort', () => {
     })
     const m = mounted
     const click = () =>
-      m.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+      m.wrapper.find('th[data-field="name"] .qt-sort').trigger('click')
     await click()
     await click()
     await click()
@@ -92,7 +92,7 @@ describe('C-07 Header sort', () => {
       sortable: true,
       query: makeQuery({ sort: { field: 'name', direction: 'desc' } })
     })
-    await mounted.wrapper.find('th[data-field="age"] .bh-sort').trigger('click')
+    await mounted.wrapper.find('th[data-field="age"] .qt-sort').trigger('click')
     expect(mounted.events[0][0].sort).toEqual({
       field: 'age',
       direction: 'asc'
@@ -101,7 +101,7 @@ describe('C-07 Header sort', () => {
 
   it('draws no sort button when the table or the column is not sortable', () => {
     mounted = mountTable({ sortable: false })
-    expect(mounted.wrapper.find('.bh-sort').exists()).toBe(false)
+    expect(mounted.wrapper.find('.qt-sort').exists()).toBe(false)
     mounted.wrapper.unmount()
 
     mounted = mountTable({
@@ -112,12 +112,12 @@ describe('C-07 Header sort', () => {
       ]
     })
     expect(
-      mounted.wrapper.find('th[data-field="name"] .bh-sort').exists()
+      mounted.wrapper.find('th[data-field="name"] .qt-sort').exists()
     ).toBe(true)
-    expect(mounted.wrapper.find('th[data-field="age"] .bh-sort').exists()).toBe(
+    expect(mounted.wrapper.find('th[data-field="age"] .qt-sort').exists()).toBe(
       false
     )
-    expect(mounted.wrapper.find('th[data-field="age"] .bh-title').text()).toBe(
+    expect(mounted.wrapper.find('th[data-field="age"] .qt-title').text()).toBe(
       'Age'
     )
   })

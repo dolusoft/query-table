@@ -60,7 +60,7 @@ test('C-20 picking a condition with text typed applies it', async () => {
   await expect.poll(() => updates.length).toBe(1)
   expect(updates[0].query.filters).toEqual([rule('name', 'StartsWith', 'foo')])
   await expect
-    .element(page.getByCSS('.bh-filter-condition'))
+    .element(page.getByCSS('.qt-filter-condition'))
     .toHaveTextContent('Starts With')
 })
 
@@ -98,7 +98,7 @@ test('C-34 clicking outside the popover closes it', async () => {
 
 test('C-22 the clear-all button is a plain button with a title, enabled once a filter is active', async () => {
   const { filterInput } = await renderTable({ hasRightPanel: true })
-  const clearAll = page.getByCSS('.bh-clear-all-button')
+  const clearAll = page.getByCSS('.qt-clear-all-button')
   await expect.element(clearAll).toBeDisabled()
   await userEvent.click(filterInput('name'))
   await userEvent.keyboard('x{Enter}')

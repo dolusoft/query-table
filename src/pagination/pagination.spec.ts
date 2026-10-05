@@ -179,11 +179,11 @@ describe('C-24 Rows do not depend on the total', () => {
   it('draws every row whatever totalRows says, and decides emptiness from rows', async () => {
     mounted = mountTable({ totalRows: 0 })
     expect(mounted.wrapper.findAll('tbody tr')).toHaveLength(5)
-    expect(mounted.wrapper.find('.bh-datatable').attributes('data-empty')).toBe(
+    expect(mounted.wrapper.find('.qt-datatable').attributes('data-empty')).toBe(
       undefined
     )
     await mounted.wrapper.setProps({ rows: [], totalRows: 100 })
-    expect(mounted.wrapper.find('.bh-datatable').attributes('data-empty')).toBe(
+    expect(mounted.wrapper.find('.qt-datatable').attributes('data-empty')).toBe(
       ''
     )
   })
@@ -192,20 +192,20 @@ describe('C-24 Rows do not depend on the total', () => {
 describe('C-25 Pagination block', () => {
   it('is drawn with rows, with a positive total, or when alwaysShow is set', async () => {
     mounted = mountTable({ rows: [], totalRows: null })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
+    expect(mounted.wrapper.find('.qt-pagination').exists()).toBe(false)
     await mounted.wrapper.setProps({ totalRows: 12 })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
+    expect(mounted.wrapper.find('.qt-pagination').exists()).toBe(true)
     await mounted.wrapper.setProps({ totalRows: 0, rows: makeRows() })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
+    expect(mounted.wrapper.find('.qt-pagination').exists()).toBe(true)
     await mounted.wrapper.setProps({
       rows: [],
       pagination: { alwaysShow: true }
     })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
+    expect(mounted.wrapper.find('.qt-pagination').exists()).toBe(true)
   })
 
   it('is not drawn without the pagination slot', () => {
     mounted = mountTable({}, { slots: { pagination: undefined as never } })
-    expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
+    expect(mounted.wrapper.find('.qt-pagination').exists()).toBe(false)
   })
 })

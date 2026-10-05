@@ -13,7 +13,7 @@ import { build } from 'vite'
 
 const root = join(import.meta.dirname, '..')
 const outDir = join(root, 'node_modules', '.cache', 'measure')
-if (!existsSync(join(root, 'dist', 'vue-server-table.js'))) {
+if (!existsSync(join(root, 'dist', 'query-table.js'))) {
   console.error(
     '[measure:consumer-size] dist/ is missing: run `pnpm build` first'
   )
@@ -27,7 +27,7 @@ const buildApp = async name => {
     configFile: false,
     logLevel: 'warn',
     // Self-reference by package name resolves through `exports` to dist/.
-    resolve: { alias: { '@dolusoft/vue-server-table': root } },
+    resolve: { alias: { '@dolusoft/query-table': root } },
     build: {
       write: false,
       minify: true,
@@ -50,8 +50,8 @@ const buildApp = async name => {
         /\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?((?:@[^/]+\/)?[^/]+)\//.exec(
           path
         )
-      const source = path.includes('/dist/vue-server-table')
-        ? '@dolusoft/vue-server-table'
+      const source = path.includes('/dist/query-table')
+        ? '@dolusoft/query-table'
         : (dependency?.[1] ?? 'fixture')
       sources[source] = (sources[source] ?? 0) + module.renderedLength
     }

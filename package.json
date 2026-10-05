@@ -1,35 +1,35 @@
 {
-  "name": "@dolusoft/vue-server-table",
-  "version": "2.2.6",
+  "name": "@dolusoft/query-table",
+  "version": "2.2.7",
   "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter and paging changes.",
   "private": false,
   "type": "module",
   "files": [
     "dist"
   ],
-  "main": "./dist/vue-server-table.cjs",
-  "module": "./dist/vue-server-table.js",
+  "main": "./dist/query-table.cjs",
+  "module": "./dist/query-table.js",
   "types": "./dist/types/index.d.cts",
   "exports": {
     ".": {
       "import": {
         "types": "./dist/types/index.d.ts",
-        "default": "./dist/vue-server-table.js"
+        "default": "./dist/query-table.js"
       },
       "require": {
         "types": "./dist/types/index.d.cts",
-        "default": "./dist/vue-server-table.cjs"
+        "default": "./dist/query-table.cjs"
       }
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dolusoft/vue-server-table.git"
+    "url": "git+https://github.com/dolusoft/query-table.git"
   },
   "bugs": {
-    "url": "https://github.com/dolusoft/vue-server-table/issues"
+    "url": "https://github.com/dolusoft/query-table/issues"
   },
-  "homepage": "https://github.com/dolusoft/vue-server-table#readme",
+  "homepage": "https://github.com/dolusoft/query-table#readme",
   "keywords": [
     "vue",
     "vue3",
@@ -53,6 +53,7 @@
     "test:browser:headless": "node scripts/test-browser.mjs --browser.headless",
     "test:browser:inspect": "vitest --project browser --mode inspect --watch",
     "measure:renders": "node scripts/measure-renders.mjs",
+    "check:renders": "node scripts/measure-renders.mjs --check",
     "analyze:build": "vite build -c vite.analyze.config.ts",
     "analyze:build:json": "node scripts/analyze-build.mjs",
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
@@ -78,6 +79,7 @@
     "@vitest/coverage-v8": "5.0.3",
     "@vue/test-utils": "^2.5.1",
     "@vueuse/core": "^15.0.0",
+    "axe-core": "^4.13.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^10.12.0",

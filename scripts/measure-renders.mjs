@@ -8,6 +8,10 @@
 // attached to its result (`task.meta.renders`) from Vitest's JSON report, and
 // writes them as one small file. Headed like the browser tests; HEADLESS=1
 // for no window.
+//
+// `--check` (`pnpm check:renders`, CI) also compares the counts with
+// scripts/render-budget.json and fails when a scenario applies a different
+// number of updates or re-renders the table more often than the budget.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -87,4 +91,39 @@ for (const [name, s] of Object.entries(scenarios)) {
       String(s.timings.scenarioMs).padStart(11)
     ].join(' ')
   )
+}
+
+if (process.argv.includes('--check')) {
+  const budget = JSON.parse(
+    readFileSync(join(import.meta.dirname, 'render-budget.json'), 'utf8')
+  ).scenarios
+  const failures = []
+  for (const name of new Set([
+    ...Object.keys(budget),
+    ...Object.keys(scenarios)
+  ])) {
+    const limit = budget[name]
+    const measured = scenarios[name]
+    if (!limit || !measured) {
+      failures.push(`${name}: in the budget or in the run, not in both`)
+      continue
+    }
+    if (measured.queryUpdates !== limit.queryUpdates) {
+      failures.push(
+        `${name}: ${measured.queryUpdates} query updates, expected ${limit.queryUpdates}`
+      )
+    }
+    if (measured.libraryUpdates > limit.maxLibraryUpdates) {
+      failures.push(
+        `${name}: ${measured.libraryUpdates} library re-renders, budget ${limit.maxLibraryUpdates}`
+      )
+    }
+  }
+  if (failures.length > 0) {
+    console.error(
+      `\n[check:renders] over budget (scripts/render-budget.json):\n  ${failures.join('\n  ')}`
+    )
+    process.exit(1)
+  }
+  console.log('\n[check:renders] every scenario is within the budget')
 }

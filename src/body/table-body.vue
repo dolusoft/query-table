@@ -1,7 +1,11 @@
 <script setup lang="ts" generic="T extends object">
 import { useSlots } from 'vue'
 
-import type { CellContextMenuPayload, TableSlots } from '../contract'
+import type {
+  CellContextMenuPayload,
+  TableLabels,
+  TableSlots
+} from '../contract'
 import { useCellView } from './use-cell-view'
 import type { ColumnEntry } from '../core/use-columns'
 
@@ -16,6 +20,9 @@ const props = defineProps<{
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
   toggle: (row: T, index: number) => void
+  labels: TableLabels
+  /** The consumer listens to `cellContextMenu` (C-28); read at event time. */
+  hasContextMenuListener: () => boolean
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +38,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
     slots: rawSlots,
     rows: () => props.rows,
     entries: () => props.entries,
+    listening: () => props.hasContextMenuListener(),
     onContextMenu: payload => emit('cellContextMenu', payload)
   })
 </script>
@@ -45,8 +53,8 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
         <td v-if="hasRightPanel">
           <button
             type="button"
-            class="bh-right-panel-button"
-            aria-label="Open right panel"
+            class="qt-right-panel-button"
+            :aria-label="labels.openRightPanel"
             @click.stop="emit('rowRightPanelClick', row)"
           >
             <svg
@@ -67,9 +75,9 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
         <td v-if="hasSubtable">
           <button
             type="button"
-            class="bh-expand"
+            class="qt-expand"
             :aria-expanded="isExpanded(row, i)"
-            aria-label="Expand row"
+            :aria-label="labels.expandRow"
             @click="toggle(row, i)"
           >
             <svg
@@ -100,13 +108,13 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
           </td>
         </template>
       </tr>
-      <tr v-if="isExpanded(row, i)" class="bh-subtable-row">
+      <tr v-if="isExpanded(row, i)" class="qt-subtable-row">
         <td :colspan="columnCount">
           <slot name="subtable" :row="row" :row-index="i" />
         </td>
       </tr>
     </template>
-    <tr v-if="rows.length === 0 && slots.empty" class="bh-empty-row">
+    <tr v-if="rows.length === 0 && slots.empty" class="qt-empty-row">
       <td :colspan="columnCount"><slot name="empty" /></td>
     </tr>
   </tbody>

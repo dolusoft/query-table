@@ -12,7 +12,7 @@ setTheme(themeFromUrl())
 // realistic layout and the screenshots are worth looking at.
 
 // The table has few accessible names to hang role locators on; its stable
-// addresses are `th[data-field]` and `bh-*` classes, so tests use CSS.
+// addresses are `th[data-field]` and `qt-*` classes, so tests use CSS.
 declare module 'vitest/browser' {
   interface LocatorSelectors {
     getByCSS(css: string): Locator

@@ -2,11 +2,13 @@
 
 The table is exercised through tests and shown in the playground (`playground/`, `pnpm dev`).
 
+Read [`PRINCIPLES.md`](./PRINCIPLES.md) first: it lists the boundaries of the package and the check behind each one. A change that crosses a principle changes the principle first.
+
 ## Layout
 
 `src/` is organized by feature, and a feature keeps its own unit tests next to the code (`*.spec.ts`; they never reach `dist`).
 
-- `vue-server-table.vue` is the thin shell: it sets up the composables, provides the header context and draws the table. `index.ts` is the package entry, `contract.ts` holds the public types.
+- `query-table.vue` is the thin shell: it sets up the composables, provides the header context and draws the table. `index.ts` is the package entry, `contract.ts` holds the public types.
 - `core/`: the query and the column helpers, `useQueryEmitter` (the only place that emits `update:query`), `useColumns`, and the context (`table-context.ts`) the header parts read.
 - `filter/`, `sort/`, `pagination/`: one folder per feature, with its pure helpers (`filter-draft.ts`, `sort.ts`), its `use-<feature>` composables and its components (`filter-cell.vue`, `sort-button.vue`, `table-pagination.vue`).
 - `header/` and `body/`: the structural parts of the table (`table-header.vue`, `table-body.vue`, `table-footer.vue`) with `use-expansion.ts` and `use-cell-view.ts`.
@@ -30,17 +32,19 @@ Names: a folder is a feature; structural parts carry a `table-` prefix; composab
 - The skin that gives the plain markup a shadcn-vue look lives in `playground/skin/` (`test-skin.css`, `theme.css`, `mapping.css`, `ui/`). The playground and the browser tests use it; it is never shipped. Regenerate it with `node playground/skin/gen-skin.ts` after editing `theme.css` or `mapping.css`; `playground/skin/skin.spec.ts` fails when the generated file is stale or when the skin selects anything outside the DOM contract. `ui/` is shadcn-vue CLI output (`components.json`, alias `@/ui`); add components with `pnpm dlx shadcn-vue@latest add <name>`.
 - The contract has four mechanisms, each checked in CI:
   - `pnpm contract:check` — `CONTRACT.md` and `contract/api.json` are generated from `src/contract.ts`, `contract/rules.md` and `contract/dom.ts` (`pnpm contract:gen`); it fails when either file is stale. The playground's API panels and `playground/manifest.spec.ts` read `contract/api.json`: the spec fails when an API member or a rule has no page.
-  - `pnpm api:check` — api-extractor compares the built `.d.ts` with `etc/vue-server-table.api.md` (`pnpm api:update` accepts a deliberate change).
+  - `pnpm api:check` — api-extractor compares the built `.d.ts` with `etc/query-table.api.md` (`pnpm api:update` accepts a deliberate change).
   - Behavior rules `C-nn` in `contract/rules.md`: each needs a test with the ID in its name; `tests/contract/contract-traceability.spec.ts` fails otherwise.
   - DOM contract: `tests/browser/dom-contract.browser.spec.ts` compares the rendered classes and attributes with `contract/dom.ts`.
 - `pnpm check:package` also fails if any `.css` ends up in `dist/` or the tarball.
+- `tests/contract/package-manifest.spec.ts` fails when `package.json` gains a runtime dependency or a second peer. ESLint fails on network or storage access (`fetch`, `localStorage`, ...) in `src/`.
+- `tests/browser/accessibility.browser.spec.ts` runs an axe-core scan of the table in light and dark themes; any violation fails the browser tests.
 - `pnpm analyze:build` — the library build, written to `node_modules/.cache/analyze-dist` (not `dist/`), with Rolldown devtools output. It then serves Vite DevTools on `http://localhost:9999/__devtools-rolldown/`: modules, chunks, assets, packages and plugins of the build. Stop it with Ctrl+C.
 
 ## Measuring
 
 Three scripts write small JSON files to `node_modules/.cache/measure/` (gitignored), so a person or an agent can read numbers instead of a UI. None of them leaves a server running.
 
-- `pnpm measure:renders` — how many times each component re-renders in four fixed scenarios on a 1000-row dataset: `mount`, `filter` (type `Name 1`, Enter), `sort` (name ascending, then descending) and `page` (100 rows a page, three clicks on Next). Output: `renders.json`. The scenarios are in `tests/measure/renders.measure.ts`; they run as the `measure` Vitest project in a real browser (headed like the browser tests, `HEADLESS=1` for no window).
+- `pnpm measure:renders` — how many times each component re-renders in four fixed scenarios on a 1000-row dataset: `mount`, `filter` (type `Name 1`, Enter), `sort` (name ascending, then descending) and `page` (100 rows a page, three clicks on Next). Output: `renders.json`. The scenarios are in `tests/measure/renders.measure.ts`; they run as the `measure` Vitest project in a real browser (headed like the browser tests, `HEADLESS=1` for no window). `pnpm check:renders` runs the same scenarios and fails when a scenario applies a different number of updates or re-renders the table more often than `scripts/render-budget.json` allows; CI runs it.
   - `scenarios.<name>.counts` has `mounts`, `updates` (the `updated` hook, by component) and `triggers` (the first reactive cause of each re-render, from `renderTriggered`); `libraryUpdates` is the sum for the table's own components. Counts are the same on every repetition (the run fails otherwise), so they can be compared across commits. `timings` are medians of five runs and noisy: report them, do not assert on them.
   - To count something else, add a scenario to the `scenarios` list in that file. The counting is a global mixin (`config.global.mixins`); it needs a development build of Vue, which the test server serves.
 - `pnpm analyze:build:json` — builds the library with Rolldown's devtools output and condenses it into `build.json`: per output format (ES, CJS) the assets with raw and gzip size, chunks, packages, external modules, and every module with its source size, imports and importer count. Use it for "what is in the bundle and what did this change add". `pnpm analyze:build` shows the same data in a UI instead, and keeps its server (ports 9999 and 10000, one per format) until you stop it.

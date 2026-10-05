@@ -12,8 +12,9 @@ export interface ExpansionOptions<T extends object> {
 /**
  * Which rows are expanded, by `rowKey` or by index (C-26). Without a row
  * identity the state belongs to the rows array it was set on, so it resets
- * when `rows` changes. A row may also arrive with `isExpanded` set (print mode
- * opens rows that way).
+ * when `rows` changes; with a key, keys of rows no longer supplied are
+ * dropped. A row may also arrive with `isExpanded` set (print mode opens rows
+ * that way).
  */
 export const useExpansion = <T extends object>(
   options: ExpansionOptions<T>
@@ -48,6 +49,15 @@ export const useExpansion = <T extends object>(
     rows => {
       if (options.rowKey() === undefined) {
         expanded.value.clear()
+      } else if (expanded.value.size > 0) {
+        // Only keys of the supplied rows are kept, so the state never grows
+        // past one page (C-26).
+        const present = new Set(rows.map(keyOf))
+        for (const key of expanded.value) {
+          if (!present.has(key)) {
+            expanded.value.delete(key)
+          }
+        }
       }
       if (!options.enabled()) {
         return

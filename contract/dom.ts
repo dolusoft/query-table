@@ -20,78 +20,78 @@ export interface AttributeEntry {
 }
 
 export const domClasses: ClassEntry[] = [
-  { name: 'bh-datatable', on: 'div', description: 'Root element.' },
+  { name: 'qt-datatable', on: 'div', description: 'Root element.' },
   {
-    name: 'bh-table-responsive',
+    name: 'qt-table-responsive',
     on: 'div',
     description: 'Scroll container around the table.'
   },
-  { name: 'bh-table', on: 'table', description: 'The table.' },
+  { name: 'qt-table', on: 'table', description: 'The table.' },
   {
-    name: 'bh-sort',
+    name: 'qt-sort',
     on: 'th > button',
     description: 'Header button of a sortable column.'
   },
   {
-    name: 'bh-title',
+    name: 'qt-title',
     on: 'th > span',
     description: 'Header text of a column that cannot be sorted.'
   },
   {
-    name: 'bh-sort-icon',
+    name: 'qt-sort-icon',
     on: 'button > svg',
-    description: 'Sort arrow inside `bh-sort`.'
+    description: 'Sort arrow inside `qt-sort`.'
   },
   {
-    name: 'bh-filter',
+    name: 'qt-filter',
     on: 'th > div',
     description:
       'Filter row of a header cell: input, filter button and condition label are its children.'
   },
   {
-    name: 'bh-filter-input',
+    name: 'qt-filter-input',
     on: 'input, select',
     description: 'The filter input of a column.'
   },
   {
-    name: 'bh-filter-button',
+    name: 'qt-filter-button',
     on: 'button',
     description:
       'Filter menu trigger, rendered by the `trigger` of the `filter-menu` slot.'
   },
   {
-    name: 'bh-filter-condition',
+    name: 'qt-filter-condition',
     on: 'small',
     description: 'Label with the condition of the filter.'
   },
   {
-    name: 'bh-clear-all-button',
+    name: 'qt-clear-all-button',
     on: 'th > button',
     description: 'Clears every filter. Lives in the first utility header cell.'
   },
   {
-    name: 'bh-expand',
+    name: 'qt-expand',
     on: 'td > button',
     description: 'Expand button of a row.'
   },
   {
-    name: 'bh-right-panel-button',
+    name: 'qt-right-panel-button',
     on: 'td > button',
     description: 'Right panel button of a row.'
   },
   {
-    name: 'bh-subtable-row',
+    name: 'qt-subtable-row',
     on: 'tbody > tr',
     description: 'Row holding the `subtable` slot of an expanded row.'
   },
   {
-    name: 'bh-empty-row',
+    name: 'qt-empty-row',
     on: 'tbody > tr',
     description: 'Row holding the `empty` slot.'
   },
-  { name: 'bh-footer', on: 'tfoot', description: 'Totals block.' },
+  { name: 'qt-footer', on: 'tfoot', description: 'Totals block.' },
   {
-    name: 'bh-pagination',
+    name: 'qt-pagination',
     on: 'div',
     description: 'Block around the `pagination` slot.'
   }
@@ -101,7 +101,7 @@ export const domClasses: ClassEntry[] = [
 export const domAttributes: AttributeEntry[] = [
   {
     name: 'data-empty',
-    on: '.bh-datatable',
+    on: '.qt-datatable',
     description: 'Present when there are no rows.'
   },
   {
@@ -122,7 +122,7 @@ export const domAttributes: AttributeEntry[] = [
   },
   {
     name: 'data-filtered',
-    on: 'th, .bh-filter-button',
+    on: 'th, .qt-filter-button',
     description: 'Present when the column has at least one rule.'
   },
   {

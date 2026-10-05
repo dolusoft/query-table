@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 import type { CellContextMenuPayload, Column } from '../../src/contract'
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import {
   createDemoRows,
@@ -38,7 +38,7 @@ const onRightPanel = (row: DemoRow) => {
       Picked: {{ picked.length ? picked.join(', ') : 'none' }} ·
       {{ lastEvent }}
     </p>
-    <VueServerTable
+    <QueryTable
       v-model:query="query"
       :columns="columns"
       :rows="result.rows"
@@ -78,6 +78,6 @@ const onRightPanel = (row: DemoRow) => {
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>

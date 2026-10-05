@@ -36,9 +36,9 @@ export const renderTable = async (props: Record<string, unknown> = {}) => {
     } as never
   })
   const filterInput = (field: string) =>
-    page.getByCSS(`th[data-field="${field}"] .bh-filter-input`)
+    page.getByCSS(`th[data-field="${field}"] .qt-filter-input`)
   const filterButton = (field: string) =>
-    page.getByCSS(`th[data-field="${field}"] .bh-filter-button`)
+    page.getByCSS(`th[data-field="${field}"] .qt-filter-button`)
   const rulesOf = (update: RecordedUpdate, field: string) =>
     update.query.filters.filter(item => item.field === field)
   // `render` is typed against the harness loosely above; keep `rerender` usable.

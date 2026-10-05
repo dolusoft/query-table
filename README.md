@@ -1,13 +1,13 @@
-# vue-server-table
+# Query Table
 
 A thin Vue 3 table for server-side data. It renders the rows you give it and tells you, through `v-model:query`, what the user asked for: a page, a page size, a sort or a filter. Fetching and ordering the data is up to you.
 
-The table ships no CSS. It renders plain markup with a small, stable set of `bh-` classes and `data-*` attributes; style them with your own design system.
+The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system.
 
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/vue-server-table/releases/download/v2.2.6/dolusoft-vue-server-table-2.2.6.tgz
+pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.7/dolusoft-query-table-2.2.7.tgz
 ```
 
 Peer dependency: `vue` 3.5+.
@@ -17,7 +17,7 @@ Peer dependency: `vue` 3.5+.
 ```vue
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
-import VueServerTable, { type TableQuery } from '@dolusoft/vue-server-table'
+import QueryTable, { type TableQuery } from '@dolusoft/query-table'
 
 const columns = [{ field: 'name', title: 'Name' }]
 const query = ref<TableQuery>({ page: 1, pageSize: 10, sort: null, filters: [] })
@@ -32,7 +32,7 @@ watchEffect(async () => {
 </script>
 
 <template>
-  <VueServerTable
+  <QueryTable
     v-model:query="query"
     :columns="columns"
     :rows="rows"
@@ -54,7 +54,7 @@ The library ships no CSS, so the layout algorithm of the `<table>` is yours. Wit
 For large tables set `table-layout: fixed` and give every column a `width` (`Column.width`, which the table writes as an inline `width` on the `th`):
 
 ```css
-.bh-table {
+.qt-table {
   table-layout: fixed;
   width: 100%;
 }
@@ -64,11 +64,27 @@ Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout aft
 
 ## Row identity
 
-Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes.
+Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes. With `row-key` only the rows currently in `rows` keep their expanded state: a row that leaves (another page) and comes back is closed.
+
+## Labels
+
+Every text the table writes itself (accessible names of its buttons and filter inputs, the options of a bool filter) comes from the `labels` prop. Give only what you want to change; the rest keeps its English default:
+
+```vue
+<QueryTable
+  :labels="{
+    clearAllFilters: 'Tüm filtreleri temizle',
+    filterInput: column => `${column} filtresi`
+  }"
+  ...
+/>
+```
 
 ## Contract
 
 [`CONTRACT.md`](./CONTRACT.md) is the full public contract: props, events, slots, types, behavior rules and the DOM the table renders. It is generated from the source and checked in CI.
+
+[`PRINCIPLES.md`](./PRINCIPLES.md) lists the boundaries of the package (what it does and never does) and the check that holds each one.
 
 ## License
 

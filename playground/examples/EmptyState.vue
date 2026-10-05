@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
 
-import { VueServerTable } from '../../src/index'
+import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import { makeQuery, peopleColumns } from '../scenarios'
 
@@ -31,7 +31,7 @@ const rows: Array<Record<string, unknown>> = []
         totalRows: {{ totalRows }}
       </Button>
     </div>
-    <VueServerTable
+    <QueryTable
       v-model:query="query"
       :columns="columns"
       :rows="rows"
@@ -44,6 +44,6 @@ const rows: Array<Record<string, unknown>> = []
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>

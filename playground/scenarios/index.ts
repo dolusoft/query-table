@@ -7,9 +7,9 @@ import {
 } from './fake-server'
 import type { Column, FooterRow, TableQuery } from '../../src/contract'
 
-// Scenario factories shared by the playground pages and the browser tests.
-// Every call returns new objects: there is no module-level state, so two
-// tables (or two tests) never share a query or a row list.
+// Scenario factories of the playground pages (the browser tests use their own
+// fixtures in tests/support). Every call returns new objects: there is no
+// module-level state, so two tables never share a query or a row list.
 
 export { createDemoRows, queryDemoRows } from './fake-server'
 export type { DemoRow } from './fake-server'

@@ -33,8 +33,8 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       ]
     })
     const th = box('th[data-field="name"]')
-    const input = box('th[data-field="name"] .bh-filter-input')
-    const button = box('th[data-field="name"] .bh-filter-button')
+    const input = box('th[data-field="name"] .qt-filter-input')
+    const button = box('th[data-field="name"] .qt-filter-button')
     expect(th.width).toBeLessThanOrEqual(121)
     expect(input.width).toBeGreaterThanOrEqual(60)
     // Side by side, not overlaid: the button starts where the input ends.
@@ -45,8 +45,8 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     ).toBeLessThanOrEqual(1)
     // Siblings in the markup too.
     expect(
-      el('th[data-field="name"] .bh-filter-input').nextElementSibling
-    ).toBe(el('th[data-field="name"] .bh-filter-button'))
+      el('th[data-field="name"] .qt-filter-input').nextElementSibling
+    ).toBe(el('th[data-field="name"] .qt-filter-button'))
     await shot('layout-narrow-column')
   })
 
@@ -59,13 +59,13 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     })
     const cell = el('th[data-field="joined"]')
     const th = cell.getBoundingClientRect()
-    const input = box('th[data-field="joined"] .bh-filter-input')
-    const button = box('th[data-field="joined"] .bh-filter-button')
+    const input = box('th[data-field="joined"] .qt-filter-input')
+    const button = box('th[data-field="joined"] .qt-filter-button')
     expect(th.width).toBeLessThanOrEqual(121)
     expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth + 1)
     expect(input.right).toBeLessThanOrEqual(th.right)
     expect(button.right).toBeLessThanOrEqual(th.right)
-    const scroller = el('.bh-table-responsive')
+    const scroller = el('.qt-table-responsive')
     expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
     await shot('layout-date-filter')
   })
@@ -76,7 +76,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     })
     const cell = textLeft('tbody tr:first-child td:first-child')
     const footer = textLeft('tfoot td:first-child')
-    const pagination = textLeft('.bh-pagination .page-info')
+    const pagination = textLeft('.qt-pagination .page-info')
     expect(Math.abs(footer - cell)).toBeLessThanOrEqual(0.5)
     expect(Math.abs(pagination - cell)).toBeLessThanOrEqual(0.5)
     await shot('layout-footer-and-pagination')
@@ -87,7 +87,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     async theme => {
       const { filterInput } = await renderTable({ theme })
       const measure = () => {
-        const input = box('th[data-field="name"] .bh-filter-input')
+        const input = box('th[data-field="name"] .qt-filter-input')
         return {
           inputX: input.x,
           inputWidth: input.width,
@@ -100,7 +100,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       const before = measure()
       await userEvent.type(filterInput('name'), 'N')
       await expect
-        .element(document.querySelector<HTMLElement>('.bh-filter-condition'))
+        .element(document.querySelector<HTMLElement>('.qt-filter-condition'))
         .toBeInTheDocument()
       expect(measure()).toEqual(before)
       await userEvent.type(filterInput('name'), 'ame 1')
@@ -119,7 +119,8 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
         { field: 'joined', title: 'Joined', filterable: false, sortable: false }
       ]
     })
-    const cells = [...document.querySelectorAll('thead th')]
+    // An empty utility header cell is a `td` (C-45).
+    const cells = [...document.querySelectorAll('thead :is(th, td)')]
     expect(cells.length).toBeGreaterThanOrEqual(6)
     for (const cell of cells) {
       const outer = cell.getBoundingClientRect()
@@ -150,8 +151,8 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       ],
       footerRows: [{ cells: [{ field: 'id', text: 'Total' }] }]
     })
-    await userEvent.click(el('.bh-expand'))
-    const styled = [...el('.bh-datatable').querySelectorAll('[style]')].filter(
+    await userEvent.click(el('.qt-expand'))
+    const styled = [...el('.qt-datatable').querySelectorAll('[style]')].filter(
       // The filter popover and the shadcn controls are the consumer's.
       node =>
         !node.closest('[data-slot]') && node.getAttribute('data-slot') === null

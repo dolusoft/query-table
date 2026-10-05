@@ -2,7 +2,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick, type Component } from 'vue'
 
 import type { Column, QueryChangeReason, TableQuery } from '../../src/contract'
-import VueServerTable from '../../src/index'
+import QueryTable from '../../src/index'
 
 export interface Row {
   id: number
@@ -98,7 +98,7 @@ export const mountTable = (
   // `const` cannot be used.
   let wrapper: VueWrapper
   // eslint-disable-next-line prefer-const
-  wrapper = mount(VueServerTable as unknown as Component, {
+  wrapper = mount(QueryTable as unknown as Component, {
     props: {
       columns: makeColumns(),
       rows: makeRows(),

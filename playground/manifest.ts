@@ -1,5 +1,5 @@
 // Which playground page shows which part of the public contract. Every prop,
-// event, slot and exposed member of contract/api.json and every behavior rule
+// event, slot, exposed member and public type of contract/api.json and every behavior rule
 // of contract/rules.md must appear on at least one page;
 // playground/manifest.spec.ts fails otherwise. Each page lists the members
 // in its API panel and the rules under "Covered rules".
@@ -9,6 +9,8 @@ export interface PageApi {
   emits?: string[]
   slots?: string[]
   exposed?: string[]
+  /** Exported types of src/contract.ts. */
+  types?: string[]
 }
 
 export interface PlaygroundPage {
@@ -41,7 +43,8 @@ export const pages: PlaygroundPage[] = [
         'rowKey'
       ],
       emits: ['update:query'],
-      slots: ['toolbar', 'filter-menu', 'empty', 'pagination']
+      slots: ['toolbar', 'filter-menu', 'empty', 'pagination'],
+      types: ['TableProps', 'TableEmits', 'TableSlots', 'Column', 'TableQuery']
     },
     rules: [
       'C-01',
@@ -63,7 +66,16 @@ export const pages: PlaygroundPage[] = [
     example: 'Filtering',
     api: {
       props: ['filterable', 'filterDebounce', 'columns', 'hasRightPanel'],
-      slots: ['filter-menu', 'filter-datetime']
+      slots: ['filter-menu', 'filter-datetime'],
+      types: [
+        'ColumnType',
+        'FilterCondition',
+        'FilterValue',
+        'FilterRule',
+        'FilterMenuSlotProps',
+        'FilterConditionOption',
+        'FilterDatetimeSlotProps'
+      ]
     },
     rules: [
       'C-09',
@@ -93,7 +105,8 @@ export const pages: PlaygroundPage[] = [
     api: {
       props: ['sortable', 'columns'],
       emits: ['update:query'],
-      slots: ['filter-menu']
+      slots: ['filter-menu'],
+      types: ['SortState', 'SortDirection']
     },
     rules: ['C-04', 'C-07', 'C-08']
   },
@@ -105,7 +118,8 @@ export const pages: PlaygroundPage[] = [
     example: 'Pagination',
     api: {
       props: ['totalRows', 'pagination'],
-      slots: ['pagination']
+      slots: ['pagination'],
+      types: ['PaginationOptions', 'PaginationSlotProps']
     },
     rules: ['C-05', 'C-06', 'C-23', 'C-25']
   },
@@ -118,7 +132,8 @@ export const pages: PlaygroundPage[] = [
     api: {
       props: ['hasSubtable', 'rowKey'],
       slots: ['subtable'],
-      exposed: ['collapseAll']
+      exposed: ['collapseAll'],
+      types: ['SubtableSlotProps', 'QueryTableExpose']
     },
     rules: ['C-26']
   },
@@ -128,7 +143,7 @@ export const pages: PlaygroundPage[] = [
     summary:
       'Totals rows in a `tfoot`; the server computes them over every matching row.',
     example: 'FooterRows',
-    api: { props: ['footerRows'] },
+    api: { props: ['footerRows'], types: ['FooterRow'] },
     rules: ['C-37']
   },
   {
@@ -140,7 +155,8 @@ export const pages: PlaygroundPage[] = [
     api: {
       props: ['hasRightPanel'],
       emits: ['cellContextMenu', 'rowRightPanelClick'],
-      slots: ['cell-<field>']
+      slots: ['cell-<field>'],
+      types: ['CellSlotProps', 'CellContextMenuPayload']
     },
     rules: ['C-27', 'C-28', 'C-36']
   },
@@ -162,8 +178,22 @@ export const pages: PlaygroundPage[] = [
     api: {
       props: ['query', 'filterDebounce'],
       emits: ['update:query'],
-      exposed: ['flushPendingFilters']
+      exposed: ['flushPendingFilters'],
+      types: ['TableQuery', 'QueryChangeReason', 'QueryTableExpose']
     },
     rules: ['C-01', 'C-02', 'C-04', 'C-13', 'C-14', 'C-19', 'C-33']
+  },
+  {
+    id: 'labels',
+    title: 'Labels & accessibility',
+    summary:
+      'Every text the table writes comes from `labels`. Header cells are column headers, and a sort button without a title is named by its field. The toolbar clears the filters in a table without utility columns.',
+    example: 'Labels',
+    api: {
+      props: ['labels', 'filterable', 'sortable'],
+      slots: ['toolbar'],
+      types: ['TableLabels', 'ToolbarSlotProps']
+    },
+    rules: ['C-22', 'C-44', 'C-45']
   }
 ]

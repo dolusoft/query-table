@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { Button } from '@/ui/button'
 
 import type { QueryChangeReason, TableQuery } from '../../src/contract'
-import { VueServerTable, type VueServerTableExpose } from '../../src/index'
+import { QueryTable, type QueryTableExpose } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
@@ -40,7 +40,7 @@ const onUpdate = (next: TableQuery, reason: QueryChangeReason) => {
   }
 }
 
-const table = ref<VueServerTableExpose | null>(null)
+const table = ref<QueryTableExpose | null>(null)
 const resetFromOutside = () => {
   // An outside change: the table redraws and emits nothing.
   query.value = makeQuery({ pageSize: 5 })
@@ -72,7 +72,7 @@ const resetFromOutside = () => {
         Reset from outside
       </Button>
     </div>
-    <VueServerTable
+    <QueryTable
       ref="table"
       :query="query"
       :columns="columns"
@@ -91,7 +91,7 @@ const resetFromOutside = () => {
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
     <div class="grid gap-3 md:grid-cols-2">
       <section>
         <h3 class="pb-1 text-sm font-medium">query (what the page holds)</h3>

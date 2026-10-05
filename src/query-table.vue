@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends object">
-import { useSlots } from 'vue'
+import { computed, getCurrentInstance, useSlots } from 'vue'
 
 import TableBody from './body/table-body.vue'
 import TableFooter from './body/table-footer.vue'
@@ -9,8 +9,9 @@ import type {
   TableEmits,
   TableProps,
   TableSlots,
-  VueServerTableExpose
+  QueryTableExpose
 } from './contract'
+import { resolveLabels } from './core/labels'
 import { provideTableContext } from './core/table-context'
 import { useColumns } from './core/use-columns'
 import { useQueryEmitter } from './core/use-query-emitter'
@@ -20,7 +21,7 @@ import TablePagination from './pagination/table-pagination.vue'
 import { usePagination } from './pagination/use-pagination'
 import { useSort } from './sort/use-sort'
 
-defineOptions({ name: 'VueServerTable' })
+defineOptions({ name: 'QueryTable' })
 
 const props = withDefaults(defineProps<TableProps<T>>(), {
   rows: () => [],
@@ -31,7 +32,8 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   filterDebounce: 100,
   hasSubtable: false,
   hasRightPanel: false,
-  rowKey: undefined
+  rowKey: undefined,
+  labels: undefined
 })
 
 const emit = defineEmits<TableEmits<T>>()
@@ -71,7 +73,15 @@ const sort = useSort({
   }
 })
 
-provideTableContext({ drafts, sort })
+const labels = computed(() => resolveLabels(props.labels))
+
+provideTableContext({ drafts, sort, labels: () => labels.value })
+
+// C-28: the browser menu is suppressed only for a consumer that listens. The
+// check runs when the event fires: a listener is not a prop, so adding one
+// later does not re-render the table.
+const instance = getCurrentInstance()
+const hasContextMenuListener = () => !!instance?.vnode.props?.onCellContextMenu
 
 const { entries, visibleColumns, utilityCount, columnCount } = useColumns({
   columns: () => props.columns,
@@ -85,6 +95,13 @@ const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
   enabled: () => props.hasSubtable
 })
 
+const toolbarProps = () => ({
+  canClearFilters: drafts.canClearAll(),
+  clearFilters: () => {
+    drafts.clearAll()
+  }
+})
+
 // The slots `table-body` draws: only the ones the consumer gave are passed on,
 // so the body can tell whether a `cell-<field>` or `empty` slot exists.
 const bodySlotNames = () =>
@@ -92,7 +109,7 @@ const bodySlotNames = () =>
     name => name.startsWith('cell-') || name === 'subtable' || name === 'empty'
   )
 
-const exposed: VueServerTableExpose = {
+const exposed: QueryTableExpose = {
   collapseAll,
   flushPendingFilters: () => {
     drafts.flushAll()
@@ -102,10 +119,10 @@ defineExpose(exposed)
 </script>
 
 <template>
-  <div class="bh-datatable" :data-empty="rows.length === 0 ? '' : undefined">
-    <slot name="toolbar" />
-    <div class="bh-table-responsive">
-      <table class="bh-table">
+  <div class="qt-datatable" :data-empty="rows.length === 0 ? '' : undefined">
+    <slot name="toolbar" v-bind="toolbarProps()" />
+    <div class="qt-table-responsive">
+      <table class="qt-table">
         <thead>
           <table-header
             :columns="visibleColumns"
@@ -131,6 +148,8 @@ defineExpose(exposed)
           :key-of="keyOf"
           :is-expanded="isExpanded"
           :toggle="toggle"
+          :labels="labels"
+          :has-context-menu-listener="hasContextMenuListener"
           @row-right-panel-click="row => emit('rowRightPanelClick', row)"
           @cell-context-menu="payload => emit('cellContextMenu', payload)"
         >

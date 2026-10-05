@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
 
-import { VueServerTable, type VueServerTableExpose } from '../../src/index'
+import { QueryTable, type QueryTableExpose } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import {
   createDemoRows,
@@ -21,7 +21,7 @@ import {
 // `collapseAll()` comes from the template ref.
 const columns = peopleColumns()
 const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
-const table = ref<VueServerTableExpose | null>(null)
+const table = ref<QueryTableExpose | null>(null)
 const ordersQuery = makeQuery({ pageSize: 10 })
 </script>
 
@@ -32,7 +32,7 @@ const ordersQuery = makeQuery({ pageSize: 10 })
         Collapse all
       </Button>
     </div>
-    <VueServerTable
+    <QueryTable
       ref="table"
       v-model:query="query"
       :columns="columns"
@@ -44,7 +44,7 @@ const ordersQuery = makeQuery({ pageSize: 10 })
     >
       <template #subtable="{ row }">
         <div class="py-2 pl-6">
-          <VueServerTable
+          <QueryTable
             :query="ordersQuery"
             :columns="orderColumns()"
             :rows="ordersOf((row as DemoRow).id)"
@@ -55,6 +55,6 @@ const ordersQuery = makeQuery({ pageSize: 10 })
       <template #pagination="page">
         <TablePager :page="page" />
       </template>
-    </VueServerTable>
+    </QueryTable>
   </div>
 </template>
