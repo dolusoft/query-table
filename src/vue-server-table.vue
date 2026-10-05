@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends object">
-import { computed, ref, useSlots, watch } from 'vue'
+import { useSlots } from 'vue'
 
 import ColumnHeader from './components/column-header.vue'
 import type {
@@ -12,10 +12,12 @@ import type {
   VueServerTableExpose
 } from './contract'
 import { columnTypeOf, valueAt } from './core/column'
+import { useColumns } from './core/use-columns'
 import { useQueryEmitter } from './core/use-query-emitter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
 import TablePagination from './pagination/table-pagination.vue'
 import { usePagination } from './pagination/use-pagination'
+import { useExpansion } from './row/use-expansion'
 import { useSort } from './sort/use-sort'
 
 defineOptions({ name: 'VueServerTable' })
@@ -88,23 +90,11 @@ const { sortBy } = useSort({
 // Columns and rows
 // ---------------------------------------------------------------------------
 
-const visibleColumns = computed(() =>
-  props.columns.filter(column => !column.hide)
-)
-
-const bodyColumns = computed(() =>
-  props.columns
-    .map((column, index) => ({ column, index }))
-    .filter(entry => !entry.column.hide)
-)
-
-const utilityCount = computed(
-  () => Number(props.hasSubtable) + Number(props.hasRightPanel)
-)
-
-const columnCount = computed(
-  () => visibleColumns.value.length + utilityCount.value
-)
+const { entries, visibleColumns, utilityCount, columnCount } = useColumns({
+  columns: () => props.columns,
+  hasSubtable: () => props.hasSubtable,
+  hasRightPanel: () => props.hasRightPanel
+})
 
 const cellAttrs = (
   row: T,
@@ -170,54 +160,14 @@ const footerText = (
 // Expansion
 // ---------------------------------------------------------------------------
 
-const expanded = ref(new Set<string | number>())
-
-const keyOf = (row: T, index: number): string | number => {
-  const { rowKey } = props
-  if (typeof rowKey === 'function') {
-    return rowKey(row, index)
-  }
-  if (typeof rowKey === 'string') {
-    return (row as Record<string, string | number>)[rowKey]
-  }
-  return index
-}
-
-const isExpanded = (row: T, index: number) =>
-  props.hasSubtable && expanded.value.has(keyOf(row, index))
-
-const toggle = (row: T, index: number) => {
-  const key = keyOf(row, index)
-  if (!expanded.value.delete(key)) {
-    expanded.value.add(key)
-  }
-}
-
-// Without a row identity the state belongs to the rows array it was set on.
-// A row may also arrive with `isExpanded` set (print mode opens rows that way).
-watch(
-  () => props.rows,
-  rows => {
-    if (props.rowKey === undefined) {
-      expanded.value.clear()
-    }
-    if (!props.hasSubtable) {
-      return
-    }
-    rows.forEach((row, index) => {
-      const seeded = (row as { isExpanded?: boolean }).isExpanded
-      if (seeded === true) {
-        expanded.value.add(keyOf(row, index))
-      } else if (seeded === false) {
-        expanded.value.delete(keyOf(row, index))
-      }
-    })
-  },
-  { immediate: true }
-)
+const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
+  rows: () => props.rows,
+  rowKey: () => props.rowKey,
+  enabled: () => props.hasSubtable
+})
 
 const exposed: VueServerTableExpose = {
-  collapseAll: () => expanded.value.clear(),
+  collapseAll,
   flushPendingFilters: () => {
     drafts.flushAll()
   }
@@ -314,7 +264,7 @@ defineExpose(exposed)
                   </svg>
                 </button>
               </td>
-              <template v-for="entry in bodyColumns" :key="entry.column.field">
+              <template v-for="entry in entries" :key="entry.column.field">
                 <td
                   v-if="hasCellSlot(entry.column)"
                   v-bind="cellAttrs(row, entry.column, i, entry.index)"
