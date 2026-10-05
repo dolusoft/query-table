@@ -7,7 +7,7 @@ The table ships no CSS. It renders plain markup with a small, stable set of `qt-
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.7/dolusoft-query-table-2.2.7.tgz
+pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.9/dolusoft-query-table-2.2.9.tgz
 ```
 
 Peer dependency: `vue` 3.5+.
@@ -111,6 +111,45 @@ where `columns` turns each saved number into `Column.width` (for example `'180px
 ## Header slot
 
 `header-<field>` replaces the title (or sort button) of a header cell. It receives `{ column, sortDirection, sortable, toggleSort }`; call `toggleSort` from your own button to keep sorting.
+
+## Loading
+
+Set `loading` while you fetch. The table keeps the rows you gave it (nothing is cleared, focus stays), hides the empty state, and marks the root with `data-loading` and `aria-busy="true"`. A `loading` slot is drawn as the last row of the body, `tr.qt-loading-row`, with one cell that spans every column. The table writes no style for it and blocks no interaction; laying it over the rows is your CSS:
+
+```css
+.qt-datatable[data-loading] tbody {
+  position: relative;
+}
+.qt-loading-row {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(255 255 255 / 0.6);
+}
+/* Without rows the loading row is alone: keep it in the flow. */
+.qt-loading-row:only-child {
+  position: static;
+  display: table-row;
+}
+```
+
+## Filter text without a table
+
+`parseFilterInput(text, column, condition?)` returns the `FilterRule[]` the table emits for `text` typed into the filter of `column`: the same shortcuts (`*a*`, `a*`, `!a`, `a,b`) and the same coercion per column type. Text that gives no rule returns `[]`.
+
+```ts
+import { parseFilterInput } from '@dolusoft/query-table'
+
+parseFilterInput('ist*,!*mir', { field: 'city' })
+// [{ field: 'city', condition: 'StartsWith', value: 'ist' },
+//  { field: 'city', condition: 'NotContains', value: 'mir' }]
+```
+
+## Methods
+
+A template ref exposes `focusFilter(field)` (returns `false` when the column has no filter to focus), `expandAll()` and `collapseAll()` (the rows given only; nothing is fetched) and `flushPendingFilters()`.
 
 ## Row identity
 

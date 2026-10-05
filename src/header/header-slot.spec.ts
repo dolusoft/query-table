@@ -1,13 +1,17 @@
+import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { h } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import {
+  makeColumns,
   makeQuery,
+  makeRows,
   mountTable,
   reasons,
   type Mounted
 } from '../../tests/support/mount-table'
-import type { HeaderSlotProps } from '../contract'
+import type { FilterMenuSlotProps, HeaderSlotProps } from '../contract'
+import QueryTable from '../index'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -75,5 +79,41 @@ describe('C-51 Header slot', () => {
     await m.wrapper.find('button.mine').trigger('click')
     expect(m.events).toEqual([])
     expect(seen.at(-1)).toMatchObject({ sortable: false, sortDirection: null })
+  })
+})
+
+describe('C-51 header slots given later', () => {
+  it('draws a header-<field> or filter-menu slot that appears after mount, and drops it again', async () => {
+    const show = ref(false)
+    const Host = defineComponent(
+      () => () =>
+        h(
+          QueryTable as never,
+          {
+            query: makeQuery(),
+            columns: makeColumns(),
+            rows: makeRows(),
+            filterable: true
+          },
+          show.value
+            ? {
+                'header-name': () => h('i', { class: 'late' }, 'late'),
+                'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger)
+              }
+            : {}
+        )
+    )
+    const wrapper = mount(Host, { attachTo: document.body })
+    expect(wrapper.find('.late').exists()).toBe(false)
+    expect(wrapper.find('.qt-filter-button').exists()).toBe(false)
+    show.value = true
+    await nextTick()
+    expect(wrapper.find('th[data-field="name"] .late').exists()).toBe(true)
+    expect(wrapper.find('.qt-filter-button').exists()).toBe(true)
+    show.value = false
+    await nextTick()
+    expect(wrapper.find('.late').exists()).toBe(false)
+    expect(wrapper.find('.qt-filter-button').exists()).toBe(false)
+    wrapper.unmount()
   })
 })

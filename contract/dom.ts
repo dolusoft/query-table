@@ -90,6 +90,12 @@ export const domClasses: ClassEntry[] = [
     description: 'Row holding the `empty` slot.'
   },
   {
+    name: 'qt-loading-row',
+    on: 'tbody > tr',
+    description:
+      'Last row of the body while `loading` is on, holding the `loading` slot in one cell that spans every column. Place it over the rows in your CSS.'
+  },
+  {
     name: 'qt-resize-handle',
     on: 'th > div',
     description:
@@ -108,7 +114,13 @@ export const domAttributes: AttributeEntry[] = [
   {
     name: 'data-empty',
     on: '.qt-datatable',
-    description: 'Present when there are no rows.'
+    description: 'Present when there are no rows and `loading` is off.'
+  },
+  {
+    name: 'data-loading',
+    on: '.qt-datatable',
+    description:
+      'Present while `loading` is on; the root then also carries `aria-busy="true"`.'
   },
   {
     name: 'data-field',

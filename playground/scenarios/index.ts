@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
 import {
   type createDemoRows,
@@ -111,4 +111,44 @@ export const useFakeServer = <R extends object>(
   const query = ref<TableQuery>(makeQuery(initial))
   const result = computed(() => queryDemoRows(allRows, query.value))
   return { query, result }
+}
+
+/**
+ * The same fake server with a network delay: every query change starts a
+ * request that answers after `delay()` milliseconds. `loading` is on while
+ * the latest request runs; the rows of the previous answer stay until the
+ * new one arrives, and an answer to an older query is dropped.
+ */
+export const useSlowServer = <R extends object>(
+  allRows: readonly R[],
+  initial: Partial<TableQuery>,
+  delay: () => number
+) => {
+  const query = ref<TableQuery>(makeQuery(initial))
+  const rows = shallowRef<R[]>([])
+  const totalRows = ref<number | null>(null)
+  const loading = ref(false)
+  let latest = 0
+  let timer: ReturnType<typeof setTimeout> | undefined
+
+  const request = () => {
+    const id = ++latest
+    const asked = query.value
+    loading.value = true
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      if (id !== latest) {
+        return
+      }
+      const answer = queryDemoRows(allRows, asked)
+      rows.value = answer.rows
+      totalRows.value = answer.totalRows
+      loading.value = false
+    }, delay())
+  }
+
+  watch(query, request, { immediate: true })
+  onScopeDispose(() => clearTimeout(timer))
+
+  return { query, rows, totalRows, loading, reload: request }
 }

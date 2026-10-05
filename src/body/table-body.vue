@@ -12,6 +12,8 @@ import { pinAttrs, utilityKey } from '../pin/pin'
 
 const props = defineProps<{
   rows: T[]
+  /** The consumer is fetching: no empty row, the `loading` row instead (C-52). */
+  loading: boolean
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
   /** Cells a full-width row (subtable, empty) spans. */
@@ -125,7 +127,13 @@ const expandAttrs = () =>
         </td>
       </tr>
     </template>
-    <tr v-if="rows.length === 0 && slots.empty" class="qt-empty-row">
+    <tr v-if="loading && slots.loading" class="qt-loading-row">
+      <td :colspan="columnCount"><slot name="loading" /></td>
+    </tr>
+    <tr
+      v-else-if="!loading && rows.length === 0 && slots.empty"
+      class="qt-empty-row"
+    >
       <td :colspan="columnCount"><slot name="empty" /></td>
     </tr>
   </tbody>

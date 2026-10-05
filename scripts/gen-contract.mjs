@@ -11,7 +11,7 @@
 //     (contract/dom.ts).
 //
 // It also writes contract/api.json: props, events, slots, the exposed surface,
-// the public types and the rules as data, read by the playground (API panels, coverage
+// the exported functions, the public types and the rules as data, read by the playground (API panels, coverage
 // manifest).
 //
 //   node scripts/gen-contract.mjs           write CONTRACT.md and contract/api.json
@@ -217,6 +217,67 @@ sameSet(
 )
 
 // ---------------------------------------------------------------------------
+// Functions: the value exports of src/index.ts besides the component
+// (`export { name } from './path'`), with signature and JSDoc read from the
+// function declaration in the module they come from.
+// ---------------------------------------------------------------------------
+
+const indexPath = at('src', 'index.ts')
+const indexFile = ts.createSourceFile(
+  indexPath,
+  read(indexPath),
+  ts.ScriptTarget.ES2022,
+  true
+)
+const functions = indexFile.statements
+  .filter(
+    statement =>
+      ts.isExportDeclaration(statement) &&
+      !statement.isTypeOnly &&
+      statement.moduleSpecifier &&
+      statement.exportClause &&
+      ts.isNamedExports(statement.exportClause)
+  )
+  .flatMap(statement => {
+    const modulePath = join(
+      dirname(indexPath),
+      `${statement.moduleSpecifier.text.replace(/^\.\//, '')}.ts`
+    )
+    const file = ts.createSourceFile(
+      modulePath,
+      read(modulePath),
+      ts.ScriptTarget.ES2022,
+      true
+    )
+    return statement.exportClause.elements.map(element => {
+      const name = (element.propertyName ?? element.name).text
+      const found = file.statements.find(
+        node => ts.isFunctionDeclaration(node) && node.name?.text === name
+      )
+      if (!found) {
+        throw new Error(
+          `src/index.ts exports ${name}, but ${modulePath} declares no function of that name`
+        )
+      }
+      const parameters = found.parameters
+        .map(parameter =>
+          parameter.initializer
+            ? `${parameter.name.getText()}?: ${parameter.type?.getText() ?? 'unknown'}`
+            : parameter.getText()
+        )
+        .join(', ')
+      return {
+        name: element.name.text,
+        type: `(${parameters}) => ${found.type?.getText() ?? 'void'}`.replace(
+          /\s+/g,
+          ' '
+        ),
+        description: docOf(found)
+      }
+    })
+  })
+
+// ---------------------------------------------------------------------------
 // Markdown
 // ---------------------------------------------------------------------------
 
@@ -274,6 +335,12 @@ const sections = [
   table(
     ['Name', 'Signature', 'Description'],
     exposed.map(item => [code(item.name), code(item.type), item.description])
+  ),
+  '### Functions',
+  'Exported from the package entry point next to the component.',
+  table(
+    ['Name', 'Signature', 'Description'],
+    functions.map(item => [code(item.name), code(item.type), item.description])
   ),
   '## Types',
   'Exported from the package entry point (`src/contract.ts`).',
@@ -394,6 +461,7 @@ const api = {
     type,
     description
   })),
+  functions,
   types,
   rules: ruleEntries
 }
