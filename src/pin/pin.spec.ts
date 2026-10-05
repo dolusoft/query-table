@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   flush,
@@ -103,6 +103,43 @@ describe('C-47 Pin offsets', () => {
         '--qt-pin-left'
       )
     ).toBe('0px')
+  })
+
+  it('measures again when the observer reports, and disconnects on unmount', async () => {
+    const callbacks: ResizeObserverCallback[] = []
+    const disconnect = vi.fn()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          callbacks.push(callback)
+        }
+        observe() {
+          return undefined
+        }
+        disconnect = disconnect
+      }
+    )
+    let width = 50
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () => ({ width }) as DOMRect
+    )
+    const m = mountIt({ columns: pinnedColumns() })
+    await flush()
+    const offset = (field: string) =>
+      (
+        m.wrapper.find(`thead th[data-field="${field}"]`).element as HTMLElement
+      ).style.getPropertyValue('--qt-pin-left')
+    expect(offset('joined')).toBe('50px')
+    width = 80
+    callbacks.at(-1)!([], {} as ResizeObserver)
+    await flush()
+    expect(offset('joined')).toBe('80px')
+    m.wrapper.unmount()
+    mounted = null
+    expect(disconnect).toHaveBeenCalled()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('marks nothing and writes no offset while no column is pinned', async () => {

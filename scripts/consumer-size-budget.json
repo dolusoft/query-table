@@ -2,8 +2,8 @@
   "note": "Budget for `node scripts/consumer-size.mjs --check` (CI): the package cost, minified + gzip, of an app that imports the table. `measuredGzipBytes` is the value when the budget was last set; `maxGzipBytes` is that plus 5%. The value was measured on Windows locally; the CI runner may differ slightly, and the 5% margin covers that. Raise it only on purpose, in the same change that adds the weight.",
   "history": [
     "2.2.6: 7934 B.",
-    "2.2.8: 10237 B (2.2.7 was 8279 B). +1958 B for column pinning (measured offsets, one ResizeObserver), column resizing (pointer, keyboard and autofit on an accessible separator) and the header slot."
+    "2.2.8: 10224 B (2.2.7 was 8279 B). +1945 B for column pinning (measured offsets, one ResizeObserver), column resizing (pointer, keyboard and autofit on an accessible separator) and the header slot."
   ],
-  "measuredGzipBytes": 10237,
-  "maxGzipBytes": 10749
+  "measuredGzipBytes": 10224,
+  "maxGzipBytes": 10735
 }

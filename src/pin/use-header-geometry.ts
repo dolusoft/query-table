@@ -45,18 +45,16 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
   const offsets = shallowRef<Numbers>({})
   let observer: ResizeObserver | null = null
 
-  const measure = () => {
-    const table = options.table.value
-    const row = table?.querySelector(':scope > thead > tr')
-    if (!table || !row) {
-      return
-    }
+  const headerCells = (table: HTMLTableElement) =>
+    table.querySelectorAll(':scope > thead > tr > *')
+
+  const measure = (table: HTMLTableElement) => {
     tableWidth.value = table.getBoundingClientRect().width
     const cells = options.cells()
     const next: Record<string, number> = {}
     const nextOffsets: Record<string, number> = {}
     let left = 0
-    ;[...row.children].forEach((cell, index) => {
+    headerCells(table).forEach((cell, index) => {
       const drawn = cells[index]
       if (drawn) {
         const width = cell.getBoundingClientRect().width
@@ -86,13 +84,15 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
       }
       return
     }
-    observer = new ResizeObserver(measure)
-    observer.observe(table)
-    for (const cell of table.querySelector(':scope > thead > tr')?.children ??
-      []) {
-      observer.observe(cell)
-    }
-    measure()
+    const current = new ResizeObserver(() => {
+      measure(table)
+    })
+    observer = current
+    current.observe(table)
+    headerCells(table).forEach(cell => {
+      current.observe(cell)
+    })
+    measure(table)
   }
 
   // Re-observe once the drawn cells change (columns, order, pinning,
