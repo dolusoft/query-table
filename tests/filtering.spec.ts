@@ -659,3 +659,124 @@ describe('C-35 Date filter slot', () => {
     expect(m.wrapper.find('.custom-date').text()).toBe('2024-05-01')
   })
 })
+
+describe('C-42 Several rules on a column that is not text', () => {
+  const twoRules = [rule('age', 'GreaterThan', 20), rule('age', 'LessThan', 40)]
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const menuSlot = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  const ageInput = (m: Mounted) => input(m, 'age').element as HTMLInputElement
+
+  it('shows the count in a read-only input and in the condition label, and emits nothing', async () => {
+    const m = mountIt({ ...base, query: makeQuery({ filters: twoRules }) })
+    await flush()
+    expect(ageInput(m).readOnly).toBe(true)
+    expect(ageInput(m).value).toBe('(2)')
+    expect(m.wrapper.find('th[data-field="age"] .bh-filter-condition').text()).toBe(
+      'Greater Than (>) (2)'
+    )
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
+  })
+
+  it('keeps both rules when another column is typed in', async () => {
+    const m = mountIt({ ...base, query: makeQuery({ filters: twoRules }) })
+    await type(m, 'name', 'ali')
+    vi.advanceTimersByTime(100)
+    expect(m.events[0][0].filters).toEqual([
+      ...twoRules,
+      rule('name', 'Contains', 'ali')
+    ])
+  })
+
+  it('becomes editable again when the rules shrink to one, from outside', async () => {
+    const m = mountIt({ ...base, query: makeQuery({ filters: twoRules }) })
+    await m.setQuery(makeQuery({ filters: [twoRules[0]] }))
+    await flush()
+    expect(ageInput(m).readOnly).toBe(false)
+    expect(ageInput(m).value).toBe('20')
+    expect(ageInput(m).type).toBe('number')
+  })
+
+  it('is cleared by the clear action of the column', async () => {
+    const m = mountIt(
+      { ...base, query: makeQuery({ page: 2, filters: twoRules }), totalRows: 100 },
+      { slots: menuSlot }
+    )
+    menus.age.clear()
+    await flush()
+    expect(reasons(m.events)).toEqual(['filter'])
+    expect(m.query().filters).toEqual([])
+    expect(ageInput(m).readOnly).toBe(false)
+    expect(ageInput(m).value).toBe('')
+  })
+
+  it('is cleared by clear all', async () => {
+    const m = mountIt({ ...base, query: makeQuery({ filters: twoRules }) })
+    await m.wrapper.find('.bh-clear-all-button').trigger('click')
+    await flush()
+    expect(m.query().filters).toEqual([])
+    expect(ageInput(m).readOnly).toBe(false)
+  })
+
+  it('is replaced by one rule when the filter-datetime slot edits a date column', async () => {
+    const box: { slot: FilterDatetimeSlotProps | null } = { slot: null }
+    const rules = [
+      rule('joined', 'GreaterThan', '2024-01-01'),
+      rule('joined', 'LessThan', '2024-12-31')
+    ]
+    const m = mountIt(
+      {
+        ...base,
+        columns: [{ field: 'joined', type: 'date' }],
+        query: makeQuery({ filters: rules })
+      },
+      {
+        slots: {
+          'filter-datetime': ((slot: FilterDatetimeSlotProps) => {
+            box.slot = slot
+            return h('span', { class: 'custom-date' }, String(slot.value))
+          }) as never
+        }
+      }
+    )
+    // The slot does not see a value it could echo back by accident.
+    expect(box.slot!.value).toBe('')
+    expect(m.wrapper.find('.bh-filter-condition').text()).toBe('After (>) (2)')
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
+    box.slot!.updateValue('2024-06-01')
+    vi.advanceTimersByTime(100)
+    expect(m.events[0][0].filters).toEqual([
+      rule('joined', 'GreaterThan', '2024-06-01')
+    ])
+  })
+
+  it('is replaced by one rule of the first value when a condition is picked from the menu', async () => {
+    const m = mountIt(
+      { ...base, query: makeQuery({ filters: twoRules }) },
+      { slots: menuSlot }
+    )
+    menus.age.setCondition('NotEqual')
+    await flush()
+    expect(m.events[0][0].filters).toEqual([rule('age', 'NotEqual', 20)])
+    expect(ageInput(m).readOnly).toBe(false)
+  })
+
+  it('disables a bool select that holds several rules', async () => {
+    mountIt({
+      ...base,
+      columns: [{ field: 'active', type: 'bool' }],
+      query: makeQuery({
+        filters: [rule('active', 'Equal', true), rule('active', 'Equal', false)]
+      })
+    })
+    const select = mounted!.wrapper.find('th[data-field="active"] select')
+    expect(select.attributes('disabled')).toBeDefined()
+    expect(mounted!.wrapper.find('.bh-filter-condition').text()).toContain('(2)')
+  })
+})
