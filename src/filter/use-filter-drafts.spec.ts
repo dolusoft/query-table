@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, type EffectScope } from 'vue'
 
-import { makeColumns, makeQuery } from '../../test-support/mount-table'
+import { makeColumns, makeQuery } from '../../tests/support/mount-table'
 import type { Column, QueryChangeReason, TableQuery } from '../contract'
 import { type FilterDrafts, useFilterDrafts } from './use-filter-drafts'
 
@@ -239,16 +239,6 @@ describe('C-20 Picking a condition', () => {
     expect(updates.at(-1)?.query.filters).toEqual([
       { field: 'name', condition: 'EndsWith', value: 'bo' }
     ])
-  })
-
-  it('IsNull applies at once with a null value and empties the text', () => {
-    const { drafts, updates } = setup()
-    drafts.onInput('age', '25')
-    drafts.setCondition('age', 'IsNull')
-    expect(updates.at(-1)?.query.filters).toEqual([
-      { field: 'age', condition: 'IsNull', value: null }
-    ])
-    expect(drafts.draftOf('age').text).toBe('')
   })
 
   it('null clears the filter', () => {

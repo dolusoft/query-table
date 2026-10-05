@@ -1,5 +1,5 @@
 import type { Column, FilterCondition, FilterRule } from '../contract'
-import { defaultConditionFor, isUnaryCondition } from './filter-conditions'
+import { defaultConditionFor } from './filter-conditions'
 import {
   hasShortcut,
   parseFilterInput,
@@ -28,9 +28,6 @@ type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>
 /** The rules a draft stands for. */
 export const parseDraft = (column: Column, draft: Draft): Parsed => {
   const type = columnTypeOf(column)
-  if (isUnaryCondition(draft.condition)) {
-    return [{ condition: draft.condition, value: null }]
-  }
   const text = draft.text.trim()
   if (text === '') {
     return []
@@ -76,7 +73,7 @@ export const draftFromRules = (
     // cannot be read as an operator; the others keep their shortcut.
     const text = rules
       .map(rule => {
-        const value = rule.value === null ? '' : String(rule.value)
+        const value = String(rule.value)
         return rule.condition === base && isPlainText(value)
           ? value
           : serializeFilterRules([rule])
@@ -90,7 +87,7 @@ export const draftFromRules = (
     return { text: '', condition: first.condition, multi: rules.length }
   }
   return {
-    text: first.value === null ? '' : String(first.value),
+    text: String(first.value),
     condition: first.condition
   }
 }

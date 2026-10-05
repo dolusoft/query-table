@@ -21,7 +21,6 @@ const footerText = (row: FooterRow, column: Column) =>
         v-for="entry in entries"
         :key="entry.column.field"
         :data-field="entry.column.field"
-        :data-type="entry.type"
       >
         {{ footerText(footerRow, entry.column) }}
       </td>

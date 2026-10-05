@@ -15,16 +15,13 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. |
 | `totalRows` | `number \| null` |  | `null` | Total number of rows on the server, `null` when unknown. It only feeds the `pagination` slot; it never decides whether rows are drawn. |
 | `footerRows` | `FooterRow[]` |  | `[]` | Rows of totals drawn in a `tfoot`. |
-| `loading` | `boolean` |  | `false` | Sets `data-loading` and shows the `loader` slot. Defaults to `false`. |
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
-| `pagination` | `boolean \| PaginationOptions` |  | `true` | `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. |
+| `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
-| `truncate` | `boolean` |  | `true` | Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. |
-| `truncateMaxLength` | `number` |  | `150` | Characters kept when `truncate` is on. Defaults to `150`. |
 
 ### Events
 
@@ -42,10 +39,8 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `filter-datetime` | `FilterDatetimeSlotProps` | Replaces the date input of `date` and `datetime` filters. |
 | `filter-menu` | `FilterMenuSlotProps` | Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. |
 | `subtable` | `SubtableSlotProps<T>` | Content of an expanded row (needs `hasSubtable`). |
-| `loader` | `none` | Shown while `loading`. |
-| `empty` | `none` | Shown when there are no rows and the table is not loading. |
+| `empty` | `none` | Shown when there are no rows. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
-| `cell` | `CellSlotProps<T>` | Cell content for every column without a `cell-<field>` slot. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
 ### Exposed
@@ -86,11 +81,6 @@ export type FilterCondition =
   | 'GreaterThanOrEqual'
   | 'LessThan'
   | 'LessThanOrEqual'
-  | 'IsNull'
-  | 'IsNotNull'
-
-/** Conditions that take no value. Their rule always carries `value: null`. */
-export type UnaryFilterCondition = 'IsNull' | 'IsNotNull'
 
 /**
  * Value of a rule: text columns give a string, `number` and `integer` columns
@@ -111,8 +101,8 @@ export interface FilterRule {
   /** Column `field` the rule applies to. */
   field: string
   condition: FilterCondition
-  /** `null` for `IsNull` and `IsNotNull`; a non-empty value otherwise. */
-  value: FilterValue | null
+  /** A non-empty value. */
+  value: FilterValue
 }
 
 export type SortDirection = 'asc' | 'desc'
@@ -170,8 +160,6 @@ export interface Column {
   filterable?: boolean
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
-  /** Render the cell with `v-html`. Escaping is the consumer's job. Defaults to `false`. */
-  html?: boolean
 }
 
 /** One row of the totals block under the body. */
@@ -200,16 +188,14 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   totalRows?: number | null
   /** Rows of totals drawn in a `tfoot`. */
   footerRows?: FooterRow[]
-  /** Sets `data-loading` and shows the `loader` slot. Defaults to `false`. */
-  loading?: boolean
   /** Allow sorting from the headers (needs column `sortable`). Defaults to `false`. */
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
   filterable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
-  /** `false` removes paging (no `page` or `pageSize` is ever emitted and the `pagination` slot is not drawn). Defaults to `true`. */
-  pagination?: boolean | PaginationOptions
+  /** Options of the `pagination` slot. Paging itself is always on. */
+  pagination?: PaginationOptions
   /** Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. */
   hasSubtable?: boolean
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
@@ -223,10 +209,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
-  /** Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. */
-  truncate?: boolean
-  /** Characters kept when `truncate` is on. Defaults to `150`. */
-  truncateMaxLength?: number
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -291,8 +273,8 @@ export interface FilterMenuSlotProps {
   /** Conditions that make sense for the column type. */
   conditions: FilterConditionOption[]
   /**
-   * Pick a condition. With a value typed (or `IsNull`/`IsNotNull`) the filter
-   * is applied; otherwise the pick waits for a value. `null` clears the filter.
+   * Pick a condition. With a value typed the filter is applied; otherwise the
+   * pick waits for a value. `null` clears the filter.
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */
@@ -321,7 +303,6 @@ export interface PaginationSlotProps {
   canPrevious: boolean
   /** `page < pageCount` when the total is known, else `rows.length >= pageSize`. */
   canNext: boolean
-  loading: boolean
   /** Go to a page; clamped to `[1, pageCount]` when the total is known. */
   setPage: (page: number) => void
   nextPage: () => void
@@ -340,14 +321,10 @@ export interface TableSlots<T> {
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
-  /** Shown while `loading`. */
-  loader?(): unknown
-  /** Shown when there are no rows and the table is not loading. */
+  /** Shown when there are no rows. */
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
-  /** Cell content for every column without a `cell-<field>` slot. */
-  cell?(props: CellSlotProps<T>): unknown
   /** Cell content of one column: `cell-${column.field}`. */
   [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined
 }
@@ -448,7 +425,7 @@ If the consumer does not apply an emitted query, the table keeps drawing the old
 
 #### C-20 Picking a condition
 
-`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `IsNull` and `IsNotNull` apply at once with `value: null` and disable the input. `setCondition(null)` clears the filter.
+`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `setCondition(null)` clears the filter.
 
 #### C-21 Clearing one column
 
@@ -468,7 +445,7 @@ Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `em
 
 #### C-25 Pagination block
 
-The `bh-pagination` block is drawn when `pagination` is not `false`, the `pagination` slot is given, and there are rows, a positive `totalRows` or `pagination.alwaysShow`. With `pagination: false` no `page` or `pageSize` update is ever emitted.
+The `bh-pagination` block is drawn when the `pagination` slot is given and there are rows, a positive `totalRows` or `pagination.alwaysShow`. Without the slot nothing is drawn, and the page actions have nobody to call them.
 
 #### C-26 Row expansion
 
@@ -476,11 +453,11 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-27 Cell slots
 
-`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation. The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
+`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`. A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 #### C-28 Context menu
 
-Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu.
+Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: the payload has no cell element. To find it, walk up from `event.target` through `closest('td')` until the `td`'s row is a direct child of this table's `tbody`; a plain `event.target.closest('td')` is wrong when slot content holds a nested table, because it returns the inner `td`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only. A table nested in a `cell-<field>` slot emits for its own cell, and then the outer table emits for the outer cell that holds it (the same event, so two `cellContextMenu` events in all).
 
 #### C-29 Hidden columns
 
@@ -488,7 +465,7 @@ A column with `hide` is neither in the header nor in the body or footer. Its rul
 
 #### C-30 Cell text
 
-Cell text is cut to `truncateMaxLength` characters with `...` when `truncate` is on, and the full text goes into `title`. A column with `html` renders its text as HTML and is never cut, so markup is not broken mid-tag and `title` never holds markup. The table does not sanitize that markup: pass trusted HTML, or sanitize it before it reaches `rows`. Values are read from dotted paths.
+Cell text is the value as a string, whole: the table never cuts it and sets no `title`. A missing value draws nothing. The text is escaped: the table never renders a value as HTML. Values are read from dotted paths.
 
 #### C-31 No styling
 
@@ -496,7 +473,7 @@ The table ships no CSS, takes no styling props and writes no inline style except
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading`, `data-empty`, `data-filtered` and `data-sorted` on the root; `data-field`, `data-type`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field`, `data-type` on body cells; `data-row-index`, `data-expanded` on rows; `data-page`, `data-page-size` on the pagination block. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -518,9 +495,9 @@ With `hasRightPanel` a button per row emits `rowRightPanelClick` with the row.
 
 `footerRows` are drawn in a `tfoot`, one cell per visible column, whatever `totalRows` is.
 
-#### C-38 Loader and empty slots
+#### C-38 Empty slot
 
-The `loader` slot is shown while `loading`, the `empty` slot when there are no rows and the table is not loading.
+The `empty` slot is shown when there are no rows. The table has no loading state: while the consumer fetches, it decides what `rows` holds and whether to show something else.
 
 #### C-39 Column types
 
@@ -565,7 +542,6 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `bh-right-panel-button` | `td > button` | Right panel button of a row. |
 | `bh-subtable-row` | `tbody > tr` | Row holding the `subtable` slot of an expanded row. |
 | `bh-empty-row` | `tbody > tr` | Row holding the `empty` slot. |
-| `bh-loader-row` | `tbody > tr` | Row holding the `loader` slot. |
 | `bh-footer` | `tfoot` | Totals block. |
 | `bh-pagination` | `div` | Block around the `pagination` slot. |
 
@@ -573,20 +549,13 @@ The classes and attributes below are the only hooks a skin can select. The table
 
 | Attribute | Element | Description |
 | --- | --- | --- |
-| `data-loading` | `.bh-datatable` | Present while `loading`. |
 | `data-empty` | `.bh-datatable` | Present when there are no rows. |
-| `data-filtered` | `.bh-datatable` | Present when `query.filters` is not empty. |
-| `data-sorted` | `.bh-datatable` | Present when `query.sort` is set. |
-| `data-field` | `th, td` | The column `field`, on header, body and footer cells. |
-| `data-type` | `th, td` | The column type, lower case. |
+| `data-field` | `th, td` | The column `field`, on header, body and footer cells. The table reads it on a body cell to tell which column was right-clicked. |
 | `data-sort` | `th` | `asc` or `desc` on the sorted column. |
 | `data-sortable` | `th` | Present when the header can sort. |
 | `data-filtered` | `th, .bh-filter-button` | Present when the column has at least one rule. |
-| `data-utility` | `th, td` | `right-panel` or `subtable` on the cells of the added utility columns. |
-| `data-row-index` | `tbody > tr` | Index of the row in `rows`. |
+| `data-row-index` | `tbody > tr` | Index of the row in `rows`. The table reads it to tell which row was right-clicked. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
-| `data-page` | `.bh-pagination` | Current page. |
-| `data-page-size` | `.bh-pagination` | Current page size. |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 
 ### Inline style
@@ -598,5 +567,5 @@ The only inline style is `width` on `th`: Set from `Column.width`, only when the
 - `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.
 - `pnpm api:check` compares the built declarations with `etc/vue-server-table.api.md`.
 - `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `src/contract.ts`.
-- `tests/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
+- `tests/contract/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
 - The browser tests compare the rendered DOM with the DOM contract and check that the test skin selects only what it lists.

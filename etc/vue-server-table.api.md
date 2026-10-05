@@ -39,7 +39,6 @@ export interface Column {
     field: string;
     filterable?: boolean;
     hide?: boolean;
-    html?: boolean;
     sortable?: boolean;
     title?: string;
     type?: ColumnType;
@@ -57,7 +56,7 @@ export { _default as VueServerTable }
 export default _default;
 
 // @public
-export type FilterCondition = 'Contains' | 'NotContains' | 'Equal' | 'NotEqual' | 'StartsWith' | 'EndsWith' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual' | 'IsNull' | 'IsNotNull';
+export type FilterCondition = 'Contains' | 'NotContains' | 'Equal' | 'NotEqual' | 'StartsWith' | 'EndsWith' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual';
 
 // @public
 export interface FilterConditionOption {
@@ -94,7 +93,7 @@ export interface FilterRule {
     // (undocumented)
     condition: FilterCondition;
     field: string;
-    value: FilterValue | null;
+    value: FilterValue;
 }
 
 // @public
@@ -120,8 +119,6 @@ export interface PaginationSlotProps {
     canNext: boolean;
     // (undocumented)
     canPrevious: boolean;
-    // (undocumented)
-    loading: boolean;
     // (undocumented)
     nextPage: () => void;
     // (undocumented)
@@ -175,15 +172,12 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     footerRows?: FooterRow[];
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
-    loading?: boolean;
-    pagination?: boolean | PaginationOptions;
+    pagination?: PaginationOptions;
     query: TableQuery;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rows?: T[];
     sortable?: boolean;
     totalRows?: number | null;
-    truncate?: boolean;
-    truncateMaxLength?: number;
 }
 
 // @public
@@ -201,16 +195,11 @@ export interface TableSlots<T> {
     'filter-datetime'?(props: FilterDatetimeSlotProps): unknown;
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
-    cell?(props: CellSlotProps<T>): unknown;
     empty?(): unknown;
-    loader?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;
     subtable?(props: SubtableSlotProps<T>): unknown;
     toolbar?(): unknown;
 }
-
-// @public
-export type UnaryFilterCondition = 'IsNull' | 'IsNotNull';
 
 // @public
 export interface VueServerTableExpose {

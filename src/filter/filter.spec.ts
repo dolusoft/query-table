@@ -8,7 +8,7 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type {
   Column,
   FilterDatetimeSlotProps,
@@ -570,18 +570,6 @@ describe('C-20 Picking a condition', () => {
     expect(m.events[0][0].filters).toEqual([rule('name', 'StartsWith', 'foo')])
   })
 
-  it('applies IsNull and IsNotNull at once with a null value and disables the input', async () => {
-    const m = mountIt(base, { slots })
-    menus.name.setCondition('IsNull')
-    await flush()
-    expect(m.events[0][0].filters).toEqual([rule('name', 'IsNull', null)])
-    expect(input(m, 'name').attributes('disabled')).toBeDefined()
-    menus.name.setCondition('IsNotNull')
-    await flush()
-    expect(m.query().filters).toEqual([rule('name', 'IsNotNull', null)])
-    expect(input(m, 'name').attributes('disabled')).toBeDefined()
-  })
-
   it('clears the filter with null', async () => {
     const m = mountIt(
       {
@@ -596,11 +584,10 @@ describe('C-20 Picking a condition', () => {
     expect(input(m, 'name').attributes('disabled')).toBeUndefined()
   })
 
-  it('lists no empty "no filter" condition and ends with the emptiness pair', () => {
+  it('lists no empty "no filter" condition', () => {
     mountIt(base, { slots })
     const values = menus.name.conditions.map(option => option.value)
     expect(values).not.toContain('')
-    expect(values.slice(-2)).toEqual(['IsNull', 'IsNotNull'])
   })
 })
 

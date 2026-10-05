@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 
-import { el, renderTable, rule, shot } from './helpers'
+import { el, renderTable, rule, shot } from '../support/helpers'
 
 // The filter menu is drawn by the consumer: here a real shadcn-vue Popover
 // (reka-ui) wraps the table's own trigger. Positions come from real layout,

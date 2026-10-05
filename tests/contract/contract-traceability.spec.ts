@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 // exist. The tests are read as text: a name is a string literal that starts a
 // `describe(`, `it(`, `test(` or `it.each(...)(` call.
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 const rules = [
   ...readFileSync(join(root, 'contract', 'rules.md'), 'utf8').matchAll(

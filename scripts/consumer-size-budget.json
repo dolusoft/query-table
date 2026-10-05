@@ -1,0 +1,5 @@
+{
+  "note": "Budget for `node scripts/consumer-size.mjs --check` (CI): the package cost, minified + gzip, of an app that imports the table. `measuredGzipBytes` is the value when the budget was set (2.2.6); `maxGzipBytes` is that plus 5%. The value was measured on Windows locally; the CI runner may differ slightly, and the 5% margin covers that. Raise it only on purpose, in the same change that adds the weight.",
+  "measuredGzipBytes": 7934,
+  "maxGzipBytes": 8331
+}

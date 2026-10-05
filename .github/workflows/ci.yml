@@ -54,4 +54,6 @@ jobs:
       - run: pnpm test:browser
         timeout-minutes: 5
       - run: pnpm check:package
+      # check:package built dist/; fails when the package cost passes the budget.
+      - run: pnpm check:size
       - run: pnpm api:check

@@ -7,7 +7,7 @@ The table ships no CSS. It renders plain markup with a small, stable set of `bh-
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/vue-server-table/releases/download/v2.2.5/dolusoft-vue-server-table-2.2.5.tgz
+pnpm add https://github.com/dolusoft/vue-server-table/releases/download/v2.2.6/dolusoft-vue-server-table-2.2.6.tgz
 ```
 
 Peer dependency: `vue` 3.5+.
@@ -42,6 +42,25 @@ watchEffect(async () => {
   />
 </template>
 ```
+
+## Long text
+
+The table draws every cell value in full and never cuts it. To shorten long text, style the cells with your own CSS (`text-overflow: ellipsis` with a fixed width, or `line-clamp`), or render the cell yourself with a `cell-<field>` slot.
+
+## Large tables
+
+The library ships no CSS, so the layout algorithm of the `<table>` is yours. With the browser default, `table-layout: auto`, every column width is worked out from all rows, and the browser lays the whole table out again whenever anything inside it changes, even a single character typed into a filter input. On a table with thousands of rows on one page that shows as a freeze after each keystroke.
+
+For large tables set `table-layout: fixed` and give every column a `width` (`Column.width`, which the table writes as an inline `width` on the `th`):
+
+```css
+.bh-table {
+  table-layout: fixed;
+  width: 100%;
+}
+```
+
+Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout after a filter input changed took 82-152 ms with `auto` and 31 ms with `fixed`. Without widths a `fixed` table splits the width evenly, so set them. Small tables, a few dozen rows, do not need any of this.
 
 ## Row identity
 

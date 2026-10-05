@@ -7,7 +7,7 @@ import type {
   QueryChangeReason,
   TableQuery
 } from '../contract'
-import { defaultConditionFor, isUnaryCondition } from './filter-conditions'
+import { defaultConditionFor } from './filter-conditions'
 import {
   type Draft,
   draftFromRules,
@@ -126,16 +126,10 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
       // Picking a condition is an explicit edit: the first rule's value
       // carries over, the other rules go.
       const first = rulesOf(options.base().filters, field)[0]
-      draft.text =
-        first?.value === undefined || first.value === null
-          ? ''
-          : String(first.value)
+      draft.text = first ? String(first.value) : ''
       draft.multi = undefined
     }
     draft.condition = condition
-    if (isUnaryCondition(condition)) {
-      draft.text = ''
-    }
     commit(field)
   }
 
@@ -215,9 +209,7 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     const type = columnTypeOf(column)
     const base = draft.condition ?? defaultConditionFor(type)
     const condition =
-      type === 'string' && !isUnaryCondition(draft.condition)
-        ? previewCondition(draft.text, base)
-        : base
+      type === 'string' ? previewCondition(draft.text, base) : base
     return { condition, count: draft.multi ?? parseDraft(column, draft).length }
   }
 

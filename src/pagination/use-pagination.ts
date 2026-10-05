@@ -10,10 +10,8 @@ import { cloneQuery } from '../core/query'
 
 export interface PaginationInput {
   /** The props the table was given (read reactively). */
-  props: Required<
-    Pick<TableProps<object>, 'query' | 'rows' | 'loading' | 'pagination'>
-  > &
-    Pick<TableProps<object>, 'totalRows'>
+  props: Required<Pick<TableProps<object>, 'query' | 'rows'>> &
+    Pick<TableProps<object>, 'totalRows' | 'pagination'>
   /** The query a new update must build on. */
   base: () => TableQuery
   update: (next: TableQuery, reason: QueryChangeReason) => void
@@ -31,17 +29,10 @@ export interface PaginationInput {
 export const usePagination = (options: PaginationInput) => {
   const { props } = options
 
-  const paging = computed(() => {
-    if (props.pagination === false) {
-      return null
-    }
-    const settings =
-      typeof props.pagination === 'object' ? props.pagination : {}
-    return {
-      pageSizeOptions: settings.pageSizeOptions ?? [10, 20, 30, 50, 100],
-      alwaysShow: settings.alwaysShow ?? false
-    }
-  })
+  const paging = computed(() => ({
+    pageSizeOptions: props.pagination?.pageSizeOptions ?? [10, 20, 30, 50, 100],
+    alwaysShow: props.pagination?.alwaysShow ?? false
+  }))
 
   const pageCountFor = (pageSize: number): number | null =>
     props.totalRows !== null && props.totalRows !== undefined && pageSize >= 1
@@ -57,7 +48,7 @@ export const usePagination = (options: PaginationInput) => {
   )
 
   const setPage = (page: number) => {
-    if (!paging.value || !Number.isFinite(page)) {
+    if (!Number.isFinite(page)) {
       return
     }
     // A pending filter that changed the filters moves the table to page 1:
@@ -75,9 +66,6 @@ export const usePagination = (options: PaginationInput) => {
   }
 
   const nextPage = () => {
-    if (!paging.value) {
-      return
-    }
     // See `setPage`: a pending filter that changed the filters ends the action.
     if (options.flushFilters()) {
       return
@@ -94,9 +82,6 @@ export const usePagination = (options: PaginationInput) => {
   }
 
   const previousPage = () => {
-    if (!paging.value) {
-      return
-    }
     if (options.flushFilters()) {
       return
     }
@@ -104,7 +89,7 @@ export const usePagination = (options: PaginationInput) => {
   }
 
   const setPageSize = (size: number) => {
-    if (!paging.value || !Number.isInteger(size) || size < 1) {
+    if (!Number.isInteger(size) || size < 1) {
       return
     }
     options.flushFilters()
@@ -123,10 +108,9 @@ export const usePagination = (options: PaginationInput) => {
     pageSize: props.query.pageSize,
     pageCount: pageCount.value,
     totalRows: props.totalRows ?? null,
-    pageSizeOptions: paging.value?.pageSizeOptions ?? [],
+    pageSizeOptions: paging.value.pageSizeOptions,
     canPrevious: props.query.page > 1,
     canNext: canNext.value,
-    loading: props.loading,
     setPage,
     nextPage,
     previousPage,
@@ -135,7 +119,6 @@ export const usePagination = (options: PaginationInput) => {
 
   const showPagination = computed(
     () =>
-      paging.value !== null &&
       options.hasSlot() &&
       (props.rows.length > 0 ||
         (props.totalRows ?? 0) > 0 ||
