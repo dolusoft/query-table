@@ -11,9 +11,13 @@ test('typing a word key by key emits once, after the debounce from the last key'
     filterDebounce: 150
   })
   const input = filterInput('name')
+  // Take the time of the last key from the input event itself: the moment
+  // `keyboard()` resolves is later by the driver round trip, which made the
+  // measured gap fall below the debounce on slower machines.
+  let lastKeyAt = 0
+  input.element().addEventListener('input', () => (lastKeyAt = performance.now() - t0))
   await userEvent.click(input)
   await userEvent.keyboard('ali')
-  const lastKeyAt = performance.now() - t0
   await sleep(100)
   // Still inside the debounce window: nothing yet.
   expect(changes).toHaveLength(0)
