@@ -277,10 +277,15 @@ const cellSlotProps = (
   cellValue: valueAt(row, column.field)
 })
 
-/** Text of a cell, cut when `truncate` is on, and the full text if it was cut. */
+/**
+ * Text of a cell, cut when `truncate` is on, and the full text if it was cut.
+ * An `html` column is never cut: a cut can leave a tag open, and the full
+ * markup is not fit for a `title`.
+ */
 const cellText = (row: T, column: Column) => {
   const full = String(valueAt(row, column.field) ?? '')
-  const cut = props.truncate && full.length > props.truncateMaxLength
+  const cut =
+    props.truncate && !column.html && full.length > props.truncateMaxLength
   return {
     text: cut ? full.substring(0, props.truncateMaxLength) + '...' : full,
     title: cut ? full : undefined
