@@ -80,7 +80,7 @@ If the consumer does not apply an emitted query, the table keeps drawing the old
 
 ### C-20 Picking a condition
 
-`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `IsNull` and `IsNotNull` apply at once with `value: null` and disable the input. `setCondition(null)` clears the filter.
+`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `setCondition(null)` clears the filter.
 
 ### C-21 Clearing one column
 

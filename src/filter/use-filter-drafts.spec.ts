@@ -241,16 +241,6 @@ describe('C-20 Picking a condition', () => {
     ])
   })
 
-  it('IsNull applies at once with a null value and empties the text', () => {
-    const { drafts, updates } = setup()
-    drafts.onInput('age', '25')
-    drafts.setCondition('age', 'IsNull')
-    expect(updates.at(-1)?.query.filters).toEqual([
-      { field: 'age', condition: 'IsNull', value: null }
-    ])
-    expect(drafts.draftOf('age').text).toBe('')
-  })
-
   it('null clears the filter', () => {
     const { drafts, updates } = setup({
       query: makeQuery({

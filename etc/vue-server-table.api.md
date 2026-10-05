@@ -57,7 +57,7 @@ export { _default as VueServerTable }
 export default _default;
 
 // @public
-export type FilterCondition = 'Contains' | 'NotContains' | 'Equal' | 'NotEqual' | 'StartsWith' | 'EndsWith' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual' | 'IsNull' | 'IsNotNull';
+export type FilterCondition = 'Contains' | 'NotContains' | 'Equal' | 'NotEqual' | 'StartsWith' | 'EndsWith' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual';
 
 // @public
 export interface FilterConditionOption {
@@ -94,7 +94,7 @@ export interface FilterRule {
     // (undocumented)
     condition: FilterCondition;
     field: string;
-    value: FilterValue | null;
+    value: FilterValue;
 }
 
 // @public
@@ -208,9 +208,6 @@ export interface TableSlots<T> {
     subtable?(props: SubtableSlotProps<T>): unknown;
     toolbar?(): unknown;
 }
-
-// @public
-export type UnaryFilterCondition = 'IsNull' | 'IsNotNull';
 
 // @public
 export interface VueServerTableExpose {

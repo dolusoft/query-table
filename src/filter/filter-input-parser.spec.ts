@@ -91,14 +91,13 @@ describe('serializeFilterRules', () => {
     ).toBe('*a*,b*,*c,!*d*,!e')
   })
 
-  it('writes the others as plain text, and a null value as nothing', () => {
+  it('writes the others as plain text', () => {
     expect(
       serializeFilterRules([
         { condition: 'Equal', value: 'a' },
-        { condition: 'GreaterThan', value: 5 },
-        { condition: 'IsNull', value: null }
+        { condition: 'GreaterThan', value: 5 }
       ])
-    ).toBe('a,5,')
+    ).toBe('a,5')
     expect(hasShortcut('Equal')).toBe(false)
     expect(hasShortcut('Contains')).toBe(true)
   })

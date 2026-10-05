@@ -86,11 +86,6 @@ export type FilterCondition =
   | 'GreaterThanOrEqual'
   | 'LessThan'
   | 'LessThanOrEqual'
-  | 'IsNull'
-  | 'IsNotNull'
-
-/** Conditions that take no value. Their rule always carries `value: null`. */
-export type UnaryFilterCondition = 'IsNull' | 'IsNotNull'
 
 /**
  * Value of a rule: text columns give a string, `number` and `integer` columns
@@ -111,8 +106,8 @@ export interface FilterRule {
   /** Column `field` the rule applies to. */
   field: string
   condition: FilterCondition
-  /** `null` for `IsNull` and `IsNotNull`; a non-empty value otherwise. */
-  value: FilterValue | null
+  /** A non-empty value. */
+  value: FilterValue
 }
 
 export type SortDirection = 'asc' | 'desc'
@@ -291,8 +286,8 @@ export interface FilterMenuSlotProps {
   /** Conditions that make sense for the column type. */
   conditions: FilterConditionOption[]
   /**
-   * Pick a condition. With a value typed (or `IsNull`/`IsNotNull`) the filter
-   * is applied; otherwise the pick waits for a value. `null` clears the filter.
+   * Pick a condition. With a value typed the filter is applied; otherwise the
+   * pick waits for a value. `null` clears the filter.
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */
@@ -448,7 +443,7 @@ If the consumer does not apply an emitted query, the table keeps drawing the old
 
 #### C-20 Picking a condition
 
-`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `IsNull` and `IsNotNull` apply at once with `value: null` and disable the input. `setCondition(null)` clears the filter.
+`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `setCondition(null)` clears the filter.
 
 #### C-21 Clearing one column
 

@@ -1,8 +1,7 @@
 import type {
   ColumnType,
   FilterCondition,
-  FilterConditionOption,
-  UnaryFilterCondition
+  FilterConditionOption
 } from '../contract'
 
 const equality: FilterConditionOption[] = [
@@ -10,25 +9,18 @@ const equality: FilterConditionOption[] = [
   { value: 'NotEqual', label: 'Not Equal (≠)' }
 ]
 
-const emptiness: FilterConditionOption[] = [
-  { value: 'IsNull', label: 'Is Empty' },
-  { value: 'IsNotNull', label: 'Is Not Empty' }
-]
-
 const numeric: FilterConditionOption[] = [
   ...equality,
   { value: 'GreaterThan', label: 'Greater Than (>)' },
   { value: 'GreaterThanOrEqual', label: 'Greater or Equal (≥)' },
   { value: 'LessThan', label: 'Less Than (<)' },
-  { value: 'LessThanOrEqual', label: 'Less or Equal (≤)' },
-  ...emptiness
+  { value: 'LessThanOrEqual', label: 'Less or Equal (≤)' }
 ]
 
 const temporal: FilterConditionOption[] = [
   ...equality,
   { value: 'GreaterThan', label: 'After (>)' },
-  { value: 'LessThan', label: 'Before (<)' },
-  ...emptiness
+  { value: 'LessThan', label: 'Before (<)' }
 ]
 
 /** Conditions offered per column type. */
@@ -38,8 +30,7 @@ export const filterConditions: Record<ColumnType, FilterConditionOption[]> = {
     { value: 'NotContains', label: 'Not Contains' },
     ...equality,
     { value: 'StartsWith', label: 'Starts With' },
-    { value: 'EndsWith', label: 'Ends With' },
-    ...emptiness
+    { value: 'EndsWith', label: 'Ends With' }
   ],
   number: numeric,
   integer: numeric,
@@ -51,11 +42,6 @@ export const filterConditions: Record<ColumnType, FilterConditionOption[]> = {
 /** Text columns match by `Contains`, every other type matches exactly. */
 export const defaultConditionFor = (type: ColumnType): FilterCondition =>
   type === 'string' ? 'Contains' : 'Equal'
-
-export const isUnaryCondition = (
-  condition: FilterCondition | null
-): condition is UnaryFilterCondition =>
-  condition === 'IsNull' || condition === 'IsNotNull'
 
 /** Label of a condition for a column type, falling back to the raw name. */
 export const conditionLabel = (

@@ -48,11 +48,6 @@ const inputText = () => {
   return count > 0 ? `(${count})` : drafts.draftOf(props.column.field).text
 }
 
-const isDisabled = () => {
-  const { condition } = drafts.draftOf(props.column.field)
-  return condition === 'IsNull' || condition === 'IsNotNull'
-}
-
 const currentCondition = (): FilterCondition | null =>
   rulesOf(props.query.filters, props.column.field)[0]?.condition ??
   drafts.draftOf(props.column.field).condition
@@ -102,7 +97,6 @@ const pick = (event: Event) => {
       class="bh-filter-input"
       :aria-label="`Filter ${column.title ?? column.field}`"
       :value="drafts.draftOf(column.field).text"
-      :disabled="isDisabled()"
       @input="drafts.onInput(column.field, inputValue($event))"
       @keydown.enter="drafts.flushField(column.field)"
     />
@@ -113,7 +107,6 @@ const pick = (event: Event) => {
       :aria-label="`Filter ${column.title ?? column.field}`"
       :value="inputText()"
       :readonly="drafts.multiOf(column.field) > 0"
-      :disabled="isDisabled()"
       @input="drafts.onInput(column.field, inputValue($event))"
       @keydown.enter="drafts.flushField(column.field)"
     />
@@ -143,7 +136,6 @@ const pick = (event: Event) => {
         :aria-label="`Filter ${column.title ?? column.field}`"
         :value="inputText()"
         :readonly="drafts.multiOf(column.field) > 0"
-        :disabled="isDisabled()"
         @input="drafts.onInput(column.field, inputValue($event))"
         @keydown.enter="drafts.flushField(column.field)"
       />

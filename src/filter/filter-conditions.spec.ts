@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   conditionLabel,
   defaultConditionFor,
-  filterConditions,
-  isUnaryCondition
+  filterConditions
 } from './filter-conditions'
 
 describe('filter conditions per column type', () => {
@@ -14,12 +13,10 @@ describe('filter conditions per column type', () => {
     }
   })
 
-  it('every list ends with the two emptiness conditions, except bool', () => {
-    for (const [type, list] of Object.entries(filterConditions)) {
-      const tail = list.slice(-2).map(option => option.value)
-      expect(tail).toEqual(
-        type === 'bool' ? ['Equal', 'NotEqual'] : ['IsNull', 'IsNotNull']
-      )
+  it('no list offers a condition twice', () => {
+    for (const list of Object.values(filterConditions)) {
+      const values = list.map(option => option.value)
+      expect(new Set(values).size).toBe(values.length)
     }
   })
 
@@ -39,8 +36,5 @@ describe('filter conditions per column type', () => {
   it('labels a condition and falls back to its name', () => {
     expect(conditionLabel('string', 'StartsWith')).toBe('Starts With')
     expect(conditionLabel('bool', 'Contains')).toBe('Contains')
-    expect(isUnaryCondition('IsNull')).toBe(true)
-    expect(isUnaryCondition('Equal')).toBe(false)
-    expect(isUnaryCondition(null)).toBe(false)
   })
 })
