@@ -60,16 +60,30 @@ describe('C-15 operator shortcuts typed into the header filter', () => {
       filterDebounce: DEBOUNCE
     })
     const { el } = await typeTracking(filterInput('name'), 'foo')
-    await sleep(WAIT)
-    expect(updates).toHaveLength(1)
-    expect(updates[0].query.filters).toEqual([rule('name', 'Contains', 'foo')])
+    // The pause is built in: `*` is typed only once the debounce has applied
+    // `foo`, however long that takes. Keys that arrive slowly may make more
+    // than one update on the way, so the test looks at what was applied last,
+    // not at how many updates there were.
+    await expect
+      .poll(() => updates.at(-1)?.query.filters)
+      .toEqual([rule('name', 'Contains', 'foo')])
+    const beforeStar = updates.length
     await userEvent.keyboard('*')
-    await sleep(WAIT)
+    await expect
+      .poll(() => updates.at(-1)?.query.filters)
+      .toEqual([rule('name', 'StartsWith', 'foo')])
     expect(el.value).toBe('foo*')
-    expect(updates).toHaveLength(2)
-    expect(updates[1].query.filters).toEqual([
-      rule('name', 'StartsWith', 'foo')
-    ])
+    // The star came after the applied `foo`: it made a new update.
+    expect(updates.length).toBeGreaterThan(beforeStar)
+    // The text with its operator never reaches the query.
+    expect(JSON.stringify(updates.map(update => update.query))).not.toContain(
+      '*'
+    )
+    // Nothing more follows once the debounce has run out.
+    const settled = updates.length
+    await sleep(WAIT)
+    expect(updates).toHaveLength(settled)
+    expect(el.value).toBe('foo*')
   })
 
   test('pasting the whole shortcut at once works the same way', async () => {

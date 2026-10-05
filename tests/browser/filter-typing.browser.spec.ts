@@ -36,18 +36,45 @@ describe('C-09 typing in a header filter', () => {
 
 describe('C-12 Enter in a header filter', () => {
   test('flushes the pending debounce immediately', async () => {
+    // Long on purpose: the update can only come from Enter if it arrives
+    // before the debounce could have fired, and that bound has to hold even
+    // when the machine is slow. Nothing below measures a short wall-clock gap.
+    const DEBOUNCE = 3000
     const { filterInput, updates, t0 } = await renderTable({
-      filterDebounce: 2000
+      filterDebounce: DEBOUNCE
     })
-    await userEvent.click(filterInput('name'))
+    // Times of the last key and of Enter come from the events themselves, not
+    // from when the driver call resolves. The capture listener on the document
+    // runs before the table's own handler.
+    let lastKeyAt = 0
+    let enterAt = Number.POSITIVE_INFINITY
+    const input = filterInput('name')
+    input
+      .element()
+      .addEventListener('input', () => (lastKeyAt = performance.now() - t0))
+    document.addEventListener(
+      'keydown',
+      event => {
+        if (event.key === 'Enter') {
+          enterAt = performance.now() - t0
+        }
+      },
+      true
+    )
+    await userEvent.click(input)
     await userEvent.keyboard('bob')
-    const beforeEnter = performance.now() - t0
     await userEvent.keyboard('{Enter}')
     await expect.poll(() => updates.length).toBe(1)
-    expect(updates[0].at - beforeEnter).toBeLessThan(1000)
+    // Caused by Enter: after the Enter key, and before the debounce of the
+    // last key was due.
+    expect(updates[0].at).toBeGreaterThanOrEqual(enterAt)
+    expect(updates[0].at - lastKeyAt).toBeLessThan(DEBOUNCE)
     expect(updates[0].query.filters).toEqual([rule('name', 'Contains', 'bob')])
-    // The flushed timer must not fire a second time.
-    await sleep(2200)
+    // The flushed timer must not fire a second time: wait until it would have
+    // been due, plus a margin.
+    await sleep(
+      Math.max(0, lastKeyAt + DEBOUNCE + 300 - (performance.now() - t0))
+    )
     expect(updates).toHaveLength(1)
   })
 })
