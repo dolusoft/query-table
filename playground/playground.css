@@ -1,0 +1,10 @@
+/* The playground page: the skin (generated, see skin/gen-skin.ts) plus the
+   page chrome, which uses Tailwind utilities only. */
+@import "./skin/test-skin.css";
+@source ".";
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}

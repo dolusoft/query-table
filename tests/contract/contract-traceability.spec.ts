@@ -21,7 +21,7 @@ const specFiles = (dir: string): string[] =>
   readdirSync(dir).flatMap(entry => {
     const path = join(dir, entry)
     if (statSync(path).isDirectory()) {
-      return entry === 'node_modules' || entry === '__screenshots__'
+      return ['node_modules', '__screenshots__', 'dist'].includes(entry)
         ? []
         : specFiles(path)
     }
@@ -35,10 +35,11 @@ const NAME =
   /\b(?:describe|it|test)(?:\.\w+)*(?:\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g
 
 // Unit specs sit next to the code in src/, the browser and cross-cutting ones
-// in tests/.
+// in tests/, the skin and playground specs in playground/.
 const named = [
   ...specFiles(join(root, 'src')),
-  ...specFiles(join(root, 'tests'))
+  ...specFiles(join(root, 'tests')),
+  ...specFiles(join(root, 'playground'))
 ].flatMap(file => {
   const text = readFileSync(file, 'utf8')
   return [...text.matchAll(NAME)].map(match => ({

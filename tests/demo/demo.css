@@ -1,5 +1,0 @@
-/* The demo's root is tests/demo, so Tailwind would only scan this folder.
-   Point it at the whole tests tree (harness, skin components) like the
-   browser tests, whose root is the repository. */
-@import "../skin/test-skin.css";
-@source "..";

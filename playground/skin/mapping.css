@@ -32,6 +32,11 @@
 .bh-table td {
   @apply p-2 align-middle whitespace-nowrap tabular-nums;
 }
+/* Vertical column borders: the same border token as the row lines. */
+.bh-table th,
+.bh-table td {
+  @apply border-r last:border-r-0;
+}
 
 /* TableFooter */
 .bh-footer {
