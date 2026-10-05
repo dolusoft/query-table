@@ -120,8 +120,6 @@ export interface PaginationSlotProps {
     // (undocumented)
     canPrevious: boolean;
     // (undocumented)
-    loading: boolean;
-    // (undocumented)
     nextPage: () => void;
     // (undocumented)
     page: number;
@@ -174,7 +172,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     footerRows?: FooterRow[];
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
-    loading?: boolean;
     pagination?: PaginationOptions;
     query: TableQuery;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
@@ -199,7 +196,6 @@ export interface TableSlots<T> {
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
     empty?(): unknown;
-    loader?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;
     subtable?(props: SubtableSlotProps<T>): unknown;
     toolbar?(): unknown;

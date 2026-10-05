@@ -89,11 +89,6 @@ export const domClasses: ClassEntry[] = [
     on: 'tbody > tr',
     description: 'Row holding the `empty` slot.'
   },
-  {
-    name: 'bh-loader-row',
-    on: 'tbody > tr',
-    description: 'Row holding the `loader` slot.'
-  },
   { name: 'bh-footer', on: 'tfoot', description: 'Totals block.' },
   {
     name: 'bh-pagination',
@@ -104,11 +99,6 @@ export const domClasses: ClassEntry[] = [
 
 /** Boolean attributes are present or absent; the value is an empty string. */
 export const domAttributes: AttributeEntry[] = [
-  {
-    name: 'data-loading',
-    on: '.bh-datatable',
-    description: 'Present while `loading`.'
-  },
   {
     name: 'data-empty',
     on: '.bh-datatable',

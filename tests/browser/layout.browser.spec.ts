@@ -115,7 +115,6 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     await renderTable({
       hasSubtable: true,
       hasRightPanel: true,
-      loading: true,
       rows: rows(3),
       columns: [
         { field: 'id', title: 'ID', type: 'number', width: '90px' },

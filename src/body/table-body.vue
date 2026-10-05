@@ -9,9 +9,8 @@ defineProps<{
   rows: T[]
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
-  /** Cells a full-width row (loader, subtable, empty) spans. */
+  /** Cells a full-width row (subtable, empty) spans. */
   columnCount: number
-  loading: boolean
   hasSubtable: boolean
   hasRightPanel: boolean
   keyOf: (row: T, index: number) => string | number
@@ -35,9 +34,6 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
 
 <template>
   <tbody>
-    <tr v-if="loading && slots.loader" class="bh-loader-row">
-      <td :colspan="columnCount"><slot name="loader" /></td>
-    </tr>
     <template v-for="(row, i) in rows" :key="keyOf(row, i)">
       <tr
         :data-row-index="i"
@@ -110,10 +106,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
         </td>
       </tr>
     </template>
-    <tr
-      v-if="rows.length === 0 && !loading && slots.empty"
-      class="bh-empty-row"
-    >
+    <tr v-if="rows.length === 0 && slots.empty" class="bh-empty-row">
       <td :colspan="columnCount"><slot name="empty" /></td>
     </tr>
   </tbody>

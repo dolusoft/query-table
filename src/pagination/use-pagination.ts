@@ -10,7 +10,7 @@ import { cloneQuery } from '../core/query'
 
 export interface PaginationInput {
   /** The props the table was given (read reactively). */
-  props: Required<Pick<TableProps<object>, 'query' | 'rows' | 'loading'>> &
+  props: Required<Pick<TableProps<object>, 'query' | 'rows'>> &
     Pick<TableProps<object>, 'totalRows' | 'pagination'>
   /** The query a new update must build on. */
   base: () => TableQuery
@@ -111,7 +111,6 @@ export const usePagination = (options: PaginationInput) => {
     pageSizeOptions: paging.value.pageSizeOptions,
     canPrevious: props.query.page > 1,
     canNext: canNext.value,
-    loading: props.loading,
     setPage,
     nextPage,
     previousPage,

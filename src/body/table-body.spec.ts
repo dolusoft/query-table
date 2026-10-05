@@ -300,30 +300,21 @@ describe('C-37 Footer rows', () => {
   })
 })
 
-describe('C-38 Loader and empty slots', () => {
+describe('C-38 Empty slot', () => {
   const slots = {
-    loader: '<span class="spin">loading</span>',
     empty: '<span class="none">nothing</span>'
   }
 
-  it('shows the loader while loading and the empty slot otherwise when there are no rows', async () => {
-    const m = mountIt({ rows: [], loading: true }, { slots })
-    expect(m.wrapper.find('.bh-loader-row .spin').exists()).toBe(true)
-    expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
-    await m.wrapper.setProps({ loading: false })
-    expect(m.wrapper.find('.bh-loader-row').exists()).toBe(false)
+  it('shows the empty slot whenever there are no rows, and hides it when rows arrive', async () => {
+    const m = mountIt({ rows: [] }, { slots })
     expect(m.wrapper.find('.bh-empty-row .none').exists()).toBe(true)
-  })
-
-  it('shows neither with rows present, and keeps the rows while loading', () => {
-    const m = mountIt({ loading: true }, { slots })
+    await m.wrapper.setProps({ rows: makeRows() })
     expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
     expect(m.wrapper.findAll('tbody tr[data-row-index]')).toHaveLength(5)
   })
 
   it('draws no row for a slot that is not given', () => {
-    const m = mountIt({ rows: [], loading: true })
-    expect(m.wrapper.find('.bh-loader-row').exists()).toBe(false)
+    const m = mountIt({ rows: [] })
     expect(m.wrapper.find('.bh-empty-row').exists()).toBe(false)
   })
 

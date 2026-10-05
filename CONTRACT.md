@@ -15,7 +15,6 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. |
 | `totalRows` | `number \| null` |  | `null` | Total number of rows on the server, `null` when unknown. It only feeds the `pagination` slot; it never decides whether rows are drawn. |
 | `footerRows` | `FooterRow[]` |  | `[]` | Rows of totals drawn in a `tfoot`. |
-| `loading` | `boolean` |  | `false` | Sets `data-loading` and shows the `loader` slot. Defaults to `false`. |
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
@@ -40,8 +39,7 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `filter-datetime` | `FilterDatetimeSlotProps` | Replaces the date input of `date` and `datetime` filters. |
 | `filter-menu` | `FilterMenuSlotProps` | Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. |
 | `subtable` | `SubtableSlotProps<T>` | Content of an expanded row (needs `hasSubtable`). |
-| `loader` | `none` | Shown while `loading`. |
-| `empty` | `none` | Shown when there are no rows and the table is not loading. |
+| `empty` | `none` | Shown when there are no rows. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
@@ -190,8 +188,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   totalRows?: number | null
   /** Rows of totals drawn in a `tfoot`. */
   footerRows?: FooterRow[]
-  /** Sets `data-loading` and shows the `loader` slot. Defaults to `false`. */
-  loading?: boolean
   /** Allow sorting from the headers (needs column `sortable`). Defaults to `false`. */
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
@@ -307,7 +303,6 @@ export interface PaginationSlotProps {
   canPrevious: boolean
   /** `page < pageCount` when the total is known, else `rows.length >= pageSize`. */
   canNext: boolean
-  loading: boolean
   /** Go to a page; clamped to `[1, pageCount]` when the total is known. */
   setPage: (page: number) => void
   nextPage: () => void
@@ -326,9 +321,7 @@ export interface TableSlots<T> {
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
-  /** Shown while `loading`. */
-  loader?(): unknown
-  /** Shown when there are no rows and the table is not loading. */
+  /** Shown when there are no rows. */
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
@@ -480,7 +473,7 @@ The table ships no CSS, takes no styling props and writes no inline style except
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading` and `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -502,9 +495,9 @@ With `hasRightPanel` a button per row emits `rowRightPanelClick` with the row.
 
 `footerRows` are drawn in a `tfoot`, one cell per visible column, whatever `totalRows` is.
 
-#### C-38 Loader and empty slots
+#### C-38 Empty slot
 
-The `loader` slot is shown while `loading`, the `empty` slot when there are no rows and the table is not loading.
+The `empty` slot is shown when there are no rows. The table has no loading state: while the consumer fetches, it decides what `rows` holds and whether to show something else.
 
 #### C-39 Column types
 
@@ -549,7 +542,6 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `bh-right-panel-button` | `td > button` | Right panel button of a row. |
 | `bh-subtable-row` | `tbody > tr` | Row holding the `subtable` slot of an expanded row. |
 | `bh-empty-row` | `tbody > tr` | Row holding the `empty` slot. |
-| `bh-loader-row` | `tbody > tr` | Row holding the `loader` slot. |
 | `bh-footer` | `tfoot` | Totals block. |
 | `bh-pagination` | `div` | Block around the `pagination` slot. |
 
@@ -557,7 +549,6 @@ The classes and attributes below are the only hooks a skin can select. The table
 
 | Attribute | Element | Description |
 | --- | --- | --- |
-| `data-loading` | `.bh-datatable` | Present while `loading`. |
 | `data-empty` | `.bh-datatable` | Present when there are no rows. |
 | `data-field` | `th, td` | The column `field`, on header, body and footer cells. |
 | `data-sort` | `th` | `asc` or `desc` on the sorted column. |

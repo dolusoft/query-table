@@ -15,7 +15,6 @@ import VueServerTable from '../../src/index'
 
 const slots = {
   'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger),
-  loader: () => h('span', 'loading'),
   empty: () => h('span', 'nothing'),
   subtable: () => h('b', 'detail'),
   pagination: () => h('span', 'pages')
@@ -131,13 +130,6 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
     footerRows: [{ cells: [{ field: 'id', text: 'Total' }] }]
   })
   await userEvent.click(document.querySelector('.bh-expand')!)
-  collect()
-  cleanup()
-
-  await renderTable({ loading: true, rows: [] })
-  await expect
-    .element(document.querySelector<HTMLElement>('.bh-loader-row'))
-    .toBeInTheDocument()
   collect()
   cleanup()
 

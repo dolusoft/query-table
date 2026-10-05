@@ -131,8 +131,6 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   totalRows?: number | null
   /** Rows of totals drawn in a `tfoot`. */
   footerRows?: FooterRow[]
-  /** Sets `data-loading` and shows the `loader` slot. Defaults to `false`. */
-  loading?: boolean
   /** Allow sorting from the headers (needs column `sortable`). Defaults to `false`. */
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
@@ -248,7 +246,6 @@ export interface PaginationSlotProps {
   canPrevious: boolean
   /** `page < pageCount` when the total is known, else `rows.length >= pageSize`. */
   canNext: boolean
-  loading: boolean
   /** Go to a page; clamped to `[1, pageCount]` when the total is known. */
   setPage: (page: number) => void
   nextPage: () => void
@@ -267,9 +264,7 @@ export interface TableSlots<T> {
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
-  /** Shown while `loading`. */
-  loader?(): unknown
-  /** Shown when there are no rows and the table is not loading. */
+  /** Shown when there are no rows. */
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown

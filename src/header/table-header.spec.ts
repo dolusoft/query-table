@@ -28,7 +28,6 @@ describe('C-31 No styling', () => {
       filterable: true,
       hasSubtable: true,
       hasRightPanel: true,
-      loading: true,
       columns: [
         { field: 'id', title: 'ID', width: '80px' },
         { field: 'name', title: 'Name' },
@@ -57,19 +56,16 @@ describe('C-31 No styling', () => {
 
 describe('C-32 State attributes', () => {
   it('sets the root attributes from the state', async () => {
-    const m = mountIt({ rows: [], loading: true })
+    const m = mountIt({ rows: [] })
     const root = () => m.wrapper.find('.bh-datatable')
-    expect(root().attributes('data-loading')).toBe('')
     expect(root().attributes('data-empty')).toBe('')
     await m.wrapper.setProps({
       rows: makeRows(),
-      loading: false,
       query: makeQuery({
         sort: { field: 'name', direction: 'asc' },
         filters: [{ field: 'name', condition: 'Contains', value: 'a' }]
       })
     })
-    expect(root().attributes('data-loading')).toBeUndefined()
     expect(root().attributes('data-empty')).toBeUndefined()
   })
 

@@ -128,7 +128,7 @@ The table ships no CSS, takes no styling props and writes no inline style except
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading` and `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -150,9 +150,9 @@ With `hasRightPanel` a button per row emits `rowRightPanelClick` with the row.
 
 `footerRows` are drawn in a `tfoot`, one cell per visible column, whatever `totalRows` is.
 
-### C-38 Loader and empty slots
+### C-38 Empty slot
 
-The `loader` slot is shown while `loading`, the `empty` slot when there are no rows and the table is not loading.
+The `empty` slot is shown when there are no rows. The table has no loading state: while the consumer fetches, it decides what `rows` holds and whether to show something else.
 
 ### C-39 Column types
 

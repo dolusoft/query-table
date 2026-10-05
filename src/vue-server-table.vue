@@ -26,7 +26,6 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   rows: () => [],
   totalRows: null,
   footerRows: () => [],
-  loading: false,
   sortable: false,
   filterable: false,
   filterDebounce: 100,
@@ -87,15 +86,10 @@ const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
 })
 
 // The slots `table-body` draws: only the ones the consumer gave are passed on,
-// so the body can tell whether a `cell-<field>`, `loader` or `empty` slot
-// exists.
+// so the body can tell whether a `cell-<field>` or `empty` slot exists.
 const bodySlotNames = () =>
   Object.keys(rawSlots).filter(
-    name =>
-      name.startsWith('cell-') ||
-      name === 'subtable' ||
-      name === 'loader' ||
-      name === 'empty'
+    name => name.startsWith('cell-') || name === 'subtable' || name === 'empty'
   )
 
 const exposed: VueServerTableExpose = {
@@ -108,11 +102,7 @@ defineExpose(exposed)
 </script>
 
 <template>
-  <div
-    class="bh-datatable"
-    :data-loading="loading ? '' : undefined"
-    :data-empty="rows.length === 0 ? '' : undefined"
-  >
+  <div class="bh-datatable" :data-empty="rows.length === 0 ? '' : undefined">
     <slot name="toolbar" />
     <div class="bh-table-responsive">
       <table class="bh-table">
@@ -136,7 +126,6 @@ defineExpose(exposed)
           :rows="rows"
           :entries="entries"
           :column-count="columnCount"
-          :loading="loading"
           :has-subtable="hasSubtable"
           :has-right-panel="hasRightPanel"
           :key-of="keyOf"
