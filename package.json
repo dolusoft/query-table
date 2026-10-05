@@ -1,0 +1,79 @@
+{
+  "name": "@dolusoft/vue-server-table",
+  "version": "2.0.0",
+  "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter and paging changes.",
+  "private": false,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/vue-server-table.cjs",
+  "module": "./dist/vue-server-table.js",
+  "types": "./dist/types/components/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/components/index.d.ts",
+      "import": "./dist/vue-server-table.js",
+      "require": "./dist/vue-server-table.cjs"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dolusoft/vue-server-table.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dolusoft/vue-server-table/issues"
+  },
+  "homepage": "https://github.com/dolusoft/vue-server-table#readme",
+  "keywords": [
+    "vue",
+    "vue3",
+    "table",
+    "datatable",
+    "server-side",
+    "pagination",
+    "sorting",
+    "filter"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build && vue-tsc -p tsconfig.build.json",
+    "lint": "eslint src",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@iconify/vue": "^5.0.3"
+  },
+  "peerDependencies": {
+    "floating-vue": ">=5.2.2",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@typescript-eslint/eslint-plugin": "^8.71.0",
+    "@typescript-eslint/parser": "^8.71.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/test-utils": "^2.5.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-vue": "^10.11.1",
+    "floating-vue": "npm:@dolusoft/floating-vue@^5.3.0",
+    "globals": "^17.13.0",
+    "happy-dom": "^20.14.5",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3",
+    "vue": "^3.5.43",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "^3.3.12"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
