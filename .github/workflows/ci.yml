@@ -16,6 +16,8 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # The whole job takes a few minutes; a hung browser run must not hold a
+    # runner for the 6-hour default.
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +50,8 @@ jobs:
       # Downloads Chromium only on a cache miss; system libraries are always
       # installed because the runner image does not keep them between jobs.
       - run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 5
       - run: pnpm test:browser
+        timeout-minutes: 5
       - run: pnpm check:package
       - run: pnpm api:check
