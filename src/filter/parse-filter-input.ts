@@ -24,6 +24,8 @@ export function parseFilterInput(
   column: Column,
   condition: FilterCondition | null = null
 ): FilterRule[] {
+  // Runtime guard for JavaScript callers: the type says `string`, but an
+  // untyped caller may pass `null`, a number or a URL parameter that is absent.
   if (typeof text !== 'string') {
     return []
   }

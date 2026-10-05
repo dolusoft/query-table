@@ -1,10 +1,13 @@
 name: Release
 
 # Publishes a version: push a tag `v<version>` that equals the `version` in
-# package.json (see CONTRIBUTING.md, "Releasing"). The job runs every check
-# of CI, packs the package and attaches the tarball to a GitHub Release,
-# then checks that the asset URL answers. Optionally it tells one consumer
-# repository about the release with a `repository_dispatch`:
+# package.json (see CONTRIBUTING.md, "Releasing").
+#
+#   verify   read-only token: runs every check of CI, builds, packs and
+#            uploads the tarball as a workflow artifact.
+#   publish  write token, no install and no repository code: downloads the
+#            tarball, creates the GitHub Release, checks that the asset URL
+#            answers, and optionally tells one consumer repository:
 #
 #   secret   CONSUMER_DISPATCH_TOKEN  a token allowed to dispatch to that repo
 #   variable CONSUMER_REPO            `owner/name` of that repo
@@ -16,20 +19,27 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
     env:
       TAG: ${{ github.ref_name }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tarball: ${{ steps.pack.outputs.name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
@@ -83,32 +93,58 @@ jobs:
         run: |
           mkdir -p release
           pnpm pack --pack-destination release
-          file="$(ls release/*.tgz)"
-          if [ "$(echo "$file" | wc -l)" -ne 1 ]; then
-            echo "::error::Expected one tarball in release/, found: $file"
+          count="$(find release -maxdepth 1 -name '*.tgz' | wc -l)"
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected one tarball in release/, found $count."
             exit 1
           fi
-          echo "file=$file" >> "$GITHUB_OUTPUT"
+          file="$(find release -maxdepth 1 -name '*.tgz')"
           echo "name=$(basename "$file")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tarball
+          path: release/${{ steps.pack.outputs.name }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      NAME: ${{ needs.verify.outputs.tarball }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tarball
+          path: release
 
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          FILE: ${{ steps.pack.outputs.file }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
-            # A re-run of the same tag replaces the asset, nothing else.
-            gh release upload "$TAG" "$FILE" --clobber
+            # A re-run may only replace the asset of the same commit: if the
+            # tag now names another commit, stop instead of overwriting.
+            tagged="$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)"
+            if [ "$tagged" != "$GITHUB_SHA" ]; then
+              echo "::error::Release $TAG exists for commit $tagged, this run is for $GITHUB_SHA."
+              exit 1
+            fi
+            gh release upload "$TAG" "release/$NAME" --clobber
           else
-            gh release create "$TAG" "$FILE" --title "$TAG" --generate-notes --verify-tag
+            gh release create "$TAG" "release/$NAME" --title "$TAG" --generate-notes --verify-tag
           fi
 
       - name: Check the asset URL
         id: asset
-        env:
-          NAME: ${{ steps.pack.outputs.name }}
         run: |
-          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${NAME}"
+          url="https://github.com/${GH_REPO}/releases/download/${TAG}/${NAME}"
           for attempt in 1 2 3 4 5 6; do
             status="$(curl -sSL -o /dev/null -w '%{http_code}' "$url" || true)"
             echo "attempt $attempt: $status $url"
@@ -125,7 +161,7 @@ jobs:
         env:
           DISPATCH_TOKEN: ${{ secrets.CONSUMER_DISPATCH_TOKEN }}
           CONSUMER_REPO: ${{ vars.CONSUMER_REPO }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.verify.outputs.version }}
           TARBALL_URL: ${{ steps.asset.outputs.url }}
         run: |
           if [ -z "$DISPATCH_TOKEN" ] || [ -z "$CONSUMER_REPO" ]; then
