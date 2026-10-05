@@ -58,13 +58,14 @@ export default defineConfig(({ mode }) => {
         enabled: true,
         // In inspect mode the headed Chromium also exposes CDP on 9333, so an
         // agent (or chrome://inspect) can attach to the very page under test.
-        provider: playwright(
-          inspect
-            ? {
-                launchOptions: { args: ['--remote-debugging-port=9333'] }
-              }
-            : {}
-        ),
+        // `colorScheme: null` turns off Playwright's default light emulation,
+        // so the headed page follows the OS theme like a real browser does.
+        provider: playwright({
+          contextOptions: { colorScheme: null },
+          ...(inspect
+            ? { launchOptions: { args: ['--remote-debugging-port=9333'] } }
+            : {})
+        }),
         // Headed by default so a developer sees the page under test.
         // Headless in CI (GitHub Actions sets CI=true) or on request
         // (`pnpm test:browser:headless`, or HEADLESS=1).
