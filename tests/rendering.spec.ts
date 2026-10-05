@@ -441,6 +441,34 @@ describe('C-34 Filter menu slot', () => {
     expect(m.wrapper.findAll('.bh-filter-button button, button button')).toHaveLength(0)
   })
 
+  it('keeps the trigger label in step with the column title', async () => {
+    const m = mountIt(
+      { filterable: true },
+      {
+        slots: {
+          'filter-menu': ((menu: FilterMenuSlotProps) =>
+            h(menu.trigger)) as never
+        }
+      }
+    )
+    const label = () =>
+      m.wrapper
+        .find('th[data-field="name"] .bh-filter-button')
+        .attributes('aria-label')
+    expect(label()).toBe('Filter options for Name')
+    await m.wrapper.setProps({
+      columns: makeColumns().map(column =>
+        column.field === 'name' ? { ...column, title: 'Isim' } : column
+      )
+    })
+    expect(label()).toBe('Filter options for Isim')
+    expect(
+      m.wrapper
+        .find('th[data-field="name"] .bh-filter-input')
+        .attributes('aria-label')
+    ).toBe('Filter Isim')
+  })
+
   it('keeps the same trigger component across renders, so a wrapper does not remount it', async () => {
     const seen: FilterMenuSlotProps[] = []
     const m = mountIt(
