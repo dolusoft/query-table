@@ -136,7 +136,7 @@ A template ref exposes `collapseAll` and `flushPendingFilters` and nothing else.
 
 ### C-34 Filter menu slot
 
-The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.bh-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. Without the slot there is no filter button.
+The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.bh-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its `aria-label` follows the current `title` of the column. Without the slot there is no filter button.
 
 ### C-35 Date filter slot
 
