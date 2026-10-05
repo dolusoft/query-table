@@ -261,6 +261,20 @@ describe('C-30 Cell text', () => {
     expect(m.wrapper.find('td em.x').text()).toBe('hi')
   })
 
+  it('never cuts an html column, so no tag is left open and the title stays plain', () => {
+    const html = `<a href="/x/${'a'.repeat(200)}">link</a><b>bold</b>`
+    const m = mountIt({
+      columns: [{ field: 'name', html: true }],
+      rows: [{ name: html }],
+      truncateMaxLength: 10
+    })
+    const cell = m.wrapper.find('td')
+    expect(cell.element.innerHTML).toBe(html)
+    expect(cell.find('a').text()).toBe('link')
+    expect(cell.find('b').text()).toBe('bold')
+    expect(cell.attributes('title')).toBeUndefined()
+  })
+
   it('escapes the text of other columns', () => {
     const m = mountIt({
       columns: [{ field: 'name' }],
@@ -439,6 +453,34 @@ describe('C-34 Filter menu slot', () => {
     expect(button.classes()).toContain('extra')
     expect(button.attributes('data-filtered')).toBe('')
     expect(m.wrapper.findAll('.bh-filter-button button, button button')).toHaveLength(0)
+  })
+
+  it('keeps the trigger label in step with the column title', async () => {
+    const m = mountIt(
+      { filterable: true },
+      {
+        slots: {
+          'filter-menu': ((menu: FilterMenuSlotProps) =>
+            h(menu.trigger)) as never
+        }
+      }
+    )
+    const label = () =>
+      m.wrapper
+        .find('th[data-field="name"] .bh-filter-button')
+        .attributes('aria-label')
+    expect(label()).toBe('Filter options for Name')
+    await m.wrapper.setProps({
+      columns: makeColumns().map(column =>
+        column.field === 'name' ? { ...column, title: 'Isim' } : column
+      )
+    })
+    expect(label()).toBe('Filter options for Isim')
+    expect(
+      m.wrapper
+        .find('th[data-field="name"] .bh-filter-input')
+        .attributes('aria-label')
+    ).toBe('Filter Isim')
   })
 
   it('keeps the same trigger component across renders, so a wrapper does not remount it', async () => {

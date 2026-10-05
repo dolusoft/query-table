@@ -23,7 +23,7 @@ This is the public contract of `@dolusoft/vue-server-table`: the component surfa
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
-| `truncate` | `boolean` |  | `true` | Cut long text to `truncateMaxLength` characters. Defaults to `true`. |
+| `truncate` | `boolean` |  | `true` | Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. |
 | `truncateMaxLength` | `number` |  | `150` | Characters kept when `truncate` is on. Defaults to `150`. |
 
 ### Events
@@ -223,7 +223,7 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
-  /** Cut long text to `truncateMaxLength` characters. Defaults to `true`. */
+  /** Cut long text to `truncateMaxLength` characters, except in `html` columns. Defaults to `true`. */
   truncate?: boolean
   /** Characters kept when `truncate` is on. Defaults to `150`. */
   truncateMaxLength?: number
@@ -400,7 +400,7 @@ A header click on a sortable column emits reason `sort`. The first click sorts a
 
 #### C-08 Sort from the filter menu
 
-`setSort(direction)` from the `filter-menu` slot emits reason `sort` with that direction, and keeps the page.
+`setSort(direction)` from the `filter-menu` slot emits reason `sort` with that direction, and keeps the page. It does nothing under the same condition as a header click (C-07): when the table or the column is not sortable, which the slot's `sortable` flag reports.
 
 #### C-09 Typing applies a filter after the debounce
 
@@ -476,7 +476,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-27 Cell slots
 
-`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation.
+`cell-<field>` renders one column's cells, `cell` renders every column that has no `cell-<field>`. Both receive `row`, `rowIndex`, `column` and `cellValue`, and skip truncation. The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 #### C-28 Context menu
 
@@ -488,7 +488,7 @@ A column with `hide` is neither in the header nor in the body or footer. Its rul
 
 #### C-30 Cell text
 
-Cell text is cut to `truncateMaxLength` characters with `...` when `truncate` is on, and the full text goes into `title`. A column with `html` renders its text as HTML. Values are read from dotted paths.
+Cell text is cut to `truncateMaxLength` characters with `...` when `truncate` is on, and the full text goes into `title`. A column with `html` renders its text as HTML and is never cut, so markup is not broken mid-tag and `title` never holds markup. Values are read from dotted paths.
 
 #### C-31 No styling
 
@@ -504,7 +504,7 @@ A template ref exposes `collapseAll` and `flushPendingFilters` and nothing else.
 
 #### C-34 Filter menu slot
 
-The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.bh-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. Without the slot there is no filter button.
+The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.bh-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its `aria-label` follows the current `title` of the column. Without the slot there is no filter button.
 
 #### C-35 Date filter slot
 

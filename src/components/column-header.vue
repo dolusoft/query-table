@@ -73,15 +73,18 @@ const currentCondition = (column: Column): FilterCondition | null =>
 
 // One component per column, created once so that a popover wrapped around it
 // does not remount the button on every render. It reads reactive state when it
-// renders, so it still updates.
+// renders, so it still updates: the column is looked up by `field` in the
+// current `columns` on each render, not captured, so a new title shows at once.
 const triggers = new Map<string, ReturnType<typeof defineComponent>>()
-const triggerFor = (column: Column) => {
-  let trigger = triggers.get(column.field)
+const triggerFor = (first: Column) => {
+  let trigger = triggers.get(first.field)
   if (!trigger) {
+    const { field } = first
     trigger = defineComponent({
       name: 'FilterTrigger',
-      setup: () => () =>
-        h(
+      setup: () => () => {
+        const column = props.columns.find(item => item.field === field) ?? first
+        return h(
           'button',
           {
             type: 'button',
@@ -92,8 +95,9 @@ const triggerFor = (column: Column) => {
           },
           [h(IconFilter, { filled: isFiltered(column) })]
         )
+      }
     })
-    triggers.set(column.field, trigger)
+    triggers.set(field, trigger)
   }
   return trigger
 }
@@ -107,7 +111,12 @@ const menuProps = (column: Column): FilterMenuSlotProps => ({
   clear: () => props.drafts.clear(column.field),
   sortable: isSortable(column),
   sortDirection: sortOf(column),
-  setSort: direction => emit('setSort', column.field, direction),
+  setSort: direction => {
+    // Same condition as a header click (C-07): no sort where there is no sort.
+    if (isSortable(column)) {
+      emit('setSort', column.field, direction)
+    }
+  },
   trigger: triggerFor(column)
 })
 
