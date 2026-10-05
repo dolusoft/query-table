@@ -204,7 +204,7 @@ describe('C-08 Sort from the filter menu', () => {
 describe('C-08 Sort from the filter menu when sorting is off', () => {
   const menusOf = (props: Record<string, unknown>) => {
     const menus: Record<string, FilterMenuSlotProps> = {}
-    mounted = mountTable(
+    const m = mountTable(
       { filterable: true, ...props },
       {
         slots: {
@@ -215,11 +215,12 @@ describe('C-08 Sort from the filter menu when sorting is off', () => {
         }
       }
     )
-    return menus
+    mounted = m
+    return { menus, m }
   }
 
   it('setSort does nothing on a column with sortable: false', async () => {
-    const menus = menusOf({
+    const { menus, m } = menusOf({
       sortable: true,
       columns: [
         { field: 'name', title: 'Name', sortable: false },
@@ -229,19 +230,19 @@ describe('C-08 Sort from the filter menu when sorting is off', () => {
     expect(menus.name.sortable).toBe(false)
     menus.name.setSort('asc')
     await flush()
-    expect(mounted.events).toEqual([])
+    expect(m.events).toEqual([])
     // the sortable column next to it still sorts
     menus.age.setSort('asc')
     await flush()
-    expect(reasons(mounted.events)).toEqual(['sort'])
+    expect(reasons(m.events)).toEqual(['sort'])
   })
 
   it('setSort does nothing when the table is not sortable', async () => {
-    const menus = menusOf({ sortable: false })
+    const { menus, m } = menusOf({ sortable: false })
     expect(menus.name.sortable).toBe(false)
     menus.name.setSort('desc')
     await flush()
-    expect(mounted.events).toEqual([])
+    expect(m.events).toEqual([])
   })
 })
 
