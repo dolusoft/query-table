@@ -6,12 +6,9 @@ import type {
   CellContextMenuPayload,
   CellSlotProps,
   Column,
-  FilterDatetimeSlotProps,
-  FilterMenuSlotProps,
   PaginationSlotProps,
   QueryChangeReason,
   SortDirection,
-  SubtableSlotProps,
   TableEmits,
   TableProps,
   TableQuery,
@@ -283,6 +280,8 @@ const cellSlotProps = (
  * markup is not fit for a `title`.
  */
 const cellText = (row: T, column: Column) => {
+  // A cell value may be any type; its string form is what the table shows.
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
   const full = String(valueAt(row, column.field) ?? '')
   const cut =
     props.truncate && !column.html && full.length > props.truncateMaxLength

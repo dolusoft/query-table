@@ -17,6 +17,8 @@ const props = defineProps<{
   applied: number[]
 }>()
 
+// A cell value may be any type; its string form is what the table shows.
+// eslint-disable-next-line @typescript-eslint/no-base-to-string
 const text = (value: unknown) => String(value ?? '').toLowerCase()
 
 const answer = (query: TableQuery) => {
@@ -58,6 +60,8 @@ const update = (next: TableQuery) => {
   void nextTick().then(() => {
     // Reading a layout property forces the style and layout work of the patch.
     void document.body.offsetHeight
+    // The host reports into the caller's array on purpose.
+    // eslint-disable-next-line vue/no-mutating-props
     props.applied.push(performance.now() - started)
   })
 }
