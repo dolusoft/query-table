@@ -1,27 +1,25 @@
 {
   "name": "@dolusoft/query-table",
-  "version": "2.2.10",
+  "version": "2.2.11",
   "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter and paging changes.",
   "private": false,
   "type": "module",
   "files": [
     "dist"
   ],
-  "main": "./dist/query-table.cjs",
-  "module": "./dist/query-table.js",
-  "types": "./dist/types/index.d.cts",
+  "sideEffects": false,
+  "main": "./dist/query-table.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/types/index.d.ts",
-        "default": "./dist/query-table.js"
-      },
-      "require": {
-        "types": "./dist/types/index.d.cts",
-        "default": "./dist/query-table.cjs"
-      }
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/query-table.js"
     }
   },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.4.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dolusoft/query-table.git"
@@ -44,7 +42,7 @@
   "scripts": {
     "dev": "vite -c playground/vite.config.ts",
     "playground:build": "vite build -c playground/vite.config.ts",
-    "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/emit-cjs-types.mjs",
+    "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/emit-type-extensions.mjs",
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run --project unit",
@@ -58,12 +56,12 @@
     "analyze:build:json": "node scripts/analyze-build.mjs",
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
     "check:size": "node scripts/consumer-size.mjs --check",
-    "check:package": "pnpm build && node scripts/check-no-css.mjs && publint && attw --pack . --profile node16",
+    "check:package": "node scripts/check-no-css.mjs && publint && attw --pack . --profile esm-only",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
     "contract:check": "node scripts/gen-contract.mjs --check",
-    "api:check": "pnpm build && api-extractor run",
-    "api:update": "pnpm build && api-extractor run --local"
+    "api:check": "api-extractor run",
+    "api:update": "api-extractor run --local"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

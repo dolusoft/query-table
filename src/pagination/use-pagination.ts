@@ -41,19 +41,19 @@ export const usePagination = (options: PaginationInput) => {
 
   const pageCount = computed(() => pageCountFor(props.query.pageSize))
 
-  const canNext = computed(() =>
-    pageCount.value !== null
-      ? props.query.page < pageCount.value
-      : props.rows.length >= props.query.pageSize
-  )
+  /** Whether there is a page after `query.page` (C-23). */
+  const hasNext = (query: TableQuery): boolean => {
+    const count = pageCountFor(query.pageSize)
+    return count !== null
+      ? query.page < count
+      : props.rows.length >= query.pageSize
+  }
 
-  const setPage = (page: number) => {
+  const canNext = computed(() => hasNext(props.query))
+
+  /** Emits the page change on the query an action builds on. */
+  const goTo = (page: number) => {
     if (!Number.isFinite(page)) {
-      return
-    }
-    // A pending filter that changed the filters moves the table to page 1:
-    // the page asked for belongs to the old filters, so the click is dropped.
-    if (options.flushFilters()) {
       return
     }
     const current = options.base()
@@ -65,27 +65,28 @@ export const usePagination = (options: PaginationInput) => {
     options.update({ ...cloneQuery(current), page: target }, 'page')
   }
 
-  const nextPage = () => {
-    // See `setPage`: a pending filter that changed the filters ends the action.
-    if (options.flushFilters()) {
-      return
+  // Each page action first applies a pending filter. A filter that changed the
+  // filters moves the table to page 1: the page asked for belongs to the old
+  // filters, so the click is dropped.
+  const setPage = (page: number) => {
+    if (Number.isFinite(page) && !options.flushFilters()) {
+      goTo(page)
     }
-    const current = options.base()
-    const count = pageCountFor(current.pageSize)
-    const canGo =
-      count !== null
-        ? current.page < count
-        : props.rows.length >= current.pageSize
-    if (canGo) {
-      setPage(current.page + 1)
+  }
+
+  const nextPage = () => {
+    if (!options.flushFilters()) {
+      const current = options.base()
+      if (hasNext(current)) {
+        goTo(current.page + 1)
+      }
     }
   }
 
   const previousPage = () => {
-    if (options.flushFilters()) {
-      return
+    if (!options.flushFilters()) {
+      goTo(options.base().page - 1)
     }
-    setPage(options.base().page - 1)
   }
 
   const setPageSize = (size: number) => {

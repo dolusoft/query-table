@@ -29,13 +29,13 @@ Names: a folder is a feature; structural parts carry a `table-` prefix; composab
   - Vite DevTools: `http://localhost:51315/__devtools/` (or the dock icon on the tested page). Client authorization is off in this mode (the server stays on loopback), so there is no one-time code to paste. The module graph lists the modules of the page under test.
   - The Chromium also listens for CDP on `http://127.0.0.1:9333`, so an agent can attach to the page under test.
 - Browser specs run one file at a time (`maxWorkers: 1`): several pages opening at once drop loopback connections on Windows and hang the run.
-- The skin that gives the plain markup a shadcn-vue look lives in `playground/skin/` (`test-skin.css`, `theme.css`, `mapping.css`, `ui/`). The playground and the browser tests use it; it is never shipped. Regenerate it with `node playground/skin/gen-skin.ts` after editing `theme.css` or `mapping.css`; `playground/skin/skin.spec.ts` fails when the generated file is stale or when the skin selects anything outside the DOM contract. `ui/` is shadcn-vue CLI output (`components.json`, alias `@/ui`); add components with `pnpm dlx shadcn-vue@latest add <name>`.
+- The skin that gives the plain markup a shadcn-vue look lives in `playground/skin/` (`test-skin.css`, `theme.css`, `mapping.css`, `ui/`). The playground and the browser tests use it; it is never shipped. `mapping.css` is written into `@layer components`, so a Tailwind utility class on a page (for example `[&_.qt-table]:w-max` on a wrapper) overrides it; do not work around the skin with scoped CSS. Regenerate it with `node playground/skin/gen-skin.ts` after editing `theme.css` or `mapping.css`; `playground/skin/skin.spec.ts` fails when the generated file is stale or when the skin selects anything outside the DOM contract. `ui/` is shadcn-vue CLI output (`components.json`, alias `@/ui`); add components with `pnpm dlx shadcn-vue@latest add <name>`.
 - The contract has four mechanisms, each checked in CI:
   - `pnpm contract:check` — `CONTRACT.md` and `contract/api.json` are generated from `src/contract.ts`, `contract/rules.md` and `contract/dom.ts` (`pnpm contract:gen`); it fails when either file is stale. The playground's API panels and `playground/manifest.spec.ts` read `contract/api.json`: the spec fails when an API member or a rule has no page.
-  - `pnpm api:check` — api-extractor compares the built `.d.ts` with `etc/query-table.api.md` (`pnpm api:update` accepts a deliberate change).
-  - Behavior rules `C-nn` in `contract/rules.md`: each needs a test with the ID in its name; `tests/contract/contract-traceability.spec.ts` fails otherwise.
+  - `pnpm api:check` — api-extractor compares the built `.d.ts` with `etc/query-table.api.md` (`pnpm api:update` accepts a deliberate change). It reads `dist/`, so run `pnpm build` first; the same build serves `check:package` and `check:size`.
+  - Behavior rules `C-nn` in `contract/rules.md`: each needs a runnable `it`/`test` with the ID in its name or in the name of the `describe` around it; an empty `describe`, a `.skip` and a `.todo` count for nothing. `tests/contract/contract-traceability.spec.ts` fails otherwise.
   - DOM contract: `tests/browser/dom-contract.browser.spec.ts` compares the rendered classes and attributes with `contract/dom.ts`.
-- `pnpm check:package` also fails if any `.css` ends up in `dist/` or the tarball.
+- `pnpm check:package` (after `pnpm build`) also fails if any `.css` ends up in `dist/` or the tarball, and runs publint and `attw --profile esm-only` on the package. The package is ESM only: there is no CommonJS build.
 - `tests/contract/package-manifest.spec.ts` fails when `package.json` gains a runtime dependency or a second peer. ESLint fails on network or storage access (`fetch`, `localStorage`, ...) in `src/`.
 - `tests/browser/accessibility.browser.spec.ts` runs an axe-core scan of the table in light and dark themes; any violation fails the browser tests.
 - `pnpm analyze:build` — the library build, written to `node_modules/.cache/analyze-dist` (not `dist/`), with Rolldown devtools output. It then serves Vite DevTools on `http://localhost:9999/__devtools-rolldown/`: modules, chunks, assets, packages and plugins of the build. Stop it with Ctrl+C.
@@ -47,7 +47,7 @@ Three scripts write small JSON files to `node_modules/.cache/measure/` (gitignor
 - `pnpm measure:renders` — how many times each component re-renders in five fixed scenarios on a 1000-row dataset: `mount`, `filter` (type `Name 1`, Enter), `sort` (name ascending, then descending), `loading` (100 rows a page, `loading` on and off) and `page` (100 rows a page, three clicks on Next). Output: `renders.json`. The scenarios are in `tests/measure/renders.measure.ts`; they run as the `measure` Vitest project in a real browser (headed like the browser tests, `HEADLESS=1` for no window). `pnpm check:renders` runs the same scenarios and fails when a scenario applies a different number of updates or re-renders the table more often than `scripts/render-budget.json` allows; CI runs it.
   - `scenarios.<name>.counts` has `mounts`, `updates` (the `updated` hook, by component) and `triggers` (the first reactive cause of each re-render, from `renderTriggered`); `libraryUpdates` is the sum for the table's own components. Counts are the same on every repetition (the run fails otherwise), so they can be compared across commits. `timings` are medians of five runs and noisy: report them, do not assert on them.
   - To count something else, add a scenario to the `scenarios` list in that file. The counting is a global mixin (`config.global.mixins`); it needs a development build of Vue, which the test server serves.
-- `pnpm analyze:build:json` — builds the library with Rolldown's devtools output and condenses it into `build.json`: per output format (ES, CJS) the assets with raw and gzip size, chunks, packages, external modules, and every module with its source size, imports and importer count. Use it for "what is in the bundle and what did this change add". `pnpm analyze:build` shows the same data in a UI instead, and keeps its server (ports 9999 and 10000, one per format) until you stop it.
+- `pnpm analyze:build:json` — builds the library with Rolldown's devtools output and condenses it into `build.json`: the assets with raw and gzip size, chunks, packages, external modules, and every module with its source size, imports and importer count. Use it for "what is in the bundle and what did this change add". `pnpm analyze:build` shows the same data in a UI instead, and keeps its server (port 9999) until you stop it.
 - `pnpm measure:consumer-size` — builds `dist/` and then two minified apps from `fixtures/consumer/` (one mounts the table, one is the same app without it), both importing the package by name. `consumer-size.json` gives their size and the difference, which is what the package adds to an application (Vue itself excluded by the subtraction). The size budget: the package cost, minified + gzip, was 10224 B in 2.2.8 and CI fails above 10735 B (that plus 5%). `pnpm check:size` runs the check on an existing `dist/` (`pnpm build` first); the number lives in `scripts/consumer-size-budget.json` and is raised only on purpose, in the change that adds the weight.
 
 For anything the scripts do not answer, attach to the page under test in inspect mode (`pnpm test:browser:inspect`):
@@ -60,13 +60,13 @@ For anything the scripts do not answer, attach to the page under test in inspect
 
 A release is a version in `package.json` and a tag that names it; the `Release` workflow (`.github/workflows/release.yml`) does the rest.
 
-1. In the pull request of the change, set `version` in `package.json` to the next patch version (releases are patch versions, P9). Update the install line of `README.md` to the same version.
+1. In the pull request of the change, set `version` in `package.json` to the next patch version (releases are patch versions, P9). Update the install line of `README.md` to the same version (`tests/contract/package-manifest.spec.ts` fails when they differ).
 2. After the pull request is merged, tag the merge commit on `main` and push the tag:
 
    ```bash
    git switch main && git pull
-   git tag v2.2.10
-   git push origin v2.2.10
+   git tag v<version>
+   git push origin v<version>
    ```
 
 3. The workflow fails when the tag is not `v` plus the `package.json` version. It runs every check of CI, builds, runs `pnpm pack` and creates a GitHub Release for the tag with the tarball (`dolusoft-query-table-<version>.tgz`) attached, then fails unless the asset URL answers 200. Consumers install that URL (see `README.md`).

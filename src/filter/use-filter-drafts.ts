@@ -30,6 +30,13 @@ export interface FilterDraftsOptions {
 
 const blank: Readonly<Draft> = Object.freeze({ text: '', condition: null })
 
+/**
+ * How many emitted rule sets per field are remembered for the echo check
+ * (C-18). An answer to an older emit than this is treated as an outside
+ * change.
+ */
+const emittedLimit = 8
+
 export const useFilterDrafts = (options: FilterDraftsOptions) => {
   const drafts = reactive<Record<string, Draft>>({})
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -37,8 +44,9 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
   // reconciled when its rules really changed.
   const seen = new Map<string, FilterRule[]>()
   // Rules this table emitted per field that have not come back yet, oldest
-  // first. A consumer that answers late returns them in order; they are the
-  // table's own words, not an outside change, and must not touch the draft.
+  // first, the last `emittedLimit` of them. A consumer that answers late
+  // returns them in order; they are the table's own words, not an outside
+  // change, and must not touch the draft.
   const emitted = new Map<string, FilterRule[][]>()
 
   const columnOf = (field: string) =>
@@ -76,7 +84,10 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     const next = cloneQuery(base)
     next.page = 1
     next.filters = replaceRules(base.filters, field, rules)
-    emitted.set(field, [...(emitted.get(field) ?? []), rules])
+    emitted.set(
+      field,
+      [...(emitted.get(field) ?? []), rules].slice(-emittedLimit)
+    )
     options.update(next, 'filter')
     return true
   }
@@ -153,9 +164,30 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     }
   }
 
+  /** Drops what is kept for a column that is no longer in `columns`. */
+  const forget = (field: string) => {
+    cancel(field)
+    delete drafts[field]
+    seen.delete(field)
+    emitted.delete(field)
+  }
+
   /** Brings drafts in line with rules that changed from outside. */
   const reconcile = () => {
     const { filters } = options.query()
+    const present = new Set(options.columns().map(column => column.field))
+    // A column that went takes its typed text with it, so Clear all does not
+    // stay enabled for text nobody can see (C-22).
+    const kept = new Set([
+      ...Object.keys(drafts),
+      ...seen.keys(),
+      ...emitted.keys()
+    ])
+    for (const field of kept) {
+      if (!present.has(field)) {
+        forget(field)
+      }
+    }
     for (const column of options.columns()) {
       const { field } = column
       const rules = rulesOf(filters, field)
@@ -216,7 +248,9 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
   /** How many rules a read-only input stands for; `0` when it is editable. */
   const multiOf = (field: string) => draftOf(field).multi ?? 0
 
-  const dirty = () => Object.values(drafts).some(hasContent)
+  /** Text or a condition is waiting in the input of a column that exists. */
+  const dirty = () =>
+    options.columns().some(column => hasContent(draftOf(column.field)))
 
   /** Clear all has something to do: a rule in `query` or typed text (C-22). */
   const canClearAll = () => options.query().filters.length > 0 || dirty()

@@ -132,6 +132,38 @@ describe('C-26 Row expansion', () => {
     expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(1)
   })
 
+  it('seeds again when rows change: true opens, false closes, absent keeps the state', async () => {
+    const m = mountIt({ hasSubtable: true, rowKey: 'id' }, { slots: subtable })
+    // The user opens rows 1 and 2.
+    await buttons(m)[0].trigger('click')
+    await buttons(m)[1].trigger('click')
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(2)
+    // New rows: row 1 is seeded closed, row 3 open, row 2 has no field.
+    const rows = makeRows().map(row =>
+      row.id === 1
+        ? { ...row, isExpanded: false }
+        : row.id === 3
+          ? { ...row, isExpanded: true }
+          : row
+    )
+    await m.wrapper.setProps({ rows })
+    expect(
+      m.wrapper
+        .findAll('tr[data-expanded]')
+        .map(tr => tr.attributes('data-row-index'))
+    ).toEqual(['1', '2'])
+  })
+
+  it('ignores isExpanded without hasSubtable and when it is not a boolean', () => {
+    const rows = makeRows().map(row => ({ ...row, isExpanded: true }))
+    const off = mountIt({ rows }, { slots: subtable })
+    expect(off.wrapper.find('.qt-subtable-row').exists()).toBe(false)
+    off.wrapper.unmount()
+    const odd = makeRows().map(row => ({ ...row, isExpanded: 'yes' }))
+    const m = mountIt({ hasSubtable: true, rows: odd }, { slots: subtable })
+    expect(m.wrapper.find('.qt-subtable-row').exists()).toBe(false)
+  })
+
   it('collapseAll closes every row', async () => {
     const m = mountIt({ hasSubtable: true }, { slots: subtable })
     await buttons(m)[0].trigger('click')

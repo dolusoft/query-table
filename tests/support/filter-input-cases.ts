@@ -80,6 +80,7 @@ export const filterInputCases: FilterInputCase[] = [
     expected: [['GreaterThan', 10]]
   },
   { type: 'number', text: 'abc', expected: [] },
+  { type: 'integer', text: '2.5', expected: [] },
   // Bool: the select's values.
   { type: 'bool', text: 'true', expected: [['Equal', true]] },
   { type: 'bool', text: 'false', expected: [['Equal', false]] },

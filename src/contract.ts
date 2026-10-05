@@ -141,7 +141,18 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   query: TableQuery
   /** Column definitions. Never mutated. */
   columns: Column[]
-  /** Rows of the current page, drawn exactly as given. */
+  /**
+   * Rows of the current page, drawn exactly as given.
+   *
+   * With `hasSubtable` a row may carry an optional `isExpanded` boolean to
+   * seed its expansion state (for example a print or report view that opens
+   * every row). Whenever `rows` changes, `isExpanded: true` opens the row,
+   * `isExpanded: false` closes it, and a row without the field (or with any
+   * other value) keeps what the state is. It is a seed, not a binding: the
+   * table never writes it back, and the user's toggles stand until `rows`
+   * changes again. The field is not part of `T`; it is read from the row
+   * object as given.
+   */
   rows?: T[]
   /**
    * Total number of rows on the server, `null` when unknown. It only feeds
@@ -171,7 +182,11 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
   pagination?: PaginationOptions
-  /** Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. */
+  /**
+   * Add a column with an expand button and render the `subtable` slot under
+   * expanded rows. A row can start expanded with its `isExpanded` field (see
+   * `rows`). Defaults to `false`.
+   */
   hasSubtable?: boolean
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
@@ -357,7 +372,11 @@ export interface TableSlots<T> {
   toolbar?(props: ToolbarSlotProps): unknown
   /** Replaces the date input of `date` and `datetime` filters. */
   'filter-datetime'?(props: FilterDatetimeSlotProps): unknown
-  /** Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. */
+  /**
+   * Content of the filter menu of a column; see `FilterMenuSlotProps`.
+   * Without it there is no filter button. A `bool` column does not render it:
+   * its select has no condition to pick.
+   */
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown

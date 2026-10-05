@@ -4,7 +4,9 @@
 //                     style reka-nova, base color neutral). Not edited by hand:
 //                     every color and radius comes from it.
 //   mapping.css       the table's DOM contract mapped onto shadcn-vue class
-//                     strings with `@apply`.
+//                     strings with `@apply`. It is written into
+//                     `@layer components`, so a Tailwind utility on a page
+//                     overrides it (see `buildSkin`).
 //
 //   node playground/skin/gen-skin.ts          write test-skin.css
 //   node playground/skin/gen-skin.ts --check  fail when test-skin.css is stale
@@ -94,8 +96,14 @@ export const buildSkin = (): string => {
     '',
     theme,
     '',
-    '/* ==== mapping.css ==== */',
+    '/* ==== mapping.css, in the components layer ==== */',
+    // A rule outside every layer beats all layers, Tailwind's `utilities`
+    // included, so a utility class on a page ("w-max" on a wrapper that
+    // reaches `.qt-table`) would lose to the mapping. In `components` the
+    // utilities win, as they do over any component class.
+    '@layer components {',
     mapping,
+    '}',
     ''
   ].join('\n')
 }

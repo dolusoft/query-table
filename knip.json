@@ -12,10 +12,13 @@
     "contract/**/*.ts",
     "scripts/*.mjs",
     "tests/**/*.ts",
-    "playground/**/*.{ts,vue}"
+    "playground/**/*.{ts,vue,css}"
   ],
-  "ignore": ["playground/skin/ui/**"],
-  "ignoreDependencies": ["shadcn", "tailwindcss", "tw-animate-css"],
+  "ignore": [
+    "playground/skin/ui/**",
+    "playground/skin/mapping.css",
+    "playground/skin/theme.css"
+  ],
   "ignoreIssues": {
     "src/**/*.vue": ["types"]
   }

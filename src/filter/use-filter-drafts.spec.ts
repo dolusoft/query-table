@@ -307,6 +307,73 @@ describe('C-22 Clearing all filters', () => {
   })
 })
 
+describe('C-22 Clearing all filters when a column goes', () => {
+  it('drops the text typed into a column that is removed, so Clear all is not stuck on', async () => {
+    const { drafts, columns } = setup({ debounce: 0, apply: false })
+    drafts.onInput('name', 'bob')
+    expect(drafts.canClearAll()).toBe(true)
+    columns.value = columns.value.filter(column => column.field !== 'name')
+    // Nothing visible is typed any more, before the watcher even runs.
+    expect(drafts.dirty()).toBe(false)
+    expect(drafts.canClearAll()).toBe(false)
+    await nextTick()
+    expect(drafts.draftOf('name')).toEqual({ text: '', condition: null })
+  })
+
+  it('does not bring the text back when the column returns', async () => {
+    const { drafts, columns } = setup({ debounce: 0, apply: false })
+    const all = columns.value
+    drafts.onInput('name', 'bob')
+    columns.value = all.filter(column => column.field !== 'name')
+    await nextTick()
+    columns.value = all
+    await nextTick()
+    expect(drafts.draftOf('name').text).toBe('')
+    expect(drafts.canClearAll()).toBe(false)
+  })
+
+  it('keeps counting the rules in the query, whatever the columns', async () => {
+    const { drafts, columns } = setup({
+      query: makeQuery({
+        filters: [{ field: 'name', condition: 'Contains', value: 'bob' }]
+      })
+    })
+    columns.value = columns.value.filter(column => column.field !== 'name')
+    await nextTick()
+    expect(drafts.canClearAll()).toBe(true)
+  })
+})
+
+describe('C-18 The echo memory is bounded', () => {
+  // Ten keystrokes, none answered yet: ten emits in flight.
+  const typeTen = () => {
+    const ctx = setup({ debounce: 0, apply: false })
+    const text = 'abcdefghij'
+    for (let i = 1; i <= text.length; i += 1) {
+      ctx.drafts.onInput('name', text.slice(0, i))
+    }
+    expect(ctx.updates).toHaveLength(10)
+    return ctx
+  }
+
+  it('still reads the last eight answers as echoes', async () => {
+    const { drafts, query, updates } = typeTen()
+    query.value = updates[2].query
+    await nextTick()
+    expect(drafts.draftOf('name').text).toBe('abcdefghij')
+    query.value = updates[9].query
+    await nextTick()
+    expect(drafts.draftOf('name').text).toBe('abcdefghij')
+  })
+
+  it('reads an answer older than that as an outside change', async () => {
+    const { drafts, query, updates } = typeTen()
+    query.value = updates[0].query
+    await nextTick()
+    expect(drafts.draftOf('name').text).toBe('a')
+  })
+})
+
 describe('useFilterDrafts scope', () => {
   it('drops its timers when the scope stops', () => {
     vi.useFakeTimers()
