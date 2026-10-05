@@ -20,14 +20,17 @@ const typesDir = fileURLToPath(new URL('../dist/types', import.meta.url))
 
 const walk = dir =>
   readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
-    entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)],
+    entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]
   )
 
 const withExtension = (source, extension) =>
-  source.replace(/(from\s+|import\()(['"])(\.[^'"]*)\2/g, (_, lead, quote, specifier) => {
-    const base = specifier.replace(/\.(c|m)?js$/, '')
-    return `${lead}${quote}${base}.${extension}${quote}`
-  })
+  source.replace(
+    /(from\s+|import\()(['"])(\.[^'"]*)\2/g,
+    (_, lead, quote, specifier) => {
+      const base = specifier.replace(/\.(c|m)?js$/, '')
+      return `${lead}${quote}${base}.${extension}${quote}`
+    }
+  )
 
 let emitted = 0
 for (const file of walk(typesDir).filter(f => f.endsWith('.d.ts'))) {
