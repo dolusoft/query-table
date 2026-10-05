@@ -14,13 +14,8 @@ import {
   previewCondition,
   serializeFilterRules
 } from './filter-input-parser'
-import {
-  cloneQuery,
-  columnTypeOf,
-  replaceRules,
-  rulesOf,
-  sameRules
-} from './query'
+import { columnTypeOf } from '../core/column'
+import { cloneQuery, replaceRules, rulesOf, sameRules } from '../core/query'
 
 /**
  * What the user has typed or picked for one column. It is a writing buffer,

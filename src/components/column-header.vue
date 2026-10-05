@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { type Component, computed, defineComponent, h } from 'vue'
 
-import IconFilter from './icon-filter.vue'
 import type {
   Column,
   FilterCondition,
@@ -10,9 +9,11 @@ import type {
   SortDirection,
   TableQuery
 } from '../contract'
-import { conditionLabel, filterConditions } from '../model/filter-conditions'
-import { columnTypeOf, rulesOf } from '../model/query'
-import type { FilterDrafts } from '../model/use-filter-drafts'
+import { columnTypeOf } from '../core/column'
+import { rulesOf } from '../core/query'
+import { conditionLabel, filterConditions } from '../filter/filter-conditions'
+import IconFilter from '../filter/filter-icon.vue'
+import type { FilterDrafts } from '../filter/use-filter-drafts'
 
 const props = defineProps<{
   /** Columns to draw: the table has already dropped the hidden ones. */

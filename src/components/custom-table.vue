@@ -15,14 +15,10 @@ import type {
   TableSlots,
   VueServerTableExpose
 } from '../contract'
-import {
-  cloneQuery,
-  columnTypeOf,
-  nextDirection,
-  sameQuery,
-  valueAt
-} from '../model/query'
-import { useFilterDrafts } from '../model/use-filter-drafts'
+import { columnTypeOf, valueAt } from '../core/column'
+import { cloneQuery, sameQuery } from '../core/query'
+import { useFilterDrafts } from '../filter/use-filter-drafts'
+import { nextDirection } from '../sort/sort'
 
 defineOptions({ name: 'VueServerTable' })
 
