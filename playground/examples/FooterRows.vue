@@ -23,7 +23,9 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
 </script>
 
 <template>
-  <div class="wide-table">
+  <!-- Consumer CSS of this page: the table takes its columns' widths and
+       scrolls sideways instead of squeezing them. -->
+  <div class="[&_.qt-table]:w-max [&_.qt-table]:min-w-full">
     <QueryTable
       v-model:query="query"
       :columns="columns"
@@ -34,7 +36,13 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
       filterable
       has-subtable
     >
-      <template #subtable="{ row }">Details of {{ row.name }}.</template>
+      <!-- Sticks to the visible edge while the table scrolls sideways (see
+           the Column pinning page). -->
+      <template #subtable="{ row }">
+        <div class="sticky left-2 w-[calc(100cqw-1rem)]">
+          Details of {{ row.name }}.
+        </div>
+      </template>
       <template #filter-menu="menu">
         <FilterMenu :menu="menu" />
       </template>
@@ -45,12 +53,3 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
     </QueryTable>
   </div>
 </template>
-
-<style scoped>
-/* Consumer CSS of this page: the table takes its columns' widths and
-   scrolls sideways instead of squeezing them. */
-.wide-table :deep(.qt-table) {
-  width: max-content;
-  min-width: 100%;
-}
-</style>

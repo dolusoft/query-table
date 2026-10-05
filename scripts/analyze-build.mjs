@@ -12,8 +12,8 @@
 // This script reads the directories that appeared during its own build and
 // removes exactly those.
 //
-// The library config builds two formats (ES and CJS), so a session holds two
-// builds; each one gets its own entry in the output.
+// The library is ESM only, so a session holds one build; `builds` stays a list
+// because Rolldown logs every build of a session separately.
 import {
   existsSync,
   mkdirSync,
@@ -147,7 +147,7 @@ try {
       })
 
       builds.push({
-        format: assets.some(a => a.file.endsWith('.cjs')) ? 'cjs' : 'es',
+        format: 'es',
         assets,
         chunks: chunkGraph.chunks.map(chunk => ({
           id: chunk.chunk_id,

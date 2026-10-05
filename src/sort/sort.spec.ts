@@ -19,10 +19,11 @@ afterEach(() => {
 })
 
 describe('sort direction', () => {
-  it('C-07 sorts ascending first, then flips', () => {
+  it('C-07 sorts ascending first, then descending, then none', () => {
     expect(nextDirection(null, 'a')).toBe('asc')
     expect(nextDirection({ field: 'a', direction: 'asc' }, 'a')).toBe('desc')
-    expect(nextDirection({ field: 'a', direction: 'desc' }, 'a')).toBe('asc')
+    expect(nextDirection({ field: 'a', direction: 'desc' }, 'a')).toBeNull()
+    expect(nextDirection({ field: 'a', direction: 'asc' }, 'b')).toBe('asc')
     expect(nextDirection({ field: 'a', direction: 'desc' }, 'b')).toBe('asc')
   })
 })
@@ -66,7 +67,7 @@ describe('C-07 sortBy guards non-sortable columns', () => {
 })
 
 describe('C-07 Header sort', () => {
-  it('sorts ascending first, then flips, and keeps the page', async () => {
+  it('sorts ascending, then descending, then drops the sort, and keeps the page', async () => {
     mounted = mountTable({
       sortable: true,
       totalRows: 50,
@@ -79,12 +80,23 @@ describe('C-07 Header sort', () => {
     await click()
     await click()
     expect(reasons(m.events)).toEqual(['sort', 'sort', 'sort'])
-    expect(m.events.map(([q]) => q.sort?.direction)).toEqual([
-      'asc',
-      'desc',
-      'asc'
+    expect(m.events.map(([q]) => q.sort)).toEqual([
+      { field: 'name', direction: 'asc' },
+      { field: 'name', direction: 'desc' },
+      null
     ])
     expect(m.events.every(([q]) => q.page === 3)).toBe(true)
+  })
+
+  it('clears the sort of the clicked column that is sorted descending', async () => {
+    mounted = mountTable({
+      sortable: true,
+      query: makeQuery({ sort: { field: 'name', direction: 'desc' } })
+    })
+    await mounted.wrapper
+      .find('th[data-field="name"] .qt-sort')
+      .trigger('click')
+    expect(mounted.events[0][0].sort).toBeNull()
   })
 
   it('moves to another column ascending', async () => {

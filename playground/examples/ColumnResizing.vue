@@ -14,7 +14,7 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // consumer would save them with the user's view) and writes them back to
 // `Column.width`. ID cannot be resized; Age stays between 60 and 160 px.
 //
-// `table-layout: fixed` (this page's CSS below) makes the header width
+// `table-layout: fixed` (this page's utilities on the wrapper) makes the header width
 // the column width; with the automatic layout, content can override it.
 const saved = ref<Record<string, number>>({})
 const columns = computed<Column[]>(() =>
@@ -48,7 +48,11 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
         Reset
       </button>
     </p>
-    <div class="wide-table">
+    <!-- Consumer CSS of this page (C-50): with the fixed layout the header
+         width is the column width, and the table grows with its columns. -->
+    <div
+      class="[&_.qt-table]:w-max [&_.qt-table]:min-w-full [&_.qt-table]:table-fixed"
+    >
       <QueryTable
         v-model:query="query"
         :columns="columns"
@@ -70,13 +74,3 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Consumer CSS of this page (C-50): with the fixed layout the header width
-   is the column width, and the table grows with its columns. */
-.wide-table :deep(.qt-table) {
-  width: max-content;
-  min-width: 100%;
-  table-layout: fixed;
-}
-</style>

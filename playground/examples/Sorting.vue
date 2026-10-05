@@ -5,8 +5,9 @@ import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 
-// Click a header to sort ascending, again for descending. The filter menu
-// offers the same through `setSort`. City opts out with `sortable: false`.
+// Click a header to sort ascending, again for descending, a third time to
+// remove the sort (`sort: null`). The filter menu offers the two directions
+// through `setSort`. City opts out with `sortable: false`.
 // The page is kept: sorting never jumps back to page 1.
 const columns: Column[] = peopleColumns().map(column =>
   column.field === 'city' ? { ...column, sortable: false } : column

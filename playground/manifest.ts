@@ -102,7 +102,7 @@ export const pages: PlaygroundPage[] = [
     id: 'sorting',
     title: 'Sorting',
     summary:
-      'Header clicks and the filter menu set the sort; a column can opt out with `sortable: false`.',
+      'Header clicks cycle ascending, descending, none; the filter menu sets a direction; a column can opt out with `sortable: false`.',
     example: 'Sorting',
     api: {
       props: ['sortable', 'columns'],

@@ -91,6 +91,19 @@ describe('C-41 the test skin selects only the DOM contract', () => {
     expect(skin).not.toMatch(/^\.dark \{/m)
   })
 
+  it('keeps the mapping in the components layer, so Tailwind utilities override it', () => {
+    const start = skin.indexOf('@layer components {')
+    expect(start).toBeGreaterThan(-1)
+    // Everything of mapping.css sits inside the layer: the layer opens before
+    // the first mapping rule and the file ends with its closing brace.
+    expect(skin.indexOf('.qt-datatable {')).toBeGreaterThan(start)
+    expect(skin.trimEnd().endsWith('}')).toBe(true)
+    // No rule of the mapping is left outside a layer, where it would beat
+    // every utility.
+    const before = skin.slice(0, start)
+    expect(before).not.toContain('.qt-')
+  })
+
   it('is generated from theme.css and mapping.css', () => {
     expect(skin).toBe(buildSkin())
   })

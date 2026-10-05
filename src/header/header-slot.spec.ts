@@ -72,6 +72,10 @@ describe('C-51 Header slot', () => {
       'desc'
     ])
     expect(seen.at(-1)).toMatchObject({ sortable: true, sortDirection: 'desc' })
+    // The third click removes the sort (C-07).
+    await m.wrapper.find('button.mine').trigger('click')
+    expect(m.events.at(-1)?.[0].sort).toBeNull()
+    expect(seen.at(-1)).toMatchObject({ sortDirection: null })
   })
 
   it('reports a column that cannot sort and ignores toggleSort there', async () => {

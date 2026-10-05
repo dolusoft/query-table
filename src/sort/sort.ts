@@ -1,11 +1,18 @@
 import type { Column, SortDirection, SortState } from '../contract'
 
-/** Header click: ascending first, then flipping between the two. */
+/**
+ * Header click: ascending, then descending, then none (`null`: the sort is
+ * removed). A click on a column that is not the sorted one starts at ascending.
+ */
 export const nextDirection = (
   sort: SortState | null,
   field: string
-): SortDirection =>
-  sort?.field === field && sort.direction === 'asc' ? 'desc' : 'asc'
+): SortDirection | null => {
+  if (sort?.field !== field) {
+    return 'asc'
+  }
+  return sort.direction === 'asc' ? 'desc' : null
+}
 
 /** A column sorts when the table allows it and the column does not opt out. */
 export const isSortableColumn = (
