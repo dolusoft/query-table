@@ -47,6 +47,21 @@ export default defineConfig(({ mode }) => {
             name: 'browser',
             include: ['tests/browser/**/*.browser.spec.ts'],
             setupFiles: ['tests/browser/setup.ts'],
+            // One page at a time. By default each spec file gets its own page,
+            // opened together, and the burst of simultaneous connections to the
+            // dev server makes Windows drop a SYN now and then; when that hits a
+            // page's first WebSocket, Vitest never recovers (see
+            // scripts/test-browser.mjs). Three concurrent pages also fight over
+            // the CPU, which made the debounce-timing assertions flaky.
+            maxWorkers: 1,
+            // Safety nets, off in inspect mode where a paused debugger is normal.
+            ...(inspect
+              ? {}
+              : {
+                  testTimeout: 15_000,
+                  hookTimeout: 15_000,
+                  teardownTimeout: 10_000
+                }),
             // Browser mode serves on this port. The default (63315) falls inside
             // a range Windows reserves for Hyper-V on some machines, and a fixed
             // port gives the inspect mode a stable URL.
@@ -64,6 +79,9 @@ export default defineConfig(({ mode }) => {
               ),
               headless: !inspect,
               ui: false,
+              // Default is 60 s. A page that cannot reach the server is not
+              // coming; fail in 15 s instead of idling.
+              connectTimeout: inspect ? 60_000 : 15_000,
               screenshotDirectory: 'tests/browser/__screenshots__',
               // A desktop-sized viewport: the default is phone-sized, which
               // squeezes the table and distorts geometry assertions.
