@@ -8,6 +8,8 @@ import type {
 } from '../contract'
 import { useCellView } from './use-cell-view'
 import type { ColumnEntry } from '../core/use-columns'
+import { pinAttrs } from '../pin/pin'
+import { utilityKey } from '../pin/use-header-geometry'
 
 const props = defineProps<{
   rows: T[]
@@ -17,6 +19,10 @@ const props = defineProps<{
   columnCount: number
   hasSubtable: boolean
   hasRightPanel: boolean
+  /** Pinned cells, utilities included, get `data-pinned` (C-47). */
+  hasPinned: boolean
+  /** `--qt-pin-left` of each pinned cell, by key. */
+  offsets: Readonly<Record<string, number>>
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
   toggle: (row: T, index: number) => void
@@ -38,9 +44,15 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
     slots: rawSlots,
     rows: () => props.rows,
     entries: () => props.entries,
+    offsets: () => props.offsets,
     listening: () => props.hasContextMenuListener(),
     onContextMenu: payload => emit('cellContextMenu', payload)
   })
+
+const rightPanelAttrs = () =>
+  pinAttrs(props.hasPinned, props.offsets[utilityKey('right-panel')])
+const expandAttrs = () =>
+  pinAttrs(props.hasPinned, props.offsets[utilityKey('subtable')])
 </script>
 
 <template>
@@ -50,7 +62,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
         :data-row-index="i"
         :data-expanded="isExpanded(row, i) ? '' : undefined"
       >
-        <td v-if="hasRightPanel">
+        <td v-if="hasRightPanel" v-bind="rightPanelAttrs()">
           <button
             type="button"
             class="qt-right-panel-button"
@@ -72,7 +84,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
             </svg>
           </button>
         </td>
-        <td v-if="hasSubtable">
+        <td v-if="hasSubtable" v-bind="expandAttrs()">
           <button
             type="button"
             class="qt-expand"

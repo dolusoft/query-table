@@ -1,5 +1,5 @@
 import axe from 'axe-core'
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 
@@ -12,6 +12,11 @@ import { columns, renderTable, rule } from '../support/helpers'
 // scan covers the table root only; the playground skin supplies the colours,
 // so a contrast finding belongs to the skin, and it is checked here too
 // because the skin is what the playground shows.
+
+// A failing scan must not leave its table mounted for the next test.
+afterEach(() => {
+  cleanup()
+})
 
 const violationsIn = async (selector: string) => {
   const root = document.querySelector(selector)
@@ -43,13 +48,11 @@ describe.each<Theme>(['light', 'dark'])(
       })
       await userEvent.click(document.querySelector('.qt-expand')!)
       expect(await violationsIn('.qt-datatable')).toEqual([])
-      cleanup()
     })
 
     test('finds no violation without rows', async () => {
       await renderTable({ ...everything, theme, rows: [], totalRows: 0 })
       expect(await violationsIn('.qt-datatable')).toEqual([])
-      cleanup()
     })
   }
 )

@@ -7,6 +7,7 @@ const defaultLabels: TableLabels = {
   openRightPanel: 'Open right panel',
   filterInput: column => `Filter ${column}`,
   filterOptions: column => `Filter options for ${column}`,
+  resizeColumn: column => `Resize ${column}`,
   boolAll: 'All',
   boolTrue: 'True',
   boolFalse: 'False'

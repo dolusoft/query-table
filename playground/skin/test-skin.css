@@ -229,6 +229,47 @@ td:has(> .qt-right-panel-button) {
   @apply w-8;
 }
 
+/* Pinned columns: the table writes `data-pinned` and the measured offset
+   `--qt-pin-left`; sticky positioning, the layer and an opaque background
+   are the skin's. The header and footer sit above the body cells. */
+.qt-table [data-pinned] {
+  @apply sticky left-(--qt-pin-left) z-10 bg-background;
+}
+.qt-table thead [data-pinned] {
+  @apply z-20;
+}
+.qt-table tbody tr:hover > [data-pinned],
+.qt-table tr[data-expanded] > [data-pinned],
+.qt-footer [data-pinned] {
+  @apply bg-muted;
+}
+/* Collapsed borders belong to the table, not to the cell: they stay behind
+   when a sticky cell moves and let the scrolled cells show through. With a
+   pinned column the table separates its borders and draws the row lines on
+   the cells. */
+.qt-table:has([data-pinned]) {
+  @apply border-separate border-spacing-0;
+}
+.qt-table:has([data-pinned]) :is(th, td) {
+  @apply border-b;
+}
+.qt-table:has([data-pinned]) tbody:last-child > tr:last-child > td,
+.qt-table:has([data-pinned]) .qt-footer > tr:last-child > td {
+  @apply border-b-0;
+}
+/* A shadow on the last pinned cell shows where the scrolled part starts. */
+.qt-table [data-pinned]:not(:has(+ [data-pinned])) {
+  @apply shadow-[1px_0_0_var(--border),4px_0_6px_-4px_var(--border)];
+}
+
+/* Resize handle: a thin strip over the right edge of the header cell. */
+.qt-table th[data-field]:not([data-pinned]) {
+  @apply relative;
+}
+.qt-resize-handle {
+  @apply absolute inset-y-0 -right-1 z-30 w-2 cursor-col-resize touch-none outline-none select-none after:absolute after:inset-y-2 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border hover:after:w-0.5 hover:after:bg-ring focus-visible:after:w-0.5 focus-visible:after:bg-ring focus-visible:ring-3 focus-visible:ring-ring/50;
+}
+
 /* Sorting */
 .qt-sort {
   @apply inline-flex items-center gap-1 rounded-sm font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;

@@ -29,7 +29,7 @@ const at = (...parts) => join(root, ...parts)
 const read = path => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 
 // Node strips the types of this data file on import (Node 22.18+).
-const { domAttributes, domClasses, domInlineStyle } = await import(
+const { domAttributes, domClasses, domInlineStyles } = await import(
   pathToFileURL(at('contract', 'dom.ts')).href
 )
 
@@ -142,7 +142,10 @@ sameSet(
 sameSet(
   'Slots',
   meta.slots.map(slot => slot.name),
-  slots.filter(slot => !slot.name.startsWith('cell-')).map(slot => slot.name)
+  slots
+    // Dynamic slots (`cell-<field>`, `header-<field>`) are not in the meta.
+    .filter(slot => !slot.name.endsWith('-<field>'))
+    .map(slot => slot.name)
 )
 sameSet(
   'Props',
@@ -298,7 +301,15 @@ const sections = [
     ])
   ),
   '### Inline style',
-  `The only inline style is \`${domInlineStyle.property}\` on \`${domInlineStyle.on}\`: ${domInlineStyle.description}`,
+  'These are the only inline styles the table writes. A custom property carries data; positioning, layers and backgrounds stay in your CSS.',
+  table(
+    ['Property', 'Element', 'Description'],
+    domInlineStyles.map(entry => [
+      code(entry.property),
+      code(entry.on),
+      entry.description
+    ])
+  ),
   '## How the contract is kept',
   [
     '- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.',

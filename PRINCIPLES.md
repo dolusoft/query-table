@@ -38,7 +38,7 @@ Check: the C-03 test that sends every emitted query through a JSON round trip; `
 
 ## P5 No CSS, no styling props
 
-The package ships no stylesheet and takes no styling props. The only inline style is `width` on a header cell whose column defines it. A future geometry value (a pinned column's offset) may only be added as a listed `--qt-*` custom property that carries data; positioning, z-index and backgrounds stay in the consumer's CSS.
+The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag) and `--qt-pin-left` on a pinned cell. A geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS.
 
 Why: every product has its own design system. A library that owns any of the look forces overrides.
 

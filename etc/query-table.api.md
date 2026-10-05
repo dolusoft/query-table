@@ -39,10 +39,20 @@ export interface Column {
     field: string;
     filterable?: boolean;
     hide?: boolean;
+    maxWidth?: number;
+    minWidth?: number;
+    pinned?: 'left';
+    resizable?: boolean;
     sortable?: boolean;
     title?: string;
     type?: ColumnType;
     width?: string;
+}
+
+// @public
+export interface ColumnResizePayload {
+    field: string;
+    width: number;
 }
 
 // @public
@@ -109,6 +119,15 @@ export interface FooterRow {
 }
 
 // @public (undocumented)
+export interface HeaderSlotProps {
+    // (undocumented)
+    column: Column;
+    sortable: boolean;
+    sortDirection: SortDirection | null;
+    toggleSort: () => void;
+}
+
+// @public (undocumented)
 export interface PaginationOptions {
     alwaysShow?: boolean;
     pageSizeOptions?: number[];
@@ -168,6 +187,7 @@ export type TableEmits<T> = {
     'update:query': [query: TableQuery, reason: QueryChangeReason];
     rowRightPanelClick: [row: T];
     cellContextMenu: [payload: CellContextMenuPayload<T>];
+    columnResize: [payload: ColumnResizePayload];
 };
 
 // @public
@@ -180,6 +200,7 @@ export interface TableLabels {
     filterInput: (column: string) => string;
     filterOptions: (column: string) => string;
     openRightPanel: string;
+    resizeColumn: (column: string) => string;
 }
 
 // @public (undocumented)
@@ -193,6 +214,7 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     labels?: Partial<TableLabels>;
     pagination?: PaginationOptions;
     query: TableQuery;
+    resizable?: boolean;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rows?: T[];
     sortable?: boolean;
@@ -213,6 +235,7 @@ export interface TableQuery {
 export interface TableSlots<T> {
     'filter-datetime'?(props: FilterDatetimeSlotProps): unknown;
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
+    [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
     empty?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;

@@ -93,10 +93,23 @@ export interface Column {
   /** Defaults to `'string'`. Case-insensitive at runtime. */
   type?: ColumnType
   /**
-   * Header width, any CSS length. It is the only inline style the table ever
-   * writes, and only when this is set.
+   * Header width, any CSS length, written as the header cell's inline
+   * `width`. A resizable column takes the pixel width of a `columnResize`
+   * event back here (`${width}px`): the table keeps no width of its own.
    */
   width?: string
+  /**
+   * `'left'` keeps the column at the start of the table: pinned columns are
+   * drawn first, in their order, and their cells get `data-pinned` and the
+   * `--qt-pin-left` offset. Sticky positioning is the consumer's CSS.
+   */
+  pinned?: 'left'
+  /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
+  resizable?: boolean
+  /** Smallest width a resize gives, in pixels. Defaults to `40`. */
+  minWidth?: number
+  /** Largest width a resize gives, in pixels. No limit by default. */
+  maxWidth?: number
   /** Not rendered in the header or the body; its rules in `query` still apply. */
   hide?: boolean
   /** Show a filter input for this column (needs table `filterable`). Defaults to `true`. */
@@ -135,6 +148,12 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
   filterable?: boolean
+  /**
+   * Draw a resize handle in the header cells (needs column `resizable`).
+   * Defaults to `false`. The table emits `columnResize`; the consumer writes
+   * the width back to `Column.width`.
+   */
+  resizable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -175,6 +194,8 @@ export interface TableLabels {
   filterInput: (column: string) => string
   /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
   filterOptions: (column: string) => string
+  /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
+  resizeColumn: (column: string) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */
@@ -196,6 +217,14 @@ export interface CellContextMenuPayload<T> {
   columnIndex: number
 }
 
+/** Payload of the `columnResize` event. */
+export interface ColumnResizePayload {
+  /** `field` of the resized column. */
+  field: string
+  /** New width in whole pixels, within the column's `minWidth` and `maxWidth`. */
+  width: number
+}
+
 /** Events of the table. */
 export type TableEmits<T> = {
   /**
@@ -210,6 +239,12 @@ export type TableEmits<T> = {
    * suppressed; without one the table emits nothing and keeps it.
    */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
+  /**
+   * The user resized a column: on release of a drag, on an arrow key or on
+   * autofit. Write `width` back to the column (`Column.width`), or the column
+   * keeps its old width.
+   */
+  columnResize: [payload: ColumnResizePayload]
 }
 
 export interface CellSlotProps<T> {
@@ -217,6 +252,16 @@ export interface CellSlotProps<T> {
   rowIndex: number
   column: Column
   cellValue: unknown
+}
+
+export interface HeaderSlotProps {
+  column: Column
+  /** Direction this column is sorted in, `null` when it is not the sorted one. */
+  sortDirection: SortDirection | null
+  /** Sorting by this column is possible (table and column `sortable`). */
+  sortable: boolean
+  /** Sort by this column as a header click does (C-07); does nothing when not `sortable`. */
+  toggleSort: () => void
 }
 
 export interface SubtableSlotProps<T> {
@@ -307,6 +352,12 @@ export interface TableSlots<T> {
   empty?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
+  /**
+   * Header content of one column: `header-${column.field}`. It replaces the
+   * sort button or the title only; the header cell, its filter row and its
+   * resize handle stay. Draw a sort control with `toggleSort` if you want one.
+   */
+  [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined
   /** Cell content of one column: `cell-${column.field}`. */
   [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined
 }

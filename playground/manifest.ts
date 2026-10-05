@@ -144,7 +144,38 @@ export const pages: PlaygroundPage[] = [
       'Totals rows in a `tfoot`; the server computes them over every matching row.',
     example: 'FooterRows',
     api: { props: ['footerRows'], types: ['FooterRow'] },
-    rules: ['C-37']
+    rules: ['C-37', 'C-47']
+  },
+  {
+    id: 'column-pinning',
+    title: 'Column pinning',
+    summary:
+      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; the skin makes them sticky while the table scrolls sideways.",
+    example: 'ColumnPinning',
+    api: { props: ['columns', 'hasSubtable'], types: ['Column'] },
+    rules: ['C-31', 'C-32', 'C-46', 'C-47']
+  },
+  {
+    id: 'column-resizing',
+    title: 'Column resizing',
+    summary:
+      'A resize handle per header: drag, arrow keys or autofit emit `columnResize`; the page stores the widths and writes them back to `Column.width`.',
+    example: 'ColumnResizing',
+    api: {
+      props: ['resizable', 'columns', 'labels'],
+      emits: ['columnResize'],
+      types: ['ColumnResizePayload']
+    },
+    rules: ['C-48', 'C-49', 'C-50']
+  },
+  {
+    id: 'header-slot',
+    title: 'Header slot',
+    summary:
+      '`header-<field>` replaces the label of one header; the cell, its sort state, the filter row and the resize handle stay.',
+    example: 'HeaderSlot',
+    api: { slots: ['header-<field>'], types: ['HeaderSlotProps'] },
+    rules: ['C-51']
   },
   {
     id: 'custom-cells',
