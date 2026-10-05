@@ -42,7 +42,7 @@ interface ScenarioResult {
   /** Updates the consumer applied (one per `update:query` event). */
   queryUpdates: number
   counts: Counts
-  /** Of the counts above: the table's own components (`src/components/`). */
+  /** Of the counts above: the table's own components (files under `src/`). */
   libraryUpdates: number
   /** Median over RUNS, in milliseconds. */
   timings: {
@@ -88,11 +88,11 @@ const nameOf = (instance: ComponentPublicInstance) =>
   instance.$options.name ?? instance.$options.__name ?? 'Anonymous'
 
 // A component belongs to the library when it, or an ancestor, is a file of
-// src/components (a render function created inside one has no `__file`).
+// src/ (a render function created inside one has no `__file`).
 const isLibrary = (internal: ComponentInternalInstance | null): boolean => {
   for (let at = internal; at; at = at.parent) {
     const file = (at.type as { __file?: string }).__file
-    if (file?.replaceAll('\\', '/').includes('/src/components/')) {
+    if (file?.replaceAll('\\', '/').includes('/src/')) {
       return true
     }
   }

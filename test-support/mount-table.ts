@@ -1,8 +1,8 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick, type Component } from 'vue'
 
-import VueServerTable from '../src/components/index'
 import type { Column, QueryChangeReason, TableQuery } from '../src/contract'
+import VueServerTable from '../src/index'
 
 export interface Row {
   id: number

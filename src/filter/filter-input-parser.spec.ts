@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FilterCondition } from '../src/contract'
+import type { FilterCondition } from '../contract'
 import {
   hasShortcut,
   parseFilterInput,
   previewCondition,
   serializeFilterRules
-} from '../src/model/filter-input-parser'
+} from './filter-input-parser'
 
 describe('C-15 operator shortcuts parse into clean rules', () => {
   it.each<[string, FilterCondition, string]>([

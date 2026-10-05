@@ -86,6 +86,7 @@ export default defineConfig(({ mode }) => {
       coverage: {
         provider: 'v8',
         include: ['src/**'],
+        exclude: ['src/**/*.spec.ts'],
         reporter: ['text', 'json-summary', 'html'],
         reportsDirectory: 'coverage',
         // Measured 2026-10-05 (unit project): lines 98.3, statements 98.39, branches 96.48,
@@ -104,7 +105,9 @@ export default defineConfig(({ mode }) => {
           test: {
             name: 'unit',
             environment: 'happy-dom',
-            include: ['tests/**/*.spec.ts'],
+            // Unit specs sit next to the code they test (src/<feature>/);
+            // cross-cutting ones (contract traceability, skin) stay in tests/.
+            include: ['src/**/*.spec.ts', 'tests/**/*.spec.ts'],
             exclude: ['tests/browser/**'],
             css: false
           }
