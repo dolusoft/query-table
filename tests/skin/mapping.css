@@ -9,9 +9,10 @@
   @apply bg-background text-sm text-foreground;
 }
 
-/* Table, TableHeader, TableBody, TableRow, TableHead, TableCell */
+/* Table, TableHeader, TableBody, TableRow, TableHead, TableCell, inside the
+   `rounded-md border` box of shadcn's data-table example */
 .bh-table-responsive {
-  @apply relative w-full overflow-x-auto;
+  @apply relative w-full overflow-x-auto rounded-md border;
 }
 .bh-table {
   @apply w-full caption-bottom text-sm;
@@ -29,7 +30,7 @@
   @apply h-10 px-2 py-2 text-left align-middle font-medium whitespace-nowrap text-foreground;
 }
 .bh-table td {
-  @apply p-2 align-middle whitespace-nowrap;
+  @apply p-2 align-middle whitespace-nowrap tabular-nums;
 }
 
 /* TableFooter */
@@ -46,7 +47,7 @@ td:has(> .bh-right-panel-button) {
 
 /* Sorting */
 .bh-sort {
-  @apply inline-flex items-center gap-1 font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;
+  @apply inline-flex items-center gap-1 rounded-sm font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;
 }
 .bh-sort-icon {
   @apply shrink-0 text-muted-foreground/40;
@@ -55,9 +56,11 @@ th[data-sort] .bh-sort-icon {
   @apply text-foreground;
 }
 
-/* Filter row: Input and Button side by side */
+/* Filter row: Input and Button side by side. The condition label shows up
+   on the first keystroke; it sits inside the input's end like an inline
+   adornment, so the cell, the row and the column never change size. */
 .bh-filter {
-  @apply mt-1 flex flex-wrap items-center gap-1 font-normal;
+  @apply relative mt-1 flex items-center gap-1 font-normal;
 }
 .bh-filter-input {
   @apply h-8 w-0 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30;
@@ -71,8 +74,14 @@ th[data-filtered] .bh-filter-input {
 .bh-filter-button[data-filtered] {
   @apply bg-muted text-foreground;
 }
+/* Badge, variant secondary, over the input's end (the button is size-8 + gap-1) */
 .bh-filter-condition {
-  @apply basis-full text-xs text-muted-foreground;
+  @apply pointer-events-none absolute top-1/2 right-10 max-w-[30%] -translate-y-1/2 truncate rounded-sm bg-secondary px-1.5 py-0.5 text-xs leading-none font-medium text-secondary-foreground;
+}
+/* The input always keeps room for the label: any padding that came and went
+   with it would change the column's width in the auto table layout. */
+.bh-filter-input {
+  @apply pr-[calc(30%+--spacing(1))];
 }
 
 /* Icon buttons in the utility columns: Button, variant ghost, size icon-xs */
@@ -93,7 +102,9 @@ tr[data-expanded] {
   @apply h-24 text-center text-muted-foreground;
 }
 
-/* Pagination block: the consumer's slot content sits inside it */
+/* Pagination block below the bordered table, as in shadcn's data-table
+   example. The consumer's slot content sits inside it; px-2.25 is the cell's
+   p-2 plus the 1px border, so the text lines up with the cell text. */
 .bh-pagination {
-  @apply border-t p-2;
+  @apply px-2.25 py-4;
 }
