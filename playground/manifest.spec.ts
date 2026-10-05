@@ -11,9 +11,13 @@ import api from '../contract/api.json'
 // every behavior rule has a page, and a page names only what exists.
 
 const here = dirname(fileURLToPath(import.meta.url))
-const kinds = ['props', 'emits', 'slots', 'exposed'] as const satisfies Array<
-  keyof PageApi
->
+const kinds = [
+  'props',
+  'emits',
+  'slots',
+  'exposed',
+  'types'
+] as const satisfies Array<keyof PageApi>
 
 describe('playground manifest', () => {
   it('reads the generated API and the rules', () => {

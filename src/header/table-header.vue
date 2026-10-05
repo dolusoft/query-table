@@ -28,15 +28,13 @@ defineSlots<{
   'filter-menu'?(props: FilterMenuSlotProps): unknown
 }>()
 
-const { drafts, sort } = useTableContext()
+const { drafts, sort, labels } = useTableContext()
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
 
 const hasFilter = (column: Column) =>
   props.filterable && column.filterable !== false
-
-const clearAllEnabled = () => props.query.filters.length > 0 || drafts.dirty()
 
 // Right panel first, then subtable; the first one hosts the clear-all button.
 const utilities = computed(() =>
@@ -45,39 +43,47 @@ const utilities = computed(() =>
     props.hasSubtable ? 'subtable' : null
   ].filter(name => name !== null)
 )
+
+const hostsClearAll = (utility: string) =>
+  props.filterable && utility === utilities.value[0]
 </script>
 
 <template>
   <tr>
-    <th v-for="utility in utilities" :key="utility">
-      <button
-        v-if="filterable && utility === utilities[0]"
-        type="button"
-        class="qt-clear-all-button"
-        title="Clear all filters"
-        aria-label="Clear all filters"
-        :disabled="!clearAllEnabled()"
-        @click.stop="drafts.clearAll()"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+    <!-- A utility header cell labels nothing; it is a `th` only when it holds
+         the clear-all button, and an empty `td` otherwise (C-45). -->
+    <template v-for="utility in utilities" :key="utility">
+      <td v-if="!hostsClearAll(utility)" />
+      <th v-else scope="col">
+        <button
+          type="button"
+          class="qt-clear-all-button"
+          :title="labels().clearAllFilters"
+          :aria-label="labels().clearAllFilters"
+          :disabled="!drafts.canClearAll()"
+          @click.stop="drafts.clearAll()"
         >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </th>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </th>
+    </template>
     <th
       v-for="column in columns"
       :key="column.field"
+      scope="col"
       :data-field="column.field"
       :data-sort="sort.sortOf(column) ?? undefined"
       :data-sortable="sort.isSortable(column) ? '' : undefined"

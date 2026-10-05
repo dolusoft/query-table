@@ -170,6 +170,18 @@ export type TableEmits<T> = {
     cellContextMenu: [payload: CellContextMenuPayload<T>];
 };
 
+// @public
+export interface TableLabels {
+    boolAll: string;
+    boolFalse: string;
+    boolTrue: string;
+    clearAllFilters: string;
+    expandRow: string;
+    filterInput: (column: string) => string;
+    filterOptions: (column: string) => string;
+    openRightPanel: string;
+}
+
 // @public (undocumented)
 export interface TableProps<T extends object = Record<string, unknown>> {
     columns: Column[];
@@ -178,6 +190,7 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     footerRows?: FooterRow[];
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
+    labels?: Partial<TableLabels>;
     pagination?: PaginationOptions;
     query: TableQuery;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
@@ -204,7 +217,13 @@ export interface TableSlots<T> {
     empty?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;
     subtable?(props: SubtableSlotProps<T>): unknown;
-    toolbar?(): unknown;
+    toolbar?(props: ToolbarSlotProps): unknown;
+}
+
+// @public (undocumented)
+export interface ToolbarSlotProps {
+    canClearFilters: boolean;
+    clearFilters: () => void;
 }
 
 // (No @packageDocumentation comment for this package)

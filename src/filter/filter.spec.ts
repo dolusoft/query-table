@@ -14,7 +14,8 @@ import type {
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
   FilterRule,
-  PaginationSlotProps
+  PaginationSlotProps,
+  ToolbarSlotProps
 } from '../contract'
 
 let mounted: Mounted | null = null
@@ -678,6 +679,35 @@ describe('C-22 Clearing all filters', () => {
       query: makeQuery({ filters: [rule('ghost', 'Equal', 1)] })
     })
     expect(clearAll(m).attributes('disabled')).toBeUndefined()
+  })
+
+  it('reaches the toolbar slot in a table without utility columns', async () => {
+    const box: { slot: ToolbarSlotProps | null } = { slot: null }
+    const m = mountIt(
+      {
+        filterable: true,
+        filterDebounce: 1000,
+        query: makeQuery({ page: 3, filters: [rule('age', 'Equal', 3)] })
+      },
+      {
+        slots: {
+          toolbar: (slot: ToolbarSlotProps) => {
+            box.slot = slot
+            return h('span', { class: 'toolbar' })
+          }
+        }
+      }
+    )
+    expect(m.wrapper.find('.qt-clear-all-button').exists()).toBe(false)
+    expect(box.slot?.canClearFilters).toBe(true)
+    await type(m, 'name', 'abc')
+    box.slot?.clearFilters()
+    await flush()
+    vi.advanceTimersByTime(5000)
+    expect(reasons(m.events)).toEqual(['reset'])
+    expect(m.events[0][0]).toEqual(makeQuery({ page: 1 }))
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('')
+    expect(box.slot?.canClearFilters).toBe(false)
   })
 })
 

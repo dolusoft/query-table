@@ -22,6 +22,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. Defaults to `false`. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
+| `labels` | `Partial<TableLabels>` |  | `undefined` | Text the table writes for people: accessible names and the options of a bool filter. Give only the entries you want to change; the rest keep their English defaults. |
 
 ### Events
 
@@ -29,13 +30,13 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | --- | --- | --- |
 | `update:query` | `[query: TableQuery, reason: QueryChangeReason]` | The user changed the query. `reason` says how. The query is a new object with new `filters` and rule objects; apply it with `v-model:query`. |
 | `rowRightPanelClick` | `[row: T]` | The right-panel button of a row was clicked. |
-| `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. The browser menu is suppressed. |
+| `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
 
 ### Slots
 
 | Name | Props | Description |
 | --- | --- | --- |
-| `toolbar` | `none` | Content above the table. |
+| `toolbar` | `ToolbarSlotProps` | Content above the table. |
 | `filter-datetime` | `FilterDatetimeSlotProps` | Replaces the date input of `date` and `datetime` filters. |
 | `filter-menu` | `FilterMenuSlotProps` | Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. |
 | `subtable` | `SubtableSlotProps<T>` | Content of an expanded row (needs `hasSubtable`). |
@@ -209,6 +210,35 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
+  /**
+   * Text the table writes for people: accessible names and the options of a
+   * bool filter. Give only the entries you want to change; the rest keep
+   * their English defaults.
+   */
+  labels?: Partial<TableLabels>
+}
+
+/**
+ * Every human-readable text the table renders itself. A function receives
+ * the column name: its `title`, else its `field`.
+ */
+export interface TableLabels {
+  /** Name and tooltip of the clear-all button. Default `'Clear all filters'`. */
+  clearAllFilters: string
+  /** Name of a row's expand button. Default `'Expand row'`. */
+  expandRow: string
+  /** Name of a row's right panel button. Default `'Open right panel'`. */
+  openRightPanel: string
+  /** Name of a filter input. Default `` name => `Filter ${name}` ``. */
+  filterInput: (column: string) => string
+  /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
+  filterOptions: (column: string) => string
+  /** Bool filter option that removes the filter. Default `'All'`. */
+  boolAll: string
+  /** Bool filter option for `true`. Default `'True'`. */
+  boolTrue: string
+  /** Bool filter option for `false`. Default `'False'`. */
+  boolFalse: string
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -233,7 +263,10 @@ export type TableEmits<T> = {
   'update:query': [query: TableQuery, reason: QueryChangeReason]
   /** The right-panel button of a row was clicked. */
   rowRightPanelClick: [row: T]
-  /** A cell was right-clicked. The browser menu is suppressed. */
+  /**
+   * A cell was right-clicked. With a listener the browser menu is
+   * suppressed; without one the table emits nothing and keeps it.
+   */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
 }
 
@@ -293,6 +326,13 @@ export interface FilterMenuSlotProps {
   trigger: Component
 }
 
+export interface ToolbarSlotProps {
+  /** There is a filter rule or typed filter text to clear. */
+  canClearFilters: boolean
+  /** Remove every filter rule, the same as the clear-all button (C-22). */
+  clearFilters: () => void
+}
+
 export interface PaginationSlotProps {
   page: number
   pageSize: number
@@ -314,7 +354,7 @@ export interface PaginationSlotProps {
 /** Slots of the table. Slot names are kebab-case. */
 export interface TableSlots<T> {
   /** Content above the table. */
-  toolbar?(): unknown
+  toolbar?(props: ToolbarSlotProps): unknown
   /** Replaces the date input of `date` and `datetime` filters. */
   'filter-datetime'?(props: FilterDatetimeSlotProps): unknown
   /** Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. */
@@ -343,13 +383,13 @@ export interface QueryTableExpose {
 
 ## Behavior rules
 
-Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/contract-traceability.spec.ts`).
+Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/contract/contract-traceability.spec.ts`).
 
 "Applied" below means the table emitted `update:query` for it. The consumer decides whether to apply the emitted query.
 
 #### C-01 The table is controlled
 
-The table reads `query` and keeps no copy of `page`, `pageSize`, `sort` or `filters`. When the consumer changes `query` from outside (route restore, a "reset" button), the table redraws to match and emits nothing. A `page` outside `[1, pageCount]`, or a `sort` or filter `field` that matches no column, is drawn as given and never corrected.
+The table reads `query` and keeps no state of its own for `page`, `pageSize`, `sort` or `filters`. The only thing it holds is the query it last emitted, and only until the consumer's update arrives or the current tick ends, so that two updates of one action stack (C-14). When the consumer changes `query` from outside (route restore, a "reset" button), the table redraws to match and emits nothing. A `page` outside `[1, pageCount]`, or a `sort` or filter `field` that matches no column, is drawn as given and never corrected.
 
 #### C-02 Quiet by default
 
@@ -361,7 +401,7 @@ The table never writes to `query`, `columns` or `rows`. The query it emits is a 
 
 #### C-04 One action, one update
 
-A user action produces at most one `update:query`. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
+A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
 
 #### C-05 Paging
 
@@ -433,7 +473,7 @@ If the consumer does not apply an emitted query, the table keeps drawing the old
 
 #### C-22 Clearing all filters
 
-The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button.
+The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click).
 
 #### C-23 Page count and neighbours
 
@@ -449,7 +489,7 @@ The `qt-pagination` block is drawn when the `pagination` slot is given and there
 
 #### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for rows that have an `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for every row; the row needs no `id`.
 
 #### C-27 Cell slots
 
@@ -457,7 +497,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-28 Context menu
 
-Right-clicking a cell emits `cellContextMenu` with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: the payload has no cell element. To find it, walk up from `event.target` through `closest('td')` until the `td`'s row is a direct child of this table's `tbody`; a plain `event.target.closest('td')` is wrong when slot content holds a nested table, because it returns the inner `td`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only. A table nested in a `cell-<field>` slot emits for its own cell, and then the outer table emits for the outer cell that holds it (the same event, so two `cellContextMenu` events in all).
+When the consumer listens to `cellContextMenu`, right-clicking a cell emits it with `event`, `row`, `column`, `cellValue`, `rowIndex` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `tbody` serves every cell, so `event.currentTarget` is the `tbody`: the payload has no cell element. To find it, walk up from `event.target` through `closest('td')` until the `td`'s row is a direct child of this table's `tbody`; a plain `event.target.closest('td')` is wrong when slot content holds a nested table, because it returns the inner `td`. Only data cells count; the utility cells, the `subtable` row and the `empty` row emit nothing and keep the browser menu. A table nested in a `subtable` slot emits for its own cells only. A table nested in a `cell-<field>` slot emits for its own cell, and then the outer table emits for the outer cell that holds it (the same event, so two `cellContextMenu` events in all).
 
 #### C-29 Hidden columns
 
@@ -481,7 +521,7 @@ A template ref exposes `collapseAll` and `flushPendingFilters` and nothing else.
 
 #### C-34 Filter menu slot
 
-The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its `aria-label` follows the current `title` of the column. Without the slot there is no filter button.
+The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button.
 
 #### C-35 Date filter slot
 
@@ -505,7 +545,7 @@ The `empty` slot is shown when there are no rows. The table has no loading state
 
 #### C-40 DOM contract
 
-Everything the table renders uses only the classes and attributes listed in the DOM contract below, and each of them is rendered by some state of the table.
+Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 #### C-41 Skin selectors
 
@@ -518,6 +558,14 @@ A number, integer, date, datetime or bool column has one input and the input hol
 #### C-43 A rule the shortcuts cannot say
 
 The input shows an outside rule as the text that reads back as it. A rule whose value has a star, a comma or a leading `!` and whose condition is `Equal` (or another condition without a shortcut) has no such text: the input shows the value as it is (`a*`), and nothing is emitted. This is a known limit, kept on purpose: there is no escape syntax. The rule stays in `query` until the user edits the input, and the text is then read as shortcuts (`a*` is `StartsWith` `a`), so it replaces the rule.
+
+#### C-44 Labels
+
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
+
+#### C-45 Header semantics
+
+Every header cell of a column is a `th` with `scope="col"`, and so is the utility cell that holds the clear-all button. A utility header cell with nothing in it (the right panel or subtable column without that button) is an empty `td`: an empty `th` would be a header without a name. A sortable header is a `button` inside the `th` whose text is the column `title`; a column without a `title` gives the button its `field` as `aria-label`, so the button always has a name.
 
 ## DOM contract
 

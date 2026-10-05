@@ -1,7 +1,11 @@
 <script setup lang="ts" generic="T extends object">
 import { useSlots } from 'vue'
 
-import type { CellContextMenuPayload, TableSlots } from '../contract'
+import type {
+  CellContextMenuPayload,
+  TableLabels,
+  TableSlots
+} from '../contract'
 import { useCellView } from './use-cell-view'
 import type { ColumnEntry } from '../core/use-columns'
 
@@ -16,6 +20,9 @@ const props = defineProps<{
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
   toggle: (row: T, index: number) => void
+  labels: TableLabels
+  /** The consumer listens to `cellContextMenu` (C-28); read at event time. */
+  hasContextMenuListener: () => boolean
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +38,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
     slots: rawSlots,
     rows: () => props.rows,
     entries: () => props.entries,
+    listening: () => props.hasContextMenuListener(),
     onContextMenu: payload => emit('cellContextMenu', payload)
   })
 </script>
@@ -46,7 +54,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
           <button
             type="button"
             class="qt-right-panel-button"
-            aria-label="Open right panel"
+            :aria-label="labels.openRightPanel"
             @click.stop="emit('rowRightPanelClick', row)"
           >
             <svg
@@ -69,7 +77,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
             type="button"
             class="qt-expand"
             :aria-expanded="isExpanded(row, i)"
-            aria-label="Expand row"
+            :aria-label="labels.expandRow"
             @click="toggle(row, i)"
           >
             <svg

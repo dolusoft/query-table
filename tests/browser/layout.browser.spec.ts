@@ -119,7 +119,8 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
         { field: 'joined', title: 'Joined', filterable: false, sortable: false }
       ]
     })
-    const cells = [...document.querySelectorAll('thead th')]
+    // An empty utility header cell is a `td` (C-45).
+    const cells = [...document.querySelectorAll('thead :is(th, td)')]
     expect(cells.length).toBeGreaterThanOrEqual(6)
     for (const cell of cells) {
       const outer = cell.getBoundingClientRect()

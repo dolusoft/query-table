@@ -152,6 +152,35 @@ export interface TableProps<T extends object = Record<string, unknown>> {
    * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
+  /**
+   * Text the table writes for people: accessible names and the options of a
+   * bool filter. Give only the entries you want to change; the rest keep
+   * their English defaults.
+   */
+  labels?: Partial<TableLabels>
+}
+
+/**
+ * Every human-readable text the table renders itself. A function receives
+ * the column name: its `title`, else its `field`.
+ */
+export interface TableLabels {
+  /** Name and tooltip of the clear-all button. Default `'Clear all filters'`. */
+  clearAllFilters: string
+  /** Name of a row's expand button. Default `'Expand row'`. */
+  expandRow: string
+  /** Name of a row's right panel button. Default `'Open right panel'`. */
+  openRightPanel: string
+  /** Name of a filter input. Default `` name => `Filter ${name}` ``. */
+  filterInput: (column: string) => string
+  /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
+  filterOptions: (column: string) => string
+  /** Bool filter option that removes the filter. Default `'All'`. */
+  boolAll: string
+  /** Bool filter option for `true`. Default `'True'`. */
+  boolTrue: string
+  /** Bool filter option for `false`. Default `'False'`. */
+  boolFalse: string
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -176,7 +205,10 @@ export type TableEmits<T> = {
   'update:query': [query: TableQuery, reason: QueryChangeReason]
   /** The right-panel button of a row was clicked. */
   rowRightPanelClick: [row: T]
-  /** A cell was right-clicked. The browser menu is suppressed. */
+  /**
+   * A cell was right-clicked. With a listener the browser menu is
+   * suppressed; without one the table emits nothing and keeps it.
+   */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
 }
 
@@ -236,6 +268,13 @@ export interface FilterMenuSlotProps {
   trigger: Component
 }
 
+export interface ToolbarSlotProps {
+  /** There is a filter rule or typed filter text to clear. */
+  canClearFilters: boolean
+  /** Remove every filter rule, the same as the clear-all button (C-22). */
+  clearFilters: () => void
+}
+
 export interface PaginationSlotProps {
   page: number
   pageSize: number
@@ -257,7 +296,7 @@ export interface PaginationSlotProps {
 /** Slots of the table. Slot names are kebab-case. */
 export interface TableSlots<T> {
   /** Content above the table. */
-  toolbar?(): unknown
+  toolbar?(props: ToolbarSlotProps): unknown
   /** Replaces the date input of `date` and `datetime` filters. */
   'filter-datetime'?(props: FilterDatetimeSlotProps): unknown
   /** Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. */

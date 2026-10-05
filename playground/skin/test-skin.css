@@ -204,7 +204,8 @@
 .qt-table tr {
   @apply border-b transition-colors hover:bg-muted/50;
 }
-.qt-table th {
+.qt-table th,
+.qt-table thead td {
   @apply h-10 px-2 py-2 text-left align-middle font-medium whitespace-nowrap text-foreground;
 }
 .qt-table td {
@@ -222,7 +223,7 @@
 }
 
 /* Utility columns */
-th:not([data-field]),
+thead :is(th, td):not([data-field]),
 td:has(> .qt-expand),
 td:has(> .qt-right-panel-button) {
   @apply w-8;

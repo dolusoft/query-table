@@ -42,11 +42,15 @@ describe('C-26 Row expansion', () => {
     expect(m.wrapper.find('.qt-subtable-row').exists()).toBe(false)
   })
 
-  it('works for rows that have a truthy id', async () => {
-    const m = mountIt({ hasSubtable: true }, { slots: subtable })
-    expect(makeRows().every(row => row.id > 0)).toBe(true)
+  it('works for every row, with or without an id', async () => {
+    const rows = [{ name: 'no id' }, { id: 0, name: 'zero id' }]
+    const m = mountIt({ hasSubtable: true, rows }, { slots: subtable })
     await buttons(m)[0].trigger('click')
-    expect(m.wrapper.find('.detail').text()).toBe('Charlie')
+    await buttons(m)[1].trigger('click')
+    expect(m.wrapper.findAll('.detail').map(d => d.text())).toEqual([
+      'no id',
+      'zero id'
+    ])
   })
 
   it('keys the state by rowKey, so it follows the row when rows reorder', async () => {
@@ -104,6 +108,15 @@ describe('C-26 Row expansion', () => {
     expect(m.wrapper.find('.detail').text()).toBe('Bob')
   })
 
+  it('keeps only the keys of the supplied rows, so a row that leaves and comes back is closed', async () => {
+    const m = mountIt({ hasSubtable: true, rowKey: 'id' }, { slots: subtable })
+    await buttons(m)[0].trigger('click')
+    await m.wrapper.setProps({ rows: makeRows().slice(1) })
+    expect(m.wrapper.find('.detail').exists()).toBe(false)
+    await m.wrapper.setProps({ rows: makeRows() })
+    expect(m.wrapper.find('.detail').exists()).toBe(false)
+  })
+
   it('resets by index when there is no rowKey and rows change', async () => {
     const m = mountIt({ hasSubtable: true }, { slots: subtable })
     await buttons(m)[0].trigger('click')
@@ -157,8 +170,25 @@ describe('C-27 Cell slots', () => {
 })
 
 describe('C-28 Context menu', () => {
-  it('emits cellContextMenu with the payload and suppresses the browser menu', () => {
+  // The table answers right clicks only for a consumer that listens.
+  const listen = { onCellContextMenu: () => undefined }
+
+  it('emits nothing and keeps the browser menu when nobody listens', () => {
     const m = mountIt()
+    const cell = m.wrapper.find(
+      'tbody tr[data-row-index="2"] td[data-field="age"]'
+    )
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    cell.element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(m.wrapper.emitted('cellContextMenu')).toBeUndefined()
+  })
+
+  it('emits cellContextMenu with the payload and suppresses the browser menu', () => {
+    const m = mountIt(listen)
     const cell = m.wrapper.find(
       'tbody tr[data-row-index="2"] td[data-field="age"]'
     )
@@ -192,7 +222,7 @@ describe('C-28 Context menu', () => {
 
   it('answers a right click on content inside a cell for that cell', () => {
     const m = mountIt(
-      { columns: makeColumns().slice(0, 2) },
+      { columns: makeColumns().slice(0, 2), ...listen },
       { slots: { 'cell-name': '<b class="inner">{{ params.cellValue }}</b>' } }
     )
     const event = rightClick(m.wrapper.findAll('td .inner')[1].element)
@@ -254,7 +284,7 @@ describe('C-28 Context menu', () => {
   it('emits for the inner cell and then for the outer cell when a table sits in a cell-<field> slot', () => {
     const inner: CellContextMenuPayload<object>[] = []
     const m = mountIt(
-      { columns: makeColumns().slice(0, 2) },
+      { columns: makeColumns().slice(0, 2), ...listen },
       {
         slots: {
           'cell-name': () =>
@@ -293,7 +323,7 @@ describe('C-28 Context menu', () => {
       { field: 'id', hide: true },
       { field: 'name', title: 'Name' }
     ]
-    const m = mountIt({ columns })
+    const m = mountIt({ columns, ...listen })
     m.wrapper
       .find('td[data-field="name"]')
       .element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))

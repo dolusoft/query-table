@@ -64,11 +64,27 @@ Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout aft
 
 ## Row identity
 
-Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes.
+Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes. With `row-key` only the rows currently in `rows` keep their expanded state: a row that leaves (another page) and comes back is closed.
+
+## Labels
+
+Every text the table writes itself (accessible names of its buttons and filter inputs, the options of a bool filter) comes from the `labels` prop. Give only what you want to change; the rest keeps its English default:
+
+```vue
+<QueryTable
+  :labels="{
+    clearAllFilters: 'Tüm filtreleri temizle',
+    filterInput: column => `${column} filtresi`
+  }"
+  ...
+/>
+```
 
 ## Contract
 
 [`CONTRACT.md`](./CONTRACT.md) is the full public contract: props, events, slots, types, behavior rules and the DOM the table renders. It is generated from the source and checked in CI.
+
+[`PRINCIPLES.md`](./PRINCIPLES.md) lists the boundaries of the package (what it does and never does) and the check that holds each one.
 
 ## License
 

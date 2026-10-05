@@ -48,6 +48,15 @@ const groups = computed(() => {
       title: 'Exposed',
       typeLabel: 'Signature',
       rows: pick(contractApi.exposed, props.members.exposed)
+    },
+    {
+      title: 'Types',
+      typeLabel: 'Kind',
+      rows: pick(contractApi.types, props.members.types).map<Row>(type => ({
+        name: type.name,
+        type: type.kind,
+        description: type.description
+      }))
     }
   ].filter(group => group.rows.length > 0)
 })

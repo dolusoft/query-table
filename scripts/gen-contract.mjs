@@ -10,8 +10,8 @@
 //   - the behavior rules (contract/rules.md) and the DOM contract
 //     (contract/dom.ts).
 //
-// It also writes contract/api.json: props, events, slots, the exposed surface
-// and the rules as data, read by the playground (API panels, coverage
+// It also writes contract/api.json: props, events, slots, the exposed surface,
+// the public types and the rules as data, read by the playground (API panels, coverage
 // manifest).
 //
 //   node scripts/gen-contract.mjs           write CONTRACT.md and contract/api.json
@@ -316,11 +316,11 @@ const sections = [
 
 // Each `### C-nn Title` heading starts a rule; its text runs to the next one.
 const ruleEntries = rules
-  .split(/^(?=### C-\d{2} )/m)
+  .split(/^(?=### C-\d+ )/m)
   .filter(part => part.startsWith('### '))
   .map(part => {
     const [heading, ...body] = part.split('\n')
-    const [, id, title] = /^### (C-\d{2}) (.+)$/.exec(heading)
+    const [, id, title] = /^### (C-\d+) (.+)$/.exec(heading)
     return {
       id,
       title: title.trim(),
@@ -330,6 +330,31 @@ const ruleEntries = rules
         .replace(/\s*\n\s*/g, ' ')
     }
   })
+
+// Every `### ` heading must be a rule the split above parsed: a heading with
+// a typo in its ID would otherwise drop out of the rules without an error.
+const headingCount = (rules.match(/^### /gm) ?? []).length
+if (headingCount !== ruleEntries.length) {
+  throw new Error(
+    `contract/rules.md has ${headingCount} headings, but ${ruleEntries.length} parse as "### C-nn Title" rules`
+  )
+}
+
+// The exported types of src/contract.ts, with their JSDoc summary.
+const types = contractFile.statements
+  .filter(
+    statement =>
+      (ts.isInterfaceDeclaration(statement) ||
+        ts.isTypeAliasDeclaration(statement)) &&
+      statement.modifiers?.some(
+        modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
+      )
+  )
+  .map(statement => ({
+    name: statement.name.text,
+    kind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type',
+    description: docOf(statement)
+  }))
 
 const api = {
   $comment:
@@ -358,6 +383,7 @@ const api = {
     type,
     description
   })),
+  types,
   rules: ruleEntries
 }
 

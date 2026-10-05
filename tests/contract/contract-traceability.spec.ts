@@ -13,7 +13,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 const rules = [
   ...readFileSync(join(root, 'contract', 'rules.md'), 'utf8').matchAll(
-    /^### (C-\d{2}) (.+)$/gm
+    /^### (C-\d+) (.+)$/gm
   )
 ].map(match => ({ id: match[1], title: match[2] }))
 
