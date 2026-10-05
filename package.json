@@ -52,6 +52,7 @@
     "test:browser:inspect": "vitest --project browser --mode inspect --watch",
     "measure:renders": "node scripts/measure-renders.mjs",
     "analyze:build": "vite build -c vite.analyze.config.ts",
+    "analyze:build:json": "node scripts/analyze-build.mjs",
     "check:package": "pnpm build && node scripts/check-no-css.mjs && publint && attw --pack . --profile node16",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
