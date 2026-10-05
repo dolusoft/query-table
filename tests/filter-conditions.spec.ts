@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { makeQuery } from './helpers'
 import {
   conditionLabel,
   defaultConditionFor,
@@ -13,7 +14,6 @@ import {
   sameQuery,
   valueAt
 } from '../src/model/query'
-import { makeQuery } from './helpers'
 
 describe('filter conditions per column type', () => {
   it('no list contains an empty "no filter" entry', () => {
@@ -33,7 +33,13 @@ describe('filter conditions per column type', () => {
 
   it('C-16 text matches by Contains, every other type exactly', () => {
     expect(defaultConditionFor('string')).toBe('Contains')
-    for (const type of ['number', 'integer', 'date', 'datetime', 'bool'] as const) {
+    for (const type of [
+      'number',
+      'integer',
+      'date',
+      'datetime',
+      'bool'
+    ] as const) {
       expect(defaultConditionFor(type)).toBe('Equal')
     }
   })
@@ -74,10 +80,13 @@ describe('query helpers', () => {
       value
     })
     const filters = [rule('a', '1'), rule('b', '2'), rule('c', '3')]
-    expect(replaceRules(filters, 'b', [rule('b', 'x'), rule('b', 'y')])).toEqual(
-      [rule('a', '1'), rule('b', 'x'), rule('b', 'y'), rule('c', '3')]
-    )
-    expect(replaceRules(filters, 'b', [])).toEqual([rule('a', '1'), rule('c', '3')])
+    expect(
+      replaceRules(filters, 'b', [rule('b', 'x'), rule('b', 'y')])
+    ).toEqual([rule('a', '1'), rule('b', 'x'), rule('b', 'y'), rule('c', '3')])
+    expect(replaceRules(filters, 'b', [])).toEqual([
+      rule('a', '1'),
+      rule('c', '3')
+    ])
     expect(replaceRules(filters, 'z', [rule('z', '9')])).toEqual([
       ...filters,
       rule('z', '9')

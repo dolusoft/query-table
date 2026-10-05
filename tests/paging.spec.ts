@@ -1,10 +1,6 @@
-import { h } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
+import { h } from 'vue'
 
-import type {
-  FilterMenuSlotProps,
-  PaginationSlotProps
-} from '../src/contract'
 import {
   flush,
   makeQuery,
@@ -14,6 +10,7 @@ import {
   type MountOptions,
   type Mounted
 } from './helpers'
+import type { FilterMenuSlotProps, PaginationSlotProps } from '../src/contract'
 
 let mounted: Mounted | null = null
 afterEach(() => {
@@ -30,10 +27,10 @@ const mountPaged = (
   mounted = mountTable(props, {
     ...options,
     slots: {
-      pagination: ((slot: PaginationSlotProps) => {
+      pagination: (slot: PaginationSlotProps) => {
         box.slot = slot
         return h('i', { class: 'paged' })
-      }) as never,
+      },
       ...options.slots
     }
   })
@@ -150,7 +147,10 @@ describe('C-07 Header sort', () => {
       query: makeQuery({ sort: { field: 'name', direction: 'desc' } })
     })
     await mounted.wrapper.find('th[data-field="age"] .bh-sort').trigger('click')
-    expect(mounted.events[0][0].sort).toEqual({ field: 'age', direction: 'asc' })
+    expect(mounted.events[0][0].sort).toEqual({
+      field: 'age',
+      direction: 'asc'
+    })
   })
 
   it('draws no sort button when the table or the column is not sortable', () => {
@@ -165,9 +165,9 @@ describe('C-07 Header sort', () => {
         { field: 'age', title: 'Age', sortable: false }
       ]
     })
-    expect(mounted.wrapper.find('th[data-field="name"] .bh-sort').exists()).toBe(
-      true
-    )
+    expect(
+      mounted.wrapper.find('th[data-field="name"] .bh-sort').exists()
+    ).toBe(true)
     expect(mounted.wrapper.find('th[data-field="age"] .bh-sort').exists()).toBe(
       false
     )
@@ -184,10 +184,10 @@ describe('C-08 Sort from the filter menu', () => {
       { filterable: true, sortable: true, query: makeQuery({ page: 2 }) },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             menus[menu.column.field] = menu
             return h(menu.trigger)
-          }) as never
+          }
         }
       }
     )
@@ -208,10 +208,10 @@ describe('C-08 Sort from the filter menu when sorting is off', () => {
       { filterable: true, ...props },
       {
         slots: {
-          'filter-menu': ((menu: FilterMenuSlotProps) => {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
             menus[menu.column.field] = menu
             return h(menu.trigger)
-          }) as never
+          }
         }
       }
     )
@@ -253,14 +253,17 @@ describe('C-23 Page count and neighbours', () => {
     [51, 10, 6],
     [0, 10, 1],
     [1, 100, 1]
-  ])('totalRows %i with page size %i has %i pages', (totalRows, pageSize, count) => {
-    const { box } = mountPaged({
-      totalRows,
-      rows: makeRows(),
-      query: makeQuery({ pageSize })
-    })
-    expect(box.slot!.pageCount).toBe(count)
-  })
+  ])(
+    'totalRows %i with page size %i has %i pages',
+    (totalRows, pageSize, count) => {
+      const { box } = mountPaged({
+        totalRows,
+        rows: makeRows(),
+        query: makeQuery({ pageSize })
+      })
+      expect(box.slot!.pageCount).toBe(count)
+    }
+  )
 
   it('pageCount is null when the total is unknown', () => {
     const { box } = mountPaged({ totalRows: null })
@@ -288,7 +291,9 @@ describe('C-23 Page count and neighbours', () => {
   })
 
   it('hands the page size options to the slot', () => {
-    expect(mountPaged().box.slot!.pageSizeOptions).toEqual([10, 20, 30, 50, 100])
+    expect(mountPaged().box.slot!.pageSizeOptions).toEqual([
+      10, 20, 30, 50, 100
+    ])
     mounted?.wrapper.unmount()
     expect(
       mountPaged({ pagination: { pageSizeOptions: [5, 15] } }).box.slot!
@@ -319,7 +324,10 @@ describe('C-25 Pagination block', () => {
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
     await mounted.wrapper.setProps({ totalRows: 0, rows: makeRows() })
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
-    await mounted.wrapper.setProps({ rows: [], pagination: { alwaysShow: true } })
+    await mounted.wrapper.setProps({
+      rows: [],
+      pagination: { alwaysShow: true }
+    })
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(true)
   })
 
@@ -330,7 +338,7 @@ describe('C-25 Pagination block', () => {
     expect(block.attributes('data-page-size')).toBe('20')
   })
 
-  it('is not drawn with pagination false, and the slot needs to be given', async () => {
+  it('is not drawn with pagination false, and the slot needs to be given', () => {
     mounted = mountTable({ pagination: false })
     expect(mounted.wrapper.find('.bh-pagination').exists()).toBe(false)
     mounted.wrapper.unmount()
@@ -341,7 +349,9 @@ describe('C-25 Pagination block', () => {
 
   it('emits no page or pageSize update with pagination false', async () => {
     mounted = mountTable({ pagination: false, sortable: true })
-    await mounted.wrapper.find('th[data-field="name"] .bh-sort').trigger('click')
+    await mounted.wrapper
+      .find('th[data-field="name"] .bh-sort')
+      .trigger('click')
     expect(reasons(mounted.events)).toEqual(['sort'])
   })
 })

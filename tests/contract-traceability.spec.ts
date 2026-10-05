@@ -31,7 +31,8 @@ const specFiles = (dir: string): string[] =>
       : []
   })
 
-const NAME = /\b(?:describe|it|test)(?:\.\w+)*(?:\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g
+const NAME =
+  /\b(?:describe|it|test)(?:\.\w+)*(?:\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g
 
 const named = specFiles(join(root, 'tests')).flatMap(file => {
   const text = readFileSync(file, 'utf8')

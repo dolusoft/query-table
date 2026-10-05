@@ -3,14 +3,10 @@ import { userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
 import { h } from 'vue'
 
-import {
-  domAttributes,
-  domClasses,
-  domInlineStyle
-} from '../../contract/dom'
+import { columns, makeQuery, rows, rule } from './helpers'
+import { domAttributes, domClasses, domInlineStyle } from '../../contract/dom'
 import VueServerTable from '../../src/components/index'
 import type { FilterMenuSlotProps, TableQuery } from '../../src/contract'
-import { columns, makeQuery, rows, rule } from './helpers'
 
 // C-40: the table renders exactly the classes and attributes of the DOM
 // contract, and every entry of the contract shows up in some state. The table
@@ -25,7 +21,7 @@ const slots = {
   pagination: () => h('span', 'pages')
 }
 
-const render_ = (props: Record<string, unknown>) =>
+const renderTable = (props: Record<string, unknown>) =>
   render(VueServerTable as never, {
     props: {
       columns: [
@@ -39,7 +35,7 @@ const render_ = (props: Record<string, unknown>) =>
       filterable: true,
       ...props
     } as never,
-    slots: slots as never
+    slots: slots
   })
 
 const filtered: TableQuery = makeQuery({
@@ -48,7 +44,9 @@ const filtered: TableQuery = makeQuery({
 })
 
 /** Every element the table rendered in the current document. */
-const rendered = () => [...document.querySelectorAll('.bh-datatable, .bh-datatable *')]
+const rendered = () => [
+  ...document.querySelectorAll('.bh-datatable, .bh-datatable *')
+]
 
 interface Seen {
   classes: Set<string>
@@ -81,7 +79,9 @@ const collect = () => {
       }
       seen.classes.add(name)
       if (!element.matches(entry.on)) {
-        unmatchedClasses.push(`.${name} is on ${element.tagName.toLowerCase()}, not ${entry.on}`)
+        unmatchedClasses.push(
+          `.${name} is on ${element.tagName.toLowerCase()}, not ${entry.on}`
+        )
       }
     }
     for (const attribute of element.getAttributeNames()) {
@@ -92,7 +92,9 @@ const collect = () => {
       if (entries.length === 0) {
         // Plain HTML the markup needs (type, title, colspan, aria-*, ...).
         if (attribute.startsWith('data-')) {
-          unknownAttributes.push(`${element.tagName.toLowerCase()}[${attribute}]`)
+          unknownAttributes.push(
+            `${element.tagName.toLowerCase()}[${attribute}]`
+          )
         }
         continue
       }
@@ -100,7 +102,9 @@ const collect = () => {
       list.push(element)
       seen.attributes.set(attribute, list)
       if (!entries.some(entry => element.matches(entry.on))) {
-        unmatchedAttributes.push(`${element.tagName.toLowerCase()}[${attribute}]`)
+        unmatchedAttributes.push(
+          `${element.tagName.toLowerCase()}[${attribute}]`
+        )
       }
     }
     if (element.hasAttribute('style')) {
@@ -112,7 +116,7 @@ const collect = () => {
 test('C-40 the rendered DOM matches the DOM contract in every state', async () => {
   // A full table: sorted, filtered, with both utility columns, a footer, an
   // expanded row and a column that defines a width.
-  render_({
+  await renderTable({
     hasSubtable: true,
     hasRightPanel: true,
     query: filtered,
@@ -130,13 +134,17 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   collect()
   cleanup()
 
-  render_({ loading: true, rows: [] })
-  await expect.element(document.querySelector<HTMLElement>('.bh-loader-row')).toBeInTheDocument()
+  await renderTable({ loading: true, rows: [] })
+  await expect
+    .element(document.querySelector<HTMLElement>('.bh-loader-row'))
+    .toBeInTheDocument()
   collect()
   cleanup()
 
-  render_({ rows: [], totalRows: 0 })
-  await expect.element(document.querySelector<HTMLElement>('.bh-empty-row')).toBeInTheDocument()
+  await renderTable({ rows: [], totalRows: 0 })
+  await expect
+    .element(document.querySelector<HTMLElement>('.bh-empty-row'))
+    .toBeInTheDocument()
   collect()
   cleanup()
 
@@ -147,7 +155,9 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   expect(unmatchedAttributes).toEqual([])
 
   // Every entry of the contract is rendered by some state.
-  expect(domClasses.map(entry => entry.name).filter(name => !seen.classes.has(name))).toEqual([])
+  expect(
+    domClasses.map(entry => entry.name).filter(name => !seen.classes.has(name))
+  ).toEqual([])
   const attributeNames = [...new Set(domAttributes.map(entry => entry.name))]
   expect(attributeNames.filter(name => !seen.attributes.has(name))).toEqual([])
   // ... including each placement of an attribute listed more than once.

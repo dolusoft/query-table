@@ -39,7 +39,9 @@ for (const file of packed.files) {
 }
 
 if (found.length > 0) {
-  console.error(`The package must ship no CSS, but contains:\n  ${found.join('\n  ')}`)
+  console.error(
+    `The package must ship no CSS, but contains:\n  ${found.join('\n  ')}`
+  )
   process.exit(1)
 }
 console.log(

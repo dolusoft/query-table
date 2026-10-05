@@ -50,7 +50,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       // A missing file counts as stale.
     }
     if (current !== buildSkin()) {
-      console.error('test-skin.css is stale. Run `pnpm skin:gen` and commit it.')
+      console.error(
+        'test-skin.css is stale. Run `pnpm skin:gen` and commit it.'
+      )
       process.exit(1)
     }
     console.log('test-skin.css is up to date')
