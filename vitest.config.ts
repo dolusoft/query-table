@@ -50,7 +50,11 @@ export default defineConfig(({ mode }) => {
             // Browser mode serves on this port. The default (63315) falls inside
             // a range Windows reserves for Hyper-V on some machines, and a fixed
             // port gives the inspect mode a stable URL.
-            api: { port: 51315, strictPort: true },
+            // VITEST_BROWSER_PORT lets two clones run browser tests at once.
+            api: {
+              port: Number(process.env.VITEST_BROWSER_PORT ?? 51315),
+              strictPort: true
+            },
             browser: {
               enabled: true,
               // In inspect mode the headed Chromium also exposes CDP on 9333, so an
@@ -62,7 +66,12 @@ export default defineConfig(({ mode }) => {
                     }
                   : {}
               ),
-              headless: !inspect,
+              // Headed by default so a developer sees the page under test.
+              // Headless in CI (GitHub Actions sets CI=true) or on request
+              // (`pnpm test:browser:headless`, or HEADLESS=1).
+              headless:
+                !inspect &&
+                (process.env.CI === 'true' || process.env.HEADLESS === '1'),
               ui: false,
               screenshotDirectory: 'tests/browser/__screenshots__',
               // A desktop-sized viewport: the default is phone-sized, which
