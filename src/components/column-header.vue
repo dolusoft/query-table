@@ -107,7 +107,12 @@ const menuProps = (column: Column): FilterMenuSlotProps => ({
   clear: () => props.drafts.clear(column.field),
   sortable: isSortable(column),
   sortDirection: sortOf(column),
-  setSort: direction => emit('setSort', column.field, direction),
+  setSort: direction => {
+    // Same condition as a header click (C-07): no sort where there is no sort.
+    if (isSortable(column)) {
+      emit('setSort', column.field, direction)
+    }
+  },
   trigger: triggerFor(column)
 })
 

@@ -32,7 +32,7 @@ A header click on a sortable column emits reason `sort`. The first click sorts a
 
 ### C-08 Sort from the filter menu
 
-`setSort(direction)` from the `filter-menu` slot emits reason `sort` with that direction, and keeps the page.
+`setSort(direction)` from the `filter-menu` slot emits reason `sort` with that direction, and keeps the page. It does nothing under the same condition as a header click (C-07): when the table or the column is not sortable, which the slot's `sortable` flag reports.
 
 ### C-09 Typing applies a filter after the debounce
 
