@@ -17,7 +17,7 @@ import {
 // whether something took focus (a hidden or unknown column gives `false`);
 // `expandAll()` opens the rows on this page only, it never fetches more.
 const columns = typedColumns()
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 5 })
+const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
 const table = ref<QueryTableExpose | null>(null)
 const fields = [...columns.map(column => column.field), 'unknown']
 const field = ref('name')
