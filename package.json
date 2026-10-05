@@ -42,6 +42,7 @@
   ],
   "license": "MIT",
   "scripts": {
+    "dev": "vite -c tests/demo/vite.config.ts",
     "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/emit-cjs-types.mjs",
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",

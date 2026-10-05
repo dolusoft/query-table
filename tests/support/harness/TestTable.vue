@@ -59,14 +59,17 @@ const update = (next: TableQuery, reason: QueryChangeReason) => {
     <template #filter-menu="menu">
       <FilterMenu :menu="menu" />
     </template>
+    <template #empty>No results.</template>
+    <!-- shadcn data-table pagination: muted text left, controls right -->
     <template #pagination="page">
-      <div class="flex items-center justify-between">
-        <span class="page-info"
+      <div class="flex items-center justify-between gap-4">
+        <span class="page-info text-sm text-muted-foreground"
           >Page {{ page.page }} of {{ page.pageCount ?? '?' }}</span
         >
         <div class="flex items-center gap-2">
+          <span class="text-sm font-medium">Rows per page</span>
           <select
-            class="page-size h-7 rounded-lg border border-input bg-transparent px-2 text-[0.8rem]"
+            class="page-size h-7 rounded-lg border border-input bg-transparent px-2 text-[0.8rem] tabular-nums transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             :value="page.pageSize"
             @change="
               page.setPageSize(

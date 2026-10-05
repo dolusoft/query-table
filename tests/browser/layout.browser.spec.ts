@@ -82,6 +82,33 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     await shot('layout-footer-and-pagination')
   })
 
+  test.each(['light', 'dark'] as const)(
+    'typing a filter moves nothing while the condition label shows up (%s)',
+    async theme => {
+      const { filterInput } = await renderTable({ theme })
+      const measure = () => {
+        const input = box('th[data-field="name"] .bh-filter-input')
+        return {
+          inputX: input.x,
+          inputWidth: input.width,
+          headerHeight: box('thead tr').height,
+          columns: [...document.querySelectorAll('thead th')].map(
+            cell => cell.getBoundingClientRect().width
+          )
+        }
+      }
+      const before = measure()
+      await userEvent.type(filterInput('name'), 'N')
+      await expect
+        .element(document.querySelector<HTMLElement>('.bh-filter-condition'))
+        .toBeInTheDocument()
+      expect(measure()).toEqual(before)
+      await userEvent.type(filterInput('name'), 'ame 1')
+      expect(measure()).toEqual(before)
+      await shot(`layout-filter-label-${theme}`)
+    }
+  )
+
   test('header content is centered vertically in every header cell', async () => {
     await renderTable({
       hasSubtable: true,

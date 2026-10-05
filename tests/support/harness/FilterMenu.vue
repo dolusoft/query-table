@@ -30,7 +30,7 @@ const pick = (run: () => void) => {
         :key="option.value"
         variant="ghost"
         size="sm"
-        class="justify-start"
+        class="justify-start data-active:bg-muted data-active:text-foreground"
         :data-active="props.menu.condition === option.value ? '' : undefined"
         @click="pick(() => props.menu.setCondition(option.value))"
       >
