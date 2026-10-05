@@ -9,7 +9,7 @@ import {
   mountTable,
   propsOf,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type { CellContextMenuPayload, Column } from '../contract'
 import VueServerTable from '../index'
 

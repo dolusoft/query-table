@@ -13,7 +13,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "paths": { "@/*": ["./tests/browser/*"] }
+    "paths": { "@/*": ["./tests/skin/*"] }
   },
-  "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "test-support/**/*.ts", "tests/**/*.ts", "tests/**/*.vue", "*.config.ts"]
+  "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "*.config.ts"]
 }

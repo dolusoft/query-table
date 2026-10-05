@@ -12,7 +12,7 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

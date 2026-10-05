@@ -1,6 +1,6 @@
 import { locators, type Locator } from 'vitest/browser'
 
-import './test-skin.css'
+import '../skin/test-skin.css'
 
 // The library ships no CSS. The browser tests style the table with the test
 // skin (shadcn-vue + Tailwind, see gen-skin.ts), so geometry is measured on a

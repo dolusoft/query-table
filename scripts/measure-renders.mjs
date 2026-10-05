@@ -2,7 +2,7 @@
 // (mount, filter, sort, page over 1000 rows) in a real browser and writes
 // node_modules/.cache/measure/renders.json.
 //
-// The scenarios live in tests/browser/measure/renders.measure.ts. This script
+// The scenarios live in tests/measure/renders.measure.ts. This script
 // runs them through the same hang-proof wrapper as the browser tests
 // (scripts/test-browser.mjs, project "measure"), takes the numbers each test
 // attached to its result (`task.meta.renders`) from Vitest's JSON report, and

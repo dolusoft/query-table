@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { domAttributes, domClasses } from '../contract/dom'
-import { buildSkin, skinPath } from './browser/gen-skin'
+import { buildSkin, skinPath } from './gen-skin'
+import { domAttributes, domClasses } from '../../contract/dom'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
@@ -75,11 +75,11 @@ describe('C-41 the test skin selects only the DOM contract', () => {
   })
 
   it('has no hand-written color: the theme comes from the shadcn-vue CLI output', () => {
-    const mapping = read(join(here, 'browser', 'skin', 'mapping.css'))
+    const mapping = read(join(here, 'mapping.css'))
     expect(mapping).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|hsl|oklch)a?\(/i)
   })
 
-  it('is generated from skin/theme.css and skin/mapping.css', () => {
+  it('is generated from theme.css and mapping.css', () => {
     expect(skin).toBe(buildSkin())
   })
 })

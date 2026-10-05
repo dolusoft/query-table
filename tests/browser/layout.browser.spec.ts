@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 
-import { columns, el, renderTable, rows, shot } from './helpers'
+import { columns, el, renderTable, rows, shot } from '../support/helpers'
 
 // Acceptance measurements on the real layout the test skin gives the plain
 // table markup. Every number here comes from getBoundingClientRect.

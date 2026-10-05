@@ -9,7 +9,7 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type { FilterMenuSlotProps } from '../contract'
 
 let mounted: Mounted | null = null

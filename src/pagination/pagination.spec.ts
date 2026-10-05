@@ -9,7 +9,7 @@ import {
   reasons,
   type MountOptions,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type { PaginationSlotProps } from '../contract'
 
 let mounted: Mounted | null = null

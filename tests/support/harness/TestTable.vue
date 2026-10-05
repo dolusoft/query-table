@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/ui/button'
 
 import FilterMenu from './FilterMenu.vue'
 import type {

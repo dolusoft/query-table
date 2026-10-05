@@ -8,7 +8,7 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from '../../test-support/mount-table'
+} from '../../tests/support/mount-table'
 import type {
   Column,
   FilterDatetimeSlotProps,
