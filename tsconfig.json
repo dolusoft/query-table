@@ -12,7 +12,8 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": { "@/*": ["./tests/browser/*"] }
   },
   "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "*.config.ts"]
 }

@@ -1,12 +1,10 @@
-import FloatingVue from 'floating-vue'
-import 'floating-vue/dist/style.css'
 import { locators, type Locator } from 'vitest/browser'
-import { config } from 'vitest-browser-vue'
 
-// The library ships no styles and relies on the consumer registering
-// floating-vue globally. The browser tests do the same and load floating-vue's
-// own stylesheet so popovers get real positioning; `bh-*` classes stay unstyled.
-config.global.plugins = [FloatingVue]
+import './test-skin.css'
+
+// The library ships no CSS. The browser tests style the table with the test
+// skin (shadcn-vue + Tailwind, see gen-skin.ts), so geometry is measured on a
+// realistic layout and the screenshots are worth looking at.
 
 // The table has few accessible names to hang role locators on; its stable
 // addresses are `th[data-field]` and `bh-*` classes, so tests use CSS.
