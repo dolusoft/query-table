@@ -1,5 +1,4 @@
 allowBuilds:
   esbuild: true
   vue-demi: true
-minimumReleaseAgeExclude:
-  - '@dolusoft/floating-vue@5.3.0'
+

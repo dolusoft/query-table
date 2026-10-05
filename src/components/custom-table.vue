@@ -1,600 +1,520 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends object">
 import { computed, ref, useSlots, watch } from 'vue'
 
-import ButtonExpand from './button-expand.vue'
-import ButtonRightPanel from './button-rightpanel.vue'
-import columnHeader from './column-header.vue'
-import TruncatedCell from './truncated-cell.vue'
-import type { ColumnDefinition } from '../model/column-model'
+import ColumnHeader from './column-header.vue'
+import type {
+  CellContextMenuPayload,
+  CellSlotProps,
+  Column,
+  FilterDatetimeSlotProps,
+  FilterMenuSlotProps,
+  PaginationSlotProps,
+  QueryChangeReason,
+  SortDirection,
+  SubtableSlotProps,
+  TableEmits,
+  TableProps,
+  TableQuery,
+  TableSlots,
+  VueServerTableExpose
+} from '../contract'
+import {
+  cloneQuery,
+  columnTypeOf,
+  nextDirection,
+  sameQuery,
+  valueAt
+} from '../model/query'
+import { useFilterDrafts } from '../model/use-filter-drafts'
 
 defineOptions({ name: 'VueServerTable' })
 
-const slots = useSlots()
-
-// Check if filter-datetime slot is provided
-const hasFilterDatetimeSlot = computed(() => !!slots['filter-datetime'])
-
-export interface Props {
-  loading?: boolean
-  skin?: string
-  totalRows?: number
-  rows?: Array<any>
-  footerRows?: Array<any>
-  columns?: Array<ColumnDefinition>
-  hasSubtable?: boolean
-  hasRightPanel?: boolean
-  rightPanelColumnWidth?: string
-  subtableColumnWidth?: string
-  subtableMaxHeight?: string
-  search?: string
-  page?: number // default: 1
-  pageSize?: number // default: 10
-  pageSizeOptions?: Array<number> // default: [10, 20, 30, 50, 100]
-  showPageSize?: boolean
-  sortable?: boolean
-  sortColumn?: string
-  sortDirection?: string
-  columnFilter?: boolean
-  filterDebounce?: number // Debounce time for filter inputs in ms (default: 100)
-  pagination?: boolean
-  stickyHeader?: boolean
-  stickyFooter?: boolean
-  height?: string // default 500px - only working with sticky headers
-  enableloadinganimation?: boolean
-  enablefooterpagination?: boolean
-  alwaysShowPagination?: boolean
-  footerOffset?: number
-  tableRightOffset?: number
-  tableLeftOffset?: number
-  // Truncate options
-  truncate?: boolean // Enable text truncation globally (default: true)
-  defaultMaxWidth?: string // Default max-width for cells (default: '400px')
-  truncateMaxLength?: number // Max character length before truncating (default: 150)
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  loading: false,
-  skin: 'bh-table-striped bh-table-hover',
-  totalRows: 0,
+const props = withDefaults(defineProps<TableProps<T>>(), {
   rows: () => [],
+  totalRows: null,
   footerRows: () => [],
-  columns: () => [],
-  hasSubtable: false,
-  hasRightPanel: false,
-  rightPanelColumnWidth: '40px',
-  subtableColumnWidth: '40px',
-  subtableMaxHeight: '400px',
-  search: '',
-  page: 1,
-  pageSize: 10,
-  pageSizeOptions: () => [10, 20, 30, 50, 100],
-  showPageSize: true,
+  loading: false,
   sortable: false,
-  sortColumn: 'id',
-  sortDirection: 'asc',
-  columnFilter: false,
+  filterable: false,
   filterDebounce: 100,
   pagination: true,
-  stickyHeader: false,
-  stickyFooter: false,
-  height: '500px',
-  enableloadinganimation: false,
-  enablefooterpagination: false,
-  alwaysShowPagination: false,
-  footerOffset: 0,
-  tableRightOffset: 0,
-  tableLeftOffset: 5,
+  hasSubtable: false,
+  hasRightPanel: false,
+  rowKey: undefined,
   truncate: true,
-  defaultMaxWidth: '400px',
   truncateMaxLength: 150
 })
 
-const emit = defineEmits(['change', 'rowRightPanelClick', 'cellContextMenu'])
+const emit = defineEmits<TableEmits<T>>()
 
-// Default filter condition for a column type: text columns match by Contains,
-// every other type matches exactly. Both 'string' and 'String' count as text.
-const defaultConditionFor = (type?: string) =>
-  type === 'string' || type === 'String' ? 'Contains' : 'Equal'
+const slots = defineSlots<TableSlots<T>>()
+const rawSlots = useSlots()
 
-// set default columns values
-for (const item of props.columns || []) {
-  const type = item.type?.toLowerCase() || 'string'
-  item.type = type
-  item.hide = item.hide !== undefined ? item.hide : false
-  item.dataOnly = item.dataOnly !== undefined ? item.dataOnly : false
-  item.filter = item.filter !== undefined ? item.filter : true
-  item.sort = item.sort !== undefined ? item.sort : true
-  item.html = item.html !== undefined ? item.html : false
-  item.maxWidth = item.maxWidth || props.defaultMaxWidth
-  // Only set condition if value exists, otherwise leave empty
-  if (item.value !== undefined && item.value !== null && item.value !== '') {
-    item.condition = item.condition || defaultConditionFor(type)
-  } else {
-    item.condition = ''
+// ---------------------------------------------------------------------------
+// Emitting: the table never writes to its props. A user action builds a new
+// query from `base()` and emits it. Several actions in one tick (a pending
+// filter flushed before a page click) must stack, so the last emitted query is
+// the base until the consumer's update arrives or the tick ends.
+// ---------------------------------------------------------------------------
+
+let lastEmitted: TableQuery | null = null
+const base = (): TableQuery => lastEmitted ?? props.query
+
+watch(
+  () => props.query,
+  () => {
+    lastEmitted = null
+  },
+  { flush: 'sync' }
+)
+
+const update = (next: TableQuery, reason: QueryChangeReason) => {
+  if (sameQuery(next, base())) {
+    return
+  }
+  lastEmitted = cloneQuery(next)
+  queueMicrotask(() => {
+    lastEmitted = null
+  })
+  emit('update:query', cloneQuery(next), reason)
+}
+
+const drafts = useFilterDrafts({
+  query: () => props.query,
+  base,
+  columns: () => props.columns,
+  debounce: () => props.filterDebounce,
+  update
+})
+
+// ---------------------------------------------------------------------------
+// Paging
+// ---------------------------------------------------------------------------
+
+const paging = computed(() => {
+  if (props.pagination === false) {
+    return null
+  }
+  const options = typeof props.pagination === 'object' ? props.pagination : {}
+  return {
+    pageSizeOptions: options.pageSizeOptions ?? [10, 20, 30, 50, 100],
+    alwaysShow: options.alwaysShow ?? false
+  }
+})
+
+const pageCountFor = (pageSize: number): number | null =>
+  props.totalRows !== null && props.totalRows !== undefined && pageSize >= 1
+    ? Math.max(1, Math.ceil(props.totalRows / pageSize))
+    : null
+
+const pageCount = computed(() => pageCountFor(props.query.pageSize))
+
+const canNext = computed(() =>
+  pageCount.value !== null
+    ? props.query.page < pageCount.value
+    : props.rows.length >= props.query.pageSize
+)
+
+const setPage = (page: number) => {
+  if (!paging.value || !Number.isFinite(page)) {
+    return
+  }
+  drafts.flushAll()
+  const current = base()
+  const count = pageCountFor(current.pageSize)
+  let target = Math.max(1, Math.trunc(page))
+  if (count !== null) {
+    target = Math.min(target, count)
+  }
+  update({ ...cloneQuery(current), page: target }, 'page')
+}
+
+const nextPage = () => {
+  if (!paging.value) {
+    return
+  }
+  // A pending filter goes first and resets the page: build on its result.
+  drafts.flushAll()
+  const current = base()
+  const count = pageCountFor(current.pageSize)
+  const canGo =
+    count !== null
+      ? current.page < count
+      : props.rows.length >= current.pageSize
+  if (canGo) {
+    setPage(current.page + 1)
   }
 }
 
-const currentPage = ref(props.page)
-const currentPageSize = ref(
-  props.pagination ? props.pageSize : props.rows?.length
+const previousPage = () => {
+  if (!paging.value) {
+    return
+  }
+  drafts.flushAll()
+  setPage(base().page - 1)
+}
+
+const setPageSize = (size: number) => {
+  if (!paging.value || !Number.isInteger(size) || size < 1) {
+    return
+  }
+  drafts.flushAll()
+  const current = base()
+  if (size === current.pageSize) {
+    return
+  }
+  update({ ...cloneQuery(current), page: 1, pageSize: size }, 'pageSize')
+}
+
+const paginationProps = computed<PaginationSlotProps>(() => ({
+  page: props.query.page,
+  pageSize: props.query.pageSize,
+  pageCount: pageCount.value,
+  totalRows: props.totalRows ?? null,
+  pageSizeOptions: paging.value?.pageSizeOptions ?? [],
+  canPrevious: props.query.page > 1,
+  canNext: canNext.value,
+  loading: props.loading,
+  setPage,
+  nextPage,
+  previousPage,
+  setPageSize
+}))
+
+const showPagination = computed(
+  () =>
+    paging.value !== null &&
+    !!slots.pagination &&
+    (props.rows.length > 0 ||
+      (props.totalRows ?? 0) > 0 ||
+      paging.value.alwaysShow)
 )
-const currentSortColumn = ref(props.sortColumn)
-const currentSortDirection = ref(props.sortDirection)
-const currentSearch = ref(props.search)
 
-// The consumer pages on the server: the row count comes from it, rows are
-// drawn exactly as given.
-const filterRowCount = computed(() => props.totalRows || 0)
+// ---------------------------------------------------------------------------
+// Sorting
+// ---------------------------------------------------------------------------
 
-const isOpenFilter = ref<string | null>(null)
+const sortBy = (field: string, direction?: SortDirection) => {
+  drafts.flushAll()
+  const current = base()
+  update(
+    {
+      ...cloneQuery(current),
+      sort: {
+        field,
+        direction: direction ?? nextDirection(current.sort, field)
+      }
+    },
+    'sort'
+  )
+}
 
-// Trigger for external filter updates (used by setColumnFilter)
-const filterUpdateTrigger = ref(0)
+// ---------------------------------------------------------------------------
+// Columns and rows
+// ---------------------------------------------------------------------------
 
-// Ref for column-header component to access flush methods
-const columnHeaderRef = ref<InstanceType<typeof columnHeader> | null>(null)
+const visibleColumns = computed(() =>
+  props.columns.filter(column => !column.hide)
+)
 
-const cellValue = (item: any, field: string | undefined) =>
-  field ? field.split('.').reduce((obj, key) => obj?.[key], item) : undefined
+const bodyColumns = computed(() =>
+  props.columns
+    .map((column, index) => ({ column, index }))
+    .filter(entry => !entry.column.hide)
+)
 
-const expandedrows = ref<Map<any, boolean>>(new Map())
+const utilityCount = computed(
+  () => Number(props.hasSubtable) + Number(props.hasRightPanel)
+)
 
-const expandedRowId = (item: any, index: number) =>
-  item._rowIndex !== undefined ? item._rowIndex : item.id || index
+const columnCount = computed(
+  () => visibleColumns.value.length + utilityCount.value
+)
 
-const isRowExpanded = (item: any, index: number) =>
-  expandedrows.value.get(expandedRowId(item, index)) === true
+const cellAttrs = (
+  row: T,
+  column: Column,
+  rowIndex: number,
+  columnIndex: number,
+  title?: string
+) => ({
+  'data-field': column.field,
+  'data-type': columnTypeOf(column),
+  title,
+  onContextmenu: (event: MouseEvent) => {
+    event.preventDefault()
+    const payload: CellContextMenuPayload<T> = {
+      event,
+      row,
+      column,
+      cellValue: valueAt(row, column.field),
+      rowIndex,
+      columnIndex
+    }
+    emit('cellContextMenu', payload)
+  }
+})
 
-// Rows may arrive with `isExpanded` set (print mode opens them this way).
+const hasCellSlot = (column: Column) =>
+  !!rawSlots[`cell-${column.field}`] || !!rawSlots.cell
+
+const cellSlotProps = (
+  row: T,
+  column: Column,
+  rowIndex: number
+): CellSlotProps<T> => ({
+  row,
+  rowIndex,
+  column,
+  cellValue: valueAt(row, column.field)
+})
+
+/** Text of a cell, cut when `truncate` is on, and the full text if it was cut. */
+const cellText = (row: T, column: Column) => {
+  const full = String(valueAt(row, column.field) ?? '')
+  const cut = props.truncate && full.length > props.truncateMaxLength
+  return {
+    text: cut ? full.substring(0, props.truncateMaxLength) + '...' : full,
+    title: cut ? full : undefined
+  }
+}
+
+const footerText = (
+  row: { cells: Array<{ field: string; text: string | number }> },
+  column: Column
+) => row.cells.find(cell => cell.field === column.field)?.text
+
+// ---------------------------------------------------------------------------
+// Expansion
+// ---------------------------------------------------------------------------
+
+const expanded = ref(new Set<string | number>())
+
+const keyOf = (row: T, index: number): string | number => {
+  const { rowKey } = props
+  if (typeof rowKey === 'function') {
+    return rowKey(row, index)
+  }
+  if (typeof rowKey === 'string') {
+    return (row as Record<string, string | number>)[rowKey]
+  }
+  return index
+}
+
+const isExpanded = (row: T, index: number) =>
+  props.hasSubtable && expanded.value.has(keyOf(row, index))
+
+const toggle = (row: T, index: number) => {
+  const key = keyOf(row, index)
+  if (!expanded.value.delete(key)) {
+    expanded.value.add(key)
+  }
+}
+
+// Without a row identity the state belongs to the rows array it was set on.
+// A row may also arrive with `isExpanded` set (print mode opens rows that way).
 watch(
   () => props.rows,
   rows => {
+    if (props.rowKey === undefined) {
+      expanded.value.clear()
+    }
     if (!props.hasSubtable) {
       return
     }
     rows.forEach((row, index) => {
-      if (row.isExpanded !== undefined) {
-        expandedrows.value.set(expandedRowId(row, index), row.isExpanded)
+      const seeded = (row as { isExpanded?: boolean }).isExpanded
+      if (seeded === true) {
+        expanded.value.add(keyOf(row, index))
+      } else if (seeded === false) {
+        expanded.value.delete(keyOf(row, index))
       }
     })
   },
   { immediate: true }
 )
 
-// Cell context menu handler
-const handleCellContextMenu = (
-  event: MouseEvent,
-  row: any,
-  column: ColumnDefinition,
-  value: any,
-  rowIndex: number,
-  columnIndex: number
-) => {
-  event.preventDefault()
-  emit('cellContextMenu', {
-    event,
-    row,
-    column,
-    value,
-    rowIndex,
-    columnIndex
-  })
+const exposed: VueServerTableExpose = {
+  collapseAll: () => expanded.value.clear(),
+  flushPendingFilters: () => drafts.flushAll()
 }
-
-// Maximum number of pages
-const maxPage = computed(() => {
-  const totalPages =
-    (currentPageSize.value as number) < 1
-      ? 1
-      : Math.ceil(filterRowCount.value / (currentPageSize.value as number))
-  return Math.max(totalPages || 0, 1)
-})
-
-const toggleFilterMenu = (col: ColumnDefinition | null) => {
-  if (col && isOpenFilter.value !== col.field) {
-    isOpenFilter.value = col.field ?? null
-  } else {
-    isOpenFilter.value = null
-  }
-}
-
-const previousPage = () => {
-  if (currentPage.value === 1) {
-    return false
-  }
-  currentPage.value--
-}
-
-const nextPage = () => {
-  if (currentPage.value >= maxPage.value) {
-    return false
-  }
-  currentPage.value++
-}
-
-const setPageSize = (pagesize: number) => {
-  currentPageSize.value = pagesize
-}
-
-const setDefaultCondition = () => {
-  for (const d of props.columns) {
-    if (
-      d.filter &&
-      ((d.value !== undefined && d.value !== null && d.value !== '') ||
-        d.condition === 'IsNull' ||
-        d.condition === 'IsNotNull')
-    ) {
-      if (
-        (d.type === 'string' || d.type === 'String') &&
-        d.value &&
-        !d.condition
-      ) {
-        d.condition = 'Contains'
-      }
-      if (d.type === 'number' && d.value && !d.condition) {
-        d.condition = 'Equal'
-      }
-      if (d.type === 'date' && d.value && !d.condition) {
-        d.condition = 'Equal'
-      }
-    }
-  }
-}
-
-const emitChange = (changeType: string, isResetPage = false) => {
-  setDefaultCondition()
-  emit('change', {
-    current_page: isResetPage ? 1 : currentPage.value,
-    pagesize: currentPageSize.value,
-    offset: (currentPage.value - 1) * (currentPageSize.value as number),
-    sort_column: currentSortColumn.value,
-    sort_direction: currentSortDirection.value,
-    search: currentSearch.value,
-    column_filters: props.columns,
-    change_type: changeType
-  })
-}
-
-// A change that has to start from the first page: on page 1 it is reported
-// as itself, otherwise moving to page 1 reports it as a page change.
-const emitFromFirstPage = (changeType: string) => {
-  if (currentPage.value === 1) {
-    emitChange(changeType, true)
-  } else {
-    currentPage.value = 1
-  }
-}
-
-watch(currentPage, () => emitChange('page'))
-watch(currentPageSize, () => emitFromFirstPage('pagesize'))
-
-watch(
-  () => props.search,
-  () => {
-    currentSearch.value = props.search
-    emitFromFirstPage('search')
-  }
-)
-
-const sortChange = (field: string, specifiedDirection?: string) => {
-  // Empty field = clear sort completely
-  if (!field) {
-    currentSortColumn.value = ''
-    currentSortDirection.value = ''
-    emitChange('sort')
-    return
-  }
-
-  // Use specified direction or auto-toggle (header click)
-  let direction = specifiedDirection || 'asc'
-  if (
-    !specifiedDirection &&
-    field === currentSortColumn.value &&
-    currentSortDirection.value === 'asc'
-  ) {
-    direction = 'desc'
-  }
-
-  currentSortColumn.value = field
-  currentSortDirection.value = direction
-  emitChange('sort')
-}
-
-const filterChange = () => emitFromFirstPage('filter')
-
-const clearAllFilters = () => {
-  for (const col of props.columns) {
-    if (col.filter) {
-      col.value = ''
-      col.condition = ''
-      col.parsedFilterRules = undefined
-    }
-  }
-
-  // Clear sort completely
-  currentSortColumn.value = ''
-  currentSortDirection.value = ''
-
-  emitChange('filter', true)
-}
-
-const collapseAll = () => {
-  expandedrows.value.forEach((value, key) => {
-    expandedrows.value.set(key, false)
-  })
-}
-
-defineExpose({
-  getColumnFilters() {
-    return props.columns
-  },
-  collapseAll,
-  clearAllFilters,
-  /**
-   * Set column filter value and optionally trigger filter
-   * @param field - Column field name
-   * @param value - Filter value
-   * @param condition - Filter condition (default: Contains for text columns, Equal otherwise)
-   * @param triggerFilter - Whether to emit a filter change (default: false)
-   */
-  setColumnFilter(
-    field: string,
-    value: string,
-    condition?: string,
-    triggerFilter: boolean = false
-  ) {
-    const column = props.columns.find(col => col.field === field)
-    if (column) {
-      column.value = value
-      // Set condition: use provided or fall back to the type default
-      column.condition = condition || defaultConditionFor(column.type)
-      // Clear any parser-generated rules (manual set overrides operator shortcuts)
-      column.parsedFilterRules = undefined
-      // Trigger UI update in column-header
-      filterUpdateTrigger.value++
-      if (triggerFilter) {
-        filterChange()
-      }
-    }
-    return !!column
-  },
-  /**
-   * Flush all pending filter debounces
-   * Call this before getColumnFilters() when Enter is pressed
-   * to ensure all filter values are immediately processed
-   */
-  flushAllFilterDebounces() {
-    columnHeaderRef.value?.flushAllFilterDebounces?.()
-  }
-})
-
-const extracolumnlength = computed(
-  () => Number(props.hasSubtable) + Number(props.hasRightPanel)
-)
+defineExpose(exposed)
 </script>
+
 <template>
   <div
-    class="bh-datatable bh-antialiased bh-relative bh-text-black bh-text-sm bh-font-normal"
+    class="bh-datatable"
+    :data-loading="loading ? '' : undefined"
+    :data-empty="rows.length === 0 ? '' : undefined"
+    :data-filtered="query.filters.length > 0 ? '' : undefined"
+    :data-sorted="query.sort !== null ? '' : undefined"
   >
-    <div
-      class="bh-w-full bh-h-full"
-      :style="{
-        height: props.height,
-        'padding-right': tableRightOffset + 'px',
-        'padding-left': tableLeftOffset + 'px'
-      }"
-    >
-      <slot name="tableactionheader"></slot>
-      <div
-        class="bh-table-responsive"
-        :class="{ 'bh-min-h-[100px]': props.loading }"
-        :style="{
-          overflow: 'auto',
-          height: props.stickyHeader
-            ? Number(props.height.replace('px', '')) - props.footerOffset + 'px'
-            : 'auto'
-        }"
-      >
-        <table :class="[props.skin]">
-          <thead
-            :class="{
-              'bh-sticky bh-top-0 bh-z-10': props.stickyHeader
-            }"
+    <slot name="toolbar" />
+    <div class="bh-table-responsive">
+      <table class="bh-table">
+        <thead>
+          <column-header
+            :columns="visibleColumns"
+            :query="query"
+            :sortable="sortable"
+            :filterable="filterable"
+            :has-subtable="hasSubtable"
+            :has-right-panel="hasRightPanel"
+            :drafts="drafts"
+            @sort="field => sortBy(field)"
+            @set-sort="sortBy"
           >
-            <column-header
-              ref="columnHeaderRef"
-              :all="props"
-              :currentSortColumn="currentSortColumn"
-              :currentSortDirection="currentSortDirection"
-              :isOpenFilter="isOpenFilter"
-              :hasFilterDatetimeSlot="hasFilterDatetimeSlot"
-              :filterUpdateTrigger="filterUpdateTrigger"
-              @sortChange="sortChange"
-              @filterChange="filterChange"
-              @toggleFilterMenu="toggleFilterMenu"
-              @clearAllFilters="clearAllFilters"
+            <template v-if="rawSlots['filter-datetime']" #filter-datetime="p">
+              <slot name="filter-datetime" v-bind="p" />
+            </template>
+            <template v-if="rawSlots['filter-menu']" #filter-menu="p">
+              <slot name="filter-menu" v-bind="p" />
+            </template>
+          </column-header>
+        </thead>
+        <tbody>
+          <tr v-if="loading && slots.loader" class="bh-loader-row">
+            <td :colspan="columnCount"><slot name="loader" /></td>
+          </tr>
+          <template v-for="(row, i) in rows" :key="i">
+            <tr
+              :data-row-index="i"
+              :data-expanded="isExpanded(row, i) ? '' : undefined"
+              @click.prevent
             >
-              <template
-                v-if="hasFilterDatetimeSlot"
-                #filter-datetime="slotProps"
-              >
-                <slot name="filter-datetime" v-bind="slotProps" />
-              </template>
-            </column-header>
-          </thead>
-          <tbody>
-            <template v-for="(item, i) in props.rows" :key="i">
-              <tr v-if="filterRowCount" @click.prevent>
-                <td
-                  v-if="props.hasRightPanel"
-                  :style="{
-                    width: props.rightPanelColumnWidth + ' !important',
-                    minWidth: props.rightPanelColumnWidth + ' !important',
-                    padding: '0px !important'
-                  }"
+              <td v-if="hasRightPanel" data-utility="right-panel">
+                <button
+                  type="button"
+                  class="bh-right-panel-button"
+                  aria-label="Open right panel"
+                  @click.stop="emit('rowRightPanelClick', row)"
                 >
-                  <ButtonRightPanel
-                    :item="item"
-                    @rightPanelClick="
-                      rowData => emit('rowRightPanelClick', rowData)
-                    "
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
                   >
-                  </ButtonRightPanel>
-                </td>
-                <td
-                  v-if="props.hasSubtable"
-                  :style="{
-                    width: props.subtableColumnWidth + ' !important',
-                    minWidth: props.subtableColumnWidth + ' !important'
-                  }"
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+              </td>
+              <td v-if="hasSubtable" data-utility="subtable">
+                <button
+                  type="button"
+                  class="bh-expand"
+                  :aria-expanded="isExpanded(row, i)"
+                  aria-label="Expand row"
+                  @click="toggle(row, i)"
                 >
-                  <button-expand
-                    :item="{ ...item, _rowIndex: i }"
-                    :expandedrows="expandedrows"
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
                   >
-                  </button-expand>
-                </td>
-                <template v-for="(col, j) in props.columns">
-                  <td
-                    v-if="!col.hide && !col.dataOnly"
-                    :key="col.field"
-                    :class="[col.cellClass ? col.cellClass : '']"
-                    :style="{
-                      maxWidth: props.truncate ? col.maxWidth : undefined
-                    }"
-                    @contextmenu="
-                      handleCellContextMenu(
-                        $event,
-                        item,
-                        col,
-                        cellValue(item, col.field),
-                        i,
-                        j
-                      )
-                    "
-                  >
-                    <!-- Slots bypass truncation - user controls rendering -->
-                    <template v-if="col.field && slots[col.field]">
-                      <slot :name="col.field" :value="item"></slot>
-                    </template>
-                    <truncated-cell
-                      v-else
-                      :value="cellValue(item, col.field)"
-                      :truncate="props.truncate"
-                      :max-length="props.truncateMaxLength"
-                      :html="col.html"
+                    <polyline
+                      v-if="isExpanded(row, i)"
+                      points="6 9 12 15 18 9"
                     />
-                  </td>
-                </template>
-              </tr>
-              <template v-if="isRowExpanded(item, i) && props.hasSubtable">
-                <tr @click.prevent>
-                  <td :colspan="props.columns.length + extracolumnlength">
-                    <div
-                      class="subtable-container"
-                      :style="{
-                        maxHeight: props.subtableMaxHeight,
-                        overflow: 'auto',
-                        padding: '10px',
-                        background: 'var(--white)',
-                        border: '1px solid var(--fade-grey)'
-                      }"
-                    >
-                      <slot name="tsub" :rowData="item"></slot>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-            </template>
-
-            <template v-if="filterRowCount">
-              <tr
-                v-for="(item, i) in props.footerRows"
-                :key="i"
-                class="sticky-table-footer"
-              >
+                    <polyline v-else points="9 6 15 12 9 18" />
+                  </svg>
+                </button>
+              </td>
+              <template v-for="entry in bodyColumns" :key="entry.column.field">
                 <td
-                  v-if="extracolumnlength > 0"
-                  :colspan="extracolumnlength"
-                ></td>
-                <template v-for="col in props.columns">
-                  <td
-                    v-if="!col.hide && !col.dataOnly"
-                    :key="col.field"
-                    :class="[col.cellClass ? col.cellClass : '']"
-                    :style="{
-                      maxWidth: props.truncate ? col.maxWidth : undefined
-                    }"
-                  >
-                    <template
-                      v-if="item.cells.find((x: any) => x.field == col.field)"
-                    >
-                      <truncated-cell
-                        :value="
-                          item.cells.find((x: any) => x.field == col.field).text
-                        "
-                        :truncate="props.truncate"
-                        :max-length="props.truncateMaxLength"
-                        :html="false"
-                      />
-                    </template>
-                  </td>
-                </template>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-
-        <div
-          v-if="props.loading && enableloadinganimation"
-          class="bh-absolute bh-inset-0 bh-bg-blue-light/50 bh-grid bh-place-content-center dt-center-loading"
-          :style="{
-            height: Number(props.height.replace('px', '')) - 175 + 'px'
-          }"
-        >
-          <slot name="loadercontent"></slot>
-        </div>
-
-        <div
-          v-if="!filterRowCount && !props.loading"
-          class="nodatacontent"
-          :style="{
-            height: Number(props.height.replace('px', '')) - 175 + 'px'
-          }"
-        >
-          <slot name="nodatacontent"></slot>
-        </div>
-      </div>
+                  v-if="hasCellSlot(entry.column)"
+                  v-bind="cellAttrs(row, entry.column, i, entry.index)"
+                >
+                  <slot
+                    v-if="rawSlots[`cell-${entry.column.field}`]"
+                    :name="`cell-${entry.column.field}`"
+                    v-bind="cellSlotProps(row, entry.column, i)"
+                  />
+                  <slot
+                    v-else
+                    name="cell"
+                    v-bind="cellSlotProps(row, entry.column, i)"
+                  />
+                </td>
+                <td
+                  v-else-if="entry.column.html"
+                  v-bind="
+                    cellAttrs(
+                      row,
+                      entry.column,
+                      i,
+                      entry.index,
+                      cellText(row, entry.column).title
+                    )
+                  "
+                  v-html="cellText(row, entry.column).text"
+                />
+                <td
+                  v-else
+                  v-bind="
+                    cellAttrs(
+                      row,
+                      entry.column,
+                      i,
+                      entry.index,
+                      cellText(row, entry.column).title
+                    )
+                  "
+                >
+                  {{ cellText(row, entry.column).text }}
+                </td>
+              </template>
+            </tr>
+            <tr
+              v-if="isExpanded(row, i)"
+              class="bh-subtable-row"
+              @click.prevent
+            >
+              <td :colspan="columnCount">
+                <slot name="subtable" :row="row" :row-index="i" />
+              </td>
+            </tr>
+          </template>
+          <tr
+            v-if="rows.length === 0 && !loading && slots.empty"
+            class="bh-empty-row"
+          >
+            <td :colspan="columnCount"><slot name="empty" /></td>
+          </tr>
+        </tbody>
+        <tfoot v-if="footerRows.length > 0" class="bh-footer">
+          <tr v-for="(footerRow, i) in footerRows" :key="i">
+            <td v-if="utilityCount > 0" :colspan="utilityCount" />
+            <td
+              v-for="column in visibleColumns"
+              :key="column.field"
+              :data-field="column.field"
+              :data-type="columnTypeOf(column)"
+            >
+              {{ footerText(footerRow, column) }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
-
     <div
-      v-if="props.pagination && (filterRowCount || props.alwaysShowPagination)"
+      v-if="showPagination"
       class="bh-pagination"
-      :class="{
-        'bh-pointer-events-none': props.loading,
-        'sticky-footer': props.stickyFooter
-      }"
+      :data-page="query.page"
+      :data-page-size="query.pageSize"
     >
-      <div
-        class="bh-flex bh-items-center bh-flex-wrap bh-flex-col sm:bh-flex-row bh-gap-4"
-      >
-        <slot
-          v-if="enablefooterpagination"
-          name="footerpageinfo"
-          :showPageSize="showPageSize"
-          :pageSizeOptions="pageSizeOptions"
-          :currentPageSize="currentPageSize"
-          :setPageSize="setPageSize"
-        ></slot>
-        <slot
-          v-if="enablefooterpagination"
-          name="footerpagination"
-          :currentPage="currentPage"
-          :maxPage="maxPage"
-          :nextPage="nextPage"
-          :previousPage="previousPage"
-        ></slot>
-      </div>
+      <slot name="pagination" v-bind="paginationProps" />
     </div>
   </div>
 </template>

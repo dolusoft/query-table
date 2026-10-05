@@ -5,12 +5,9 @@ import { defineConfig } from 'vite'
 
 import pkg from './package.json' with { type: 'json' }
 
-// Every runtime and peer dependency stays external: the consumer resolves
-// (and deduplicates) them, the library bundle only carries its own code.
-const externalPackages = [
-  ...Object.keys(pkg.dependencies ?? {}),
-  ...Object.keys(pkg.peerDependencies ?? {})
-]
+// Vue is the only dependency, and a peer one: the consumer resolves (and
+// deduplicates) it, the library bundle only carries its own code.
+const externalPackages = Object.keys(pkg.peerDependencies)
 const external = (id: string) =>
   externalPackages.some(name => id === name || id.startsWith(`${name}/`))
 

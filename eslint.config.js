@@ -15,6 +15,7 @@ const fileName = fileURLToPath(import.meta.url)
 export default [
   {
     files: [
+      'contract/**/*.ts',
       'src/**/*.js',
       'src/**/*.ts',
       'src/**/**/*.ts',
@@ -102,7 +103,19 @@ export default [
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
       quotes: ['error', 'single'],
-      '@typescript-eslint/no-shadow': 'error'
+      '@typescript-eslint/no-shadow': 'error',
+      // The library never depends on its test skin or test helpers.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/tests/**', '**/tests', 'tests/**'],
+              message: 'Library code must not import from tests/.'
+            }
+          ]
+        }
+      ]
     },
     ignores: [
       'build',

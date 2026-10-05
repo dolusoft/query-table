@@ -1,126 +1,148 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseFilterInput } from '../src/model/filter-input-parser'
+import type { FilterCondition } from '../src/contract'
+import {
+  hasShortcut,
+  parseFilterInput,
+  previewCondition,
+  serializeFilterRules
+} from '../src/model/filter-input-parser'
 
-const single = (
-  value: string,
-  condition: string,
-  isOperatorDetected = true
-) => ({
-  rules: [{ value, condition }],
-  displayCondition: condition,
-  isOperatorDetected
-})
-
-const EMPTY = { rules: [], displayCondition: '', isOperatorDetected: false }
-
-describe('parseFilterInput — operator shortcuts', () => {
-  it.each([
-    ['*face*', single('face', 'Contains')],
-    ['face*', single('face', 'StartsWith')],
-    ['*face', single('face', 'EndsWith')],
-    ['!face', single('face', 'NotEqual')],
-    ['!*face*', single('face', 'NotContains')],
-    // backend has no NotStartsWith / NotEndsWith: both fall back to NotContains
-    ['!face*', single('face', 'NotContains')],
-    ['!*face', single('face', 'NotContains')],
-    ['face', single('face', 'Equal', false)]
-  ])('%s', (input, expected) => {
-    expect(parseFilterInput(input)).toEqual(expected)
+describe('C-15 operator shortcuts parse into clean rules', () => {
+  it.each<[string, FilterCondition, string]>([
+    ['*foo*', 'Contains', 'foo'],
+    ['foo*', 'StartsWith', 'foo'],
+    ['*foo', 'EndsWith', 'foo'],
+    ['!foo', 'NotEqual', 'foo'],
+    ['!*foo*', 'NotContains', 'foo'],
+    ['!foo*', 'NotContains', 'foo'],
+    ['!*foo', 'NotContains', 'foo']
+  ])('%s is %s of "%s"', (input, condition, value) => {
+    expect(parseFilterInput(input)).toEqual([{ condition, value }])
   })
 
-  it('a,b → one rule per segment, display condition from the first', () => {
-    expect(parseFilterInput('!*youtube*,*vimeo*')).toEqual({
-      rules: [
-        { value: 'youtube', condition: 'NotContains' },
-        { value: 'vimeo', condition: 'Contains' }
-      ],
-      displayCondition: 'NotContains',
-      isOperatorDetected: true
-    })
-  })
-
-  it('a,b without operators → Equal rules, no operator detected', () => {
-    expect(parseFilterInput('a,b')).toEqual({
-      rules: [
-        { value: 'a', condition: 'Equal' },
-        { value: 'b', condition: 'Equal' }
-      ],
-      displayCondition: 'Equal',
-      isOperatorDetected: false
-    })
-  })
-
-  it('operator in any segment marks the whole input as detected', () => {
-    const r = parseFilterInput('a,b*')
-    expect(r.isOperatorDetected).toBe(true)
-    expect(r.displayCondition).toBe('Equal')
-  })
-})
-
-describe('parseFilterInput — edge cases', () => {
-  it.each([
-    [''],
-    ['   '],
-    ['*'],
-    ['**'],
-    ['***'],
-    ['!'],
-    ['!*'],
-    ['!**'],
-    [','],
-    [' , , '],
-    ['* *']
-  ])('%j → empty result', input => {
-    expect(parseFilterInput(input)).toEqual(EMPTY)
-  })
-
-  it('non-string input → empty result', () => {
-    expect(parseFilterInput(undefined as any)).toEqual(EMPTY)
-    expect(parseFilterInput(null as any)).toEqual(EMPTY)
-    expect(parseFilterInput(42 as any)).toEqual(EMPTY)
-  })
-
-  it('trims surrounding whitespace and inner whitespace after stripping', () => {
-    expect(parseFilterInput('  * face *  ')).toEqual(single('face', 'Contains'))
-    expect(parseFilterInput(' a , b ').rules).toEqual([
-      { value: 'a', condition: 'Equal' },
-      { value: 'b', condition: 'Equal' }
+  it('a segment without an operator takes the base condition', () => {
+    expect(parseFilterInput('foo')).toEqual([
+      { condition: 'Contains', value: 'foo' }
+    ])
+    expect(parseFilterInput('foo', 'Equal')).toEqual([
+      { condition: 'Equal', value: 'foo' }
+    ])
+    expect(parseFilterInput('foo', 'StartsWith')).toEqual([
+      { condition: 'StartsWith', value: 'foo' }
     ])
   })
 
-  it('empty segments are dropped', () => {
-    expect(parseFilterInput('a,,*,b').rules.map(r => r.value)).toEqual([
+  it.each(['', '   ', '*', '**', '!', '!*', '!**', ',', ' , ', '*,*'])(
+    'input %j makes no rule',
+    input => {
+      expect(parseFilterInput(input)).toEqual([])
+    }
+  )
+
+  it('trims the input and the segments', () => {
+    expect(parseFilterInput('  a , b  ', 'Equal')).toEqual([
+      { condition: 'Equal', value: 'a' },
+      { condition: 'Equal', value: 'b' }
+    ])
+  })
+
+  it('skips empty segments between commas', () => {
+    expect(parseFilterInput('a,,*,b', 'Equal').map(r => r.value)).toEqual([
       'a',
       'b'
     ])
   })
 
-  it('current behavior: no escape syntax — backslash is kept literally', () => {
-    // leading "\*" is not a leading star, so the input is a plain Equal
-    expect(parseFilterInput('\\*face')).toEqual(
-      single('\\*face', 'Equal', false)
-    )
-    // trailing "\*" still acts as the StartsWith operator
-    expect(parseFilterInput('face\\*')).toEqual(single('face\\', 'StartsWith'))
-  })
-
-  it('current behavior: comma cannot be escaped, it always splits', () => {
-    expect(parseFilterInput('a\\,b').rules).toEqual([
-      { value: 'a\\', condition: 'Equal' },
-      { value: 'b', condition: 'Equal' }
+  it('keeps the known limits: no escape, a comma always splits, only the outer stars count', () => {
+    // current behavior, pinned on purpose
+    expect(parseFilterInput('\\*face', 'Equal')).toEqual([
+      { condition: 'Equal', value: '\\*face' }
+    ])
+    expect(parseFilterInput('a\\,b', 'Equal').map(r => r.value)).toEqual([
+      'a\\',
+      'b'
+    ])
+    expect(parseFilterInput('a*b', 'Equal')).toEqual([
+      { condition: 'Equal', value: 'a*b' }
     ])
   })
+})
 
-  it('current behavior: only one leading/trailing star is stripped', () => {
-    expect(parseFilterInput('**face**')).toEqual(single('*face*', 'Contains'))
+describe('C-17 several rules for one field', () => {
+  it('a,b gives one rule per segment, each with its own condition', () => {
+    expect(parseFilterInput('!*youtube*,vimeo*')).toEqual([
+      { condition: 'NotContains', value: 'youtube' },
+      { condition: 'StartsWith', value: 'vimeo' }
+    ])
+  })
+})
+
+describe('serializeFilterRules', () => {
+  it('writes every condition that has a shortcut as its shortcut', () => {
+    expect(
+      serializeFilterRules([
+        { condition: 'Contains', value: 'a' },
+        { condition: 'StartsWith', value: 'b' },
+        { condition: 'EndsWith', value: 'c' },
+        { condition: 'NotContains', value: 'd' },
+        { condition: 'NotEqual', value: 'e' }
+      ])
+    ).toBe('*a*,b*,*c,!*d*,!e')
   })
 
-  it('current behavior: double negation keeps the second ! in the value', () => {
-    expect(parseFilterInput('!!face')).toEqual(single('!face', 'NotEqual'))
+  it('writes the others as plain text, and a null value as nothing', () => {
+    expect(
+      serializeFilterRules([
+        { condition: 'Equal', value: 'a' },
+        { condition: 'GreaterThan', value: 5 },
+        { condition: 'IsNull', value: null }
+      ])
+    ).toBe('a,5,')
+    expect(hasShortcut('Equal')).toBe(false)
+    expect(hasShortcut('Contains')).toBe(true)
   })
 
-  it('current behavior: inner star is literal', () => {
-    expect(parseFilterInput('fa*ce')).toEqual(single('fa*ce', 'Equal', false))
+  it('round-trips: parse(serialize(rules), base) gives the rules back', () => {
+    const conditions: FilterCondition[] = [
+      'Contains',
+      'NotContains',
+      'NotEqual',
+      'StartsWith',
+      'EndsWith'
+    ]
+    const values = ['a', 'foo bar', 'x-1', 'Ünï']
+    // Every pair and triple of the shortcut conditions.
+    for (const first of conditions) {
+      for (const second of conditions) {
+        const rules = [
+          { condition: first, value: values[0] },
+          { condition: second, value: values[1] },
+          { condition: first, value: values[2] }
+        ]
+        expect(parseFilterInput(serializeFilterRules(rules))).toEqual(rules)
+      }
+    }
+    // A plain condition needs to be the base.
+    const plain = [{ condition: 'Equal' as const, value: 'a' }]
+    expect(parseFilterInput(serializeFilterRules(plain), 'Equal')).toEqual(
+      plain
+    )
+  })
+})
+
+describe('previewCondition', () => {
+  it.each<[string, FilterCondition]>([
+    ['*', 'Contains'],
+    ['!*', 'NotContains'],
+    ['!', 'NotEqual'],
+    ['foo*', 'StartsWith'],
+    ['foo', 'Contains']
+  ])('%s previews %s', (input, condition) => {
+    expect(previewCondition(input, 'Contains')).toBe(condition)
+  })
+
+  it('falls back to the base for text that makes no rule', () => {
+    expect(previewCondition('', 'Equal')).toBe('Equal')
   })
 })
