@@ -103,8 +103,6 @@ export interface Column {
   filterable?: boolean
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
-  /** Render the cell with `v-html`. Escaping is the consumer's job. Defaults to `false`. */
-  html?: boolean
 }
 
 /** One row of the totals block under the body. */

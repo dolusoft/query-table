@@ -230,27 +230,7 @@ describe('C-30 Cell text', () => {
     expect(cell.attributes('title')).toBeUndefined()
   })
 
-  it('renders html columns as HTML', () => {
-    const m = mountIt({
-      columns: [{ field: 'name', html: true }],
-      rows: [{ name: '<em class="x">hi</em>' }]
-    })
-    expect(m.wrapper.find('td em.x').text()).toBe('hi')
-  })
-
-  it('keeps the markup of an html column whole', () => {
-    const html = `<a href="/x/${'a'.repeat(200)}">link</a><b>bold</b>`
-    const m = mountIt({
-      columns: [{ field: 'name', html: true }],
-      rows: [{ name: html }]
-    })
-    const cell = m.wrapper.find('td')
-    expect(cell.element.innerHTML).toBe(html)
-    expect(cell.find('a').text()).toBe('link')
-    expect(cell.find('b').text()).toBe('bold')
-  })
-
-  it('escapes the text of other columns', () => {
+  it('escapes the text: markup in a value is drawn as text', () => {
     const m = mountIt({
       columns: [{ field: 'name' }],
       rows: [{ name: '<em class="x">hi</em>' }]

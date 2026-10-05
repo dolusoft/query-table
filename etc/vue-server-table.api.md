@@ -39,7 +39,6 @@ export interface Column {
     field: string;
     filterable?: boolean;
     hide?: boolean;
-    html?: boolean;
     sortable?: boolean;
     title?: string;
     type?: ColumnType;

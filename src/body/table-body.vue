@@ -99,11 +99,6 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
               v-bind="slotProps(row, entry.column, i)"
             />
           </td>
-          <td
-            v-else-if="entry.column.html"
-            v-bind="cellAttrs(row, entry, i)"
-            v-html="cellText(row, entry.column)"
-          />
           <td v-else v-bind="cellAttrs(row, entry, i)">
             {{ cellText(row, entry.column) }}
           </td>
