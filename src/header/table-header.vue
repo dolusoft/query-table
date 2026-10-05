@@ -27,13 +27,22 @@ const props = defineProps<{
   hasPinned: boolean
   /** `--qt-pin-left` of each pinned cell, by key. */
   offsets: Readonly<Record<string, number>>
+  /**
+   * The header slots the consumer gave (`header-<field>`, `filter-datetime`,
+   * `filter-menu`), space-separated. The slots below are always passed so
+   * that they stay stable; this says which ones to draw.
+   */
+  slotNames: string
 }>()
 
-const slots = defineSlots<{
+defineSlots<{
   'filter-datetime'?(props: FilterDatetimeSlotProps): unknown
   'filter-menu'?(props: FilterMenuSlotProps): unknown
-  [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined
+  /** Draws the consumer's `header-<field>` slot for `column`. */
+  header?(props: HeaderSlotProps): unknown
 }>()
+
+const given = (name: string) => props.slotNames.split(' ').includes(name)
 
 const { drafts, sort, resize, labels } = useTableContext()
 
@@ -116,8 +125,8 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
     >
       <!-- C-51: the header slot replaces the label only. -->
       <slot
-        v-if="slots[`header-${column.field}`]"
-        :name="`header-${column.field}`"
+        v-if="given(`header-${column.field}`)"
+        name="header"
         v-bind="headerSlotProps(column)"
       />
       <sort-button
@@ -133,10 +142,10 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
         :type="columnTypeOf(column)"
         :query="query"
       >
-        <template v-if="$slots['filter-datetime']" #filter-datetime="p">
+        <template v-if="given('filter-datetime')" #filter-datetime="p">
           <slot name="filter-datetime" v-bind="p" />
         </template>
-        <template v-if="$slots['filter-menu']" #filter-menu="p">
+        <template v-if="given('filter-menu')" #filter-menu="p">
           <slot name="filter-menu" v-bind="p" />
         </template>
       </filter-cell>

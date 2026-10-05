@@ -186,3 +186,51 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     await shot('layout-full-table')
   })
 })
+
+describe('C-52 loading geometry with the test skin', () => {
+  const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
+  /** Rects of the header cells, the body rows and the table, rounded. */
+  const layout = () =>
+    [
+      ...document.querySelectorAll(
+        '.qt-table, .qt-table thead th, .qt-table tbody > tr[data-row-index], .qt-footer, .qt-pagination'
+      )
+    ].map(node => {
+      const r = node.getBoundingClientRect()
+      return [r.x, r.y, r.width, r.height].map(Math.round)
+    })
+
+  test('turning loading on and off moves nothing, and the overlay covers the body only', async () => {
+    const { rerender } = await renderTable({
+      hasSubtable: true,
+      footerRows: [{ cells: [{ field: 'id', text: 'Total' }] }]
+    })
+    await frame()
+    const before = layout()
+    await rerender({ loading: true })
+    await frame()
+    expect(layout()).toEqual(before)
+    const overlay = box('.qt-loading-row')
+    const body = box('.qt-table tbody')
+    const head = box('.qt-table thead')
+    expect(Math.round(overlay.top)).toBe(Math.round(body.top))
+    expect(Math.round(overlay.bottom)).toBe(Math.round(body.bottom))
+    expect(Math.round(overlay.left)).toBe(Math.round(body.left))
+    expect(Math.round(overlay.width)).toBe(Math.round(body.width))
+    expect(overlay.top).toBeGreaterThanOrEqual(head.bottom - 0.5)
+    await shot('layout-loading-over-rows')
+    await rerender({ loading: false })
+    await frame()
+    expect(layout()).toEqual(before)
+  })
+
+  test('without rows the loading row stays in the flow, as tall as the empty row', async () => {
+    const { rerender } = await renderTable({ rows: [], totalRows: 0 })
+    await frame()
+    const empty = box('.qt-empty-row').height
+    await rerender({ loading: true })
+    await frame()
+    expect(Math.round(box('.qt-loading-row').height)).toBe(Math.round(empty))
+    await shot('layout-loading-empty')
+  })
+})

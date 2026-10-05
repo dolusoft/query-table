@@ -44,7 +44,7 @@ Names: a folder is a feature; structural parts carry a `table-` prefix; composab
 
 Three scripts write small JSON files to `node_modules/.cache/measure/` (gitignored), so a person or an agent can read numbers instead of a UI. None of them leaves a server running.
 
-- `pnpm measure:renders` — how many times each component re-renders in four fixed scenarios on a 1000-row dataset: `mount`, `filter` (type `Name 1`, Enter), `sort` (name ascending, then descending) and `page` (100 rows a page, three clicks on Next). Output: `renders.json`. The scenarios are in `tests/measure/renders.measure.ts`; they run as the `measure` Vitest project in a real browser (headed like the browser tests, `HEADLESS=1` for no window). `pnpm check:renders` runs the same scenarios and fails when a scenario applies a different number of updates or re-renders the table more often than `scripts/render-budget.json` allows; CI runs it.
+- `pnpm measure:renders` — how many times each component re-renders in five fixed scenarios on a 1000-row dataset: `mount`, `filter` (type `Name 1`, Enter), `sort` (name ascending, then descending), `loading` (100 rows a page, `loading` on and off) and `page` (100 rows a page, three clicks on Next). Output: `renders.json`. The scenarios are in `tests/measure/renders.measure.ts`; they run as the `measure` Vitest project in a real browser (headed like the browser tests, `HEADLESS=1` for no window). `pnpm check:renders` runs the same scenarios and fails when a scenario applies a different number of updates or re-renders the table more often than `scripts/render-budget.json` allows; CI runs it.
   - `scenarios.<name>.counts` has `mounts`, `updates` (the `updated` hook, by component) and `triggers` (the first reactive cause of each re-render, from `renderTriggered`); `libraryUpdates` is the sum for the table's own components. Counts are the same on every repetition (the run fails otherwise), so they can be compared across commits. `timings` are medians of five runs and noisy: report them, do not assert on them.
   - To count something else, add a scenario to the `scenarios` list in that file. The counting is a global mixin (`config.global.mixins`); it needs a development build of Vue, which the test server serves.
 - `pnpm analyze:build:json` — builds the library with Rolldown's devtools output and condenses it into `build.json`: per output format (ES, CJS) the assets with raw and gzip size, chunks, packages, external modules, and every module with its source size, imports and importer count. Use it for "what is in the bundle and what did this change add". `pnpm analyze:build` shows the same data in a UI instead, and keeps its server (ports 9999 and 10000, one per format) until you stop it.
@@ -55,3 +55,21 @@ For anything the scripts do not answer, attach to the page under test in inspect
 - Vite DevTools at `http://localhost:51315/__devtools/`, Vue DevTools in the page.
 - CDP at `http://127.0.0.1:9333` (`/json/version` lists the browser WebSocket URL; Playwright `chromium.connectOverCDP('http://127.0.0.1:9333')` works). The table and the Vue DevTools hook (`__VUE_DEVTOOLS_GLOBAL_HOOK__`) live in the tester iframe (the frame whose URL carries `iframeId=`), not in the top frame.
 - Inspect mode keeps the loopback-only dev server up until you stop it. Narrow it with a file filter so the table you want stays mounted, e.g. `pnpm test:browser:inspect popovers`.
+
+## Releasing
+
+A release is a version in `package.json` and a tag that names it; the `Release` workflow (`.github/workflows/release.yml`) does the rest.
+
+1. In the pull request of the change, set `version` in `package.json` to the next patch version (releases are patch versions, P9). Update the install line of `README.md` to the same version.
+2. After the pull request is merged, tag the merge commit on `main` and push the tag:
+
+   ```bash
+   git switch main && git pull
+   git tag v2.2.9
+   git push origin v2.2.9
+   ```
+
+3. The workflow fails when the tag is not `v` plus the `package.json` version. It runs every check of CI, builds, runs `pnpm pack` and creates a GitHub Release for the tag with the tarball (`dolusoft-query-table-<version>.tgz`) attached, then fails unless the asset URL answers 200. Consumers install that URL (see `README.md`).
+4. Optionally the workflow sends a `repository_dispatch` with event type `query-table-released` and the payload `{ version, tarballUrl }` to one consumer repository, so that it can open its upgrade pull request. It does so only when the repository secret `CONSUMER_DISPATCH_TOKEN` (a token allowed to dispatch to that repository) and the repository variable `CONSUMER_REPO` (`owner/name`) are both set; otherwise the step logs that it skipped and the release still succeeds. The receiving workflow should be idempotent: a re-run of the same tag sends the same event again.
+
+The workflow has two jobs: `verify` runs the checks and packs with a read-only token, and `publish` (the only job with write access, no install) creates the release from the packed tarball. A failed run can be re-run on the same tag: an existing release gets its tarball replaced, nothing else, and only when the tag still names the commit of the run; otherwise the run fails.

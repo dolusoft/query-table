@@ -7,9 +7,9 @@ import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import { makeQuery, peopleColumns } from '../scenarios'
 
-// The `empty` slot shows whenever `rows` is empty, whatever `totalRows` says.
-// The table has no loading state: while a request runs, the consumer decides
-// what to show (here a line of text instead of the rows).
+// The `empty` slot shows whenever `rows` is empty, whatever `totalRows`
+// says, unless `loading` is on: a table that is fetching is not empty yet
+// (see the "Loading state" page).
 const columns = peopleColumns()
 const query = ref(makeQuery())
 const loading = ref(false)
@@ -21,7 +21,7 @@ const rows: Array<Record<string, unknown>> = []
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-2">
       <Button variant="outline" size="sm" @click="loading = !loading">
-        {{ loading ? 'Stop loading' : 'Pretend to load' }}
+        loading: {{ loading }}
       </Button>
       <Button
         variant="outline"
@@ -36,10 +36,13 @@ const rows: Array<Record<string, unknown>> = []
       :columns="columns"
       :rows="rows"
       :total-rows="totalRows"
+      :loading="loading"
     >
       <template #empty>
-        <span v-if="loading">Loading…</span>
-        <span v-else>No people yet.</span>
+        <span>No people yet.</span>
+      </template>
+      <template #loading>
+        <span class="text-muted-foreground">Loading…</span>
       </template>
       <template #pagination="page">
         <TablePager :page="page" />

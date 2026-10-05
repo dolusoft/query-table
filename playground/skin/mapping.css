@@ -158,6 +158,32 @@ tr[data-expanded] {
   @apply h-24 text-center text-muted-foreground;
 }
 
+/* Loading: the table keeps the rows and adds `tr.qt-loading-row` as the last
+   row of the body. The skin lays it over the body only (the `tbody` is its
+   containing block), so the header and the footer stay readable and nothing
+   moves. Without rows it is the only row and stays in the flow, as tall as
+   the empty row. */
+.qt-datatable[data-loading] tbody {
+  @apply relative;
+}
+.qt-loading-row {
+  @apply absolute inset-0 z-40 flex items-center justify-center border-0 bg-background/60 hover:bg-background/60;
+}
+/* Over the rows the cell is a small card in the middle of the body. */
+.qt-loading-row > td {
+  @apply rounded-md border bg-popover px-3 py-1.5 text-popover-foreground shadow-sm last:border;
+}
+/* The last data row keeps the borderless end it has without the overlay. */
+.qt-datatable[data-loading] tbody > tr:nth-last-child(2) {
+  @apply border-0;
+}
+.qt-loading-row:only-child {
+  @apply static table-row;
+}
+.qt-loading-row:only-child > td {
+  @apply h-24 rounded-none border-0 bg-transparent p-2 text-center text-muted-foreground shadow-none last:border-r-0;
+}
+
 /* Pagination block below the bordered table, as in shadcn's data-table
    example. The consumer's slot content sits inside it; px-2.25 is the cell's
    p-2 plus the 1px border, so the text lines up with the cell text. */

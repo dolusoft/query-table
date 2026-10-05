@@ -9,6 +9,8 @@ export interface PageApi {
   emits?: string[]
   slots?: string[]
   exposed?: string[]
+  /** Functions exported from src/index.ts next to the component. */
+  functions?: string[]
   /** Exported types of src/contract.ts. */
   types?: string[]
 }
@@ -195,10 +197,44 @@ export const pages: PlaygroundPage[] = [
     id: 'empty-state',
     title: 'Empty state',
     summary:
-      'The `empty` slot shows when there are no rows, whatever the total says. Loading is the consumer’s to draw.',
+      'The `empty` slot shows when there are no rows and the table is not loading, whatever the total says.',
     example: 'EmptyState',
     api: { props: ['rows', 'totalRows'], slots: ['empty'] },
     rules: ['C-24', 'C-38']
+  },
+  {
+    id: 'loading-state',
+    title: 'Loading state',
+    summary:
+      'A slow fake server: while it answers, `loading` keeps the rows on screen, marks the root `data-loading` and `aria-busy`, and the `loading` slot is drawn over the body by the skin.',
+    example: 'LoadingState',
+    api: { props: ['loading', 'rows'], slots: ['loading', 'empty'] },
+    rules: ['C-38', 'C-52']
+  },
+  {
+    id: 'programmatic-control',
+    title: 'Programmatic control',
+    summary:
+      'Methods on the template ref: `focusFilter(field)` puts the caret in a filter, `expandAll()` and `collapseAll()` open and close the rows given.',
+    example: 'ProgrammaticControl',
+    api: {
+      props: ['hasSubtable', 'rowKey', 'filterable'],
+      exposed: ['focusFilter', 'expandAll', 'collapseAll'],
+      types: ['QueryTableExpose']
+    },
+    rules: ['C-26', 'C-33', 'C-54', 'C-55']
+  },
+  {
+    id: 'filter-parser',
+    title: 'Filter parser',
+    summary:
+      '`parseFilterInput(text, column)` returns the rules the table would emit for a typed text, without a table: the same shortcuts and the same coercion per column type.',
+    example: 'FilterParser',
+    api: {
+      functions: ['parseFilterInput'],
+      types: ['FilterRule', 'FilterCondition', 'Column', 'ColumnType']
+    },
+    rules: ['C-15', 'C-16', 'C-53']
   },
   {
     id: 'query-model',

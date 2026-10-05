@@ -16,6 +16,7 @@ import { resolveLabels } from './core/labels'
 import { provideTableContext } from './core/table-context'
 import { useColumns } from './core/use-columns'
 import { useQueryEmitter } from './core/use-query-emitter'
+import { focusFilterOf } from './filter/focus-filter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
 import TableHeader from './header/table-header.vue'
 import TablePagination from './pagination/table-pagination.vue'
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   rows: () => [],
   totalRows: null,
   footerRows: () => [],
+  loading: false,
   sortable: false,
   filterable: false,
   resizable: false,
@@ -135,7 +137,7 @@ provideTableContext({
   labels: () => labels.value
 })
 
-const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
+const { keyOf, isExpanded, toggle, collapseAll, expandAll } = useExpansion({
   rows: () => props.rows,
   rowKey: () => props.rowKey,
   enabled: () => props.hasSubtable
@@ -152,13 +154,28 @@ const toolbarProps = () => ({
 // so the body can tell whether a `cell-<field>` or `empty` slot exists.
 const bodySlotNames = () =>
   Object.keys(rawSlots).filter(
-    name => name.startsWith('cell-') || name === 'subtable' || name === 'empty'
+    name =>
+      name.startsWith('cell-') ||
+      name === 'subtable' ||
+      name === 'empty' ||
+      name === 'loading'
   )
+// A string, so the header sees a changed prop only when the set changes.
 const headerSlotNames = () =>
-  Object.keys(rawSlots).filter(name => name.startsWith('header-'))
+  Object.keys(rawSlots)
+    .filter(
+      name =>
+        name.startsWith('header-') ||
+        name === 'filter-datetime' ||
+        name === 'filter-menu'
+    )
+    .sort()
+    .join(' ')
 
 const exposed: QueryTableExpose = {
   collapseAll,
+  expandAll,
+  focusFilter: field => focusFilterOf(tableEl.value, field),
   flushPendingFilters: () => {
     drafts.flushAll()
   }
@@ -167,7 +184,12 @@ defineExpose(exposed)
 </script>
 
 <template>
-  <div class="qt-datatable" :data-empty="rows.length === 0 ? '' : undefined">
+  <div
+    class="qt-datatable"
+    :data-empty="!loading && rows.length === 0 ? '' : undefined"
+    :data-loading="loading ? '' : undefined"
+    :aria-busy="loading ? 'true' : undefined"
+  >
     <slot name="toolbar" v-bind="toolbarProps()" />
     <div class="qt-table-responsive">
       <table ref="tableEl" class="qt-table">
@@ -179,21 +201,29 @@ defineExpose(exposed)
             :utilities="utilities"
             :has-pinned="hasPinned"
             :offsets="offsets"
+            :slot-names="headerSlotNames()"
           >
-            <template v-for="name in headerSlotNames()" :key="name" #[name]="p">
+            <!-- Stable slots: the header re-renders only when its props
+                 change, not with every render of the root (`loading`,
+                 `rows`). `slot-names` says which ones the consumer gave. -->
+            <template #header="p">
               <!-- Names are dynamic (header-<field>); the types only widen here. -->
-              <slot :name="name as 'header-x'" v-bind="p as HeaderSlotProps" />
+              <slot
+                :name="`header-${p.column.field}` as 'header-x'"
+                v-bind="p as HeaderSlotProps"
+              />
             </template>
-            <template v-if="rawSlots['filter-datetime']" #filter-datetime="p">
+            <template #filter-datetime="p">
               <slot name="filter-datetime" v-bind="p" />
             </template>
-            <template v-if="rawSlots['filter-menu']" #filter-menu="p">
+            <template #filter-menu="p">
               <slot name="filter-menu" v-bind="p" />
             </template>
           </table-header>
         </thead>
         <table-body
           :rows="rows"
+          :loading="loading"
           :entries="entries"
           :column-count="columnCount"
           :has-subtable="hasSubtable"

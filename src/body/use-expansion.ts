@@ -44,6 +44,15 @@ export const useExpansion = <T extends object>(
 
   const collapseAll = () => expanded.value.clear()
 
+  // Only the rows given: the table never fetches rows to open (C-55).
+  const expandAll = () => {
+    if (options.enabled()) {
+      options.rows().forEach((row, index) => {
+        expanded.value.add(keyOf(row, index))
+      })
+    }
+  }
+
   watch(
     options.rows,
     rows => {
@@ -74,5 +83,5 @@ export const useExpansion = <T extends object>(
     { immediate: true }
   )
 
-  return { keyOf, isExpanded, toggle, collapseAll }
+  return { keyOf, isExpanded, toggle, collapseAll, expandAll }
 }

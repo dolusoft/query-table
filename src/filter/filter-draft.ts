@@ -2,7 +2,7 @@ import type { Column, FilterCondition, FilterRule } from '../contract'
 import { defaultConditionFor } from './filter-conditions'
 import {
   hasShortcut,
-  parseFilterInput,
+  parseShortcuts,
   serializeFilterRules
 } from './filter-input-parser'
 import { columnTypeOf } from '../core/column'
@@ -35,7 +35,7 @@ export const parseDraft = (column: Column, draft: Draft): Parsed => {
   const condition = draft.condition ?? defaultConditionFor(type)
   switch (type) {
     case 'string':
-      return parseFilterInput(text, condition)
+      return parseShortcuts(text, condition)
     case 'number':
     case 'integer': {
       const value = Number(text)

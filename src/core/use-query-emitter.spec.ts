@@ -189,19 +189,34 @@ describe('C-19 An ignored update changes nothing', () => {
 })
 
 describe('C-33 Exposed surface', () => {
-  it('exposes collapseAll and flushPendingFilters and nothing else', () => {
+  it('exposes collapseAll, expandAll, focusFilter and flushPendingFilters and nothing else', () => {
     const m = mountIt()
-    const vm = m.wrapper.vm as unknown as Record<string, unknown>
-    expect(typeof vm.collapseAll).toBe('function')
-    expect(typeof vm.flushPendingFilters).toBe('function')
     // `exposed` is what a template ref sees through the proxy.
     const exposed = (
       m.wrapper.vm.$ as unknown as { exposed: Record<string, unknown> }
     ).exposed
     expect(Object.keys(exposed).sort()).toEqual([
       'collapseAll',
-      'flushPendingFilters'
+      'expandAll',
+      'flushPendingFilters',
+      'focusFilter'
     ])
+    for (const member of Object.values(exposed)) {
+      expect(typeof member).toBe('function')
+    }
+  })
+
+  it('emits nothing from collapseAll, expandAll and focusFilter', () => {
+    const m = mountIt({ hasSubtable: true, rowKey: 'id', filterable: true })
+    const vm = m.wrapper.vm as unknown as {
+      collapseAll(): void
+      expandAll(): void
+      focusFilter(field: string): boolean
+    }
+    vm.expandAll()
+    vm.collapseAll()
+    vm.focusFilter('name')
+    expect(m.events).toEqual([])
   })
 })
 

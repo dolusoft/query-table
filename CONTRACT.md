@@ -15,6 +15,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. |
 | `totalRows` | `number \| null` |  | `null` | Total number of rows on the server, `null` when unknown. It only feeds the `pagination` slot; it never decides whether rows are drawn. |
 | `footerRows` | `FooterRow[]` |  | `[]` | Rows of totals drawn in a `tfoot`. |
+| `loading` | `boolean` |  | `false` | The consumer is fetching. The root gets `data-loading` and `aria-busy="true"`, the rows given stay drawn, the empty state is not shown and the `loading` slot is drawn as the last row of the body. The table blocks no interaction. Defaults to `false`. |
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
 | `resizable` | `boolean` |  | `false` | Draw a resize handle in the header cells (needs column `resizable`). Defaults to `false`. The table emits `columnResize`; the consumer writes the width back to `Column.width`. |
@@ -42,7 +43,8 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `filter-datetime` | `FilterDatetimeSlotProps` | Replaces the date input of `date` and `datetime` filters. |
 | `filter-menu` | `FilterMenuSlotProps` | Content of the filter menu of a column; see `FilterMenuSlotProps`. Without it there is no filter button. |
 | `subtable` | `SubtableSlotProps<T>` | Content of an expanded row (needs `hasSubtable`). |
-| `empty` | `none` | Shown when there are no rows. |
+| `empty` | `none` | Shown when there are no rows and `loading` is off. |
+| `loading` | `none` | Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last row of the body. The rows stay; place the row over them in your CSS. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
 | `header-<field>` | `((props: HeaderSlotProps) => unknown)` | Header content of one column: `header-${column.field}`. It replaces the sort button or the title only; the header cell, its filter row and its resize handle stay. Draw a sort control with `toggleSort` if you want one. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
@@ -52,7 +54,17 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | Name | Signature | Description |
 | --- | --- | --- |
 | `collapseAll` | `() => void` | Close every expanded row. |
+| `expandAll` | `() => void` | Open every row in `rows` (needs `hasSubtable`). Rows that arrive later are not opened, and nothing is fetched. |
+| `focusFilter` | `(field: string) => boolean` | Move focus to the filter of a column: its filter input, or the first focusable element the `filter-datetime` slot draws. Returns `false` when nothing took focus (no filter drawn for the field, a disabled select). |
 | `flushPendingFilters` | `() => void` | Apply typed-but-not-yet-applied filter text now. Every `update:query` it causes has been emitted when the call returns. |
+
+### Functions
+
+Exported from the package entry point next to the component.
+
+| Name | Signature | Description |
+| --- | --- | --- |
+| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number` and `integer`: one rule with a number value; text that is not a finite number gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. |
 
 ## Types
 
@@ -205,6 +217,13 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   totalRows?: number | null
   /** Rows of totals drawn in a `tfoot`. */
   footerRows?: FooterRow[]
+  /**
+   * The consumer is fetching. The root gets `data-loading` and
+   * `aria-busy="true"`, the rows given stay drawn, the empty state is not
+   * shown and the `loading` slot is drawn as the last row of the body. The
+   * table blocks no interaction. Defaults to `false`.
+   */
+  loading?: boolean
   /** Allow sorting from the headers (needs column `sortable`). Defaults to `false`. */
   sortable?: boolean
   /** Show the filter row. Defaults to `false`. */
@@ -409,8 +428,13 @@ export interface TableSlots<T> {
   'filter-menu'?(props: FilterMenuSlotProps): unknown
   /** Content of an expanded row (needs `hasSubtable`). */
   subtable?(props: SubtableSlotProps<T>): unknown
-  /** Shown when there are no rows. */
+  /** Shown when there are no rows and `loading` is off. */
   empty?(): unknown
+  /**
+   * Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last
+   * row of the body. The rows stay; place the row over them in your CSS.
+   */
+  loading?(): unknown
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
   /**
@@ -427,6 +451,17 @@ export interface TableSlots<T> {
 export interface QueryTableExpose {
   /** Close every expanded row. */
   collapseAll(): void
+  /**
+   * Open every row in `rows` (needs `hasSubtable`). Rows that arrive later
+   * are not opened, and nothing is fetched.
+   */
+  expandAll(): void
+  /**
+   * Move focus to the filter of a column: its filter input, or the first
+   * focusable element the `filter-datetime` slot draws. Returns `false` when
+   * nothing took focus (no filter drawn for the field, a disabled select).
+   */
+  focusFilter(field: string): boolean
   /**
    * Apply typed-but-not-yet-applied filter text now. Every `update:query` it
    * causes has been emitted when the call returns.
@@ -535,7 +570,7 @@ The clear-all button removes every rule and nothing else: reason `reset`, `page:
 
 #### C-24 Rows do not depend on the total
 
-Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `empty` slot) comes from `rows.length === 0` alone.
+Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `empty` slot) comes from `rows.length === 0` and `loading` (C-38), never from `totalRows`.
 
 #### C-25 Pagination block
 
@@ -543,7 +578,7 @@ The `qt-pagination` block is drawn when the `pagination` slot is given and there
 
 #### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for every row; the row needs no `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
 
 #### C-27 Cell slots
 
@@ -567,11 +602,11 @@ The table ships no CSS and takes no styling props. It writes two inline styles a
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column and on the utility cells while some column is pinned; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column and on the utility cells while some column is pinned; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
-A template ref exposes `collapseAll` and `flushPendingFilters` and nothing else.
+A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54) and `flushPendingFilters` (C-13) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed.
 
 #### C-34 Filter menu slot
 
@@ -589,9 +624,9 @@ With `hasRightPanel` a button per row emits `rowRightPanelClick` with the row.
 
 `footerRows` are drawn in a `tfoot`, one cell per visible column, whatever `totalRows` is.
 
-#### C-38 Empty slot
+#### C-38 Empty and loading
 
-The `empty` slot is shown when there are no rows. The table has no loading state: while the consumer fetches, it decides what `rows` holds and whether to show something else.
+The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-row`) is shown when there are no rows and `loading` is off. While `loading` is on it is not shown, with rows or without: a table that is fetching is not empty yet. The `loading` slot (C-52) takes its place.
 
 #### C-39 Column types
 
@@ -645,6 +680,22 @@ On a focused handle, ArrowRight and ArrowLeft emit `columnResize` with the rende
 
 The `header-<field>` slot replaces the label of one column header: the sort button or the title. It receives `column`, `sortDirection`, `sortable` and `toggleSort`, which sorts as a header click does (C-07) and does nothing when `sortable` is false. The `th` stays with its attributes (`data-sort`, `aria-sort`, `data-pinned`, the width), and so do the filter row and the resize handle. The slot is not drawn inside a `button`, so a control in it is never a nested button.
 
+#### C-52 Loading state
+
+`loading` tells the table that the consumer is fetching; the table never sets it. While it is on, the root carries `data-loading` and `aria-busy="true"`, and both are absent otherwise. The rows given stay drawn as they are: nothing is cleared, remounted or reordered, so focus and the state of slot content are kept. The empty state is not shown (C-38). With a `loading` slot the body ends with one `tr.qt-loading-row` whose single cell spans every column, utilities included, and holds the slot; without the slot nothing is drawn. The row is ordinary table markup in the body: placing it over the rows (for example `position: absolute` inside a `tbody` with `position: relative`) is the consumer's CSS, and the table writes no inline style for it. The table blocks no interaction while loading: sorting, filtering, paging and the row buttons work and emit as usual, and a consumer that wants to block them does so in its CSS or its handlers. Turning `loading` on or off emits nothing and re-renders only the root and the body.
+
+#### C-53 Filter parser
+
+`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
+
+#### C-54 focusFilter
+
+`focusFilter(field)` moves focus to the filter of the column with that `field` in this table's header: its filter input or select, or with a `filter-datetime` slot the first focusable element the slot draws. It returns `true` when that element took focus, and `false` when there is none (the table or the column is not filterable, the column is hidden, no column has that `field`, the slot draws nothing focusable) or it cannot take focus (a disabled bool select, C-42). It emits nothing and opens no menu. A table nested in a slot is not searched.
+
+#### C-55 expandAll
+
+`expandAll()` opens the rows currently in `rows`, by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -668,6 +719,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-right-panel-button` | `td > button` | Right panel button of a row. |
 | `qt-subtable-row` | `tbody > tr` | Row holding the `subtable` slot of an expanded row. |
 | `qt-empty-row` | `tbody > tr` | Row holding the `empty` slot. |
+| `qt-loading-row` | `tbody > tr` | Last row of the body while `loading` is on, holding the `loading` slot in one cell that spans every column. Place it over the rows in your CSS. |
 | `qt-resize-handle` | `th > div` | Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS. |
 | `qt-footer` | `tfoot` | Totals block. |
 | `qt-pagination` | `div` | Block around the `pagination` slot. |
@@ -676,7 +728,8 @@ The classes and attributes below are the only hooks a skin can select. The table
 
 | Attribute | Element | Description |
 | --- | --- | --- |
-| `data-empty` | `.qt-datatable` | Present when there are no rows. |
+| `data-empty` | `.qt-datatable` | Present when there are no rows and `loading` is off. |
+| `data-loading` | `.qt-datatable` | Present while `loading` is on; the root then also carries `aria-busy="true"`. |
 | `data-field` | `th, td` | The column `field`, on header, body and footer cells. The table reads it on a body cell to tell which column was right-clicked. |
 | `data-sort` | `th` | `asc` or `desc` on the sorted column. |
 | `data-sortable` | `th` | Present when the header can sort. |

@@ -37,6 +37,13 @@
       "description": "Rows of totals drawn in a `tfoot`."
     },
     {
+      "name": "loading",
+      "type": "boolean",
+      "required": false,
+      "default": "false",
+      "description": "The consumer is fetching. The root gets `data-loading` and\n`aria-busy=\"true\"`, the rows given stay drawn, the empty state is not\nshown and the `loading` slot is drawn as the last row of the body. The\ntable blocks no interaction. Defaults to `false`."
+    },
+    {
       "name": "sortable",
       "type": "boolean",
       "required": false,
@@ -146,7 +153,12 @@
     {
       "name": "empty",
       "props": "",
-      "description": "Shown when there are no rows."
+      "description": "Shown when there are no rows and `loading` is off."
+    },
+    {
+      "name": "loading",
+      "props": "",
+      "description": "Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last\nrow of the body. The rows stay; place the row over them in your CSS."
     },
     {
       "name": "pagination",
@@ -171,9 +183,26 @@
       "description": "Close every expanded row."
     },
     {
+      "name": "expandAll",
+      "type": "() => void",
+      "description": "Open every row in `rows` (needs `hasSubtable`). Rows that arrive later\nare not opened, and nothing is fetched."
+    },
+    {
+      "name": "focusFilter",
+      "type": "(field: string) => boolean",
+      "description": "Move focus to the filter of a column: its filter input, or the first\nfocusable element the `filter-datetime` slot draws. Returns `false` when\nnothing took focus (no filter drawn for the field, a disabled select)."
+    },
+    {
       "name": "flushPendingFilters",
       "type": "() => void",
       "description": "Apply typed-but-not-yet-applied filter text now. Every `update:query` it\ncauses has been emitted when the call returns."
+    }
+  ],
+  "functions": [
+    {
+      "name": "parseFilterInput",
+      "type": "(text: string, column: Column, condition?: FilterCondition | null) => FilterRule[]",
+      "description": "The rules the table emits when `text` is typed into the filter input of\n`column` (C-53): the same grammar and the same coercion per column type.\n\n- `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`);\n  a segment without an operator uses `condition`.\n- `number` and `integer`: one rule with a number value; text that is not a\n  finite number gives `[]`.\n- `bool`: `'true'` or `'false'` gives one rule with a boolean value;\n  anything else gives `[]`.\n- `date` and `datetime`: one rule with the trimmed text as its value; the\n  text is not validated, as the input already gives an ISO date.\n\n`condition` is the one picked in the filter menu; without it the column\ntype's default applies (`Contains` for text, `Equal` otherwise). Empty or\nblank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`.\nInvalid input never throws. Pure: no Vue, no DOM; the column is not written."
     }
   ],
   "types": [
@@ -427,7 +456,7 @@
     {
       "id": "C-24",
       "title": "Rows do not depend on the total",
-      "text": "Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `empty` slot) comes from `rows.length === 0` alone."
+      "text": "Rows are drawn whatever `totalRows` says. The empty state (`data-empty`, the `empty` slot) comes from `rows.length === 0` and `loading` (C-38), never from `totalRows`."
     },
     {
       "id": "C-25",
@@ -437,7 +466,7 @@
     {
       "id": "C-26",
       "title": "Row expansion",
-      "text": "With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row. The button works for every row; the row needs no `id`."
+      "text": "With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row with `isExpanded` set seeds its state when `rows` changes. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`."
     },
     {
       "id": "C-27",
@@ -467,12 +496,12 @@
     {
       "id": "C-32",
       "title": "State attributes",
-      "text": "State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column and on the utility cells while some column is pinned; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header."
+      "text": "State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column and on the utility cells while some column is pinned; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header."
     },
     {
       "id": "C-33",
       "title": "Exposed surface",
-      "text": "A template ref exposes `collapseAll` and `flushPendingFilters` and nothing else."
+      "text": "A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54) and `flushPendingFilters` (C-13) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed."
     },
     {
       "id": "C-34",
@@ -496,8 +525,8 @@
     },
     {
       "id": "C-38",
-      "title": "Empty slot",
-      "text": "The `empty` slot is shown when there are no rows. The table has no loading state: while the consumer fetches, it decides what `rows` holds and whether to show something else."
+      "title": "Empty and loading",
+      "text": "The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-row`) is shown when there are no rows and `loading` is off. While `loading` is on it is not shown, with rows or without: a table that is fetching is not empty yet. The `loading` slot (C-52) takes its place."
     },
     {
       "id": "C-39",
@@ -563,6 +592,26 @@
       "id": "C-51",
       "title": "Header slot",
       "text": "The `header-<field>` slot replaces the label of one column header: the sort button or the title. It receives `column`, `sortDirection`, `sortable` and `toggleSort`, which sorts as a header click does (C-07) and does nothing when `sortable` is false. The `th` stays with its attributes (`data-sort`, `aria-sort`, `data-pinned`, the width), and so do the filter row and the resize handle. The slot is not drawn inside a `button`, so a control in it is never a nested button."
+    },
+    {
+      "id": "C-52",
+      "title": "Loading state",
+      "text": "`loading` tells the table that the consumer is fetching; the table never sets it. While it is on, the root carries `data-loading` and `aria-busy=\"true\"`, and both are absent otherwise. The rows given stay drawn as they are: nothing is cleared, remounted or reordered, so focus and the state of slot content are kept. The empty state is not shown (C-38). With a `loading` slot the body ends with one `tr.qt-loading-row` whose single cell spans every column, utilities included, and holds the slot; without the slot nothing is drawn. The row is ordinary table markup in the body: placing it over the rows (for example `position: absolute` inside a `tbody` with `position: relative`) is the consumer's CSS, and the table writes no inline style for it. The table blocks no interaction while loading: sorting, filtering, paging and the row buttons work and emit as usual, and a consumer that wants to block them does so in its CSS or its handlers. Turning `loading` on or off emits nothing and re-renders only the root and the body."
+    },
+    {
+      "id": "C-53",
+      "title": "Filter parser",
+      "text": "`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`."
+    },
+    {
+      "id": "C-54",
+      "title": "focusFilter",
+      "text": "`focusFilter(field)` moves focus to the filter of the column with that `field` in this table's header: its filter input or select, or with a `filter-datetime` slot the first focusable element the slot draws. It returns `true` when that element took focus, and `false` when there is none (the table or the column is not filterable, the column is hidden, no column has that `field`, the slot draws nothing focusable) or it cannot take focus (a disabled bool select, C-42). It emits nothing and opens no menu. A table nested in a slot is not searched."
+    },
+    {
+      "id": "C-55",
+      "title": "expandAll",
+      "text": "`expandAll()` opens the rows currently in `rows`, by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing."
     }
   ]
 }

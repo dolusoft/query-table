@@ -54,5 +54,17 @@ describe.each<Theme>(['light', 'dark'])(
       await renderTable({ ...everything, theme, rows: [], totalRows: 0 })
       expect(await violationsIn('.qt-datatable')).toEqual([])
     })
+
+    test('finds no violation while loading, with rows and without (C-52)', async () => {
+      const { rerender } = await renderTable({
+        ...everything,
+        theme,
+        loading: true
+      })
+      expect(document.querySelector('.qt-loading-row')).not.toBeNull()
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+      await rerender({ rows: [], totalRows: 0 })
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+    })
   }
 )
