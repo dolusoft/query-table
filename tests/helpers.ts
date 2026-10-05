@@ -21,7 +21,7 @@ export const makeRows = () => [
 
 // The footer slots the consumer provides: a page-size select fed by
 // `setPageSize` and previous/next buttons fed by `previousPage`/`nextPage`.
-export const footerSlots = {
+const footerSlots = {
   footerpageinfo: `
     <select
       v-if="params.showPageSize"
