@@ -1,3 +1,6 @@
+import { resolve } from 'node:path'
+
+import tailwindcss from '@tailwindcss/vite'
 import { playwright } from '@vitest/browser-playwright'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { defineConfig, mergeConfig } from 'vitest/config'
@@ -18,13 +21,14 @@ export default defineConfig(({ mode }) => {
         include: ['src/**'],
         reporter: ['text', 'json-summary', 'html'],
         reportsDirectory: 'coverage',
-        // Measured 2026-10-05: lines 78.87, statements 79.2, branches 74.69, functions 69.16.
-        // Floors sit a few points below so the suite passes today and guards regressions.
+        // Measured 2026-10-05 (unit project): lines 98.3, statements 98.39, branches 96.48,
+        // functions 97.94. Floors sit a few points below so the suite passes today and
+        // guards regressions.
         thresholds: {
-          lines: 75,
-          statements: 76,
-          branches: 71,
-          functions: 66
+          lines: 95,
+          statements: 95,
+          branches: 93,
+          functions: 94
         }
       },
       projects: [
@@ -40,11 +44,25 @@ export default defineConfig(({ mode }) => {
         },
         {
           extends: true,
-          plugins: inspect ? [vueDevTools()] : [],
+          // Tailwind builds the test skin (tests/browser/test-skin.css); the
+          // library build never loads it.
+          plugins: [tailwindcss(), ...(inspect ? [vueDevTools()] : [])],
+          resolve: {
+            alias: { '@': resolve(import.meta.dirname, 'tests/browser') }
+          },
           devtools: inspect,
           test: {
             name: 'browser',
             include: ['tests/browser/**/*.browser.spec.ts'],
+            // One page at a time. Several pages opening at once burst ~30
+            // loopback WebSocket connections within 130ms; on Windows the first
+            // SYN of some get dropped, the client reconnects too late and the
+            // run hangs ("Failed to connect to the browser session"). It also
+            // keeps the debounce-timing tests from competing for CPU.
+            maxWorkers: 1,
+            testTimeout: 15_000,
+            hookTimeout: 15_000,
+            teardownTimeout: 10_000,
             setupFiles: ['tests/browser/setup.ts'],
             // Browser mode serves on this port. The default (63315) falls inside
             // a range Windows reserves for Hyper-V on some machines, and a fixed
