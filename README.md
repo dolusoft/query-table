@@ -7,7 +7,7 @@ The table ships no CSS. It renders plain markup with a small, stable set of `qt-
 ## Install
 
 ```bash
-pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.9/dolusoft-query-table-2.2.9.tgz
+pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.10/dolusoft-query-table-2.2.10.tgz
 ```
 
 Peer dependency: `vue` 3.5+.

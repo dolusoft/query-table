@@ -102,6 +102,59 @@ describe('C-49 Dragging a handle', () => {
     expect(clampWidth(column, 120.4)).toBe(120)
     expect(clampWidth({ field: 'x' }, 3)).toBe(40)
   })
+
+  // JS and loosely typed consumers can pass what the types forbid.
+  const loose = (limits: Record<string, unknown>) =>
+    ({ field: 'x', ...limits }) as Column
+
+  it.each([[''], [NaN], [Infinity], [-Infinity], [0], [-5], [null], ['80']])(
+    'treats maxWidth %j as unset: no maximum, never 0',
+    bad => {
+      const column = loose({ maxWidth: bad })
+      expect(clampWidth(column, 500)).toBe(500)
+      expect(clampWidth(column, 10)).toBe(40)
+    }
+  )
+
+  it.each([[''], [NaN], [Infinity], [-Infinity], [0], [-5], [null], ['80']])(
+    'treats minWidth %j as unset: the default 40 applies',
+    bad => {
+      const column = loose({ minWidth: bad, maxWidth: 300 })
+      expect(clampWidth(column, 1)).toBe(40)
+      expect(clampWidth(column, 1000)).toBe(300)
+    }
+  )
+
+  it('uses minWidth when it is above maxWidth', () => {
+    const column = loose({ minWidth: 200, maxWidth: 100 })
+    expect(clampWidth(column, 10)).toBe(200)
+    expect(clampWidth(column, 150)).toBe(200)
+    expect(clampWidth(column, 1000)).toBe(200)
+  })
+
+  it('lets the default minimum give way to a smaller maxWidth', () => {
+    const column = loose({ maxWidth: 20 })
+    expect(clampWidth(column, 1)).toBe(20)
+    expect(clampWidth(column, 500)).toBe(20)
+  })
+
+  it('draws aria-valuemin and aria-valuemax from the guarded limits', async () => {
+    headerWidth(100)
+    const m = mountIt({
+      columns: [
+        loose({ field: 'a', title: 'A', minWidth: '', maxWidth: '' }),
+        loose({ field: 'b', title: 'B', minWidth: 200, maxWidth: 100 })
+      ],
+      resizable: true
+    })
+    await m.wrapper.vm.$nextTick()
+    expect(handle(m, 'a').attributes('aria-valuemin')).toBe('40')
+    expect(
+      Number(handle(m, 'a').attributes('aria-valuemax'))
+    ).toBeGreaterThanOrEqual(100)
+    expect(handle(m, 'b').attributes('aria-valuemin')).toBe('200')
+    expect(handle(m, 'b').attributes('aria-valuemax')).toBe('200')
+  })
 })
 
 const nextFrame = () =>
