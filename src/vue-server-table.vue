@@ -43,10 +43,7 @@ const emit = defineEmits<TableEmits<T>>()
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
-// ---------------------------------------------------------------------------
-// Emitting: the table never writes to its props (see use-query-emitter.ts).
-// ---------------------------------------------------------------------------
-
+// The table never writes to its props (see use-query-emitter.ts).
 const { base, update } = useQueryEmitter({
   query: () => props.query,
   emit: (query, reason) => emit('update:query', query, reason)
@@ -60,10 +57,6 @@ const drafts = useFilterDrafts({
   update
 })
 
-// ---------------------------------------------------------------------------
-// Paging
-// ---------------------------------------------------------------------------
-
 const { paginationProps, showPagination } = usePagination({
   props,
   base,
@@ -71,10 +64,6 @@ const { paginationProps, showPagination } = usePagination({
   flushFilters: () => drafts.flushAll(),
   hasSlot: () => !!slots.pagination
 })
-
-// ---------------------------------------------------------------------------
-// Sorting
-// ---------------------------------------------------------------------------
 
 const sort = useSort({
   sortable: () => props.sortable,
@@ -88,19 +77,11 @@ const sort = useSort({
 
 provideTableContext({ drafts, sort })
 
-// ---------------------------------------------------------------------------
-// Columns and rows
-// ---------------------------------------------------------------------------
-
 const { entries, visibleColumns, utilityCount, columnCount } = useColumns({
   columns: () => props.columns,
   hasSubtable: () => props.hasSubtable,
   hasRightPanel: () => props.hasRightPanel
 })
-
-// ---------------------------------------------------------------------------
-// Expansion
-// ---------------------------------------------------------------------------
 
 const { keyOf, isExpanded, toggle, collapseAll } = useExpansion({
   rows: () => props.rows,

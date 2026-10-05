@@ -2,6 +2,20 @@
 
 There is no demo app; the table is exercised through tests.
 
+## Layout
+
+`src/` is organized by feature, and a feature keeps its own unit tests next to the code (`*.spec.ts`; they never reach `dist`).
+
+- `vue-server-table.vue` is the thin shell: it sets up the composables, provides the header context and draws the table. `index.ts` is the package entry, `contract.ts` holds the public types.
+- `core/`: the query and the column helpers, `useQueryEmitter` (the only place that emits `update:query`), `useColumns`, and the context (`table-context.ts`) the header parts read.
+- `filter/`, `sort/`, `pagination/`: one folder per feature, with its pure helpers (`filter-draft.ts`, `sort.ts`), its `use-<feature>` composables and its components (`filter-cell.vue`, `sort-button.vue`, `table-pagination.vue`).
+- `header/` and `body/`: the structural parts of the table (`table-header.vue`, `table-body.vue`, `table-footer.vue`) with `use-expansion.ts` and `use-cell-view.ts`.
+- `test-support/` (outside `src/`) has the shared mount helper for specs. `tests/` keeps the cross-cutting specs (`contract-traceability.spec.ts`, `skin.spec.ts`) and the browser tests.
+
+Names: a folder is a feature; structural parts carry a `table-` prefix; composables are `use-<feature>[-<role>]`; a spec is named after the unit it tests.
+
+## Commands
+
 - `pnpm test` — unit tests (happy-dom), fast.
 - `pnpm test:browser` — real-browser tests (Vitest Browser Mode, Playwright Chromium). **Headed by default**: a visible Chromium window opens, so you can watch the page under test. First run: `pnpm exec playwright install chromium`. Screenshots for manual inspection land in `tests/browser/__screenshots__/` (gitignored, never compared). The script runs Vitest under a time limit and retries once when the run hangs or the browser loses its connection (`BROWSER_TEST_TIMEOUT_MS`, `BROWSER_TEST_ATTEMPTS`); failing tests are never retried. Spec files run one after another in a single page on purpose, see the comment in `vitest.config.ts`.
 - `pnpm test:browser:headless` — the same tests without a window. CI runs headless on its own (GitHub Actions sets `CI=true`); `HEADLESS=1` does the same for any other command.
