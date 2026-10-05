@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { makeQuery } from './helpers'
 import {
   conditionLabel,
   defaultConditionFor,
@@ -14,6 +13,7 @@ import {
   sameQuery,
   valueAt
 } from '../src/model/query'
+import { makeQuery } from '../test-support/mount-table'
 
 describe('filter conditions per column type', () => {
   it('no list contains an empty "no filter" entry', () => {

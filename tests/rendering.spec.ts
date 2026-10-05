@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 
+import type {
+  CellContextMenuPayload,
+  Column,
+  FilterMenuSlotProps
+} from '../src/contract'
 import {
   flush,
   makeColumns,
@@ -9,12 +14,7 @@ import {
   mountTable,
   propsOf,
   type Mounted
-} from './helpers'
-import type {
-  CellContextMenuPayload,
-  Column,
-  FilterMenuSlotProps
-} from '../src/contract'
+} from '../test-support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

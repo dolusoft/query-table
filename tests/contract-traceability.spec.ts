@@ -34,7 +34,12 @@ const specFiles = (dir: string): string[] =>
 const NAME =
   /\b(?:describe|it|test)(?:\.\w+)*(?:\([^)]*\))?\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g
 
-const named = specFiles(join(root, 'tests')).flatMap(file => {
+// Unit specs sit next to the code in src/, the browser and cross-cutting ones
+// in tests/.
+const named = [
+  ...specFiles(join(root, 'src')),
+  ...specFiles(join(root, 'tests'))
+].flatMap(file => {
   const text = readFileSync(file, 'utf8')
   return [...text.matchAll(NAME)].map(match => ({
     file: file.slice(root.length + 1).replace(/\\/g, '/'),
