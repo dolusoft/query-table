@@ -30,6 +30,12 @@ export interface Draft {
   text: string
   /** Condition picked from the menu; `null` means the type default. */
   condition: FilterCondition | null
+  /**
+   * Set when the query holds several rules for a column whose input cannot
+   * write them (anything but text): how many. The input is then a read-only
+   * summary and the draft is not applied until something replaces it.
+   */
+  multi?: number
 }
 
 export interface FilterDraftsOptions {
@@ -106,6 +112,10 @@ const draftFromRules = (
     return { text, condition: plain?.condition ?? null }
   }
   const [first] = rules
+  if (rules.length > 1) {
+    // One input holds one value: show the count instead of dropping rules.
+    return { text: '', condition: first.condition, multi: rules.length }
+  }
   return {
     text: first.value === null ? '' : String(first.value),
     condition: first.condition
@@ -179,7 +189,9 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
   }
 
   const onInput = (field: string, text: string) => {
-    ensure(field).text = text
+    const draft = ensure(field)
+    draft.text = text
+    draft.multi = undefined
     schedule(field)
   }
 
@@ -201,6 +213,16 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
       return
     }
     const draft = ensure(field)
+    if (draft.multi) {
+      // Picking a condition is an explicit edit: the first rule's value
+      // carries over, the other rules go.
+      const first = rulesOf(options.base().filters, field)[0]
+      draft.text =
+        first?.value === undefined || first.value === null
+          ? ''
+          : String(first.value)
+      draft.multi = undefined
+    }
     draft.condition = condition
     if (isUnaryCondition(condition)) {
       draft.text = ''
@@ -287,8 +309,11 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
       type === 'string' && !isUnaryCondition(draft.condition)
         ? previewCondition(draft.text, base)
         : base
-    return { condition, count: parseDraft(column, draft).length }
+    return { condition, count: draft.multi ?? parseDraft(column, draft).length }
   }
+
+  /** How many rules a read-only input stands for; `0` when it is editable. */
+  const multiOf = (field: string) => draftOf(field).multi ?? 0
 
   const dirty = () => Object.values(drafts).some(hasContent)
 
@@ -301,6 +326,7 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     clear,
     clearAll,
     label,
+    multiOf,
     dirty
   }
 }

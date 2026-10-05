@@ -531,6 +531,10 @@ Everything the table renders uses only the classes and attributes listed in the 
 
 The test skin selects only classes and attributes of the DOM contract (besides shadcn and Tailwind classes it applies through `@apply`).
 
+#### C-42 Several rules on a column that is not text
+
+A number, integer, date, datetime or bool column has one input and the input holds one value. When `query.filters` holds several rules for such a column (`age > 20` and `age < 40`), the input is read-only and shows the count, `(2)`, and the condition label shows the first condition with the same count. A bool select is disabled. Nothing is emitted and no rule is dropped. The clear action of the column and clear all remove the rules. Picking a condition from the menu, or an `updateValue` of the `filter-datetime` slot, is an explicit edit: it replaces the rules with one (the first rule's value for a pick), and `filter-datetime` receives an empty `value` while the rules stand. Text columns write several rules as `a,b` and are not affected.
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.

@@ -56,6 +56,12 @@ const labelOf = (column: Column) => {
   return label.count > 1 ? `${text} (${label.count})` : text
 }
 
+// A column with several rules shows their count where the value would be.
+const inputText = (column: Column) => {
+  const count = props.drafts.multiOf(column.field)
+  return count > 0 ? `(${count})` : props.drafts.draftOf(column.field).text
+}
+
 const isDisabled = (column: Column) => {
   const { condition } = props.drafts.draftOf(column.field)
   return condition === 'IsNull' || condition === 'IsNotNull'
@@ -235,10 +241,11 @@ const ariaSort = (direction: SortDirection | null) =>
             columnTypeOf(column) === 'number' ||
             columnTypeOf(column) === 'integer'
           "
-          type="number"
+          :type="drafts.multiOf(column.field) ? 'text' : 'number'"
           class="bh-filter-input"
           :aria-label="`Filter ${column.title ?? column.field}`"
-          :value="drafts.draftOf(column.field).text"
+          :value="inputText(column)"
+          :readonly="drafts.multiOf(column.field) > 0"
           :disabled="isDisabled(column)"
           @input="drafts.onInput(column.field, inputValue($event))"
           @keydown.enter="drafts.flushField(column.field)"
@@ -248,6 +255,7 @@ const ariaSort = (direction: SortDirection | null) =>
             class="bh-filter-input"
             :aria-label="`Filter ${column.title ?? column.field}`"
             :value="drafts.draftOf(column.field).text"
+            :disabled="drafts.multiOf(column.field) > 0"
             @change="pick(column.field, $event)"
           >
             <option value="">All</option>
@@ -263,10 +271,11 @@ const ariaSort = (direction: SortDirection | null) =>
           />
           <input
             v-else
-            type="date"
+            :type="drafts.multiOf(column.field) ? 'text' : 'date'"
             class="bh-filter-input"
             :aria-label="`Filter ${column.title ?? column.field}`"
-            :value="drafts.draftOf(column.field).text"
+            :value="inputText(column)"
+            :readonly="drafts.multiOf(column.field) > 0"
             :disabled="isDisabled(column)"
             @input="drafts.onInput(column.field, inputValue($event))"
             @keydown.enter="drafts.flushField(column.field)"
