@@ -121,6 +121,10 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
   // Rules per field as of the last reconciliation: a field is only
   // reconciled when its rules really changed.
   const seen = new Map<string, FilterRule[]>()
+  // Rules this table emitted per field that have not come back yet, oldest
+  // first. A consumer that answers late returns them in order; they are the
+  // table's own words, not an outside change, and must not touch the draft.
+  const emitted = new Map<string, FilterRule[][]>()
 
   const columnOf = (field: string) =>
     options.columns().find(column => column.field === field)
@@ -157,6 +161,7 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     const next = cloneQuery(base)
     next.page = 1
     next.filters = replaceRules(base.filters, field, rules)
+    emitted.set(field, [...(emitted.get(field) ?? []), rules])
     options.update(next, 'filter')
   }
 
@@ -233,6 +238,16 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
         continue
       }
       seen.set(field, rules)
+      const pending = emitted.get(field) ?? []
+      const echo = pending.findIndex(sent => sameRules(sent, rules))
+      if (echo >= 0) {
+        // Our own emit came back (possibly late): older ones are answered
+        // too, newer ones are still on their way. The draft stays as typed.
+        emitted.set(field, pending.slice(echo + 1))
+        continue
+      }
+      // A different set of rules: the consumer has moved on from what we sent.
+      emitted.delete(field)
       const draft = drafts[field]
       if (
         draft &&

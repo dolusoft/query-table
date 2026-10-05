@@ -72,7 +72,7 @@ Rules of one `field` combine with OR, or with AND when all of them are negative 
 
 ### C-18 The input follows outside changes
 
-When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. Removing the rules from outside empties the input and removes the label.
+When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. This holds when the consumer answers late: an echo of an earlier emit never overwrites what the user has typed since. Removing the rules from outside empties the input and removes the label.
 
 ### C-19 An ignored update changes nothing
 

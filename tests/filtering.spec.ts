@@ -430,6 +430,49 @@ describe('C-18 The input follows outside changes', () => {
     expect(m.wrapper.find('.bh-filter-condition').exists()).toBe(false)
   })
 
+  it('keeps newer typing when a late echo of an earlier emit arrives', async () => {
+    const m = mountIt({ ...base, filterDebounce: 100 }, { apply: false })
+    await type(m, 'name', 'fo')
+    vi.advanceTimersByTime(100)
+    expect(m.events).toHaveLength(1)
+    await type(m, 'name', 'foo')
+    // The consumer answers the first emit only now, after the user kept typing.
+    await m.applyEmitted(0)
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('foo')
+    vi.advanceTimersByTime(100)
+    expect(m.events).toHaveLength(2)
+    expect(m.events[1][0].filters).toEqual([rule('name', 'Contains', 'foo')])
+  })
+
+  it('keeps the typing when several echoes arrive late and in order', async () => {
+    const m = mountIt({ ...base, filterDebounce: 100 }, { apply: false })
+    await type(m, 'name', 'fo')
+    vi.advanceTimersByTime(100)
+    await type(m, 'name', 'foo')
+    vi.advanceTimersByTime(100)
+    expect(m.events).toHaveLength(2)
+    await m.applyEmitted(0)
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('foo')
+    await m.applyEmitted(1)
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('foo')
+    expect(m.events).toHaveLength(2)
+  })
+
+  it('follows an outside change that equals an old emit once another outside change came in between', async () => {
+    const m = mountIt({ ...base, filterDebounce: 100 }, { apply: false })
+    await type(m, 'name', 'fo')
+    vi.advanceTimersByTime(100)
+    await m.setQuery(makeQuery({ filters: [rule('name', 'Contains', 'bar')] }))
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('bar')
+    await m.setQuery(makeQuery({ filters: [rule('name', 'Contains', 'fo')] }))
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('fo')
+  })
+
   it('leaves the other inputs alone when one column changes from outside', async () => {
     const m = mountIt(base)
     await type(m, 'age', '2')
