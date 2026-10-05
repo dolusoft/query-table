@@ -9,12 +9,17 @@
   ],
   "main": "./dist/vue-server-table.cjs",
   "module": "./dist/vue-server-table.js",
-  "types": "./dist/types/components/index.d.ts",
+  "types": "./dist/types/components/index.d.cts",
   "exports": {
     ".": {
-      "types": "./dist/types/components/index.d.ts",
-      "import": "./dist/vue-server-table.js",
-      "require": "./dist/vue-server-table.cjs"
+      "import": {
+        "types": "./dist/types/components/index.d.ts",
+        "default": "./dist/vue-server-table.js"
+      },
+      "require": {
+        "types": "./dist/types/components/index.d.cts",
+        "default": "./dist/vue-server-table.cjs"
+      }
     }
   },
   "repository": {
@@ -37,10 +42,12 @@
   ],
   "license": "MIT",
   "scripts": {
-    "build": "vite build && vue-tsc -p tsconfig.build.json",
+    "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/emit-cjs-types.mjs",
     "lint": "eslint src",
     "typecheck": "vue-tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check:package": "pnpm build && publint && attw --pack . --profile node16"
   },
   "dependencies": {
     "@iconify/vue": "^5.0.3"
@@ -50,10 +57,12 @@
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@types/node": "^26.6.4",
     "@typescript-eslint/eslint-plugin": "^8.71.0",
     "@typescript-eslint/parser": "^8.71.0",
     "@vitejs/plugin-vue": "^6.0.9",
+    "@vitest/coverage-v8": "5.0.3",
     "@vue/test-utils": "^2.5.1",
     "eslint": "^10.12.0",
     "eslint-plugin-import": "^2.32.0",
@@ -63,6 +72,7 @@
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
     "prettier": "^3.9.9",
+    "publint": "^0.3.25",
     "typescript": "~6.0.3",
     "vite": "^8.3.2",
     "vitest": "^5.0.3",
