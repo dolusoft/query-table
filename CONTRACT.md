@@ -480,7 +480,7 @@ The table ships no CSS, takes no styling props and writes no inline style except
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading`, `data-empty`, `data-filtered` and `data-sorted` on the root; `data-field`, `data-type`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field`, `data-type` on body cells; `data-row-index`, `data-expanded` on rows; `data-page`, `data-page-size` on the pagination block. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading` and `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -559,18 +559,12 @@ The classes and attributes below are the only hooks a skin can select. The table
 | --- | --- | --- |
 | `data-loading` | `.bh-datatable` | Present while `loading`. |
 | `data-empty` | `.bh-datatable` | Present when there are no rows. |
-| `data-filtered` | `.bh-datatable` | Present when `query.filters` is not empty. |
-| `data-sorted` | `.bh-datatable` | Present when `query.sort` is set. |
 | `data-field` | `th, td` | The column `field`, on header, body and footer cells. |
-| `data-type` | `th, td` | The column type, lower case. |
 | `data-sort` | `th` | `asc` or `desc` on the sorted column. |
 | `data-sortable` | `th` | Present when the header can sort. |
 | `data-filtered` | `th, .bh-filter-button` | Present when the column has at least one rule. |
-| `data-utility` | `th, td` | `right-panel` or `subtable` on the cells of the added utility columns. |
 | `data-row-index` | `tbody > tr` | Index of the row in `rows`. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
-| `data-page` | `.bh-pagination` | Current page. |
-| `data-page-size` | `.bh-pagination` | Current page size. |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 
 ### Inline style

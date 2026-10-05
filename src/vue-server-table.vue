@@ -113,8 +113,6 @@ defineExpose(exposed)
     class="bh-datatable"
     :data-loading="loading ? '' : undefined"
     :data-empty="rows.length === 0 ? '' : undefined"
-    :data-filtered="query.filters.length > 0 ? '' : undefined"
-    :data-sorted="query.sort !== null ? '' : undefined"
   >
     <slot name="toolbar" />
     <div class="bh-table-responsive">

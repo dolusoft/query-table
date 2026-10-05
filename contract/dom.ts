@@ -115,24 +115,9 @@ export const domAttributes: AttributeEntry[] = [
     description: 'Present when there are no rows.'
   },
   {
-    name: 'data-filtered',
-    on: '.bh-datatable',
-    description: 'Present when `query.filters` is not empty.'
-  },
-  {
-    name: 'data-sorted',
-    on: '.bh-datatable',
-    description: 'Present when `query.sort` is set.'
-  },
-  {
     name: 'data-field',
     on: 'th, td',
     description: 'The column `field`, on header, body and footer cells.'
-  },
-  {
-    name: 'data-type',
-    on: 'th, td',
-    description: 'The column type, lower case.'
   },
   {
     name: 'data-sort',
@@ -150,12 +135,6 @@ export const domAttributes: AttributeEntry[] = [
     description: 'Present when the column has at least one rule.'
   },
   {
-    name: 'data-utility',
-    on: 'th, td',
-    description:
-      '`right-panel` or `subtable` on the cells of the added utility columns.'
-  },
-  {
     name: 'data-row-index',
     on: 'tbody > tr',
     description: 'Index of the row in `rows`.'
@@ -164,16 +143,6 @@ export const domAttributes: AttributeEntry[] = [
     name: 'data-expanded',
     on: 'tbody > tr',
     description: 'Present on an expanded row.'
-  },
-  {
-    name: 'data-page',
-    on: '.bh-pagination',
-    description: 'Current page.'
-  },
-  {
-    name: 'data-page-size',
-    on: '.bh-pagination',
-    description: 'Current page size.'
   },
   {
     name: 'aria-sort',

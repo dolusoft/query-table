@@ -23,7 +23,6 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
 
   const cellAttrs = (row: T, entry: ColumnEntry, rowIndex: number) => ({
     'data-field': entry.column.field,
-    'data-type': entry.type,
     onContextmenu: (event: MouseEvent) => {
       event.preventDefault()
       options.onContextMenu({

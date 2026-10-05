@@ -165,8 +165,9 @@
 }
 
 /* Utility columns */
-th[data-utility],
-td[data-utility] {
+th:not([data-field]),
+td:has(> .bh-expand),
+td:has(> .bh-right-panel-button) {
   @apply w-8;
 }
 

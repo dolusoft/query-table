@@ -128,7 +128,7 @@ The table ships no CSS, takes no styling props and writes no inline style except
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading`, `data-empty`, `data-filtered` and `data-sorted` on the root; `data-field`, `data-type`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field`, `data-type` on body cells; `data-row-index`, `data-expanded` on rows; `data-page`, `data-page-size` on the pagination block. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-loading` and `data-empty` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 

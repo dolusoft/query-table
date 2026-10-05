@@ -43,7 +43,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
         :data-row-index="i"
         :data-expanded="isExpanded(row, i) ? '' : undefined"
       >
-        <td v-if="hasRightPanel" data-utility="right-panel">
+        <td v-if="hasRightPanel">
           <button
             type="button"
             class="bh-right-panel-button"
@@ -65,7 +65,7 @@ const { cellText, cellAttrs, hasCellSlot, slotProps } = useCellView<T>({
             </svg>
           </button>
         </td>
-        <td v-if="hasSubtable" data-utility="subtable">
+        <td v-if="hasSubtable">
           <button
             type="button"
             class="bh-expand"

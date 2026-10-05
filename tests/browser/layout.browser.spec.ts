@@ -106,7 +106,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       const bottom = Math.max(...inner.map(r => r.bottom))
       expect(
         Math.abs((top + bottom) / 2 - (outer.top + outer.bottom) / 2),
-        `th ${cell.getAttribute('data-field') ?? cell.getAttribute('data-utility')}`
+        `th ${cell.getAttribute('data-field') ?? 'utility'}`
       ).toBeLessThanOrEqual(1)
     }
   })

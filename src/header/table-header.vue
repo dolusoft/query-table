@@ -49,7 +49,7 @@ const utilities = computed(() =>
 
 <template>
   <tr>
-    <th v-for="utility in utilities" :key="utility" :data-utility="utility">
+    <th v-for="utility in utilities" :key="utility">
       <button
         v-if="filterable && utility === utilities[0]"
         type="button"
@@ -79,7 +79,6 @@ const utilities = computed(() =>
       v-for="column in columns"
       :key="column.field"
       :data-field="column.field"
-      :data-type="columnTypeOf(column)"
       :data-sort="sort.sortOf(column) ?? undefined"
       :data-sortable="sort.isSortable(column) ? '' : undefined"
       :data-filtered="isFiltered(column) ? '' : undefined"

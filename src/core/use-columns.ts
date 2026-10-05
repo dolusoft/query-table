@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 
-import type { Column, ColumnType } from '../contract'
-import { columnTypeOf } from './column'
+import type { Column } from '../contract'
 
 export interface ColumnsOptions {
   columns: () => Column[]
@@ -13,18 +12,17 @@ export interface ColumnEntry {
   column: Column
   /** Position in the `columns` prop, hidden columns included. */
   index: number
-  type: ColumnType
 }
 
 /**
  * The columns the table draws (hidden ones dropped) with their original
- * index and type, and how many cells a full-width row spans (C-29).
+ * index, and how many cells a full-width row spans (C-29).
  */
 export const useColumns = (options: ColumnsOptions) => {
   const entries = computed<ColumnEntry[]>(() =>
     options
       .columns()
-      .map((column, index) => ({ column, index, type: columnTypeOf(column) }))
+      .map((column, index) => ({ column, index }))
       .filter(entry => !entry.column.hide)
   )
 

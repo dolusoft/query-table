@@ -61,8 +61,6 @@ describe('C-32 State attributes', () => {
     const root = () => m.wrapper.find('.bh-datatable')
     expect(root().attributes('data-loading')).toBe('')
     expect(root().attributes('data-empty')).toBe('')
-    expect(root().attributes('data-filtered')).toBeUndefined()
-    expect(root().attributes('data-sorted')).toBeUndefined()
     await m.wrapper.setProps({
       rows: makeRows(),
       loading: false,
@@ -73,8 +71,6 @@ describe('C-32 State attributes', () => {
     })
     expect(root().attributes('data-loading')).toBeUndefined()
     expect(root().attributes('data-empty')).toBeUndefined()
-    expect(root().attributes('data-filtered')).toBe('')
-    expect(root().attributes('data-sorted')).toBe('')
   })
 
   it('sets the header cell attributes and aria-sort', () => {
@@ -89,7 +85,6 @@ describe('C-32 State attributes', () => {
     const name = m.wrapper.find('th[data-field="name"]')
     const age = m.wrapper.find('th[data-field="age"]')
     expect(name.attributes()).toMatchObject({
-      'data-type': 'string',
       'data-sortable': '',
       'data-filtered': ''
     })
@@ -97,7 +92,6 @@ describe('C-32 State attributes', () => {
     expect(name.attributes('aria-sort')).toBeUndefined()
     expect(age.attributes('data-sort')).toBe('desc')
     expect(age.attributes('aria-sort')).toBe('descending')
-    expect(age.attributes('data-type')).toBe('number')
     expect(age.attributes('data-filtered')).toBeUndefined()
   })
 
@@ -111,16 +105,15 @@ describe('C-32 State attributes', () => {
     )
   })
 
-  it('sets data-field and data-type on body and footer cells, and the row attributes', () => {
+  it('sets data-field on body and footer cells and data-row-index on rows', () => {
     const m = mountIt({
       footerRows: [{ cells: [{ field: 'age', text: 9 }] }]
     })
     const cell = m.wrapper.find(
       'tbody tr[data-row-index="0"] td[data-field="age"]'
     )
-    expect(cell.attributes('data-type')).toBe('number')
-    const foot = m.wrapper.find('tfoot td[data-field="age"]')
-    expect(foot.attributes('data-type')).toBe('number')
+    expect(cell.text()).toBe('30')
+    expect(m.wrapper.find('tfoot td[data-field="age"]').text()).toBe('9')
     expect(m.wrapper.findAll('tbody tr[data-row-index]')).toHaveLength(5)
   })
 })
