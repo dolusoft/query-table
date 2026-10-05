@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url'
 
 import tsEslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
-import importPlugin from 'eslint-plugin-import' // Eklendi
+import importPlugin from 'eslint-plugin-import'
 import prettierPlugin from 'eslint-plugin-prettier'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
@@ -45,7 +45,7 @@ export default [
       '@typescript-eslint': tsEslint,
       vue: pluginVue,
       prettier: prettierPlugin,
-      import: importPlugin // Eklendi
+      import: importPlugin
     },
     rules: {
       'prettier/prettier': 'error',

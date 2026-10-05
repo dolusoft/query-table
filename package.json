@@ -47,7 +47,8 @@
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "check:package": "pnpm build && publint && attw --pack . --profile node16"
+    "check:package": "pnpm build && publint && attw --pack . --profile node16",
+    "knip": "knip"
   },
   "dependencies": {
     "@iconify/vue": "^5.0.3"
@@ -71,6 +72,7 @@
     "floating-vue": "npm:@dolusoft/floating-vue@^5.3.0",
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
+    "knip": "^6.39.0",
     "prettier": "^3.9.9",
     "publint": "^0.3.25",
     "typescript": "~6.0.3",
@@ -79,11 +81,5 @@
     "vue": "^3.5.43",
     "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "^3.3.12"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+  }
 }

@@ -9,7 +9,7 @@ import pkg from './package.json' with { type: 'json' }
 // (and deduplicates) them, the library bundle only carries its own code.
 const externalPackages = [
   ...Object.keys(pkg.dependencies ?? {}),
-  ...Object.keys(pkg.peerDependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {})
 ]
 const external = (id: string) =>
   externalPackages.some(name => id === name || id.startsWith(`${name}/`))
@@ -23,12 +23,15 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: {
-        'vue-server-table': resolve(import.meta.dirname, 'src/components/index.ts'),
+        'vue-server-table': resolve(
+          import.meta.dirname,
+          'src/components/index.ts'
+        )
       },
-      formats: ['es', 'cjs'],
+      formats: ['es', 'cjs']
     },
     rollupOptions: {
-      external,
-    },
-  },
+      external
+    }
+  }
 })
