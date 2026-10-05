@@ -7,7 +7,6 @@ import type {
   CellSlotProps,
   Column,
   PaginationSlotProps,
-  SortDirection,
   TableEmits,
   TableProps,
   TableSlots,
@@ -17,7 +16,7 @@ import { columnTypeOf, valueAt } from './core/column'
 import { cloneQuery } from './core/query'
 import { useQueryEmitter } from './core/use-query-emitter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
-import { nextDirection } from './sort/sort'
+import { useSort } from './sort/use-sort'
 
 defineOptions({ name: 'VueServerTable' })
 
@@ -174,20 +173,15 @@ const showPagination = computed(
 // Sorting
 // ---------------------------------------------------------------------------
 
-const sortBy = (field: string, direction?: SortDirection) => {
-  drafts.flushAll()
-  const current = base()
-  update(
-    {
-      ...cloneQuery(current),
-      sort: {
-        field,
-        direction: direction ?? nextDirection(current.sort, field)
-      }
-    },
-    'sort'
-  )
-}
+const { sortBy } = useSort({
+  sortable: () => props.sortable,
+  query: () => props.query,
+  base,
+  update,
+  flushFilters: () => {
+    drafts.flushAll()
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Columns and rows

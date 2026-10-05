@@ -14,6 +14,8 @@ import { rulesOf } from '../core/query'
 import { conditionLabel, filterConditions } from '../filter/filter-conditions'
 import IconFilter from '../filter/filter-icon.vue'
 import type { FilterDrafts } from '../filter/use-filter-drafts'
+import { ariaSort, isSortableColumn, sortDirectionOf } from '../sort/sort'
+import SortButton from '../sort/sort-button.vue'
 
 const props = defineProps<{
   /** Columns to draw: the table has already dropped the hidden ones. */
@@ -36,11 +38,9 @@ defineSlots<{
   'filter-menu'?(props: FilterMenuSlotProps): unknown
 }>()
 
-const isSortable = (column: Column) =>
-  props.sortable && column.sortable !== false
+const isSortable = (column: Column) => isSortableColumn(props.sortable, column)
 
-const sortOf = (column: Column): SortDirection | null =>
-  props.query.sort?.field === column.field ? props.query.sort.direction : null
+const sortOf = (column: Column) => sortDirectionOf(props.query.sort, column)
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -146,13 +146,6 @@ const utilities = computed(() =>
     props.hasSubtable ? 'subtable' : null
   ].filter(name => name !== null)
 )
-
-const ariaSort = (direction: SortDirection | null) =>
-  direction === 'asc'
-    ? 'ascending'
-    : direction === 'desc'
-      ? 'descending'
-      : undefined
 </script>
 
 <template>
@@ -194,45 +187,12 @@ const ariaSort = (direction: SortDirection | null) =>
       :aria-sort="ariaSort(sortOf(column))"
       :style="column.width ? { width: column.width } : undefined"
     >
-      <button
+      <sort-button
         v-if="isSortable(column)"
-        type="button"
-        class="bh-sort"
+        :column="column"
+        :direction="sortOf(column)"
         @click="emit('sort', column.field)"
-      >
-        {{ column.title }}
-        <svg
-          v-if="sortOf(column) === 'asc'"
-          class="bh-sort-icon"
-          width="14"
-          height="14"
-          viewBox="0 0 16 16"
-          aria-hidden="true"
-        >
-          <path d="M8 3.5L12.5 9.5H3.5L8 3.5Z" fill="currentColor" />
-        </svg>
-        <svg
-          v-else-if="sortOf(column) === 'desc'"
-          class="bh-sort-icon"
-          width="14"
-          height="14"
-          viewBox="0 0 16 16"
-          aria-hidden="true"
-        >
-          <path d="M8 12.5L3.5 6.5H12.5L8 12.5Z" fill="currentColor" />
-        </svg>
-        <svg
-          v-else
-          class="bh-sort-icon"
-          width="14"
-          height="14"
-          viewBox="0 0 16 16"
-          aria-hidden="true"
-        >
-          <path d="M8 3L11.5 7H4.5L8 3Z" fill="currentColor" />
-          <path d="M8 13L4.5 9H11.5L8 13Z" fill="currentColor" />
-        </svg>
-      </button>
+      />
       <span v-else class="bh-title">{{ column.title }}</span>
 
       <div v-if="hasFilter(column)" class="bh-filter">
