@@ -1,4 +1,4 @@
-import { h } from 'vue'
+import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type {
@@ -64,6 +64,33 @@ describe('C-26 Row expansion', () => {
       m.wrapper.find('.bh-subtable-row').element.previousElementSibling
         ?.getAttribute('data-row-index')
     ).toBe('4')
+  })
+
+  it('keeps the component state of a subtable with its row when rows reorder', async () => {
+    // Each mount of the probe takes a new number: the same number after the
+    // reorder means the component was moved with its row, not rebuilt.
+    let mounts = 0
+    const Probe = defineComponent({
+      props: { name: { type: String, required: true } },
+      setup(probe) {
+        const id = ++mounts
+        return () => h('b', { class: 'probe', 'data-name': probe.name }, String(id))
+      }
+    })
+    const m = mountIt(
+      { hasSubtable: true, rowKey: 'id' },
+      { slots: { subtable: ((p: { row: { name: string } }) => h(Probe, { name: p.row.name })) as never } }
+    )
+    await buttons(m)[0].trigger('click')
+    await buttons(m)[1].trigger('click')
+    const idOf = (name: string) =>
+      m.wrapper.find(`.probe[data-name="${name}"]`).text()
+    const before = { Charlie: idOf('Charlie'), alice: idOf('alice') }
+    await m.wrapper.setProps({ rows: [...makeRows()].reverse() })
+    expect(m.wrapper.findAll('.probe')).toHaveLength(2)
+    expect(idOf('Charlie')).toBe(before.Charlie)
+    expect(idOf('alice')).toBe(before.alice)
+    expect(mounts).toBe(2)
   })
 
   it('keys the state by a rowKey function', async () => {

@@ -153,9 +153,12 @@ export interface TableProps<T extends object = Record<string, unknown>> {
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
   /**
-   * Identity of a row for expansion state: a property name or a function.
-   * Without it the row index is the identity and the state resets whenever
-   * `rows` changes.
+   * Identity of a row, for expansion state and for the rendered row (a row
+   * keeps the state of its `subtable` components when `rows` reorder): a
+   * property name or a function. A string is a direct property read, not a
+   * dotted path; use the function form for a nested value. Keys must be
+   * unique. Without it the row index is the identity and the expansion state
+   * resets whenever `rows` changes.
    */
   rowKey?: (keyof T & string) | ((row: T, index: number) => string | number)
   /** Cut long text to `truncateMaxLength` characters. Defaults to `true`. */
