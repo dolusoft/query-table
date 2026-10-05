@@ -7,16 +7,15 @@ import type {
   CellSlotProps,
   Column,
   PaginationSlotProps,
-  QueryChangeReason,
   SortDirection,
   TableEmits,
   TableProps,
-  TableQuery,
   TableSlots,
   VueServerTableExpose
 } from './contract'
 import { columnTypeOf, valueAt } from './core/column'
-import { cloneQuery, sameQuery } from './core/query'
+import { cloneQuery } from './core/query'
+import { useQueryEmitter } from './core/use-query-emitter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
 import { nextDirection } from './sort/sort'
 
@@ -44,33 +43,13 @@ const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
 // ---------------------------------------------------------------------------
-// Emitting: the table never writes to its props. A user action builds a new
-// query from `base()` and emits it. Several actions in one tick (a pending
-// filter flushed before a page click) must stack, so the last emitted query is
-// the base until the consumer's update arrives or the tick ends.
+// Emitting: the table never writes to its props (see use-query-emitter.ts).
 // ---------------------------------------------------------------------------
 
-let lastEmitted: TableQuery | null = null
-const base = (): TableQuery => lastEmitted ?? props.query
-
-watch(
-  () => props.query,
-  () => {
-    lastEmitted = null
-  },
-  { flush: 'sync' }
-)
-
-const update = (next: TableQuery, reason: QueryChangeReason) => {
-  if (sameQuery(next, base())) {
-    return
-  }
-  lastEmitted = cloneQuery(next)
-  queueMicrotask(() => {
-    lastEmitted = null
-  })
-  emit('update:query', cloneQuery(next), reason)
-}
+const { base, update } = useQueryEmitter({
+  query: () => props.query,
+  emit: (query, reason) => emit('update:query', query, reason)
+})
 
 const drafts = useFilterDrafts({
   query: () => props.query,
