@@ -6,16 +6,16 @@ import type {
   CellContextMenuPayload,
   CellSlotProps,
   Column,
-  PaginationSlotProps,
   TableEmits,
   TableProps,
   TableSlots,
   VueServerTableExpose
 } from './contract'
 import { columnTypeOf, valueAt } from './core/column'
-import { cloneQuery } from './core/query'
 import { useQueryEmitter } from './core/use-query-emitter'
 import { useFilterDrafts } from './filter/use-filter-drafts'
+import TablePagination from './pagination/table-pagination.vue'
+import { usePagination } from './pagination/use-pagination'
 import { useSort } from './sort/use-sort'
 
 defineOptions({ name: 'VueServerTable' })
@@ -62,112 +62,13 @@ const drafts = useFilterDrafts({
 // Paging
 // ---------------------------------------------------------------------------
 
-const paging = computed(() => {
-  if (props.pagination === false) {
-    return null
-  }
-  const options = typeof props.pagination === 'object' ? props.pagination : {}
-  return {
-    pageSizeOptions: options.pageSizeOptions ?? [10, 20, 30, 50, 100],
-    alwaysShow: options.alwaysShow ?? false
-  }
+const { paginationProps, showPagination } = usePagination({
+  props,
+  base,
+  update,
+  flushFilters: () => drafts.flushAll(),
+  hasSlot: () => !!slots.pagination
 })
-
-const pageCountFor = (pageSize: number): number | null =>
-  props.totalRows !== null && props.totalRows !== undefined && pageSize >= 1
-    ? Math.max(1, Math.ceil(props.totalRows / pageSize))
-    : null
-
-const pageCount = computed(() => pageCountFor(props.query.pageSize))
-
-const canNext = computed(() =>
-  pageCount.value !== null
-    ? props.query.page < pageCount.value
-    : props.rows.length >= props.query.pageSize
-)
-
-const setPage = (page: number) => {
-  if (!paging.value || !Number.isFinite(page)) {
-    return
-  }
-  // A pending filter that changed the filters moves the table to page 1:
-  // the page asked for belongs to the old filters, so the click is dropped.
-  if (drafts.flushAll()) {
-    return
-  }
-  const current = base()
-  const count = pageCountFor(current.pageSize)
-  let target = Math.max(1, Math.trunc(page))
-  if (count !== null) {
-    target = Math.min(target, count)
-  }
-  update({ ...cloneQuery(current), page: target }, 'page')
-}
-
-const nextPage = () => {
-  if (!paging.value) {
-    return
-  }
-  // See `setPage`: a pending filter that changed the filters ends the action.
-  if (drafts.flushAll()) {
-    return
-  }
-  const current = base()
-  const count = pageCountFor(current.pageSize)
-  const canGo =
-    count !== null
-      ? current.page < count
-      : props.rows.length >= current.pageSize
-  if (canGo) {
-    setPage(current.page + 1)
-  }
-}
-
-const previousPage = () => {
-  if (!paging.value) {
-    return
-  }
-  if (drafts.flushAll()) {
-    return
-  }
-  setPage(base().page - 1)
-}
-
-const setPageSize = (size: number) => {
-  if (!paging.value || !Number.isInteger(size) || size < 1) {
-    return
-  }
-  drafts.flushAll()
-  const current = base()
-  if (size === current.pageSize) {
-    return
-  }
-  update({ ...cloneQuery(current), page: 1, pageSize: size }, 'pageSize')
-}
-
-const paginationProps = computed<PaginationSlotProps>(() => ({
-  page: props.query.page,
-  pageSize: props.query.pageSize,
-  pageCount: pageCount.value,
-  totalRows: props.totalRows ?? null,
-  pageSizeOptions: paging.value?.pageSizeOptions ?? [],
-  canPrevious: props.query.page > 1,
-  canNext: canNext.value,
-  loading: props.loading,
-  setPage,
-  nextPage,
-  previousPage,
-  setPageSize
-}))
-
-const showPagination = computed(
-  () =>
-    paging.value !== null &&
-    !!slots.pagination &&
-    (props.rows.length > 0 ||
-      (props.totalRows ?? 0) > 0 ||
-      paging.value.alwaysShow)
-)
 
 // ---------------------------------------------------------------------------
 // Sorting
@@ -486,13 +387,10 @@ defineExpose(exposed)
         </tfoot>
       </table>
     </div>
-    <div
-      v-if="showPagination"
-      class="bh-pagination"
-      :data-page="query.page"
-      :data-page-size="query.pageSize"
-    >
-      <slot name="pagination" v-bind="paginationProps" />
-    </div>
+    <table-pagination v-if="showPagination" :pagination-props="paginationProps">
+      <template #pagination="p">
+        <slot name="pagination" v-bind="p" />
+      </template>
+    </table-pagination>
   </div>
 </template>
