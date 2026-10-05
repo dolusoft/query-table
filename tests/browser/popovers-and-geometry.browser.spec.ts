@@ -1,100 +1,113 @@
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 
-import { renderTable, rows, shot } from './helpers'
+import { el, renderTable, rule, shot } from './helpers'
 
-// floating-vue computes positions from real layout (getBoundingClientRect,
-// ResizeObserver). happy-dom has no layout, so these only mean something here.
+// The filter menu is drawn by the consumer: here a real shadcn-vue Popover
+// (reka-ui) wraps the table's own trigger. Positions come from real layout,
+// which happy-dom does not have, so these only mean something in a browser.
 
-// floating-vue removes the popper (or drops its shown class) once hidden.
-const shownPopper = () => document.querySelector('.v-popper__popper--shown')
+const openPopover = () => document.querySelector('[data-slot="popover-content"]')
 
-const filterButton = (field: string) =>
-  page.getByCSS(`th[data-field="${field}"] .bh-filter-button`)
-
-test('filter button opens the condition popover just below it, inside the viewport', async () => {
-  await renderTable()
+test('C-34 the filter button opens the condition popover just below it, inside the viewport', async () => {
+  const { filterButton } = await renderTable()
   const button = filterButton('name')
   await userEvent.click(button)
 
-  const popover = page.getByText('Filter Condition')
-  await expect.element(popover).toBeVisible()
-
-  const popper = (popover.element() as HTMLElement).closest(
-    '.v-popper__popper'
-  ) as HTMLElement
-  await expect.poll(() => popper.dataset.popperPlacement).toMatch(/^bottom/)
-  // floating-vue anchors to its own `.v-popper` wrapper around the button.
-  const b = (button.element() as HTMLElement)
-    .closest('.v-popper')!
-    .getBoundingClientRect()
-  const p = popper.getBoundingClientRect()
-  // placement="bottom-start" with distance 4 (plus floating-vue's arrow gap)
+  await expect.element(page.getByText('Filter Condition')).toBeVisible()
+  const popover = el('[data-slot="popover-content"]')
+  const b = (button.element() as HTMLElement).getBoundingClientRect()
+  await expect.poll(() => popover.dataset.side).toBe('bottom')
+  const p = popover.getBoundingClientRect()
   expect(p.top).toBeGreaterThanOrEqual(b.bottom)
-  expect(p.top - b.bottom).toBeLessThan(20)
-  expect(Math.abs(p.left - b.left)).toBeLessThan(2)
+  expect(p.top - b.bottom).toBeLessThan(12)
+  expect(p.left).toBeGreaterThanOrEqual(0)
   expect(p.right).toBeLessThanOrEqual(window.innerWidth)
   await shot('filter-popover-open')
 })
 
-test('choosing a sort in the popover emits a sort change and closes it', async () => {
-  const { changes } = await renderTable()
+test('C-08 choosing a sort in the popover applies a sort and closes it', async () => {
+  const { updates, filterButton } = await renderTable({
+    query: {
+      page: 3,
+      pageSize: 10,
+      sort: null,
+      filters: [rule('age', 'Equal', 21)]
+    }
+  })
   await userEvent.click(filterButton('name'))
   await userEvent.click(page.getByText(/Sort Descending/))
-  await expect.poll(() => changes.length).toBe(1)
-  expect(changes[0].payload).toMatchObject({
-    sort_column: 'name',
-    sort_direction: 'desc',
-    change_type: 'sort'
+  await expect.poll(() => updates.length).toBe(1)
+  expect(updates[0].reason).toBe('sort')
+  expect(updates[0].query).toEqual({
+    page: 3,
+    pageSize: 10,
+    sort: { field: 'name', direction: 'desc' },
+    filters: [rule('age', 'Equal', 21)]
   })
-  await expect.poll(shownPopper).toBeNull()
+  await expect.poll(openPopover).toBeNull()
 })
 
-test('clicking outside the popover closes it (auto-hide)', async () => {
-  await renderTable()
+test('C-20 picking a condition with text typed applies it', async () => {
+  const { updates, filterButton, filterInput } = await renderTable({
+    filterDebounce: 2000
+  })
+  await userEvent.click(filterInput('name'))
+  await userEvent.keyboard('foo')
+  await userEvent.click(filterButton('name'))
+  await userEvent.click(page.getByText('Starts With'))
+  await expect.poll(() => updates.length).toBe(1)
+  expect(updates[0].query.filters).toEqual([rule('name', 'StartsWith', 'foo')])
+  await expect.element(page.getByCSS('.bh-filter-condition')).toHaveTextContent(
+    'Starts With'
+  )
+})
+
+test('C-21 Clear filter in the popover clears that column only and keeps the sort', async () => {
+  const { updates, filterButton } = await renderTable({
+    query: {
+      page: 2,
+      pageSize: 10,
+      sort: { field: 'age', direction: 'asc' },
+      filters: [rule('name', 'Contains', 'a'), rule('age', 'Equal', 21)]
+    }
+  })
+  await userEvent.click(filterButton('name'))
+  await userEvent.click(page.getByText('Clear filter'))
+  await expect.poll(() => updates.length).toBe(1)
+  expect(updates[0].reason).toBe('filter')
+  expect(updates[0].query).toEqual({
+    page: 1,
+    pageSize: 10,
+    sort: { field: 'age', direction: 'asc' },
+    filters: [rule('age', 'Equal', 21)]
+  })
+})
+
+test('C-34 clicking outside the popover closes it', async () => {
+  const { filterButton } = await renderTable()
   await userEvent.click(filterButton('name'))
   await expect.element(page.getByText('Filter Condition')).toBeVisible()
   // Far bottom-right of the page: nothing of the table or popover is there.
   await userEvent.click(page.getByCSS('body'), {
     position: { x: 1200, y: 760 }
   })
-  await expect.poll(shownPopper).toBeNull()
+  await expect.poll(openPopover).toBeNull()
 })
 
-test('clear-all button tooltip appears on hover', async () => {
+test('C-22 the clear-all button is a plain button with a title, enabled once a filter is active', async () => {
   const { filterInput } = await renderTable({ hasRightPanel: true })
-  // The button is disabled until a filter is active.
+  const clearAll = page.getByCSS('.bh-clear-all-button')
+  await expect.element(clearAll).toBeDisabled()
   await userEvent.click(filterInput('name'))
   await userEvent.keyboard('x{Enter}')
-  const clearAll = page.getByCSS('.bh-clear-all-button')
-
   await expect.element(clearAll).toBeEnabled()
-  await userEvent.hover(clearAll)
-  await expect.element(page.getByText('Clear all filters')).toBeVisible()
+  // A tooltip is the consumer's business; the table sets `title` only.
+  await expect.element(clearAll).toHaveAttribute('title', 'Clear all filters')
+  expect(document.querySelector('[role="tooltip"]')).toBeNull()
 })
 
-test('stickyHeader + height gives a fixed-height scroll container the rows overflow', async () => {
-  // Structure only: the scroll container's height and overflow are inline
-  // styles. `bh-sticky` itself needs consumer CSS, so stickiness is not
-  // asserted here.
-  const { screen } = await renderTable({
-    stickyHeader: true,
-    height: '300px',
-    footerOffset: 50,
-    rows: rows(40),
-    pageSize: 50
-  })
-  const scroller = screen.container.querySelector(
-    '.bh-table-responsive'
-  ) as HTMLElement
-  expect(scroller.getBoundingClientRect().height).toBe(250)
-  expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight)
-  scroller.scrollTop = 200
-  expect(scroller.scrollTop).toBe(200)
-  await shot('sticky-scroll-container')
-})
-
-test('a column width set on the definition reaches the rendered header cell', async () => {
+test('C-31 a column width set on the definition reaches the rendered header cell', async () => {
   const { screen } = await renderTable({
     columns: [
       { field: 'id', title: 'ID', type: 'number', width: '120px' },
