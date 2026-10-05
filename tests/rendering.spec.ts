@@ -1,11 +1,6 @@
-import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
 
-import type {
-  CellContextMenuPayload,
-  Column,
-  FilterMenuSlotProps
-} from '../src/contract'
 import {
   flush,
   makeColumns,
@@ -15,6 +10,11 @@ import {
   propsOf,
   type Mounted
 } from './helpers'
+import type {
+  CellContextMenuPayload,
+  Column,
+  FilterMenuSlotProps
+} from '../src/contract'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -37,9 +37,9 @@ describe('C-26 Row expansion', () => {
     await buttons(m)[1].trigger('click')
     expect(m.wrapper.findAll('.bh-subtable-row')).toHaveLength(1)
     expect(m.wrapper.find('.detail').text()).toBe('alice')
-    expect(m.wrapper.find('tr[data-row-index="1"]').attributes('data-expanded')).toBe(
-      ''
-    )
+    expect(
+      m.wrapper.find('tr[data-row-index="1"]').attributes('data-expanded')
+    ).toBe('')
     expect(buttons(m)[1].attributes('aria-expanded')).toBe('true')
     await buttons(m)[1].trigger('click')
     expect(m.wrapper.find('.bh-subtable-row').exists()).toBe(false)
@@ -53,16 +53,14 @@ describe('C-26 Row expansion', () => {
   })
 
   it('keys the state by rowKey, so it follows the row when rows reorder', async () => {
-    const m = mountIt(
-      { hasSubtable: true, rowKey: 'id' },
-      { slots: subtable }
-    )
+    const m = mountIt({ hasSubtable: true, rowKey: 'id' }, { slots: subtable })
     await buttons(m)[0].trigger('click')
     await m.wrapper.setProps({ rows: [...makeRows()].reverse() })
     expect(m.wrapper.find('.detail').text()).toBe('Charlie')
     expect(
-      m.wrapper.find('.bh-subtable-row').element.previousElementSibling
-        ?.getAttribute('data-row-index')
+      m.wrapper
+        .find('.bh-subtable-row')
+        .element.previousElementSibling?.getAttribute('data-row-index')
     ).toBe('4')
   })
 
@@ -74,12 +72,18 @@ describe('C-26 Row expansion', () => {
       props: { name: { type: String, required: true } },
       setup(probe) {
         const id = ++mounts
-        return () => h('b', { class: 'probe', 'data-name': probe.name }, String(id))
+        return () =>
+          h('b', { class: 'probe', 'data-name': probe.name }, String(id))
       }
     })
     const m = mountIt(
       { hasSubtable: true, rowKey: 'id' },
-      { slots: { subtable: ((p: { row: { name: string } }) => h(Probe, { name: p.row.name })) as never } }
+      {
+        slots: {
+          subtable: ((p: { row: { name: string } }) =>
+            h(Probe, { name: p.row.name })) as never
+        }
+      }
     )
     await buttons(m)[0].trigger('click')
     await buttons(m)[1].trigger('click')
@@ -152,7 +156,9 @@ describe('C-27 Cell slots', () => {
     )
     expect(m.wrapper.findAll('td[data-field="id"] .generic')).toHaveLength(5)
     expect(m.wrapper.findAll('td[data-field="age"] .generic')).toHaveLength(5)
-    expect(m.wrapper.find('td[data-field="name"] .generic').exists()).toBe(false)
+    expect(m.wrapper.find('td[data-field="name"] .generic').exists()).toBe(
+      false
+    )
   })
 
   it('skips truncation', () => {
@@ -173,8 +179,13 @@ describe('C-27 Cell slots', () => {
 describe('C-28 Context menu', () => {
   it('emits cellContextMenu with the payload and suppresses the browser menu', async () => {
     const m = mountIt()
-    const cell = m.wrapper.find('tbody tr[data-row-index="2"] td[data-field="age"]')
-    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    const cell = m.wrapper.find(
+      'tbody tr[data-row-index="2"] td[data-field="age"]'
+    )
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
     cell.element.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(true)
     const emitted = m.wrapper.emitted('cellContextMenu') as [
@@ -199,9 +210,9 @@ describe('C-28 Context menu', () => {
     m.wrapper
       .find('td[data-field="name"]')
       .element.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
-    const payload = (m.wrapper.emitted('cellContextMenu') as [
-      CellContextMenuPayload<object>
-    ][])[0][0]
+    const payload = (
+      m.wrapper.emitted('cellContextMenu') as [CellContextMenuPayload<object>][]
+    )[0][0]
     expect(payload.columnIndex).toBe(1)
   })
 })
@@ -321,7 +332,11 @@ describe('C-31 No styling', () => {
     const props = Object.keys(
       (mountIt().wrapper.vm.$.type as { props: Record<string, unknown> }).props
     )
-    expect(props.filter(name => /^(class|style|skin|height|sticky|offset|width|theme)/i.test(name))).toEqual([])
+    expect(
+      props.filter(name =>
+        /^(class|style|skin|height|sticky|offset|width|theme)/i.test(name)
+      )
+    ).toEqual([])
   })
 })
 
@@ -385,7 +400,9 @@ describe('C-32 State attributes', () => {
     const m = mountIt({
       footerRows: [{ cells: [{ field: 'age', text: 9 }] }]
     })
-    const cell = m.wrapper.find('tbody tr[data-row-index="0"] td[data-field="age"]')
+    const cell = m.wrapper.find(
+      'tbody tr[data-row-index="0"] td[data-field="age"]'
+    )
     expect(cell.attributes('data-type')).toBe('number')
     const foot = m.wrapper.find('tfoot td[data-field="age"]')
     expect(foot.attributes('data-type')).toBe('number')
@@ -397,9 +414,9 @@ describe('C-34 Filter menu slot', () => {
   it('draws no popover or tooltip and no filter button without the slot', () => {
     const m = mountIt({ filterable: true })
     expect(m.wrapper.find('.bh-filter-button').exists()).toBe(false)
-    expect(m.wrapper.find('[role="tooltip"], [data-popper-placement]').exists()).toBe(
-      false
-    )
+    expect(
+      m.wrapper.find('[role="tooltip"], [data-popper-placement]').exists()
+    ).toBe(false)
   })
 
   it('renders the slot right after the filter input, as its sibling', () => {
@@ -452,7 +469,9 @@ describe('C-34 Filter menu slot', () => {
     expect(button.attributes('data-extra')).toBe('yes')
     expect(button.classes()).toContain('extra')
     expect(button.attributes('data-filtered')).toBe('')
-    expect(m.wrapper.findAll('.bh-filter-button button, button button')).toHaveLength(0)
+    expect(
+      m.wrapper.findAll('.bh-filter-button button, button button')
+    ).toHaveLength(0)
   })
 
   it('keeps the trigger label in step with the column title', async () => {
@@ -513,7 +532,9 @@ describe('C-36 Right panel', () => {
   })
 
   it('draws no button without hasRightPanel', () => {
-    expect(mountIt().wrapper.find('.bh-right-panel-button').exists()).toBe(false)
+    expect(mountIt().wrapper.find('.bh-right-panel-button').exists()).toBe(
+      false
+    )
   })
 })
 
@@ -528,13 +549,21 @@ describe('C-37 Footer rows', () => {
       columns,
       totalRows: 0,
       footerRows: [
-        { cells: [{ field: 'id', text: 'Sum' }, { field: 'name', text: 12 }] },
+        {
+          cells: [
+            { field: 'id', text: 'Sum' },
+            { field: 'name', text: 12 }
+          ]
+        },
         { cells: [{ field: 'name', text: 'x' }] }
       ]
     })
     const rows = m.wrapper.findAll('tfoot tr')
     expect(rows).toHaveLength(2)
-    expect(rows[0].findAll('td').map(cell => cell.text())).toEqual(['Sum', '12'])
+    expect(rows[0].findAll('td').map(cell => cell.text())).toEqual([
+      'Sum',
+      '12'
+    ])
     expect(rows[1].findAll('td').map(cell => cell.text())).toEqual(['', 'x'])
   })
 

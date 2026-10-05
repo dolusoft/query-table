@@ -1,7 +1,7 @@
-import type { ComponentInternalInstance, ComponentPublicInstance } from 'vue'
 import { afterAll, beforeAll, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup, config, render } from 'vitest-browser-vue'
+import type { ComponentInternalInstance, ComponentPublicInstance } from 'vue'
 
 import MeasureHost from './MeasureHost.vue'
 import type { Column, TableQuery } from '../../../src/contract'

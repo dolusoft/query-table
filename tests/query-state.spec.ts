@@ -35,9 +35,9 @@ describe('C-01 The table is controlled', () => {
     )
     await flush()
     expect(m.events).toEqual([])
-    expect(m.wrapper.find('th[data-field="name"]').attributes('data-sort')).toBe(
-      'desc'
-    )
+    expect(
+      m.wrapper.find('th[data-field="name"]').attributes('data-sort')
+    ).toBe('desc')
     expect(m.wrapper.find('.bh-datatable').attributes('data-filtered')).toBe('')
   })
 
@@ -158,9 +158,9 @@ describe('C-19 An ignored update changes nothing', () => {
       undefined
     )
     expect((input.element as HTMLInputElement).value).toBe('ali')
-    expect(m.wrapper.find('th[data-field="name"]').attributes('data-filtered')).toBe(
-      undefined
-    )
+    expect(
+      m.wrapper.find('th[data-field="name"]').attributes('data-filtered')
+    ).toBe(undefined)
   })
 })
 

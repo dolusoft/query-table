@@ -7,7 +7,8 @@ import { el, renderTable, rule, shot } from './helpers'
 // (reka-ui) wraps the table's own trigger. Positions come from real layout,
 // which happy-dom does not have, so these only mean something in a browser.
 
-const openPopover = () => document.querySelector('[data-slot="popover-content"]')
+const openPopover = () =>
+  document.querySelector('[data-slot="popover-content"]')
 
 test('C-34 the filter button opens the condition popover just below it, inside the viewport', async () => {
   const { filterButton } = await renderTable()
@@ -58,9 +59,9 @@ test('C-20 picking a condition with text typed applies it', async () => {
   await userEvent.click(page.getByText('Starts With'))
   await expect.poll(() => updates.length).toBe(1)
   expect(updates[0].query.filters).toEqual([rule('name', 'StartsWith', 'foo')])
-  await expect.element(page.getByCSS('.bh-filter-condition')).toHaveTextContent(
-    'Starts With'
-  )
+  await expect
+    .element(page.getByCSS('.bh-filter-condition'))
+    .toHaveTextContent('Starts With')
 })
 
 test('C-21 Clear filter in the popover clears that column only and keeps the sort', async () => {

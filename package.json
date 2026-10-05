@@ -43,7 +43,7 @@
   "license": "MIT",
   "scripts": {
     "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/emit-cjs-types.mjs",
-    "lint": "eslint src contract",
+    "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run --project unit",
     "test:coverage": "vitest run --project unit --coverage",
