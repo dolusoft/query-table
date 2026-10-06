@@ -1,5 +1,5 @@
 // The options and APIs serverQueryFeature adds to a TanStack table, registered
-// through TanStack's declaration merging (spike REPORT, finding 4): a table
+// through TanStack's declaration merging (spike/REPORT.md at fb3485b, finding 4): a table
 // whose `features` hold `serverQueryFeature` takes `query` and
 // `onQueryChange` as typed options and has `getBaseQuery()`.
 import type {

@@ -1,7 +1,7 @@
 import { locators, type Locator } from 'vitest/browser'
 
-import '../../playground/skin/test-skin.css'
-import { setTheme, themeFromUrl } from '../../playground/harness/theme'
+import '../../apps/playground/skin/test-skin.css'
+import { setTheme, themeFromUrl } from '../../apps/playground/harness/theme'
 
 // `?theme=light` or `?theme=dark` on the test page pins the skin's theme, for
 // looking at the table in either one; without it the OS decides.

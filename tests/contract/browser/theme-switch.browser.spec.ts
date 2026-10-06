@@ -3,9 +3,9 @@ import { afterEach, beforeEach, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
-import '../../../playground/playground.css'
-import App from '../../../playground/App.vue'
-import { router } from '../../../playground/router'
+import '../../../apps/playground/playground.css'
+import App from '../../../apps/playground/App.vue'
+import { router } from '../../../apps/playground/router'
 
 // The theme switch of the playground shell: a shadcn-vue single toggle group.
 // Each item is a toggle button whose `aria-pressed` says which theme is on;

@@ -4,13 +4,26 @@ A thin Vue 3 table for server-side data. It renders the rows you give it and tel
 
 The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system.
 
+![Query Table v3 architecture: the Vue package on the core features, the core on the protocol and TanStack Table, and the two consumer paths](apps/playground/public/architecture.svg)
+
+Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)).
+
 ## Install
 
-```bash
-pnpm add https://github.com/dolusoft/query-table/releases/download/v2.2.12/dolusoft-query-table-2.2.12.tgz
+The three packages are released together as GitHub Release tarballs. The Vue package depends on the other two, so map their names to the tarballs (pnpm `overrides` in `pnpm-workspace.yaml`; npm and Yarn have the same field in `package.json`) and add the component:
+
+```yaml
+# pnpm-workspace.yaml
+overrides:
+  '@dolusoft/query-protocol': https://github.com/dolusoft/query-table/releases/download/v3.0.0-next.0/dolusoft-query-protocol-3.0.0-next.0.tgz
+  '@dolusoft/query-table-core': https://github.com/dolusoft/query-table/releases/download/v3.0.0-next.0/dolusoft-query-table-core-3.0.0-next.0.tgz
 ```
 
-Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
+```bash
+pnpm add https://github.com/dolusoft/query-table/releases/download/v3.0.0-next.0/dolusoft-query-table-3.0.0-next.0.tgz
+```
+
+A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
 
 ## Usage
 
@@ -164,6 +177,38 @@ Set `loading` while you fetch. The table keeps the rows you gave it (nothing is 
 }
 ```
 
+## Search
+
+The `toolbar` slot gets the global search: `search` (the text to show), `setSearch(text)` for each key and `applySearch()` for Enter. Typed text is applied `search-debounce` milliseconds after the last key (default `300`), as one `search` update that goes back to the first page; blank text applies at once. The server decides what `query.search` matches. If you debounce on your own, pass `:search-debounce="0"` so the text is not debounced twice (C-58, C-63).
+
+```vue
+<QueryTable v-model:query="query" :search-debounce="300" ...>
+  <template #toolbar="{ search, setSearch, applySearch }">
+    <input
+      :value="search"
+      aria-label="Search"
+      @input="setSearch(($event.target as HTMLInputElement).value)"
+      @keydown.enter="applySearch()"
+    />
+  </template>
+</QueryTable>
+```
+
+## Row selection
+
+Pass `v-model:selection` (a map of row key to `true`) and the table draws a column of checkboxes, with a select-all box for the page. The selection is yours: the table emits the new map and draws what you pass back, keys of other pages included. Give `row-key` so a key names the same row on every page (C-59, C-64).
+
+## Cursor paging
+
+A query with a `cursor` key pages by cursor: `cursor: null` asks for the first page, `{ token, direction }` for the page on that side of the one shown. Pass the cursors of the page shown as `:cursors="{ next, prev }"` (`null` where there is no page) and `:total-rows="null"` when the total is unknown. The `pagination` slot then gets `cursorMode: true`; a sort, a filter, a search or a new page size goes back to `cursor: null` (C-56, C-57, C-65).
+
+```ts
+import type { CursorQuery, PageCursors } from '@dolusoft/query-table'
+
+const query = ref<CursorQuery>({ cursor: null, pageSize: 20, sort: null, filters: [] })
+const cursors = ref<PageCursors>({ next: null, prev: null })
+```
+
 ## Filter text without a table
 
 `parseFilterInput(text, column, condition?)` returns the `FilterRule[]` the table emits for `text` typed into the filter of `column`: the same shortcuts (`*a*`, `a*`, `!a`, `a,b`) and the same coercion per column type. Text that gives no rule returns `[]`.
@@ -175,6 +220,37 @@ parseFilterInput('ist*,!*mir', { field: 'city' })
 // [{ field: 'city', condition: 'StartsWith', value: 'ist' },
 //  { field: 'city', condition: 'NotContains', value: 'mir' }]
 ```
+
+## Advanced usage: `useQueryTable()`
+
+`QueryTable` is a thin view over `useQueryTable()`. Call the composable yourself to draw your own markup with the same behavior: it takes the props as refs or getters, calls `onQueryChange(query, reason)` once per user action and returns the state and actions to draw from, plus the TanStack `table`. It is disposed with the component's scope.
+
+```ts
+import { ref } from 'vue'
+import { useQueryTable, type TableQuery } from '@dolusoft/query-table'
+
+const query = ref<TableQuery>({ page: 1, pageSize: 10, sort: null, filters: [] })
+const rows = ref<{ name: string }[]>([])
+const total = ref(0)
+const qt = useQueryTable({
+  query,
+  columns: [{ field: 'name', title: 'Name', sortable: true }],
+  rows,
+  totalRows: total,
+  sortable: true,
+  onQueryChange: next => {
+    query.value = next
+  }
+})
+
+qt.columns.value // the columns to draw, pinned first
+qt.sort.sortBy(column) // a header click
+qt.filters.setInput('name', text) // typed filter text, debounced
+qt.search.set(text) // typed search, debounced
+qt.pagination.value.nextPage() // what the pagination slot gets
+```
+
+Without Vue's component layer at all, use TanStack Table with the two core features: `serverQueryFeature` owns TanStack's sorting, filter and pagination handlers and turns each change into one query update, and `filterInputFeature` adds the typed filter text. Import them from `@dolusoft/query-table-core` and the query types from `@dolusoft/query-protocol`; add both packages to your dependencies, since you import them directly. The playground's "TanStack path" page is a working example.
 
 ## Methods
 

@@ -5,7 +5,7 @@ import type { QueryChangeReason, TableQuery } from '@dolusoft/query-table'
 
 import { columns, makeQuery, rows } from './fixtures'
 import { traceUpdate } from './trace'
-import TestTable from '../../playground/harness/TestTable.vue'
+import TestTable from '../../apps/playground/harness/TestTable.vue'
 
 export { columns, el, rows, rule, sleep } from './fixtures'
 

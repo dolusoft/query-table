@@ -1,6 +1,6 @@
 import { defineConfig, mergeConfig } from 'vite'
 
-import viteConfig from './vite.config.ts'
+import viteConfig from './packages/vue/vite.config.ts'
 
 // Build analysis only (`pnpm analyze:build`): the same library build, written
 // outside `dist/`, with Rolldown's devtools session output switched on so
