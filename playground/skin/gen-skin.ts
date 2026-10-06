@@ -3,8 +3,8 @@
 //   theme.css         the theme the shadcn-vue CLI wrote (`shadcn-vue init`,
 //                     style reka-nova, base color neutral). Not edited by hand:
 //                     every color and radius comes from it.
-//   mapping.css       the table's DOM contract mapped onto shadcn-vue class
-//                     strings with `@apply`. It is written into
+//   mapping.css       the table's DOM contract drawn in plain CSS with the
+//                     theme's tokens (`var(--border)`, ...). It is written into
 //                     `@layer components`, so a Tailwind utility on a page
 //                     overrides it (see `buildSkin`).
 //

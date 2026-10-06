@@ -12,7 +12,7 @@ const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 
 /**
  * The selectors of a stylesheet: the text before each `{` that opens a style
- * rule. `@apply` lines hold utility names, not selectors, and at-rules
+ * rule. A nested `&...` selector adds to its parent's, and at-rules
  * (`@theme`, `@layer`, `@custom-variant`, `@import`) are skipped.
  */
 const selectorsOf = (css: string): string[] => {
@@ -82,6 +82,12 @@ describe('C-41 the test skin selects only the DOM contract', () => {
   it('has no hand-written color: the theme comes from the shadcn-vue CLI output', () => {
     const mapping = read(join(here, 'mapping.css'))
     expect(mapping).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|hsl|oklch)a?\(/i)
+  })
+
+  it('draws with the theme tokens, not with pasted utility class strings', () => {
+    const mapping = read(join(here, 'mapping.css'))
+    expect(mapping).not.toContain('@apply')
+    expect(mapping).toContain('var(--border)')
   })
 
   it('follows the OS theme and lets data-theme on <html> override it', () => {
