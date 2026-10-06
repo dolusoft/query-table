@@ -11,7 +11,8 @@
 //
 // A run that hung or lost its connection is retried once; a run whose tests
 // failed is not. Both limits can be overridden:
-//   BROWSER_TEST_TIMEOUT_MS  per attempt, default 45000 (a run takes ~10 s)
+//   BROWSER_TEST_TIMEOUT_MS  per attempt, default 120000 (a run takes ~10 s
+//                            locally and up to ~45 s on CI)
 //   BROWSER_TEST_ATTEMPTS    default 2
 //   BROWSER_TEST_PROJECT     Vitest project to run, default "browser" (scripts/measure-renders.mjs
 //                            runs "measure" through this same wrapper)
@@ -19,7 +20,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 
-const attemptTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 45_000
+const attemptTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 120_000
 const maxAttempts = Number(process.env.BROWSER_TEST_ATTEMPTS) || 2
 const project = process.env.BROWSER_TEST_PROJECT || 'browser'
 const lostConnection = /Failed to connect to the browser session/

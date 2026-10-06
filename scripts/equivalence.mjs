@@ -195,8 +195,8 @@ const prepare = async target => {
 /** Runs the contract specs against one target; returns the report files. */
 const runSuites = (target, prepared) => {
   // A built baseline starts cold (Vite optimizes its dependencies) and its
-  // failing added tests wait out their timeouts: the default 45 s per
-  // attempt of test-browser.mjs is too short for that run.
+  // failing added tests wait out their timeouts: the default 120 s per
+  // attempt of test-browser.mjs can be too short for that run.
   const env = {
     BROWSER_TEST_TIMEOUT_MS: '240000',
     ...process.env,
