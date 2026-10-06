@@ -14,7 +14,7 @@ const { query, result } = useFakeServer(createDemoRows(), {
 
 <template>
   <!-- A fixed layout keeps the columns still while rows change. -->
-  <div class="[&_.qt-table]:table-fixed">
+  <div class="[&_.qt-table]:min-w-[48rem] [&_.qt-table]:table-fixed">
     <QueryTable
       v-model:query="query"
       :columns="columns"
