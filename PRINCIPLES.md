@@ -1,8 +1,6 @@
 # Principles
 
-Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)).
-
-P1, P4, P9, P10 and P14 were amended for the local evaluator on 2026-10-06 ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)).
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)), and P1, P4, P9, P10 and P14 for the local evaluator ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)).
 
 These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
 
@@ -78,9 +76,7 @@ Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry 
 
 ## P9 One small, typed surface per package
 
-Each package has one entry per published path and one API report, nothing else. A new capability goes into the core plugins first; the Vue package exposes what the core provides. New surface is a minor release and fixes are patch releases, within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made.
-
-A data-source helper that is not table behavior (the local evaluator) lives in the protocol, with a thin binding in the Vue package; it is not a plugin and the core does not know it.
+Every published TypeScript API surface is covered by a reviewed API report; independently exposed surfaces receive separate reports. A new capability goes into the core plugins first; the Vue package exposes what the core provides. New surface is a minor release and fixes are patch releases, within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made. A data-source helper that is not table behavior (the local evaluator) lives in the protocol, with a thin binding in the Vue package; it is not a plugin and the core does not know it.
 
 Why: a version number only means something when the surface it versions is enumerable, and three packages released together must agree on one surface.
 
