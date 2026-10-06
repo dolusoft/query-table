@@ -342,6 +342,7 @@ What stays **own**, outside TanStack (ADR 0004, decisions D3 and D10):
 
 - **Pin geometry.** Where a pinned column sticks (`--qt-pin-left`, `--qt-pin-right`) comes from measuring the rendered cells, not from TanStack's `columnSizingFeature`; widths stay CSS strings. This is part of the Vue package.
 - **Column resizing.** `columnSizingFeature` and `columnResizingFeature` are not registered in v3. Resize is our own code and widths are controlled by the consumer, as in 2.2.
+- **Reorder handle.** With `reorderable` (C-73) the drag (pointer capture, no HTML5 `draggable`), the drop target, the arrow keys, Home and End and giving the focus back to the moved handle are Vue code; the result goes through `columnOrderingFeature` (`setColumnOrder`) and comes out as `update:columns`. The consumer's CSS gives the handle `touch-action: none`.
 - **Filter drafts, the echo history, drag previews, measured geometry**: short-lived UI state the plugins and the Vue layer keep.
 
 Row expansion is not own: TanStack's `rowExpandingFeature` holds it, as a projection of the consumer's props.

@@ -87,7 +87,11 @@ const ADDED_AFTER_BASELINE = [
   `tests/contract/unit/pin.spec.ts > C-71 Right pinning [tanstack] [own]`,
   `tests/contract/browser/pin-right.browser.spec.ts > C-71 Right pinning [tanstack] [own]`,
   'tests/contract/browser/accessibility.browser.spec.ts > C-71 accessibility scan',
-  'tests/contract/browser/dom-contract-3-1.browser.spec.ts > C-72 the DOM with 3.1 features matches the DOM contract'
+  'tests/contract/browser/dom-contract-3-1.browser.spec.ts > C-72 the DOM with 3.1 features matches the DOM contract',
+  'tests/contract/browser/reorder.browser.spec.ts > C-73 Reorder handle [tanstack] [own]',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-73 accessibility scan',
+  // `moveColumn` is its own test, so the other C-44 tests still compare.
+  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

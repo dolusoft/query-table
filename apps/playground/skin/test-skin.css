@@ -406,6 +406,46 @@ td:has(> .qt-right-panel-button) {
   background-color: var(--border);
 }
 
+/* own: reorder handle, a grip before the header text. `touch-action: none`
+   keeps a touch drag from scrolling the page (C-73). */
+.qt-reorder-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: 0.25rem;
+  vertical-align: middle;
+  border-radius: calc(var(--radius) - 4px);
+  color: var(--muted-foreground);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  user-select: none;
+
+  &:hover {
+    color: var(--foreground);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+}
+/* own: the column being dragged fades. */
+.qt-table th[data-dragging] {
+  opacity: 0.5;
+
+  & > .qt-reorder-handle {
+    cursor: grabbing;
+  }
+}
+/* own: the drop target, a line on its left: the column goes before it. */
+.qt-table th[data-drop='before'] {
+  box-shadow: inset 2px 0 0 var(--ring);
+}
+/* own: the drop target, a line on its right: the column goes after it. */
+.qt-table th[data-drop='after'] {
+  box-shadow: inset -2px 0 0 var(--ring);
+}
+
 /* own: sorting, a ghost button around the header text. A Button would
    bring its height and padding into the header cell, so the sort button
    keeps the text's box and borrows only the ghost hover and focus ring. */

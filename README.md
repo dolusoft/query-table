@@ -151,6 +151,10 @@ where `columns` turns each saved number into `Column.width` (for example `'180px
 }
 ```
 
+## Reordering columns
+
+With `reorderable` every header cell starts with a `qt-reorder-handle` button (opt a column out with `reorderable: false`). Drag it onto another header of the same region (pinned left, not pinned, pinned right), or focus it and press ArrowLeft or ArrowRight to move one position, Home or End to go to the ends of the region; Escape cancels a drag. The table emits `update:columns` with reason `order` and draws the new order once you write it back (`v-model:columns`); the focus stays on the moved handle. While dragging, the dragged header carries `data-dragging` and the target `data-drop="before"` or `"after"`: draw the indicator with your CSS, and give the handle `touch-action: none` so a touch drag does not scroll the page. The table announces nothing: say the new position from your `update:columns` listener.
+
 ## Header slot
 
 `header-<field>` replaces the title (or sort button) of a header cell. It receives `{ column, sortDirection, sortable, toggleSort }`; call `toggleSort` from your own button to keep sorting.

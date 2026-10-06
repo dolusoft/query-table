@@ -45,6 +45,7 @@ const columns = shallowRef<Column[]>(initialColumns)
 
 - A consumer that does not write back sees the old layout, and nothing is emitted on mount or when you change `columns` yourself.
 - Moving stays inside the column's region (pinned left, not pinned, pinned right); changing the region is pinning.
+- With `reorderable` every header cell starts with a `button.qt-reorder-handle` (opt a column out with `reorderable: false`, name it with `labels.moveColumn`). Drag it, or focus it and press ArrowLeft/ArrowRight (one position), Home or End (the region's ends): one `update:columns` with reason `order` per drop or key. While dragging, the table only sets `data-dragging` on the dragged header and `data-drop="before|after"` on the target; Escape cancels. Give the handle `touch-action: none` in your CSS. The focus stays on the moved handle after you write back; the table draws no live region, so announce the new position from `update:columns` yourself.
 - Showing a hidden column again is yours: write `columns` without `hide` from your own column picker.
 - Keep `columns` in a `shallowRef`: the table emits a new array for every change, so nothing needs to watch its inside.
 - The sides are physical (`left`, `right`): an LTR layout is assumed.

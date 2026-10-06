@@ -1,6 +1,7 @@
 import { inject, provide, type InjectionKey } from 'vue'
 
 import type { TableLabels } from '../contract'
+import type { ColumnReorder } from '../reorder/use-column-reorder'
 import type { ColumnResize } from '../resize/use-column-resize'
 import type {
   QueryTableFilters,
@@ -11,9 +12,9 @@ import type {
 
 /**
  * What the header parts call: the filter inputs, the sort gate and the
- * layout actions of the composable, the resize actions and the labels. Only
- * actions and getters travel here; data (`columns`, `query`) comes down as
- * props.
+ * layout actions of the composable, the resize and reorder actions and the
+ * labels. Only actions and getters travel here; data (`columns`, `query`)
+ * comes down as props.
  */
 export interface TableContext {
   filters: QueryTableFilters
@@ -21,6 +22,8 @@ export interface TableContext {
   /** The `control` of the header and filter-menu slots (C-70). */
   layout: QueryTableLayout
   resize: ColumnResize
+  /** The reorder handles: drag, keys and the drag preview (C-73). */
+  reorder: ColumnReorder
   /** The select-all checkbox of the selection column (C-59). */
   selection: Pick<
     QueryTableSelection<object>,

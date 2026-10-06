@@ -193,7 +193,7 @@ export const features: Feature[] = [
     group: 'open',
     title: 'Column order',
     summary:
-      'Move a column within its region from a menu (`control.move`); drag and keyboard come with `reorderable`.',
+      'Move a column within its region by dragging its handle, with the arrow keys, Home and End, or from a menu (`control.move`). The table emits `update:columns`.',
     tanstack: 'column-ordering',
     component: 'yes',
     tanstackPath: 'yes',

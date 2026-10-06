@@ -169,7 +169,7 @@ export const usedTanstackFeatures: Array<{
   {
     feature: 'columnOrderingFeature',
     guide: 'column-ordering',
-    role: 'The order slice, a projection of the order of `columns`; `control.move()` becomes `update:columns`.'
+    role: 'The order slice, a projection of the order of `columns`; `control.move()` and the reorder handle (drag, arrow keys, Home, End) become `update:columns`.'
   },
   {
     feature: 'columnPinningFeature',

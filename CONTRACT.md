@@ -22,6 +22,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
 | `resizable` | `boolean` |  | `false` | Draw a resize handle in the header cells (needs column `resizable`). Defaults to `false`. The table emits `columnResize`; the consumer writes the width back to `Column.width`. |
+| `reorderable` | `boolean` |  | `false` | Draw a reorder handle at the start of the header cells (needs column `reorderable`): dragging it, or the arrow keys, Home and End on it, move a column within its region and emit `update:columns`. Defaults to `false`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. A row can start expanded with its `isExpanded` field (see `rows`). Defaults to `false`. |
@@ -153,6 +154,8 @@ export interface Column {
   pinned?: 'left' | 'right'
   /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
   resizable?: boolean
+  /** Show a reorder handle for this column (needs table `reorderable`). Defaults to `true`. */
+  reorderable?: boolean
   /**
    * Smallest width a resize gives, in pixels. Defaults to `40`. A value that
    * is not a finite number above `0` counts as unset.
@@ -256,6 +259,12 @@ export interface TableProps<
    * the width back to `Column.width`.
    */
   resizable?: boolean
+  /**
+   * Draw a reorder handle at the start of the header cells (needs column
+   * `reorderable`): dragging it, or the arrow keys, Home and End on it, move
+   * a column within its region and emit `update:columns`. Defaults to `false`.
+   */
+  reorderable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -302,6 +311,8 @@ export interface TableLabels {
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
   resizeColumn: (column: string) => string
+  /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
+  moveColumn: (column: string) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */
@@ -848,7 +859,7 @@ The table ships no CSS and takes no styling props. It writes three inline styles
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -896,7 +907,7 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 #### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and resize handles and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs, resize handles and reorder handles and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
 
 #### C-45 Header semantics
 
@@ -912,7 +923,7 @@ Every cell of a column pinned to the left (header, body, footer) and, while some
 
 #### C-48 Resize handle
 
-With the table's `resizable` and the column's `resizable` not `false`, the header cell ends with a `div.qt-resize-handle`, outside the sort button and the filter row. It is focusable (`tabindex="0"`), `role="separator"` with `aria-orientation="vertical"`, named by `labels.resizeColumn`, and reports the width in pixels: `aria-valuenow` is the rendered width (the preview during a drag), `aria-valuemin` the column's `minWidth` (default 40), `aria-valuemax` its `maxWidth` or, without one, the larger of the width and the table's width. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`.
+With the table's `resizable` and the column's `resizable` not `false`, the header cell ends with a `div.qt-resize-handle`, outside the sort button and the filter row. It is focusable (`tabindex="0"`), `role="separator"` with `aria-orientation="vertical"`, named by `labels.resizeColumn`, and reports the width in pixels: `aria-valuenow` is the rendered width (the preview during a drag), `aria-valuemin` the column's `minWidth` (default 40), `aria-valuemax` its `maxWidth` or, without one, the larger of the width and the table's width. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`. The reorder handle (C-73) is the first child of the header cell; the resize handle stays the last.
 
 #### C-49 Dragging a handle
 
@@ -1046,6 +1057,12 @@ With the 3.1 features on, the rendered DOM still uses only the classes, attribut
 
 Source: own
 
+#### C-73 Reorder handle
+
+With the table's `reorderable` and the column's `reorderable` not `false`, the header cell starts with a `button.qt-reorder-handle` (`type="button"`), named by `labels.moveColumn` and carrying `aria-keyshortcuts="ArrowLeft ArrowRight Home End"`. Pressing the primary button on it focuses it and captures the pointer; while it moves, the dragged header cell carries `data-dragging` and the visible header cell of the same region under the pointer carries `data-drop` (`before` or `after`, by the half the pointer is over). Nothing is emitted and nothing is moved in the DOM during the drag. Releasing emits one `update:columns` with reason `order` that places the column before or after that cell (C-69); a release where the order stays emits nothing. Escape, a `pointercancel`, a lost pointer capture or a change of `columns` from outside ends the drag without an event and drops the attributes. On a focused handle, ArrowLeft and ArrowRight move the column one visible position in its region (C-69), Home and End to the start and the end of the region; each key is one `update:columns`, and a key at the edge does nothing. When the consumer writes the new order back and the handle had the focus, the focus returns to the handle of the same column. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`. The table draws no live region: announcing the new position is the consumer's, from `update:columns`.
+
+Source: tanstack, own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1073,6 +1090,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-empty-row` | `tbody > tr` | Row holding the `empty` slot. |
 | `qt-loading-row` | `tbody > tr` | Last row of the body while `loading` is on, holding the `loading` slot in one cell that spans every column. Place it over the rows in your CSS. |
 | `qt-resize-handle` | `th > div` | Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS. |
+| `qt-reorder-handle` | `th > button` | Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS. |
 | `qt-footer` | `tfoot` | Totals block. |
 | `qt-pagination` | `div` | Block around the `pagination` slot. |
 
@@ -1091,6 +1109,8 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-selected` | `tbody > tr` | Present on a selected row (C-64). |
 | `data-pinned` | `th, td` | Empty on every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, on the utility cells; the cell also carries `--qt-pin-left`. `right` on a column pinned to the right (C-71). |
 | `data-pinned` | `th[data-pinned="right"], td[data-pinned="right"]` | Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71). |
+| `data-dragging` | `th` | On the header cell of the column being dragged (C-73). |
+| `data-drop` | `th` | `before` or `after`: the header cell the dragged column would be placed next to (C-73). |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 
 ### Inline style

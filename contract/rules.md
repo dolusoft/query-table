@@ -190,7 +190,7 @@ The table ships no CSS and takes no styling props. It writes three inline styles
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -238,7 +238,7 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 ### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and resize handles and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs, resize handles and reorder handles and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
 
 ### C-45 Header semantics
 
@@ -254,7 +254,7 @@ Every cell of a column pinned to the left (header, body, footer) and, while some
 
 ### C-48 Resize handle
 
-With the table's `resizable` and the column's `resizable` not `false`, the header cell ends with a `div.qt-resize-handle`, outside the sort button and the filter row. It is focusable (`tabindex="0"`), `role="separator"` with `aria-orientation="vertical"`, named by `labels.resizeColumn`, and reports the width in pixels: `aria-valuenow` is the rendered width (the preview during a drag), `aria-valuemin` the column's `minWidth` (default 40), `aria-valuemax` its `maxWidth` or, without one, the larger of the width and the table's width. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`.
+With the table's `resizable` and the column's `resizable` not `false`, the header cell ends with a `div.qt-resize-handle`, outside the sort button and the filter row. It is focusable (`tabindex="0"`), `role="separator"` with `aria-orientation="vertical"`, named by `labels.resizeColumn`, and reports the width in pixels: `aria-valuenow` is the rendered width (the preview during a drag), `aria-valuemin` the column's `minWidth` (default 40), `aria-valuemax` its `maxWidth` or, without one, the larger of the width and the table's width. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`. The reorder handle (C-73) is the first child of the header cell; the resize handle stays the last.
 
 ### C-49 Dragging a handle
 
@@ -387,3 +387,9 @@ Source: tanstack, own
 With the 3.1 features on, the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entries the contract marks `addedBy: 'C-71'`, `'C-73'` and `'C-74'` are rendered, each on its element, by the state that adds it. With every 3.1 feature off the DOM is the one C-40 checks.
 
 Source: own
+
+### C-73 Reorder handle
+
+With the table's `reorderable` and the column's `reorderable` not `false`, the header cell starts with a `button.qt-reorder-handle` (`type="button"`), named by `labels.moveColumn` and carrying `aria-keyshortcuts="ArrowLeft ArrowRight Home End"`. Pressing the primary button on it focuses it and captures the pointer; while it moves, the dragged header cell carries `data-dragging` and the visible header cell of the same region under the pointer carries `data-drop` (`before` or `after`, by the half the pointer is over). Nothing is emitted and nothing is moved in the DOM during the drag. Releasing emits one `update:columns` with reason `order` that places the column before or after that cell (C-69); a release where the order stays emits nothing. Escape, a `pointercancel`, a lost pointer capture or a change of `columns` from outside ends the drag without an event and drops the attributes. On a focused handle, ArrowLeft and ArrowRight move the column one visible position in its region (C-69), Home and End to the start and the end of the region; each key is one `update:columns`, and a key at the edge does nothing. When the consumer writes the new order back and the handle had the focus, the focus returns to the handle of the same column. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`. The table draws no live region: announcing the new position is the consumer's, from `update:columns`.
+
+Source: tanstack, own

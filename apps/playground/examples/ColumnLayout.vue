@@ -11,7 +11,11 @@ import { shallowRef } from 'vue'
 import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
-import { type Column, QueryTable } from '@dolusoft/query-table'
+import {
+  type Column,
+  type ColumnChangeReason,
+  QueryTable
+} from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
@@ -27,6 +31,10 @@ import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
 //
 // Hiding is in the header; showing again is the page's own column picker
 // above the table, which writes `columns` without `hide`.
+//
+// With `reorderable` every header starts with a handle: drag it, or focus it
+// and press the arrow keys, Home or End. The table draws no live region, so
+// the page announces the new position itself, from `update:columns`.
 const columns = shallowRef<Column[]>(wideColumns())
 const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
 
@@ -34,6 +42,31 @@ const withoutHide = (column: Column): Column => {
   const copy = { ...column }
   delete copy.hide
   return copy
+}
+
+/** The columns as the table draws them: left-pinned, the rest, right-pinned. */
+const drawn = (list: Column[]) => {
+  const shown = list.filter(column => !column.hide)
+  return [
+    ...shown.filter(column => column.pinned === 'left'),
+    ...shown.filter(column => !column.pinned),
+    ...shown.filter(column => column.pinned === 'right')
+  ]
+}
+
+const announcement = shallowRef('')
+
+// Only an order change is announced. The moved column is the one whose
+// header holds the focus: a drag and a key focus the handle, and the move
+// buttons sit in the same header cell.
+const announce = (next: Column[], reason: ColumnChangeReason) => {
+  const th = document.activeElement?.closest<HTMLElement>('th[data-field]')
+  const list = drawn(next)
+  const at = list.findIndex(column => column.field === th?.dataset.field)
+  if (reason === 'order' && at >= 0) {
+    const name = list[at].title ?? list[at].field
+    announcement.value = `${name} moved to position ${at + 1} of ${list.length}`
+  }
 }
 
 const setShown = (field: string, on: boolean) => {
@@ -74,6 +107,8 @@ const setShown = (field: string, on: boolean) => {
         row-key="id"
         sortable
         filterable
+        reorderable
+        @update:columns="announce"
       >
         <template #filter-menu="menu">
           <FilterMenu :menu="menu" />
@@ -142,5 +177,7 @@ const setShown = (field: string, on: boolean) => {
         </template>
       </QueryTable>
     </div>
+    <!-- The page's own live region (C-73): the table announces nothing. -->
+    <p aria-live="polite" class="sr-only">{{ announcement }}</p>
   </div>
 </template>

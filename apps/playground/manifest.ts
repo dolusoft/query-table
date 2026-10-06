@@ -161,10 +161,10 @@ export const pages: PlaygroundPage[] = [
     id: 'column-layout',
     title: 'Column layout',
     summary:
-      'Hide, show, move and pin columns. The table emits a new `columns` array with `update:columns`; the page writes it back with `v-model:columns`.',
+      'Hide, show, move and pin columns; drag a header handle or press the arrow keys on it to reorder. The table emits a new `columns` array with `update:columns`; the page writes it back with `v-model:columns` and announces the new position itself.',
     example: 'ColumnLayout',
     api: {
-      props: ['columns'],
+      props: ['columns', 'reorderable', 'labels'],
       emits: ['update:columns'],
       slots: ['header-<field>', 'filter-menu'],
       types: [
@@ -174,7 +174,7 @@ export const pages: PlaygroundPage[] = [
         'FilterMenuSlotProps'
       ]
     },
-    rules: ['C-67', 'C-68', 'C-69', 'C-70']
+    rules: ['C-67', 'C-68', 'C-69', 'C-70', 'C-72', 'C-73']
   },
   {
     id: 'column-resizing',

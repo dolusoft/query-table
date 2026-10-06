@@ -74,6 +74,8 @@ export interface Column {
   pinned?: 'left' | 'right'
   /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
   resizable?: boolean
+  /** Show a reorder handle for this column (needs table `reorderable`). Defaults to `true`. */
+  reorderable?: boolean
   /**
    * Smallest width a resize gives, in pixels. Defaults to `40`. A value that
    * is not a finite number above `0` counts as unset.
@@ -177,6 +179,12 @@ export interface TableProps<
    * the width back to `Column.width`.
    */
   resizable?: boolean
+  /**
+   * Draw a reorder handle at the start of the header cells (needs column
+   * `reorderable`): dragging it, or the arrow keys, Home and End on it, move
+   * a column within its region and emit `update:columns`. Defaults to `false`.
+   */
+  reorderable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -223,6 +231,8 @@ export interface TableLabels {
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
   resizeColumn: (column: string) => string
+  /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
+  moveColumn: (column: string) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */

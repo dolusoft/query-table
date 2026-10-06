@@ -68,5 +68,14 @@ export const renderColumnsTable = async (
     }
   })
   const screen = await render(Host)
-  return { screen, columns: () => current.value, changes, updates }
+  return {
+    screen,
+    columns: () => current.value,
+    /** Writes `columns` from outside, as the consumer's own code would. */
+    setColumns: (next: Column[]) => {
+      current.value = next
+    },
+    changes,
+    updates
+  }
 }

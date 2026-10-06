@@ -123,6 +123,13 @@ export const domClasses: ClassEntry[] = [
     description:
       'Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS.'
   },
+  {
+    name: 'qt-reorder-handle',
+    on: 'th > button',
+    description:
+      'Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS.',
+    addedBy: 'C-73'
+  },
   { name: 'qt-footer', on: 'tfoot', description: 'Totals block.' },
   {
     name: 'qt-pagination',
@@ -194,6 +201,19 @@ export const domAttributes: AttributeEntry[] = [
     description:
       'Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71).',
     addedBy: 'C-71'
+  },
+  {
+    name: 'data-dragging',
+    on: 'th',
+    description: 'On the header cell of the column being dragged (C-73).',
+    addedBy: 'C-73'
+  },
+  {
+    name: 'data-drop',
+    on: 'th',
+    description:
+      '`before` or `after`: the header cell the dragged column would be placed next to (C-73).',
+    addedBy: 'C-73'
   },
   {
     name: 'aria-sort',

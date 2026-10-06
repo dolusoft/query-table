@@ -60,6 +60,7 @@ export interface Column {
     maxWidth?: number;
     minWidth?: number;
     pinned?: 'left' | 'right';
+    reorderable?: boolean;
     resizable?: boolean;
     sortable?: boolean;
     title?: string;
@@ -330,6 +331,7 @@ export interface TableLabels {
     expandRow: string;
     filterInput: (column: string) => string;
     filterOptions: (column: string) => string;
+    moveColumn: (column: string) => string;
     openRightPanel: string;
     resizeColumn: (column: string) => string;
     selectAllRows: string;
@@ -349,6 +351,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     loading?: boolean;
     pagination?: PaginationOptions;
     query: Q;
+    reorderable?: boolean;
     resizable?: boolean;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rows?: T[];

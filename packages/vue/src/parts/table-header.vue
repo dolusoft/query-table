@@ -10,6 +10,7 @@ import type {
   Query
 } from '../contract'
 import FilterCell from './filter-cell.vue'
+import ReorderHandle from './reorder-handle.vue'
 import ResizeHandle from './resize-handle.vue'
 import SortButton from './sort-button.vue'
 import { sideOf } from '../columns/column-layout'
@@ -46,7 +47,17 @@ defineSlots<{
 
 const given = (name: string) => props.slotNames.split(' ').includes(name)
 
-const { filters, sort, layout, resize, selection, labels } = useTableContext()
+const { filters, sort, layout, resize, reorder, selection, labels } =
+  useTableContext()
+
+// C-73: the drag preview is attributes only; nothing moves until release.
+const dragAttrs = (column: Column) => {
+  const drag = reorder.dragging.value
+  return {
+    'data-dragging': drag?.field === column.field ? '' : undefined,
+    'data-drop': drag?.target === column.field ? drag.place : undefined
+  }
+}
 
 // A computed: the header re-renders when the answer changes, not with every
 // pending filter draft.
@@ -146,8 +157,10 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
       :data-sortable="sort.isSortable(column) ? '' : undefined"
       :data-filtered="isFiltered(column) ? '' : undefined"
       :aria-sort="ariaSort(sort.sortOf(column))"
-      v-bind="cellAttrs(column)"
+      v-bind="{ ...cellAttrs(column), ...dragAttrs(column) }"
     >
+      <!-- C-73: the reorder handle is the first child, the resize handle the last. -->
+      <reorder-handle v-if="reorder.isReorderable(column)" :column="column" />
       <!-- C-51: the header slot replaces the label only. -->
       <slot
         v-if="given(`header-${column.field}`)"

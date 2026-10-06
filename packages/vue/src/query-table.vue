@@ -26,6 +26,7 @@ import TableHeader from './parts/table-header.vue'
 import TablePagination from './parts/table-pagination.vue'
 import { utilityKey, type Utility } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
+import { useColumnReorder } from './reorder/use-column-reorder'
 import { useColumnResize } from './resize/use-column-resize'
 import { useQueryTable } from './use-query-table'
 
@@ -42,6 +43,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   sortable: false,
   filterable: false,
   resizable: false,
+  reorderable: false,
   filterDebounce: 100,
   hasSubtable: false,
   hasRightPanel: false,
@@ -137,11 +139,19 @@ const resize = useColumnResize({
   }
 })
 
+const reorder = useColumnReorder({
+  reorderable: () => props.reorderable,
+  table: tableEl,
+  layout: state.layout,
+  columns: () => props.columns
+})
+
 provideTableContext({
   filters,
   sort,
   layout: state.layout,
   resize,
+  reorder,
   selection: rowSelection,
   labels: () => labels.value
 })

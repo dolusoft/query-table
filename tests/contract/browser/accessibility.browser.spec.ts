@@ -89,3 +89,22 @@ describe.each<Theme>(['light', 'dark'])(
     })
   }
 )
+
+describe.each<Theme>(['light', 'dark'])(
+  'C-73 accessibility scan (axe) with reorder handles, %s theme',
+  theme => {
+    test('finds no violation with reorder and resize handles and a pinned column', async () => {
+      await renderTable({
+        ...everything,
+        theme,
+        reorderable: true,
+        resizable: true,
+        columns: everything.columns.map(column =>
+          column.field === 'age' ? { ...column, pinned: 'right' } : column
+        )
+      })
+      expect(document.querySelector('.qt-reorder-handle')).not.toBeNull()
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+    })
+  }
+)
