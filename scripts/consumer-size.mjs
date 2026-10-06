@@ -1,7 +1,7 @@
 // `pnpm measure:consumer-size`: how much a Vue application that uses
 // `@dolusoft/query-table` ships (P8). Builds minified apps from
-// fixtures/consumer against the built `dist/` of the packages, through their
-// `exports` maps, and subtracts the same app without the table
+// fixtures/consumer against aliases to the Vue package's built `dist/` entry
+// files, and subtracts the same app without the table
 // (`vue-only`): what is left is the package with TanStack, the core and the
 // protocol, Vue excluded. Two fixtures: `composable` (`useQueryTable()` with
 // the consumer's own markup) and `component` (`QueryTable`). Writes
@@ -40,7 +40,7 @@ const buildApp = async name => {
     root,
     configFile: false,
     logLevel: 'warn',
-    // The package name resolves through `exports` to dist/; its own
+    // The aliases point directly to the built entry files in dist/; their
     // dependencies (core, protocol, TanStack) resolve from packages/vue.
     resolve: {
       alias: [

@@ -26,7 +26,7 @@ import {
 declare const process: { env: { NODE_ENV?: string } }
 
 export interface UseLocalQueryOptions<T> {
-  /** Every row of the source context. Replace a shallowRef's array instead of mutating it. */
+  /** Every row of the source context. In-place changes in a deeply reactive array are seen; replace a shallowRef's array to trigger evaluation. */
   allRows: MaybeRefOrGetter<readonly T[]>
   /** The consumer's query, read without writing or correcting it. */
   query: MaybeRefOrGetter<Query>

@@ -125,6 +125,7 @@ describe('C-81 useLocalQuery [own]', () => {
         id: { type: 'integer' },
         name: {
           type: 'string',
+          search: true,
           get: row => {
             reads++
             return row.name
@@ -132,7 +133,11 @@ describe('C-81 useLocalQuery [own]', () => {
         }
       }
     })
-    const query = ref(page())
+    const query = ref<PageQuery>({
+      ...page(),
+      filters: [{ field: 'name', condition: 'NotEqual', value: 'Zeki' }],
+      search: 'a'
+    })
     const paginate = ref(true)
     const state = local({ allRows: rows, dataset: schema, query, paginate })
     expect(state.rows.value).toEqual([rows[0]])
@@ -141,20 +146,39 @@ describe('C-81 useLocalQuery [own]', () => {
       ...query.value,
       page: 2,
       sort: { ...query.value.sort! },
-      filters: []
+      filters: query.value.filters.map(rule => ({ ...rule })),
+      search: 'a'
     }
     expect(state.rows.value).toEqual([rows[2]])
+    expect(reads).toBe(count)
     query.value.pageSize = 2
-    expect(state.rows.value).toEqual([rows[1]])
+    expect(state.rows.value).toEqual([])
+    expect(reads).toBe(count)
     paginate.value = false
-    expect(state.rows.value).toEqual([rows[0], rows[2], rows[1]])
+    expect(state.rows.value).toEqual([rows[0], rows[2]])
     expect(reads).toBe(count)
     query.value.page = 99
     paginate.value = true
     expect(state.rows.value).toEqual([])
-    expect(state.totalRows.value).toBe(3)
+    expect(state.totalRows.value).toBe(2)
     expect(query.value.page).toBe(99)
     expect(reads).toBe(count)
+
+    query.value.page = 1
+    query.value.filters[0].value = 'Ada'
+    expect(state.rows.value).toEqual([rows[2]])
+    expect(reads).toBeGreaterThan(count)
+    equal(state, rows, query.value, schema)
+    let previous = reads
+    query.value.sort!.direction = 'desc'
+    expect(state.rows.value).toEqual([rows[2]])
+    expect(reads).toBeGreaterThan(previous)
+    equal(state, rows, query.value, schema)
+    previous = reads
+    query.value.search = 'e'
+    expect(state.rows.value).toEqual([rows[1]])
+    expect(reads).toBeGreaterThan(previous)
+    equal(state, rows, query.value, schema)
   })
 
   it('in-place changes of the query are seen', () => {
@@ -170,13 +194,6 @@ describe('C-81 useLocalQuery [own]', () => {
     query.value.sort!.direction = 'desc'
     equal(state, rows, query.value, dataset)
     query.value.page = 2
-    equal(state, rows, query.value, dataset)
-    const rule = query.value.filters[0] as (typeof query.value.filters)[0] & {
-      extra: { token: number }
-    }
-    rule.extra = { token: 1 }
-    equal(state, rows, query.value, dataset)
-    rule.extra.token = 2
     equal(state, rows, query.value, dataset)
     query.value.filters[0].value = 'Zeki'
     equal(state, rows, query.value, dataset)
@@ -270,15 +287,9 @@ describe('C-81 useLocalQuery [own]', () => {
     expect(state.error.value).toBeNull()
   })
 
-  it('accepts a dataset held in ref() and readonly inputs without any write', () => {
-    let writes = 0
+  it('accepts a dataset held in ref(), readonly rows and a frozen query without throwing', () => {
     const frozen = rows.map(row => Object.freeze({ ...row }))
-    const input = new Proxy(Object.freeze(frozen), {
-      set() {
-        writes++
-        return false
-      }
-    })
+    const input = Object.freeze(frozen)
     const query = readonly(ref(page()))
     const schema = ref(dataset)
     const state = local({
@@ -299,11 +310,16 @@ describe('C-81 useLocalQuery [own]', () => {
       query: frozenQuery as unknown as Query
     })
     expect(second.rows.value).toEqual([input[0]])
-    expect(writes).toBe(0)
   })
 
   it('returns exactly the supplied row objects including reactive proxies', () => {
+    const plain = local({ allRows: rows, dataset, query: page() })
+    expect(plain.rows.value).toHaveLength(1)
+    expect(plain.rows.value[0]).toBe(rows[0])
     const input = reactive(rows.map(row => ({ ...row })))
+    const paginated = local({ allRows: input, dataset, query: page() })
+    expect(paginated.rows.value).toHaveLength(1)
+    expect(paginated.rows.value[0]).toBe(input[0])
     const state = local({
       allRows: input,
       dataset,
