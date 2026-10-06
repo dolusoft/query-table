@@ -21,8 +21,26 @@ export default defineConfig(({ mode }) => {
   const packageEntry = process.env.QT_TARGET
     ? resolve(process.env.QT_TARGET)
     : resolve(import.meta.dirname, 'src/index.ts')
+  // The v3 workspace packages answer with their source too (the same map as
+  // the `paths` of tsconfig.json).
+  const packages = resolve(import.meta.dirname, 'packages')
   const packageAlias = [
-    { find: /^@dolusoft\/query-table$/, replacement: packageEntry }
+    { find: /^@dolusoft\/query-table$/, replacement: packageEntry },
+    {
+      find: /^@dolusoft\/query-protocol$/,
+      replacement: resolve(packages, 'query-protocol/src/index.ts')
+    },
+    {
+      find: /^@dolusoft\/query-table-core$/,
+      replacement: resolve(packages, 'query-table-core/src/index.ts')
+    },
+    {
+      find: /^@dolusoft\/query-table-core\/([\w-]+)$/,
+      replacement: resolve(
+        packages,
+        'query-table-core/src/features/$1/index.ts'
+      )
+    }
   ]
   const skinAlias = {
     find: '@',
@@ -134,6 +152,9 @@ export default defineConfig(({ mode }) => {
               'src/**/*.spec.ts',
               'tests/**/*.spec.ts',
               'playground/**/*.spec.ts',
+              // The v3 packages: pure unit tests, no DOM needed.
+              'packages/*/src/**/*.spec.ts',
+              'packages/*/tests/**/*.spec.ts',
               // The TanStack feasibility spike of v3 (deleted at the end of PR-C).
               'spike/**/*.spec.ts'
             ],
