@@ -18,6 +18,8 @@ Layer direction: protocol → core → vue → playground. An import against tha
 
 A new package is opened only when it has a different dependency set or a different consumer.
 
+The K6 additions (2026-10-06) stay inside these three packages: the cursor mode and `search` of the query belong to the protocol, cursor paging and global search to `serverQueryFeature`, row selection (TanStack `rowSelectionFeature`, controlled `v-model:selection`) to the Vue package. Ownership of each is in ADR 0004.
+
 ## Consequences
 
 - Each package has its own manifest test, API report (api-extractor) and size budget.

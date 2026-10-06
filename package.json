@@ -78,6 +78,8 @@
     "@lucide/vue": "^1.52.0",
     "@microsoft/api-extractor": "^7.59.3",
     "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/table-core": "9.2.6",
+    "@tanstack/vue-table": "9.2.6",
     "@types/node": "^26.6.4",
     "@vitejs/devtools": "0.7.6",
     "@vitejs/devtools-rolldown": "0.7.6",

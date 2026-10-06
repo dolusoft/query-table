@@ -28,5 +28,6 @@ The gain is not less code. It is a TanStack-native path for consumers and an ext
 
 - 2.2.11 adds 10,792 B (minified + gzip) to a consumer application (`scripts/consumer-size.mjs`).
 - TanStack alone was estimated at about +9.8 KB gzip with three features and +13.6 KB with seven. The full Vue path is expected around 20–23 KB gzip.
+- The spike measured it with the same method (`spike/REPORT.md`): `@tanstack/vue-table` 9.2.6 with the six features the table uses adds 13,610 B; the two plugins add 1,787 B on top (composable 15,397 B); a headless core consumer adds 16,558 B; a protocol-only consumer 756 B. The v3 component lands between 16,213 B (the spike component, a lower bound) and 26,279 B (the 2.2 component next to the composable, an upper bound).
 
 P8 is rewritten around consumer fixtures (protocol only, each core entry, the composable, the component), each with its own budget. The numbers are fixed from the feasibility spike (`spike/REPORT.md`), not from estimates. The render budget keeps its meaning but is re-baselined for v3; render counts are not part of the equivalence gate.

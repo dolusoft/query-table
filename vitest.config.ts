@@ -133,7 +133,9 @@ export default defineConfig(({ mode }) => {
             include: [
               'src/**/*.spec.ts',
               'tests/**/*.spec.ts',
-              'playground/**/*.spec.ts'
+              'playground/**/*.spec.ts',
+              // The TanStack feasibility spike of v3 (deleted at the end of PR-C).
+              'spike/**/*.spec.ts'
             ],
             exclude: ['tests/contract/browser/**'],
             css: false
