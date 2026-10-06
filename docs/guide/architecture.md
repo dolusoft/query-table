@@ -96,6 +96,7 @@ Most of the core figure is TanStack itself (the stock features the fixture uses)
 | [0004](../decisions/0004-state-ownership.md)                   | The consumer owns lasting state; TanStack holds projections; hybrid table  |
 | [0005](../decisions/0005-composable-and-component.md)          | `useQueryTable` and `QueryTable`, and the consumer fence                   |
 | [0006](../decisions/0006-release-3.md)                         | Releasing 3.0.0: the `next` branch and the equivalence gate                |
+| [0007](../decisions/0007-column-layout-row-pinning.md)         | Column layout and row pinning (3.1)                                        |
 
 ## Diagram as text
 
