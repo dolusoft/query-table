@@ -18,7 +18,7 @@ import {
 } from '@/ui/sidebar'
 
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
-import { repositoryUrl, version } from './home/home-content'
+import { repositoryUrl } from './home/home-content'
 import { pages } from './manifest'
 import DocSearch from './search/DocSearch.vue'
 import ThemeToggle from './shell/ThemeToggle.vue'
@@ -116,7 +116,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
         class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-muted-foreground sm:px-6"
       >
         <p>
-          Query Table v{{ version }} ·
+          Query Table ·
           <a
             :href="repositoryUrl"
             target="_blank"
