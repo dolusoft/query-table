@@ -1,4 +1,10 @@
-import type { FilterRule, FilterValue, TableQuery } from '@dolusoft/query-table'
+import type {
+  CursorQuery,
+  FilterRule,
+  FilterValue,
+  PageCursors,
+  TableQuery
+} from '@dolusoft/query-table'
 
 // A stand-in for a real server: it evaluates the query the table emits
 // (filters, sort, page) over an in-memory list. The table never filters or
@@ -93,7 +99,7 @@ const matches = (row: object, rule: FilterRule): boolean => {
 /** The rows that pass `query.filters`, sorted by `query.sort`; not paged. */
 export const filterDemoRows = <R extends object>(
   allRows: readonly R[],
-  query: TableQuery
+  query: Pick<TableQuery, 'filters' | 'sort'>
 ): R[] => {
   const groups = new Map<string, FilterRule[]>()
   for (const rule of query.filters) {
@@ -137,5 +143,47 @@ export const queryDemoRows = <R extends object>(
   return {
     rows: filtered.slice(offset, offset + query.pageSize),
     totalRows: filtered.length
+  }
+}
+
+/**
+ * Rows whose name or city holds the search text, case-insensitive: what this
+ * demo server matches a global search against (the server decides, C-58).
+ */
+export const searchDemoRows = <R extends object>(
+  rows: readonly R[],
+  search: string | undefined
+): R[] => {
+  const needle = search?.trim().toLowerCase()
+  if (!needle) {
+    return [...rows]
+  }
+  return rows.filter(row =>
+    ['name', 'city'].some(field => {
+      const value = valueOf(row, field)
+      return typeof value === 'string' && value.toLowerCase().includes(needle)
+    })
+  )
+}
+
+/**
+ * One cursor page (C-56). A cursor is the base64 offset of the page it leads
+ * to; the table never reads inside it. No total: a cursor server often does
+ * not count.
+ */
+export const cursorDemoPage = <R extends object>(
+  allRows: readonly R[],
+  query: CursorQuery
+) => {
+  const matching = searchDemoRows(filterDemoRows(allRows, query), query.search)
+  const offset = query.cursor ? Number(atob(query.cursor.token)) : 0
+  const end = offset + query.pageSize
+  const token = (at: number) => btoa(String(at))
+  return {
+    rows: matching.slice(offset, end),
+    cursors: {
+      next: end < matching.length ? token(end) : null,
+      prev: offset > 0 ? token(Math.max(0, offset - query.pageSize)) : null
+    } satisfies PageCursors
   }
 }

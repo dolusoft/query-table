@@ -15,7 +15,15 @@ const sizeId = useId()
 
 <template>
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <span class="page-info text-sm whitespace-nowrap text-muted-foreground"
+    <!-- Cursor paging has no page number: the server sends cursors only. -->
+    <span
+      v-if="page.cursorMode"
+      class="page-info text-sm whitespace-nowrap text-muted-foreground"
+      >Cursor paging</span
+    >
+    <span
+      v-else
+      class="page-info text-sm whitespace-nowrap text-muted-foreground"
       >Page {{ page.page }} of {{ page.pageCount ?? '?' }}</span
     >
     <div class="flex flex-wrap items-center gap-2">

@@ -263,6 +263,40 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-01', 'C-02', 'C-04', 'C-13', 'C-14', 'C-19', 'C-33']
   },
   {
+    id: 'search-selection-cursors',
+    title: 'Search, selection & cursor paging',
+    summary:
+      'A cursor-paged query (`cursor` key) with the server’s `cursors` passed back, a toolbar search applied after `searchDebounce`, and a checkbox column bound to `v-model:selection`.',
+    example: 'SearchSelectionCursors',
+    api: {
+      props: ['cursors', 'searchDebounce', 'selection', 'query'],
+      emits: ['update:selection', 'update:query'],
+      slots: ['toolbar', 'pagination'],
+      types: [
+        'CursorQuery',
+        'CursorRequest',
+        'PageCursors',
+        'Query',
+        'RowSelection',
+        'ToolbarSlotProps',
+        'PaginationSlotProps'
+      ]
+    },
+    rules: ['C-56', 'C-57', 'C-58', 'C-59', 'C-63', 'C-64', 'C-65']
+  },
+  {
+    id: 'tanstack-path',
+    title: 'TanStack path',
+    summary:
+      'No `QueryTable`: shadcn-vue’s Table drawn from `useTable` with `serverQueryFeature` and `filterInputFeature`. The plugins own the query handlers; the markup is the page’s. `useQueryTable()` is the step between: the same state without the markup.',
+    example: 'TanstackPath',
+    api: {
+      functions: ['useQueryTable'],
+      types: ['Query', 'QueryChangeReason']
+    },
+    rules: ['C-60', 'C-61', 'C-62']
+  },
+  {
     id: 'labels',
     title: 'Labels & accessibility',
     summary:
@@ -275,20 +309,4 @@ export const pages: PlaygroundPage[] = [
     },
     rules: ['C-22', 'C-44', 'C-45']
   }
-]
-
-/**
- * Rules of the v3 core (packages/query-table-core) that the 2.2 component
- * does not implement: cursor paging, search, selection, plugin ownership and
- * dispose. They have no page yet; PR-C, which puts the component on the
- * core, maps them to pages and empties this list.
- */
-export const coreOnlyRules: string[] = [
-  'C-56',
-  'C-57',
-  'C-58',
-  'C-59',
-  'C-60',
-  'C-61',
-  'C-62'
 ]

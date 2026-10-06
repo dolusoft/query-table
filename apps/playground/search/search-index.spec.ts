@@ -12,7 +12,7 @@ import {
 } from './search-index'
 import api from '../../../contract/api.json'
 import { homeSections } from '../home/home-content'
-import { coreOnlyRules, pages } from '../manifest'
+import { pages } from '../manifest'
 
 // The search index is built from contract/api.json and the manifest: every
 // API member and rule must be findable, on the page that documents it.
@@ -35,7 +35,7 @@ describe('documentation search index', () => {
 
   it('contains every rule with its text', () => {
     const rules = documents.filter(doc => doc.kind === 'rule')
-    const shown = api.rules.filter(rule => !coreOnlyRules.includes(rule.id))
+    const shown = api.rules
     for (const rule of shown) {
       const docs = rules.filter(
         candidate => candidate.title.split(' ')[0] === rule.id

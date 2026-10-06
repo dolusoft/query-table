@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { coreOnlyRules, pages, type PageApi } from './manifest'
+import { pages, type PageApi } from './manifest'
 import api from '../../contract/api.json'
 
 // The playground must show the whole public contract: every API member and
@@ -45,20 +45,9 @@ describe('playground manifest', () => {
   })
 
   it('maps every behavior rule to a page', () => {
-    const mapped = new Set([
-      ...pages.flatMap(page => page.rules),
-      ...coreOnlyRules
-    ])
+    const mapped = new Set(pages.flatMap(page => page.rules))
     const missing = api.rules.map(rule => rule.id).filter(id => !mapped.has(id))
     expect(missing).toEqual([])
-  })
-
-  it('lists as core-only only existing rules that no page shows', () => {
-    const known = new Set(api.rules.map(rule => rule.id))
-    const shown = new Set(pages.flatMap(page => page.rules))
-    expect(coreOnlyRules.filter(id => !known.has(id) || shown.has(id))).toEqual(
-      []
-    )
   })
 
   it('names only existing rules', () => {
