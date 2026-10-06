@@ -52,7 +52,7 @@ The classes in `contract/dom.ts` (all `qt-*`), its `data-*` attributes and `aria
 
 Why: consumer CSS depends on them. Markup that is not listed is markup nobody promised.
 
-Check: C-40 (`tests/contract/browser/dom-contract.browser.spec.ts`) and C-41 (`playground/skin/skin.spec.ts`).
+Check: C-40 (`tests/contract/browser/dom-contract.browser.spec.ts`) and C-41 (`apps/playground/skin/skin.spec.ts`).
 
 ## P7 Native semantics first, then ARIA; no hardcoded text
 
@@ -70,7 +70,7 @@ Size is not a goal in itself: a useful library may grow. A budget is the last me
 
 Why: tables with thousands of rows on a page are a real use, and TanStack moves the size of the package (ADR 0001). A regression that nobody measures ships; a budget measured on a different thing than the consumer pays is not a budget.
 
-Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture _(v3, PR-C)_); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
+Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture: the composable and the component); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
 
 ## P9 One small, typed surface per package
 
@@ -78,7 +78,7 @@ Each package has one entry per published path and one API report, nothing else. 
 
 Why: a version number only means something when the surface it versions is enumerable, and three packages released together must agree on one surface.
 
-Check: `pnpm api:check` (api-extractor, one report per package _(v3, PR-C)_; today `etc/query-table.api.md`) and `pnpm contract:check`.
+Check: `pnpm api:check` (api-extractor, one report per package: `packages/<name>/etc/*.api.md`) and `pnpm contract:check`.
 
 ## P10 Extension order: slot, event, prop, method; inside, plugin first
 
@@ -86,7 +86,7 @@ For the public API of `QueryTable`: a slot when the consumer draws something, an
 
 Why: slots and events keep the table thin; props and methods grow it. A behavior that lives in a plugin is usable without our component.
 
-Check: review, backed by the playground manifest: `playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. Each C-rule names its source (`tanstack` or `own`) in `contract/rules.md`.
+Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. Each C-rule names its source (`tanstack` or `own`) in `contract/rules.md`.
 
 ## P11 Dependencies are few, pinned and layered
 
@@ -102,7 +102,7 @@ A behavior change starts as a rule in `contract/rules.md`, gets a test that asse
 
 Why: a rule without a test rots, and a hand-edited document lies.
 
-Check: `tests/repo/contract-traceability.spec.ts`, `pnpm contract:check` and `playground/manifest.spec.ts`.
+Check: `tests/repo/contract-traceability.spec.ts`, `pnpm contract:check` and `apps/playground/manifest.spec.ts`.
 
 ## P13 Page layout is out of scope
 

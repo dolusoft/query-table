@@ -5,7 +5,7 @@
   "typescript": true,
   "tailwind": {
     "config": "",
-    "css": "playground/skin/theme.css",
+    "css": "apps/playground/skin/theme.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""

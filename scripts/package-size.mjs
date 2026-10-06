@@ -3,7 +3,7 @@
 // minified app (TanStack bundled) against the built `dist/` of the packages,
 // through their `exports` maps, and subtracts the empty baseline app. Writes
 // node_modules/.cache/measure/package-size.json. Run after
-// `pnpm build:packages`.
+// `pnpm build`.
 //
 // `--check` (CI) compares each gzip cost with scripts/package-size-budget.json
 // and exits 1 when one is over its budget or a budget is over the ceiling
@@ -35,7 +35,7 @@ for (const [name, dir] of Object.entries(packages)) {
     const path = join(dir, file)
     if (!existsSync(path)) {
       console.error(
-        `[package-size] ${path} is missing: run \`pnpm build:packages\` first`
+        `[package-size] ${path} is missing: run \`pnpm build\` first`
       )
       process.exit(1)
     }

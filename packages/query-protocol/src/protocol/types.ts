@@ -53,7 +53,7 @@ export type QueryChangeReason = (typeof queryChangeReasons)[number]
 export type ColumnType = (typeof columnTypes)[number]
 
 /** What the query has in both paging modes. */
-interface QueryBase {
+export interface QueryBase {
   pageSize: number
   /** `null` means unsorted. */
   sort: SortState | null
@@ -79,9 +79,15 @@ export type TableQuery = PageQuery
 
 /** Which page of a cursor-paged result to fetch (K6). */
 export interface CursorRequest {
-  /** A cursor the server answered with (`PageCursors`). */
+  /**
+   * A cursor from `PageCursors`. Opaque: it may hold JSON or base64 and has
+   * no length limit; only the server reads inside it.
+   */
   token: string
-  /** The side of the current page the cursor leads to. */
+  /**
+   * The side of the shown page the cursor leads to: `prev` asks for the page
+   * before it. Mapping this to the server's own direction is the consumer's.
+   */
   direction: (typeof cursorDirections)[number]
 }
 
@@ -102,8 +108,10 @@ export interface CursorQuery extends QueryBase {
 export type Query = PageQuery | CursorQuery
 
 /**
- * The cursors the server answered with for the page shown (cursor mode).
- * `null` means there is no page on that side.
+ * The cursors of the page shown (cursor mode). `next` comes from the server;
+ * `prev` may come from the server or from the consumer's own stack of earlier
+ * cursors, and the table does not tell them apart. `null` means there is no
+ * page on that side.
  */
 export interface PageCursors {
   next: string | null

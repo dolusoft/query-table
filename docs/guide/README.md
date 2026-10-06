@@ -7,7 +7,7 @@ Short, example-first guides for the v3 packages. Every code sample is a file und
 | [Protocol](protocol.md)                    | you write a backend, or need the shape of a query: page and cursor mode, filters, search, schema |
 | [TanStack plugins](tanstack-plugins.md)    | you use TanStack Table and want `serverQueryFeature` and `filterInputFeature`                   |
 | [Architecture](architecture.md)            | you want the layers, the state ownership, the size budgets and the reasons behind them          |
-| [Migrating to 3.0](migration-v3.md)        | you run 2.2.x today (draft; the Vue package section is completed in PR-C)                       |
+| [Migrating to 3.0](migration-v3.md)        | you run 2.2.x today (draft; includes the Vue package)                       |
 
 Where to start: a backend developer reads the protocol guide; a TanStack user reads the plugin guide; a `QueryTable` user reads the migration guide.
 

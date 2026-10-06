@@ -217,7 +217,7 @@ const searchAction = (table: AnyTable, updater: Updater<unknown>) => {
 
 /**
  * The header click (C-07): asc → desc → none from the base query, so two
- * calls in one tick are two steps (spike REPORT, scenario 5).
+ * calls in one tick are two steps (spike/REPORT.md at fb3485b, scenario 5).
  */
 const toggleQuerySorting = (column: AnyColumn) => {
   const { table } = column

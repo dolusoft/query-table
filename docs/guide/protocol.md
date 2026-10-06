@@ -575,4 +575,4 @@ export function describePaging(query: Query): string {
 
 - [Using the plugins with TanStack Table](tanstack-plugins.md), for the other side of the wire.
 - [Architecture](architecture.md), for how the three packages fit together.
-- `contract/rules.md` in the repository: every behavior of the table as a numbered rule (C-01 to C-62), each covered by a test.
+- `contract/rules.md` in the repository: every behavior of the table as a numbered rule (C-01 to C-66), each covered by a test.

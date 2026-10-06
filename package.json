@@ -1,21 +1,9 @@
 {
-  "name": "@dolusoft/query-table",
-  "version": "2.2.12",
-  "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter and paging changes.",
-  "private": false,
+  "name": "query-table-workspace",
+  "version": "3.0.0-next.0",
+  "description": "Workspace of Query Table: the protocol, core and Vue packages in packages/, the playground in apps/.",
+  "private": true,
   "type": "module",
-  "files": [
-    "dist"
-  ],
-  "sideEffects": false,
-  "main": "./dist/query-table.js",
-  "types": "./dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "default": "./dist/query-table.js"
-    }
-  },
   "engines": {
     "node": ">=22.12"
   },
@@ -35,21 +23,11 @@
     "url": "https://github.com/dolusoft/query-table/issues"
   },
   "homepage": "https://github.com/dolusoft/query-table#readme",
-  "keywords": [
-    "vue",
-    "vue3",
-    "table",
-    "datatable",
-    "server-side",
-    "pagination",
-    "sorting",
-    "filter"
-  ],
   "license": "MIT",
   "scripts": {
-    "dev": "vite -c playground/vite.config.ts",
-    "playground:build": "vite build -c playground/vite.config.ts",
-    "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/emit-type-extensions.mjs",
+    "dev": "vite -c apps/playground/vite.config.ts",
+    "playground:build": "vite build -c apps/playground/vite.config.ts",
+    "build": "pnpm -r build",
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run --project unit",
@@ -64,23 +42,23 @@
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
     "check:size": "node scripts/consumer-size.mjs --check",
     "equivalence": "node scripts/equivalence.mjs",
-    "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint && attw --pack . --profile esm-only",
+    "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint packages/query-protocol && publint packages/query-table-core && publint packages/vue && cd packages/query-protocol && attw --pack . --profile esm-only && cd ../query-table-core && attw --pack . --profile esm-only && cd ../vue && attw --pack . --profile esm-only",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
     "contract:check": "node scripts/gen-contract.mjs --check",
-    "api:check": "node scripts/check-dist-fresh.mjs && api-extractor run",
-    "api:update": "api-extractor run --local",
-    "build:packages": "pnpm --filter @dolusoft/query-protocol build && pnpm --filter @dolusoft/query-table-core build",
+    "api:check": "node scripts/check-dist-fresh.mjs && node scripts/api-report.mjs",
+    "api:update": "node scripts/api-report.mjs --local",
     "schema:gen": "node scripts/gen-schema.mjs",
     "schema:check": "node scripts/gen-schema.mjs --check",
     "check:deps": "node scripts/check-deps.mjs",
-    "check:packages": "publint packages/query-protocol && publint packages/query-table-core && cd packages/query-protocol && attw --pack . --profile esm-only && cd ../query-table-core && attw --pack . --profile esm-only",
-    "measure:package-size": "pnpm build:packages && node scripts/package-size.mjs",
-    "check:package-size": "node scripts/package-size.mjs --check"
+    "measure:package-size": "pnpm build && node scripts/package-size.mjs",
+    "check:package-size": "node scripts/package-size.mjs --check",
+    "pack-install": "node scripts/pack-install-test.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
+    "@fontsource-variable/geist": "^5.3.0",
     "@internationalized/date": "^3.12.4",
     "@lucide/vue": "^1.52.0",
     "@microsoft/api-extractor": "^7.59.3",
@@ -128,8 +106,5 @@
     "vue-eslint-parser": "^10.4.1",
     "vue-router": "^5.3.1",
     "vue-tsc": "^3.3.12"
-  },
-  "peerDependencies": {
-    "vue": "^3.5.0"
   }
 }

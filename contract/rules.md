@@ -219,7 +219,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 ### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop and are checked by C-66. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 ### C-41 Skin selectors
 
@@ -285,19 +285,19 @@ Source: own
 
 ### C-56 Cursor paging
 
-A query with a `cursor` key is in cursor mode: the server pages by opaque cursors and the total may be unknown. `cursor: null` asks for the first page, `{ token, direction }` for the page on that side of the one shown. The consumer passes the cursors its server answered with (`{ next, prev }`, `null` where there is no page). `nextPage` and `previousPage` emit reason `page` with the cursor on that side and change nothing else; they do nothing when that side has no cursor, and so does a jump to a page number. `canNext` and `canPrevious` say whether that side has a cursor.
+A query with a `cursor` key is in cursor mode: the server pages by opaque cursors and the total may be unknown. `cursor: null` asks for the first page, `{ token, direction }` for the page on that side of the one shown. The consumer passes the cursors of the page shown (`{ next, prev }`, `null` where there is no page): `next` from its server, `prev` from its server or from its own stack of earlier cursors; the table does not tell them apart. A token is opaque: it may hold JSON or base64 and has no length limit, and only the server reads inside it. `direction: 'prev'` means the consumer asks for the page before the one shown with that cursor; mapping the direction to the server's is the consumer's. `nextPage` and `previousPage` emit reason `page` with the cursor on that side and change nothing else; they do nothing when that side has no cursor, and so does a jump to a page number. `canNext` and `canPrevious` say whether that side has a cursor.
 
 Source: tanstack, own
 
 ### C-57 Cursor mode starts over
 
-In cursor mode a sort, a filter change, a page size change, a search and clearing all filters emit `cursor: null`: a cursor belongs to the order, filters and size it was answered for. In page mode the same actions go to `page: 1`, except a sort, which keeps the page (C-07).
+In cursor mode a sort, a filter change, a page size change, a search and clearing all filters emit `cursor: null`: a cursor belongs to the order, filters and size it was answered for. In page mode the same actions go to `page: 1`, except a sort, which keeps the page (C-07). Other inputs that invalidate a cursor (a time range, a set of sources) are outside the query: the consumer sets `cursor: null` itself when they change. A server that fixes the order of a cursor may ignore `sort`; the consumer then marks the columns `sortable: false`, so no header offers a sort that does nothing.
 
 Source: own
 
 ### C-58 Global search
 
-`search` is the text of a global search; the server decides what it matches. Setting it emits reason `search` with the text as given, spaces included, and `page: 1` (C-57 in cursor mode). Empty text removes the `search` key: an emitted query never holds `search: ''`, and an absent key and `''` mean the same. Setting the text the query already has emits nothing. A pending filter is applied first (C-14).
+`search` is the text of a global search; the server decides what it matches. Setting it emits reason `search` with the text as given, spaces included, and `page: 1` (C-57 in cursor mode). Empty text removes the `search` key: an emitted query never holds `search: ''`, and an absent key and `''` mean the same. Setting the text the query already has emits nothing. A pending filter is applied first (C-14). The core emits each text it is given; debouncing typed text is the Vue layer's, with a configurable delay, and a delay of `0` turns it off for a consumer that debounces on its own, so the text is never debounced twice.
 
 Source: tanstack, own
 
@@ -322,5 +322,29 @@ Source: own
 ### C-62 Dispose and isolation
 
 Each table keeps its plugin state to itself: an action on one table never flushes, stacks on or emits for another. Disposing a table clears its pending debounce timers and makes it inert: nothing it does later, a late timer included, emits an update or brings its state back.
+
+Source: own
+
+### C-63 Typed search is debounced
+
+The `toolbar` slot receives the search text to show (`search`: the text being typed, else `query.search`, else `''`), `setSearch` and `applySearch`. Text set with `setSearch` is applied `searchDebounce` milliseconds after the last call (default `300`), in one `search` update (C-58); blank text and a `searchDebounce` of `0` apply at once, so a consumer that debounces on its own is not debounced twice. `applySearch` applies a pending text now (Enter). A pending text is applied before a sort or page action, and a page action that it changed the query for is dropped, as with a pending filter (C-14). The typed text stays shown until the query answers with a new search.
+
+Source: own
+
+### C-64 Selection column
+
+With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row of the page is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows of the page and keeps the keys of other pages. The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
+
+Source: tanstack, own
+
+### C-65 Cursor paging controls
+
+With a `CursorQuery` the `pagination` slot receives `cursorMode: true`, `page: 1` and `pageCount: null`; `canPrevious` and `canNext` say whether `cursors` hold a cursor on that side. `nextPage` and `previousPage` emit a `page` update with the cursor of that side (C-56) and do nothing without one; `setPage` does nothing. `setPageSize` goes back to the first page (C-57).
+
+Source: tanstack, own
+
+### C-66 DOM contract of the selection column
+
+With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list.
 
 Source: own

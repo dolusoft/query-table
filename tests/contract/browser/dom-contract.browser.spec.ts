@@ -6,17 +6,15 @@ import { h } from 'vue'
 import type { FilterMenuSlotProps, TableQuery } from '@dolusoft/query-table'
 import QueryTable from '@dolusoft/query-table'
 
-import {
-  domAttributes,
-  domClasses,
-  domInlineStyles
-} from '../../../contract/dom'
+import { createCollector } from '../../support/dom-collector'
 import { columns, makeQuery, rows, rule } from '../../support/fixtures'
 
 // C-40: the table renders exactly the classes and attributes of the DOM
 // contract, and every entry of the contract shows up in some state. The table
 // is rendered bare: its own output only, no consumer styling or slot widgets
-// beyond the trigger it hands out.
+// beyond the trigger it hands out. Hooks that only v3 adds (the selection
+// column, C-64) carry `addedBy` in the contract and are checked by C-66; this
+// test runs without `selection`, so it holds for the 2.2.x baseline too.
 
 const slots = {
   'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger),
@@ -48,75 +46,7 @@ const filtered: TableQuery = makeQuery({
   filters: [rule('name', 'Contains', 'Name')]
 })
 
-/** Every element the table rendered in the current document. */
-const rendered = () => [
-  ...document.querySelectorAll('.qt-datatable, .qt-datatable *')
-]
-
-interface Seen {
-  classes: Set<string>
-  /** attribute name -> elements that carry it */
-  attributes: Map<string, Element[]>
-  styled: Element[]
-}
-
-const seen: Seen = { classes: new Set(), attributes: new Map(), styled: [] }
-const unknownClasses: string[] = []
-const unmatchedClasses: string[] = []
-const unknownAttributes: string[] = []
-const unmatchedAttributes: string[] = []
-
-const knownClass = new Map(domClasses.map(entry => [entry.name, entry]))
-const attributeEntries = (name: string) =>
-  domAttributes.filter(entry => entry.name === name)
-
-const collect = () => {
-  for (const element of rendered()) {
-    for (const name of element.classList) {
-      if (!name.startsWith('qt-')) {
-        unknownClasses.push(`${element.tagName.toLowerCase()}.${name}`)
-        continue
-      }
-      const entry = knownClass.get(name)
-      if (!entry) {
-        unknownClasses.push(`.${name}`)
-        continue
-      }
-      seen.classes.add(name)
-      if (!element.matches(entry.on)) {
-        unmatchedClasses.push(
-          `.${name} is on ${element.tagName.toLowerCase()}, not ${entry.on}`
-        )
-      }
-    }
-    for (const attribute of element.getAttributeNames()) {
-      if (attribute === 'class' || attribute === 'style') {
-        continue
-      }
-      const entries = attributeEntries(attribute)
-      if (entries.length === 0) {
-        // Plain HTML the markup needs (type, title, colspan, aria-*, ...).
-        if (attribute.startsWith('data-')) {
-          unknownAttributes.push(
-            `${element.tagName.toLowerCase()}[${attribute}]`
-          )
-        }
-        continue
-      }
-      const list = seen.attributes.get(attribute) ?? []
-      list.push(element)
-      seen.attributes.set(attribute, list)
-      if (!entries.some(entry => element.matches(entry.on))) {
-        unmatchedAttributes.push(
-          `${element.tagName.toLowerCase()}[${attribute}]`
-        )
-      }
-    }
-    if (element.hasAttribute('style')) {
-      seen.styled.push(element)
-    }
-  }
-}
+const dom = createCollector()
 
 test('C-40 the rendered DOM matches the DOM contract in every state', async () => {
   // A full table: sorted, filtered, with both utility columns, a footer, an
@@ -140,14 +70,14 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   // The pin offsets are measured after layout.
   await new Promise(resolve => requestAnimationFrame(resolve))
   await new Promise(resolve => requestAnimationFrame(resolve))
-  collect()
+  dom.collect()
   cleanup()
 
   await renderTable({ rows: [], totalRows: 0 })
   await expect
     .element(document.querySelector<HTMLElement>('.qt-empty-row'))
     .toBeInTheDocument()
-  collect()
+  dom.collect()
   cleanup()
 
   // Loading over the rows (C-52).
@@ -155,47 +85,12 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   await expect
     .element(document.querySelector<HTMLElement>('.qt-loading-row'))
     .toBeInTheDocument()
-  collect()
+  dom.collect()
   cleanup()
 
-  // The rendered DOM uses nothing outside the contract.
-  expect(unknownClasses).toEqual([])
-  expect(unmatchedClasses).toEqual([])
-  expect(unknownAttributes).toEqual([])
-  expect(unmatchedAttributes).toEqual([])
-
-  // Every entry of the contract is rendered by some state.
-  expect(
-    domClasses.map(entry => entry.name).filter(name => !seen.classes.has(name))
-  ).toEqual([])
-  const attributeNames = [...new Set(domAttributes.map(entry => entry.name))]
-  expect(attributeNames.filter(name => !seen.attributes.has(name))).toEqual([])
-  // ... including each placement of an attribute listed more than once.
-  for (const entry of domAttributes) {
-    const elements = seen.attributes.get(entry.name) ?? []
-    expect(
-      elements.some(element => element.matches(entry.on)),
-      `${entry.name} on ${entry.on}`
-    ).toBe(true)
-  }
-
-  // C-31: only the listed inline styles, each on its element, and each one
-  // written by some state.
-  expect(seen.styled.length).toBeGreaterThan(0)
-  const writtenStyles = new Set<string>()
-  for (const element of seen.styled) {
-    const style = (element as HTMLElement).style
-    for (let i = 0; i < style.length; i++) {
-      const property = style.item(i)
-      const entry = domInlineStyles.find(e => e.property === property)
-      expect(entry, `inline ${property}`).toBeDefined()
-      expect(element.matches(entry!.on), `${property} on ${entry!.on}`).toBe(
-        true
-      )
-      writtenStyles.add(property)
-    }
-  }
-  expect([...writtenStyles].sort()).toEqual(
-    domInlineStyles.map(entry => entry.property).sort()
-  )
+  dom.expectNothingOutsideContract()
+  // Every entry of the contract the 2.2.x table renders is rendered by some
+  // state; the ones C-66 covers are left to it.
+  dom.expectEntriesRendered(entry => entry.addedBy === undefined)
+  dom.expectInlineStyles()
 })

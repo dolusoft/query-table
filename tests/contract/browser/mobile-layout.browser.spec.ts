@@ -2,9 +2,9 @@ import { expect, test } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
-import '../../../playground/playground.css'
-import App from '../../../playground/App.vue'
-import { router } from '../../../playground/router'
+import '../../../apps/playground/playground.css'
+import App from '../../../apps/playground/App.vue'
+import { router } from '../../../apps/playground/router'
 
 const rect = (selector: string) =>
   document.querySelector<HTMLElement>(selector)!.getBoundingClientRect()

@@ -23,7 +23,8 @@ export interface Draft {
   multi?: number
 }
 
-type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>
+/** The rules a draft parses to: condition and value, the field is the column's. */
+export type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>
 
 /** The rules a draft stands for. */
 export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
