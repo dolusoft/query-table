@@ -962,6 +962,12 @@ With a `selection` prop the rendered DOM still uses only the classes and attribu
 
 Source: own
 
+#### C-75 The local evaluator is separate
+
+The local evaluator comes only from `@dolusoft/query-protocol/local`, and its Vue binding only from `@dolusoft/query-table/local`. The default entries of the three packages neither export nor import it, and no path in their built module graph reaches it. The table never filters, searches, sorts or slices the rows it is given, and it cannot tell a local source from a remote one (P1, ADR 0008).
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.

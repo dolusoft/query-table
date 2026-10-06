@@ -15,6 +15,10 @@
       "types": "./dist/types/index.d.ts",
       "default": "./dist/query-protocol.js"
     },
+    "./local": {
+      "types": "./dist/types/local/index.d.ts",
+      "default": "./dist/local.js"
+    },
     "./query.schema.json": "./dist/query.schema.json"
   },
   "engines": {

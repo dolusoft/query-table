@@ -15,7 +15,7 @@ import { features } from '../guides/feature-matrix'
 import { aiSections, guidePages } from '../guides/guides'
 import { tanstackFeatureGuides, tanstackGeneralLinks } from '../guides/tanstack'
 import { homeSections } from '../home/home-content'
-import { pages } from '../manifest'
+import { pages, pendingRules } from '../manifest'
 
 // The search index is built from contract/api.json and the manifest: every
 // API member and rule must be findable, on the page that documents it.
@@ -38,7 +38,8 @@ describe('documentation search index', () => {
 
   it('contains every rule with its text', () => {
     const rules = documents.filter(doc => doc.kind === 'rule')
-    const shown = api.rules
+    // A pending rule has no page yet, so nothing indexes it (manifest.ts).
+    const shown = api.rules.filter(rule => !pendingRules.includes(rule.id))
     for (const rule of shown) {
       const docs = rules.filter(
         candidate => candidate.title.split(' ')[0] === rule.id

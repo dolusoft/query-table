@@ -52,6 +52,7 @@
     "schema:check": "node scripts/gen-schema.mjs --check",
     "check:deps": "node scripts/check-deps.mjs",
     "check:links": "node scripts/check-links.mjs",
+    "check:entry-graph": "node scripts/check-entry-graph.mjs",
     "measure:package-size": "pnpm build && node scripts/package-size.mjs",
     "check:package-size": "node scripts/package-size.mjs --check",
     "pack-install": "node scripts/pack-install-test.mjs"

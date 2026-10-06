@@ -147,3 +147,122 @@ export { dispose } from './shared'`
     expect(lint('src/index.ts', `import { ref } from 'vue'`)).toEqual([])
   })
 })
+
+// C-75: the local evaluator is a separate part of the protocol and of the
+// Vue package. It reaches only the protocol's types, constants and query
+// helpers, and nothing outside it reaches it except through its own entry.
+describe('local evaluator layers', () => {
+  const vue = 'packages/vue/src'
+  const fence: unknown = expect.stringContaining(
+    'the local evaluator is reached only through its own entry (C-75)'
+  )
+
+  it('lets the protocol evaluator import only the protocol basics and itself', () => {
+    const file = `${protocol}/local/x.ts`
+    expect(
+      lint(
+        file,
+        `import type { Query } from '../protocol/types'
+import { filterConditions } from '../protocol/constants'
+import { rulesOf } from '../protocol/query'
+import { foldText } from './text'`
+      )
+    ).toEqual([])
+    for (const code of [
+      `import { parseDraft } from '../grammar/draft'`,
+      `import { sameQuery } from '../index'`,
+      `import { parseDraft } from '../protocol/../grammar/draft'`,
+      `import { ref } from 'vue'`,
+      `import { sameQuery } from '@dolusoft/query-protocol'`
+    ]) {
+      expect(lint(file, code), code).toHaveLength(1)
+    }
+  })
+
+  it('keeps the rest of the protocol out of the evaluator', () => {
+    for (const [file, dir] of [
+      [`${protocol}/protocol/x.ts`, '../local'],
+      [`${protocol}/index.ts`, './local']
+    ]) {
+      for (const code of [
+        `import { foldText } from '${dir}/text'`,
+        `import { profiles } from '@dolusoft/query-protocol/local'`
+      ]) {
+        expect(lint(file, code), `${file}: ${code}`).toEqual([fence])
+      }
+    }
+    expect(
+      lint(`${protocol}/index.ts`, `import { profiles } from './local'`)
+    ).toEqual([fence])
+    expect(lint(`${protocol}/index.ts`, `export * from './local'`)).toEqual([
+      fence
+    ])
+  })
+
+  it('keeps the core away from the evaluator and the suite', () => {
+    const file = `${core}/x.ts`
+    expect(
+      lint(file, `import { profiles } from '@dolusoft/query-protocol/local'`)
+    ).toEqual([fence])
+    expect(
+      lint(
+        file,
+        `import manifest from '@dolusoft/query-protocol/conformance/manifest.json'`
+      )
+    ).toHaveLength(1)
+    expect(
+      lint(
+        file,
+        `import { sameQuery } from '@dolusoft/query-protocol'
+import { functionalUpdate } from '@tanstack/table-core'`
+      )
+    ).toEqual([])
+  })
+
+  it('keeps the Vue table away from its local binding', () => {
+    const file = `${vue}/x.ts`
+    for (const code of [
+      `import { profiles } from '@dolusoft/query-protocol/local'`,
+      `import { useLocalQuery } from './local'`,
+      `import { useLocalQuery } from './local/index'`,
+      `void import('./local')`,
+      `export { useLocalQuery } from './local'`
+    ]) {
+      expect(lint(file, code), code).toEqual([fence])
+    }
+  })
+
+  it('lets the Vue binding import vue and the protocol entries only', () => {
+    const file = `${vue}/local/x.ts`
+    expect(
+      lint(
+        file,
+        `import { computed } from 'vue'
+import type { Query } from '@dolusoft/query-protocol'
+import { applyQuery } from '@dolusoft/query-protocol/local'
+import { useLocalQuery } from './use-local-query'`
+      )
+    ).toEqual([])
+    for (const code of [
+      `import { columnOf } from '../core/column'`,
+      `import { serverQueryFeature } from '@dolusoft/query-table-core'`,
+      `import { useVueTable } from '@tanstack/vue-table'`,
+      `import { QueryTable } from '../index'`
+    ]) {
+      expect(lint(file, code), code).toHaveLength(1)
+    }
+  })
+
+  it('leaves the playground and the consumer fixtures alone', () => {
+    for (const file of ['apps/playground/x.ts', 'fixtures/consumer/x.ts']) {
+      expect(
+        lint(
+          file,
+          `import { profiles } from '@dolusoft/query-protocol/local'
+import { useLocalQuery } from '@dolusoft/query-table/local'
+import { QueryTable } from '@dolusoft/query-table'`
+        )
+      ).toEqual([])
+    }
+  })
+})

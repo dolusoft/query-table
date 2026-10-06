@@ -17,6 +17,7 @@
       "@/*": ["./apps/playground/skin/*"],
       "@dolusoft/query-table": ["./packages/vue/src/index.ts"],
       "@dolusoft/query-protocol": ["./packages/query-protocol/src/index.ts"],
+      "@dolusoft/query-protocol/local": ["./packages/query-protocol/src/local/index.ts"],
       "@dolusoft/query-protocol/query.schema.json": ["./packages/query-protocol/query.schema.json"],
       "@dolusoft/query-table-core": ["./packages/query-table-core/src/index.ts"],
       "@dolusoft/query-table-core/*": ["./packages/query-table-core/src/features/*/index.ts"]
