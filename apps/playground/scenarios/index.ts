@@ -1,9 +1,15 @@
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
-import type { Column, FooterRow, TableQuery } from '@dolusoft/query-table'
+import type {
+  Column,
+  CursorQuery,
+  FooterRow,
+  TableQuery
+} from '@dolusoft/query-table'
 
 import {
   type createDemoRows,
+  cursorDemoPage,
   filterDemoRows,
   queryDemoRows
 } from './fake-server'
@@ -159,4 +165,27 @@ export const useSlowServer = <R extends object>(
   onScopeDispose(() => clearTimeout(timer))
 
   return { query, rows, totalRows, loading, reload: request, reset }
+}
+
+export const makeCursorQuery = (
+  overrides: Partial<CursorQuery> = {}
+): CursorQuery => ({
+  cursor: null,
+  pageSize: 10,
+  sort: null,
+  filters: [],
+  ...overrides
+})
+
+/**
+ * A consumer page backed by a cursor server (C-56): it owns the query and
+ * passes the cursors of each answer back to the table.
+ */
+export const useCursorServer = <R extends object>(
+  allRows: readonly R[],
+  initial: Partial<CursorQuery> = {}
+) => {
+  const query = ref<CursorQuery>(makeCursorQuery(initial))
+  const result = computed(() => cursorDemoPage(allRows, query.value))
+  return { query, result }
 }

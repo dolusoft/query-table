@@ -2,7 +2,12 @@ import { describe, expect, test } from 'vitest'
 
 import type { FilterRule, TableQuery } from '@dolusoft/query-table'
 
-import { createDemoRows, queryDemoRows } from './fake-server'
+import {
+  createDemoRows,
+  cursorDemoPage,
+  queryDemoRows,
+  searchDemoRows
+} from './fake-server'
 
 const rows = [
   {
@@ -143,5 +148,50 @@ describe('the demo consumer evaluates the server query contract', () => {
       rows: [],
       totalRows: 3
     })
+  })
+})
+
+describe('cursor pages and search of the demo server', () => {
+  const all = createDemoRows()
+  const base = { pageSize: 10, sort: null, filters: [] }
+
+  test('the first page has a next cursor and no previous one', () => {
+    const first = cursorDemoPage(all, { ...base, cursor: null })
+    expect(first.rows.map(row => row.id)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    ])
+    expect(first.cursors.prev).toBeNull()
+    expect(first.cursors.next).not.toBeNull()
+  })
+
+  test('a next cursor leads to the following page and back', () => {
+    const first = cursorDemoPage(all, { ...base, cursor: null })
+    const second = cursorDemoPage(all, {
+      ...base,
+      cursor: { token: first.cursors.next!, direction: 'next' }
+    })
+    expect(second.rows[0]?.id).toBe(11)
+    const back = cursorDemoPage(all, {
+      ...base,
+      cursor: { token: second.cursors.prev!, direction: 'prev' }
+    })
+    expect(back.rows[0]?.id).toBe(1)
+  })
+
+  test('the last page has no next cursor', () => {
+    const last = cursorDemoPage(all, {
+      ...base,
+      cursor: { token: btoa('190'), direction: 'next' }
+    })
+    expect(last.rows).toHaveLength(10)
+    expect(last.cursors.next).toBeNull()
+  })
+
+  test('search matches name or city, case-insensitive, and blank matches all', () => {
+    expect(
+      searchDemoRows(all, 'alice').every(row => row.name === 'Alice')
+    ).toBe(true)
+    expect(searchDemoRows(all, 'bursa').length).toBe(40)
+    expect(searchDemoRows(all, '  ')).toHaveLength(all.length)
   })
 })

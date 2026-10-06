@@ -28,7 +28,9 @@ test('/ is the home page with the install command and the showcase', async () =>
   await expect.element(page.getByTestId('install-command')).toBeVisible()
   expect(
     document.querySelector('[data-testid="install-command"] code')?.textContent
-  ).toMatch(/^pnpm add https:\/\/\S+\/dolusoft-query-table-\d+\.\d+\.\d+(?:-[\w.]+)?\.tgz$/)
+  ).toMatch(
+    /^pnpm add https:\/\/\S+\/dolusoft-query-table-\d+\.\d+\.\d+(?:-[\w.]+)?\.tgz$/
+  )
   await expect
     .element(page.getByRole('button', { name: 'Copy install command' }))
     .toBeVisible()
