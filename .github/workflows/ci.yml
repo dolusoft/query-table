@@ -35,6 +35,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm knip
       - run: pnpm contract:check
+      # The JSON Schema of the protocol is generated from its constants.
+      - run: pnpm schema:check
       - run: pnpm playground:build
       - run: pnpm test:coverage
 
@@ -62,3 +64,10 @@ jobs:
       # Fails when the package cost passes the budget.
       - run: pnpm check:size
       - run: pnpm api:check
+      # The v3 packages: built, linted as packages (publint, attw), their
+      # sources and dist/ checked against the dependency allow-list, then
+      # each consumer fixture against scripts/package-size-budget.json (P8).
+      - run: pnpm build:packages
+      - run: pnpm check:packages
+      - run: pnpm check:deps
+      - run: pnpm check:package-size
