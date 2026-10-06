@@ -83,13 +83,19 @@ const columns = computed<Column[]>(() => {
 
 const money = new Intl.NumberFormat('en-US')
 // The server sends the totals over every matching row, not just this page.
+// Before the first answer there are no totals: the footer keeps its rows
+// (so the table does not grow later) with blank cells. A footer cell takes
+// text only, so there is no skeleton bar to draw in it.
 const footerRows = computed(() =>
   peopleFooter(allRows, query.value).map(row => ({
-    cells: row.cells.map(cell =>
-      typeof cell.text === 'number'
+    cells: row.cells.map(cell => {
+      if (totalRows.value === null) {
+        return { ...cell, text: ' ' }
+      }
+      return typeof cell.text === 'number'
         ? { ...cell, text: money.format(cell.text) }
         : cell
-    )
+    })
   }))
 )
 
