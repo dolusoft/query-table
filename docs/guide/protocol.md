@@ -279,6 +279,15 @@ The table keeps what it does not know. Any extra key of the query, and any extra
 
 The schema allows these at the top level and on rules. It does **not** allow extra keys inside `sort` or `cursor`. Unknown keys are the consumer's: the table never invents one, so ignore the ones you do not understand. (Version 2.2 dropped them; 3.0 keeps them, see [the migration notes](migration-v3.md).)
 
+### Reserved names
+
+Some names are kept for future forms of the query. Do not use these names for your own extensions:
+
+- the top-level keys `sorts`, `any`, `group`, `aggregates`, `columns` and `range`;
+- the conditions `IsNull` and `IsNotNull`.
+
+The table carries them like any other unknown key, but the local evaluator refuses `sorts`, `any`, `group`, `aggregates`, `IsNull` and `IsNotNull`, and a server that follows the same semantics profile does too. Future forms go into a versioned envelope, not into the query; see [Versioning](semantics.md#versioning) in the semantics profile.
+
 ## JSON Schema
 
 `@dolusoft/query-protocol` ships the schema as `query.schema.json` (JSON Schema draft 2020-12, in the repository at `packages/query-protocol/query.schema.json`). It is generated from the same lists the TypeScript types are made of (`pnpm schema:gen`), and CI fails when the committed file is out of date, so it cannot drift from the types.
@@ -575,4 +584,5 @@ export function describePaging(query: Query): string {
 
 - [Using the plugins with TanStack Table](tanstack-plugins.md), for the other side of the wire.
 - [Architecture](architecture.md), for how the three packages fit together.
+- [The `tr-1` semantics profile](semantics.md), for what a query means when it is evaluated: matching, order, paging and errors.
 - `contract/rules.md` in the repository: every behavior of the table as a numbered rule (C-01 to C-66), each covered by a test.

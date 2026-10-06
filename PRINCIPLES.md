@@ -1,18 +1,20 @@
 # Principles
 
-Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)).
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)), and P1, P4, P9, P10 and P14 for the local evaluator ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)).
 
 These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
 
 The behavior rules (`C-nn`) are in [contract/rules.md](contract/rules.md); the generated contract is [CONTRACT.md](CONTRACT.md).
 
-## P1 The table renders, the consumer fetches
+## P1 The table renders; the consumer supplies the data
 
-The table draws the rows it is given and reports, through `update:query`, what the user asked for. Fetching, caching, persistence, permissions and page layout belong to the consumer.
+The table renders the rows it is given, in the order given, and reports through `update:query` what the user asked for. The component, `useQueryTable` and the core features never filter, search, sort or page those rows. Fetching, query execution, caching, persistence, authorization and source context belong to the consumer's data source.
 
-Why: server-side data is the premise of the package. Any data logic inside the table becomes a second source of truth next to the server's.
+A consumer that already holds every row of the resolved source context may evaluate the query with the opt-in local evaluator (`@dolusoft/query-protocol/local`, bound to Vue by `@dolusoft/query-table/local`). Its meaning is a named, immutable semantics profile written in `docs/guide/semantics.md` and held by the conformance suite the protocol ships; a server that claims the profile passes the same suite for the same dataset contract. The table has no local or remote mode and cannot tell one source from the other.
 
-Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in the source of every package, `packages/*/src/**` (`no-restricted-globals`, `no-restricted-properties` in `eslint.config.js`).
+Why: data logic inside the table would become a second source of truth next to the data source. A separate evaluator with a written, tested meaning lets a table move between the browser and a server without changing what it shows.
+
+Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in `src/`; C-61 pins the manual row-model settings; `layers/boundaries` and the built entry graph keep the evaluator out of the default entries; `packages/query-protocol/tests/conformance.spec.ts` runs the suite.
 
 ## P2 Lasting state is controlled; internal state is short-lived
 
@@ -32,7 +34,7 @@ Check: C-02, C-04, C-13 and C-14 and their tests.
 
 ## P4 The query is a typed, transport-free protocol
 
-`TableQuery` is plain JSON: numbers, strings, booleans, arrays and objects. It says nothing about HTTP, URLs or a backend, and the table never evaluates it.
+`TableQuery` is plain JSON: numbers, strings, booleans, arrays and objects. It says nothing about HTTP, URLs or a backend, and the table never evaluates it. Where a consumer evaluates it locally, its meaning is a semantics profile (`docs/guide/semantics.md`); the profile is not part of the JSON.
 
 Why: the query is the API between the consumer and its backend, not only between the consumer and the table. It must survive a URL, a storage entry or a message unchanged.
 
@@ -40,11 +42,11 @@ Check: the C-03 test that sends every emitted query through a JSON round trip; `
 
 ## P5 No CSS, no styling props
 
-The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag) and `--qt-pin-left` on a pinned cell. A geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS.
+The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag), `--qt-pin-left` on a cell pinned to the left and `--qt-pin-right` on a cell pinned to the right. A geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS.
 
 Why: every product has its own design system. A library that owns any of the look forces overrides.
 
-Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; C-31 asserts the only inline style; `contract/dom.ts` lists the inline style the DOM test allows.
+Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; C-31 asserts the only inline styles; `contract/dom.ts` lists the inline style the DOM test allows.
 
 ## P6 The DOM is public API
 
@@ -74,19 +76,19 @@ Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry 
 
 ## P9 One small, typed surface per package
 
-Each package has one entry per published path and one API report, nothing else. A new capability goes into the core plugins first; the Vue package exposes what the core provides. Releases are patch versions within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made.
+Every published TypeScript API surface is covered by a reviewed API report; independently exposed surfaces receive separate reports. A new capability goes into the core plugins first; the Vue package exposes what the core provides. New surface is a minor release and fixes are patch releases, within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made. A data-source helper that is not table behavior (the local evaluator) lives in the protocol, with a thin binding in the Vue package; it is not a plugin and the core does not know it.
 
 Why: a version number only means something when the surface it versions is enumerable, and three packages released together must agree on one surface.
 
-Check: `pnpm api:check` (api-extractor, one report per package: `packages/<name>/etc/*.api.md`) and `pnpm contract:check`.
+Check: `pnpm api:check` (api-extractor, one report per published TypeScript entry: `packages/<name>/etc/*.api.md`) and `pnpm contract:check`.
 
 ## P10 Extension order: slot, event, prop, method; inside, plugin first
 
-For the public API of `QueryTable`: a slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`. Inside the packages, a behavior is first a TanStack option, then a TanStack plugin of ours, and only then Vue code.
+For the public API of `QueryTable`: a slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`. Inside the packages, a behavior is first a TanStack option, then a TanStack plugin of ours, and only then Vue code. The local evaluator is not table behavior; TanStack's client row models stay unused (ADR 0008).
 
 Why: slots and events keep the table thin; props and methods grow it. A behavior that lives in a plugin is usable without our component.
 
-Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. A C-rule names its source (`tanstack` or `own`) in `contract/rules.md`: C-01 to C-23, C-53 and C-56 to C-66 do; `tests/repo/contract-traceability.spec.ts` checks every source named but does not yet require one (`requireSource`).
+Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. A C-rule names its source (`tanstack` or `own`) in `contract/rules.md`: every rule except C-24 to C-52, C-54 and C-55 does; `tests/repo/contract-traceability.spec.ts` checks every source named but does not yet require one (`requireSource`).
 
 ## P11 Dependencies are few, pinned and layered
 
@@ -114,15 +116,15 @@ Check: review; C-34 states that the table draws no popover and no tooltip.
 
 ## P14 Layers point one way
 
-protocol → core → vue → playground. A package imports only from the layers before it; inside core, a feature (`serverQueryFeature`, `filterInputFeature`) imports only `shared/` and the protocol, never another feature.
+protocol → core → vue → playground. A package imports only from the layers before it; inside core, a feature (`serverQueryFeature`, `filterInputFeature`) imports only `shared/` and the protocol, never another feature. The protocol's local evaluator depends on the protocol types, never the other way; the Vue binding depends on the evaluator, never the table.
 
 Why: a layer that imports upward cannot be used without the one above it, and two features that import each other are one feature.
 
-Check: the ESLint layer rule `layers/boundaries` (`scripts/eslint-layers.mjs`, tested in `tests/repo/eslint-layers.spec.ts`) over imports, re-exports, dynamic imports, type imports and package sub-paths; `scripts/check-deps.mjs`.
+Check: the ESLint layer rule `layers/boundaries` (`scripts/eslint-layers.mjs`, tested in `tests/repo/eslint-layers.spec.ts`) over imports, re-exports, dynamic imports, type imports and package sub-paths; `scripts/check-deps.mjs`; `scripts/check-entry-graph.mjs` over the built entries.
 
 ## P15 TanStack holds the table; we add only what it lacks
 
-Table state that TanStack models (sorting, pagination, column filters, pinning order, expansion) lives in TanStack, as a projection of the consumer's props (P2), and is never kept a second time. What TanStack does is not rewritten; what it lacks is a plugin that implements the `TableFeature` interface, with its own state only for transient UI (drafts, drag preview, echo history, measured geometry). Plugins communicate through `shared/` (the `beforeAction` hooks, the dispatcher, `dispose`), never through each other.
+Table state that TanStack models (sorting, pagination, column filters, column visibility, column order, column and row pinning, expansion) lives in TanStack, as a projection of the consumer's props (P2), and is never kept a second time. What TanStack does is not rewritten; what it lacks is a plugin that implements the `TableFeature` interface, with its own state only for transient UI (drafts, drag preview, echo history, measured geometry). Plugins communicate through `shared/` (the `beforeAction` hooks, the dispatcher, `dispose`), never through each other.
 
 Why: two copies of one state drift apart. A plugin keeps our behavior usable by any TanStack table, not only ours.
 
