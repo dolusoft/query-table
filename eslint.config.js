@@ -85,6 +85,14 @@ export default defineConfig([
             {
               pattern: '@/**',
               group: 'internal'
+            },
+            // The package itself, imported by name in tests and the
+            // playground. Without this the group depends on whether dist/
+            // exists (self-reference through `exports`): internal after a
+            // build, external on a fresh checkout.
+            {
+              pattern: '@dolusoft/query-table',
+              group: 'internal'
             }
           ],
           pathGroupsExcludedImportTypes: ['builtin'],
