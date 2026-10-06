@@ -66,13 +66,16 @@ export interface Column {
    */
   width?: string
   /**
-   * `'left'` keeps the column at the start of the table: pinned columns are
-   * drawn first, in their order, and their cells get `data-pinned` and the
-   * `--qt-pin-left` offset. Sticky positioning is the consumer's CSS.
+   * `'left'` draws the column before the others, `'right'` after them;
+   * inside a side the order of `columns` holds. Their cells get
+   * `data-pinned` and the measured offset. Sticky positioning is the
+   * consumer's CSS.
    */
-  pinned?: 'left'
+  pinned?: 'left' | 'right'
   /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
   resizable?: boolean
+  /** Show a reorder handle for this column (needs table `reorderable`). Defaults to `true`. */
+  reorderable?: boolean
   /**
    * Smallest width a resize gives, in pixels. Defaults to `40`. A value that
    * is not a finite number above `0` counts as unset.
@@ -83,7 +86,11 @@ export interface Column {
    * is not a finite number above `0` counts as unset; a `minWidth` above it wins.
    */
   maxWidth?: number
-  /** Not rendered in the header or the body; its rules in `query` still apply. */
+  /**
+   * Not rendered in the header or the body; its rules in `query` still
+   * apply. The table emits `update:columns` with `hide: true` when the user
+   * hides it (`control.hide()`).
+   */
   hide?: boolean
   /** Show a filter input for this column (needs table `filterable`). Defaults to `true`. */
   filterable?: boolean
@@ -130,7 +137,10 @@ export interface TableProps<
    * call at once, for a consumer that debounces on its own. Defaults to `300`.
    */
   searchDebounce?: number
-  /** Column definitions. Never mutated. */
+  /**
+   * Column definitions, used with `v-model:columns` when the user may
+   * change the layout. Never mutated.
+   */
   columns: Column[]
   /**
    * Rows of the current page, drawn exactly as given.
@@ -169,6 +179,12 @@ export interface TableProps<
    * the width back to `Column.width`.
    */
   resizable?: boolean
+  /**
+   * Draw a reorder handle at the start of the header cells (needs column
+   * `reorderable`): dragging it, or the arrow keys, Home and End on it, move
+   * a column within its region and emit `update:columns`. Defaults to `false`.
+   */
+  reorderable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -215,6 +231,8 @@ export interface TableLabels {
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
   resizeColumn: (column: string) => string
+  /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
+  moveColumn: (column: string) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */
@@ -248,6 +266,32 @@ export interface ColumnResizePayload {
   width: number
 }
 
+/** What changed the layout in an `update:columns` event (C-68). */
+export type ColumnChangeReason = 'visibility' | 'order' | 'pin' | 'resize'
+
+/**
+ * Column actions handed to the `header-<field>` and `filter-menu` slots
+ * (C-70). Each action emits `update:columns`; the table changes nothing
+ * until the consumer writes the new `columns` back.
+ */
+export interface ColumnControl {
+  /** Side the column is pinned to, `false` when it is not pinned. */
+  pinned: 'left' | 'right' | false
+  /** Pin to a side or unpin: one `update:columns` with reason `pin`. */
+  pin: (side: 'left' | 'right' | false) => void
+  /** Hide the column: one `update:columns` with reason `visibility`. */
+  hide: () => void
+  /** There is a visible column on the left within the column's region. */
+  canMoveLeft: boolean
+  /** There is a visible column on the right within the column's region. */
+  canMoveRight: boolean
+  /**
+   * Move one visible position within the region (C-69): one
+   * `update:columns` with reason `order`; nothing at the region's edge.
+   */
+  move: (direction: 'left' | 'right') => void
+}
+
 /** Events of the table. */
 export type TableEmits<T, Q extends Query = TableQuery> = {
   /**
@@ -273,6 +317,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * keeps its old width.
    */
   columnResize: [payload: ColumnResizePayload]
+  /**
+   * The user changed the layout: visibility, order, pinning or a width
+   * (C-68). A new array; changed columns are new objects, the others are
+   * yours. Apply it with `v-model:columns`, or the table draws the old one.
+   */
+  'update:columns': [columns: Column[], reason: ColumnChangeReason]
 }
 
 export interface CellSlotProps<T> {
@@ -290,6 +340,8 @@ export interface HeaderSlotProps {
   sortable: boolean
   /** Sort by this column as a header click does (C-07); does nothing when not `sortable`. */
   toggleSort: () => void
+  /** Layout actions of this column (C-70). */
+  control: ColumnControl
 }
 
 export interface SubtableSlotProps<T> {
@@ -339,6 +391,8 @@ export interface FilterMenuSlotProps {
    * single `button.qt-filter-button` and merges the attributes it receives.
    */
   trigger: Component
+  /** Layout actions of this column (C-70). */
+  control: ColumnControl
 }
 
 export interface ToolbarSlotProps {

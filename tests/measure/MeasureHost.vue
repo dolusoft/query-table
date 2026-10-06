@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import type { Column, TableQuery } from '../../packages/vue/src/contract'
 import QueryTable from '../../packages/vue/src/index'
@@ -8,14 +8,22 @@ import QueryTable from '../../packages/vue/src/index'
 // every `update:query` answers with the rows a server would send (filtered,
 // sorted and cut to a page from `dataset`). It takes the time its own render
 // needs for each answer (`applied`), forced through layout.
-const props = defineProps<{
-  dataset: Array<Record<string, unknown>>
-  columns: Column[]
-  initialQuery: TableQuery
-  filterDebounce: number
-  /** Collects the milliseconds each answer took to patch and lay out. */
-  applied: number[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    dataset: Array<Record<string, unknown>>
+    columns: Column[]
+    initialQuery: TableQuery
+    filterDebounce: number
+    /** Collects the milliseconds each answer took to patch and lay out. */
+    applied: number[]
+    /** Reorder handles (the `move` scenario); the others keep them off. */
+    reorderable?: boolean
+  }>(),
+  { reorderable: false }
+)
+
+// The consumer owns the layout too (`v-model:columns`).
+const layout = shallowRef(props.columns)
 
 // A cell value may be any type; its string form is what the table shows.
 // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -74,13 +82,14 @@ const update = (next: TableQuery) => {
     Loading
   </button>
   <QueryTable
+    v-model:columns="layout"
     :query="query"
-    :columns="columns"
     :rows="rows"
     :total-rows="total"
     :loading="loading"
     sortable
     filterable
+    :reorderable="reorderable"
     :filter-debounce="filterDebounce"
     @update:query="update"
   >

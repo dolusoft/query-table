@@ -11,6 +11,7 @@ export {
   type QueryTableExpansion,
   type QueryTableFeatures,
   type QueryTableFilters,
+  type QueryTableLayout,
   type QueryTableSearch,
   type QueryTableSelection,
   type QueryTableSort,

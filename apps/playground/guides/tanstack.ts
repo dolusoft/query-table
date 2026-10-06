@@ -162,8 +162,18 @@ export const usedTanstackFeatures: Array<{
     role: 'The expanded rows behind the `subtable` slot, keyed by `rowKey`.'
   },
   {
+    feature: 'columnVisibilityFeature',
+    guide: 'column-visibility',
+    role: 'The visibility slice, a projection of `Column.hide`; `control.hide()` becomes `update:columns`.'
+  },
+  {
+    feature: 'columnOrderingFeature',
+    guide: 'column-ordering',
+    role: 'The order slice, a projection of the order of `columns`; `control.move()` and the reorder handle (drag, arrow keys, Home, End) become `update:columns`.'
+  },
+  {
     feature: 'columnPinningFeature',
     guide: 'column-pinning',
-    role: 'The order of pinned columns (left only); the sticky offsets are measured by the table.'
+    role: 'The regions of pinned columns, a projection of `Column.pinned` (`start` is left, `end` is right); the sticky offsets are measured by the table.'
   }
 ]

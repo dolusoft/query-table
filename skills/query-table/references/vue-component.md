@@ -7,7 +7,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | Prop | Meaning |
 | --- | --- |
 | `query` (required) | The query, with `v-model:query`. A `CursorQuery` (a `cursor` key) pages by cursor. |
-| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`. |
+| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`. With `v-model:columns` when the user may change the layout. |
 | `rows`, `totalRows` | Rows of the current page; the total on the server, `null` when unknown. |
 | `sortable`, `filterable`, `resizable` | Turn on the sort buttons, the filter row, the resize handles (each also needs the column to allow it). |
 | `filterDebounce` | ms before typed filter text applies (default 100; `0` applies every key). |
@@ -19,11 +19,37 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. |
 
-Events: `update:query (query, reason)`, `update:selection`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width.
+Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
 Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
 
 Template ref methods: `focusFilter(field)`, `expandAll()`, `collapseAll()`, `flushPendingFilters()`.
+
+## Column layout
+
+Your `columns` owns the layout: `hide`, the order of the array and `pinned: 'left' | 'right'`. The `header-<field>` and `filter-menu` slots receive `control`: `pinned`, `pin(side)` (`'left'`, `'right'` or `false`), `hide()`, `canMoveLeft`, `canMoveRight` and `move('left' | 'right')`. Each action emits `update:columns (columns, reason)` once, `reason` being a `ColumnChangeReason`: `visibility`, `order`, `pin` or `resize`. The array is new, a changed column is a new object with your other fields kept, the others are your objects, and a default is removed (`hide`, `pinned`), never written as `false`.
+
+```vue
+<script setup lang="ts">
+const columns = shallowRef<Column[]>(initialColumns)
+</script>
+
+<QueryTable v-model:query="query" v-model:columns="columns" ...>
+  <template #filter-menu="menu">
+    <button @click="menu.control.pin(menu.control.pinned ? false : 'left')">Pin</button>
+    <button :disabled="!menu.control.canMoveLeft" @click="menu.control.move('left')">←</button>
+    <button @click="menu.control.hide()">Hide</button>
+  </template>
+</QueryTable>
+```
+
+- A consumer that does not write back sees the old layout, and nothing is emitted on mount or when you change `columns` yourself.
+- Moving stays inside the column's region (pinned left, not pinned, pinned right); changing the region is pinning.
+- With `reorderable` every header cell starts with a `button.qt-reorder-handle` (opt a column out with `reorderable: false`, name it with `labels.moveColumn`). Drag it, or focus it and press ArrowLeft/ArrowRight (one position), Home or End (the region's ends): one `update:columns` with reason `order` per drop or key. While dragging, the table only sets `data-dragging` on the dragged header and `data-drop="before|after"` on the target; Escape cancels. Give the handle `touch-action: none` in your CSS. The focus stays on the moved handle after you write back; the table draws no live region, so announce the new position from `update:columns` yourself.
+- Showing a hidden column again is yours: write `columns` without `hide` from your own column picker.
+- Keep `columns` in a `shallowRef`: the table emits a new array for every change, so nothing needs to watch its inside.
+- The sides are physical (`left`, `right`): an LTR layout is assumed.
+- None of these emits `update:query`.
 
 ## Page mode, with a pager
 
@@ -86,7 +112,8 @@ const qt = useQueryTable({
   }
 })
 
-qt.columns.value // columns to draw, hidden dropped, pinned first
+qt.columns.value // columns to draw, hidden dropped, pinned left first, pinned right last
+qt.layout.controlOf('name').hide() // calls onColumnsChange(columns, 'visibility')
 qt.sort.sortBy(column) // a header click
 qt.filters.setInput('name', text) // typed filter text, debounced
 qt.search.set(text) // typed search, debounced
@@ -94,11 +121,11 @@ qt.pagination.value.nextPage()
 qt.table // the TanStack table
 ```
 
-Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `clear`, `clearAll`, `canClearAll`, `labelOf`), `expansion`, `selection`, `baseQuery()`. The scope disposal is automatic.
+Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `clear`, `clearAll`, `canClearAll`, `labelOf`), `layout` (`controlOf`, `regionOf`, `moveColumn`; give `onColumnsChange(columns, reason)` to receive them), `expansion`, `selection`, `baseQuery()`. The scope disposal is automatic.
 
 ## Styling
 
-No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Two inline styles exist: `width` on a header cell and `--qt-pin-left` on pinned cells; sticky positioning is your CSS. For large tables set `table-layout: fixed` and give every column a `width`.
+No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Three inline styles exist: `width` on a header cell, `--qt-pin-left` on cells pinned to the left and `--qt-pin-right` on cells pinned to the right (`data-pinned="right"`); sticky positioning is your CSS. One rule serves both sides, since the unset property leaves the other side `auto` (LTR layout): `.qt-table [data-pinned] { position: sticky; left: var(--qt-pin-left); right: var(--qt-pin-right) }`. The utility cells are pinned only with a column pinned to the left. For large tables set `table-layout: fixed` and give every column a `width`.
 
 ## Rules to remember
 

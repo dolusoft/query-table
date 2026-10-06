@@ -152,10 +152,29 @@ export const pages: PlaygroundPage[] = [
     id: 'column-pinning',
     title: 'Column pinning',
     summary:
-      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; the skin makes them sticky while the table scrolls sideways.",
+      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; columns with `pinned: 'right'` are drawn last and carry `data-pinned=\"right\"` and `--qt-pin-right`. The skin makes both sticky while the table scrolls sideways.",
     example: 'ColumnPinning',
     api: { props: ['columns', 'hasSubtable'], types: ['Column'] },
-    rules: ['C-31', 'C-32', 'C-46', 'C-47']
+    rules: ['C-31', 'C-32', 'C-46', 'C-47', 'C-71', 'C-72']
+  },
+  {
+    id: 'column-layout',
+    title: 'Column layout',
+    summary:
+      'Hide, show, move and pin columns; drag a header handle or press the arrow keys on it to reorder. The table emits a new `columns` array with `update:columns`; the page writes it back with `v-model:columns` and announces the new position itself.',
+    example: 'ColumnLayout',
+    api: {
+      props: ['columns', 'reorderable', 'labels'],
+      emits: ['update:columns'],
+      slots: ['header-<field>', 'filter-menu'],
+      types: [
+        'ColumnControl',
+        'ColumnChangeReason',
+        'HeaderSlotProps',
+        'FilterMenuSlotProps'
+      ]
+    },
+    rules: ['C-67', 'C-68', 'C-69', 'C-70', 'C-72', 'C-73']
   },
   {
     id: 'column-resizing',

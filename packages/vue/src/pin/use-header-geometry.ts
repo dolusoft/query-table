@@ -6,10 +6,12 @@ import {
   type ShallowRef
 } from 'vue'
 
-/** A drawn header cell, in order: its key (`field`, or the utility) and pin. */
+import type { PinSide } from '../columns/column-layout'
+
+/** A drawn header cell, in order: its key (`field`, or the utility) and side. */
 interface HeaderCellKey {
   key: string
-  pinned: boolean
+  side: PinSide
 }
 
 export interface HeaderGeometryOptions {
@@ -17,7 +19,7 @@ export interface HeaderGeometryOptions {
   table: ShallowRef<HTMLTableElement | null>
   /** The header cells as drawn: utilities first, then the columns. */
   cells: () => HeaderCellKey[]
-  /** Some column is pinned (C-46) or has a resize handle (C-48). */
+  /** Some column is pinned on either side (C-46, C-71) or has a resize handle (C-48). */
   active: () => boolean
 }
 
@@ -27,9 +29,10 @@ type Numbers = Readonly<Record<string, number>>
 const signature = (numbers: Numbers) => JSON.stringify(numbers)
 
 /**
- * Measured header geometry (C-47, C-48): the rendered width of every header
- * cell and, for the pinned cells, the cumulative left offset written as
- * `--qt-pin-left`. One `ResizeObserver` watches the header cells and the
+ * Measured header geometry (C-47, C-48, C-71): the rendered width of every
+ * header cell and, for the pinned cells, the cumulative offset: from the left
+ * for a left-pinned cell (`--qt-pin-left`), from the right for a
+ * right-pinned one (`--qt-pin-right`). One `ResizeObserver` watches the header cells and the
  * table; it reports width changes from any cause (a resize, a font that
  * loads, a container that narrows) in one batched callback, after layout, so
  * reading the cells there forces no extra layout. The observer is rebuilt
@@ -41,7 +44,10 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
   const widths = shallowRef<Numbers>({})
   /** Rendered width of the table. */
   const tableWidth = shallowRef(0)
-  /** `--qt-pin-left` of each pinned cell, by key, in pixels. */
+  /**
+   * `--qt-pin-left` of each left-pinned cell and `--qt-pin-right` of each
+   * right-pinned one, by key, in pixels.
+   */
   const offsets = shallowRef<Numbers>({})
   let observer: ResizeObserver | null = null
 
@@ -53,18 +59,28 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     const cells = options.cells()
     const next: Record<string, number> = {}
     const nextOffsets: Record<string, number> = {}
+    const rights: Array<[string, number]> = []
     let left = 0
     headerCells(table).forEach((cell, index) => {
       const drawn = cells[index]
       if (drawn) {
         const width = cell.getBoundingClientRect().width
         next[drawn.key] = width
-        if (drawn.pinned) {
+        if (drawn.side === 'left') {
           nextOffsets[drawn.key] = left
           left += width
+        } else if (drawn.side === 'right') {
+          rights.push([drawn.key, width])
         }
       }
     })
+    // Right offsets add up from the right edge: the last cell is at 0.
+    let right = 0
+    for (let i = rights.length - 1; i >= 0; i--) {
+      const [key, width] = rights[i]
+      nextOffsets[key] = right
+      right += width
+    }
     // Only a real change re-renders the cells that read these.
     if (signature(next) !== signature(widths.value)) {
       widths.value = next
@@ -107,7 +123,13 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
       () =>
         options
           .cells()
-          .map(cell => (cell.pinned ? `${cell.key}*` : cell.key))
+          .map(cell =>
+            cell.side === 'left'
+              ? `${cell.key}*`
+              : cell.side === 'right'
+                ? `${cell.key}>`
+                : cell.key
+          )
           .join('|')
     ],
     () => {

@@ -165,6 +165,42 @@ export const features: Feature[] = [
     example: 'column-pinning'
   },
   {
+    id: 'column-pinning-right',
+    group: 'open',
+    title: 'Pinning columns to the right',
+    summary:
+      "`pinned: 'right'`: drawn last, with the measured `--qt-pin-right` offset.",
+    tanstack: 'column-pinning',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-pinning'
+  },
+  {
+    id: 'column-visibility',
+    group: 'open',
+    title: 'Column visibility',
+    summary:
+      'Hide a column from its header or filter menu (`control.hide()`); your own column picker shows it again by writing `columns`. The table emits `update:columns`.',
+    tanstack: 'column-visibility',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-layout'
+  },
+  {
+    id: 'column-ordering',
+    group: 'open',
+    title: 'Column order',
+    summary:
+      'Move a column within its region by dragging its handle, with the arrow keys, Home and End, or from a menu (`control.move`). The table emits `update:columns`.',
+    tanstack: 'column-ordering',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-layout'
+  },
+  {
     id: 'column-sizing',
     group: 'open',
     title: 'Column sizing and resizing',
@@ -177,37 +213,6 @@ export const features: Feature[] = [
     example: 'column-resizing'
   },
   // B: planned
-  {
-    id: 'column-visibility',
-    group: 'planned',
-    title: 'Column visibility',
-    summary:
-      'Show and hide columns from the table. Today `Column.hide` hides one from your own code.',
-    tanstack: 'column-visibility',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
-  {
-    id: 'column-ordering',
-    group: 'planned',
-    title: 'Column order',
-    summary: 'Let the user reorder columns.',
-    tanstack: 'column-ordering',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
-  {
-    id: 'column-pinning-right',
-    group: 'planned',
-    title: 'Pinning columns to the right',
-    summary: 'The `end` side of column pinning.',
-    tanstack: 'column-pinning',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
   {
     id: 'row-pinning',
     group: 'planned',
@@ -329,7 +334,7 @@ export const features: Feature[] = [
     group: 'own',
     title: 'Measured sticky offsets for pinned columns',
     summary:
-      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths.',
+      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths, for `--qt-pin-left` and `--qt-pin-right` alike.',
     tanstack: null,
     component: 'yes',
     tanstackPath: 'no',

@@ -99,6 +99,32 @@ describe('C-44 Labels', () => {
     )
   })
 
+  // 3.1 (C-73): a separate test, so the ones above still compare with 3.0.0.
+  it('names the reorder handles by moveColumn', () => {
+    const handles = (m: Mounted) =>
+      m.wrapper
+        .findAll('.qt-reorder-handle')
+        .map(el => el.attributes('aria-label'))
+    expect(
+      handles(
+        mountIt({
+          reorderable: true,
+          columns: [{ field: 'city' }, ...makeColumns()]
+        })
+      )
+    ).toEqual(['Move city', 'Move ID', 'Move Name', 'Move Age', 'Move Joined'])
+    mounted?.wrapper.unmount()
+    expect(
+      handles(
+        mountIt({
+          reorderable: true,
+          columns: [{ field: 'name', title: 'Name' }],
+          labels: { moveColumn: (column: string) => `${column} sütununu taşı` }
+        })
+      )
+    ).toEqual(['Name sütununu taşı'])
+  })
+
   it('names a column without a title by its field', () => {
     const m = mountIt({ filterable: true, columns: [{ field: 'city' }] }, menu)
     expect(names(m)).toEqual(['Filter city', 'Filter options for city'])
