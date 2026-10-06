@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { cdp, page, userEvent } from 'vitest/browser'
 
-import { el, renderTable } from '../support/helpers'
+import { el, renderTable } from '../../support/helpers'
 
 // The test skin follows the OS theme and lets `data-theme` on <html> override
 // it. The library ships no CSS and knows nothing about this.

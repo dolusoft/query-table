@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { Column } from '../../src/contract'
-import { QueryTable } from '../../src/index'
+import type { Column } from '@dolusoft/query-table'
+import { QueryTable } from '@dolusoft/query-table'
+
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'

@@ -1,14 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 
-import {
-  flush,
-  makeColumns,
-  makeQuery,
-  mountTable,
-  reasons,
-  type Mounted
-} from '../../tests/support/mount-table'
 import type {
   Column,
   FilterDatetimeSlotProps,
@@ -16,7 +8,16 @@ import type {
   FilterRule,
   PaginationSlotProps,
   ToolbarSlotProps
-} from '../contract'
+} from '@dolusoft/query-table'
+
+import {
+  flush,
+  makeColumns,
+  makeQuery,
+  mountTable,
+  reasons,
+  type Mounted
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

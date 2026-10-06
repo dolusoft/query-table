@@ -106,3 +106,55 @@ export const namedIds = (suite: FoundSuite): string[] =>
   [...suite.groups, ...suite.tests.map(test => test.name)].flatMap(title =>
     [...title.matchAll(/\bC-\d{2,}\b/g)].map(match => match[0])
   )
+
+/**
+ * Where a rule's behavior comes from: `tanstack` when TanStack does it,
+ * configured; `own` when our code does it. A rule may name both (TanStack
+ * with an override of ours).
+ */
+export const ruleSources = ['tanstack', 'own'] as const
+
+const tagPattern = /\[(tanstack|own|[a-z-]+)\]/g
+
+/**
+ * The `Source:` line under each `### C-nn` heading of `contract/rules.md`,
+ * as written (`Source: tanstack, own` gives both). Rules without one are left
+ * out.
+ */
+export const sourcesOf = (rules: string): Map<string, string[]> => {
+  const found = new Map<string, string[]>()
+  let current: string | null = null
+  for (const line of rules.split(/\r?\n/)) {
+    const heading = /^### (C-\d+) /.exec(line)
+    if (heading) {
+      current = heading[1]
+      continue
+    }
+    const source = /^Source:\s*(.+)$/.exec(line)
+    if (current && source) {
+      found.set(
+        current,
+        source[1].split(',').map(part => part.trim().toLowerCase())
+      )
+    }
+  }
+  return found
+}
+
+/**
+ * Every `[tag]` a runnable test carries (in its own title or a `describe`
+ * around it), paired with each rule ID it stands under.
+ */
+export const taggedIds = (
+  suite: FoundSuite
+): Array<{ id: string; tag: string }> =>
+  suite.tests.flatMap(test => {
+    const titles = [...test.groups, test.name]
+    const tags = titles.flatMap(title =>
+      [...title.matchAll(tagPattern)].map(match => match[1])
+    )
+    const ids = titles.flatMap(title =>
+      [...title.matchAll(/\bC-\d{2,}\b/g)].map(match => match[0])
+    )
+    return ids.flatMap(id => tags.map(tag => ({ id, tag })))
+  })

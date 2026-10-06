@@ -13,7 +13,15 @@ export default defineConfig({
   base: process.env.PLAYGROUND_BASE ?? '/',
   plugins: [vue(), tailwindcss()],
   resolve: {
-    alias: { '@': resolve(import.meta.dirname, 'skin') }
+    // The examples import the package by name, as a consumer does; here the
+    // name answers with the source.
+    alias: [
+      {
+        find: /^@dolusoft\/query-table$/,
+        replacement: resolve(import.meta.dirname, '../src/index.ts')
+      },
+      { find: '@', replacement: resolve(import.meta.dirname, 'skin') }
+    ]
   },
   build: {
     outDir: resolve(import.meta.dirname, 'dist'),

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
 
+import type { FilterRule, TableQuery } from '@dolusoft/query-table'
+
 import { createDemoRows, queryDemoRows } from './fake-server'
-import type { FilterRule, TableQuery } from '../../src/contract'
 
 const rows = [
   {

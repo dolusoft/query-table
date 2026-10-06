@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { QueryTable } from '../../src/index'
+import { QueryTable } from '@dolusoft/query-table'
+
 import { useCompact } from '../harness/column-filter'
 import ColumnFilterSheet from '../harness/ColumnFilterSheet.vue'
 import CompactHeader from '../harness/CompactHeader.vue'

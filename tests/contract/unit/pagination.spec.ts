@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
+import type { PaginationSlotProps } from '@dolusoft/query-table'
+
 import {
   flush,
   makeQuery,
@@ -9,8 +11,7 @@ import {
   reasons,
   type MountOptions,
   type Mounted
-} from '../../tests/support/mount-table'
-import type { PaginationSlotProps } from '../contract'
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 afterEach(() => {

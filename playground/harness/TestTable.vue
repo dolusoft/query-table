@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import FilterMenu from './FilterMenu.vue'
-import TablePager from './TablePager.vue'
-import { setTheme, themeFromUrl, type Theme } from './theme'
 import type {
   QueryChangeReason,
   TableProps,
   TableQuery
-} from '../../src/contract'
-import QueryTable from '../../src/index'
+} from '@dolusoft/query-table'
+import QueryTable from '@dolusoft/query-table'
+
+import FilterMenu from './FilterMenu.vue'
+import TablePager from './TablePager.vue'
+import { setTheme, themeFromUrl, type Theme } from './theme'
 
 // The consumer around the table in the browser tests: it owns the query
 // (what `v-model:query` does), takes outside changes through the `query`

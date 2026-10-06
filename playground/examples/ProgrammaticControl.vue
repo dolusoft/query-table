@@ -4,8 +4,8 @@ import { ref } from 'vue'
 import { Button } from '@/ui/button'
 import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
+import { QueryTable, type QueryTableExpose } from '@dolusoft/query-table'
 
-import { QueryTable, type QueryTableExpose } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import {
   createDemoRows,

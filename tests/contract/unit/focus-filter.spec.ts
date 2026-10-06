@@ -1,15 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
+import type { Column, FilterRule } from '@dolusoft/query-table'
+import QueryTable from '@dolusoft/query-table'
+
 import {
   makeColumns,
   makeQuery,
   makeRows,
   mountTable,
   type Mounted
-} from '../../tests/support/mount-table'
-import type { Column, FilterRule } from '../contract'
-import QueryTable from '../index'
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

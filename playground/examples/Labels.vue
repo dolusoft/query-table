@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { Button } from '@/ui/button'
+import {
+  QueryTable,
+  type Column,
+  type TableLabels
+} from '@dolusoft/query-table'
 
-import { QueryTable, type Column, type TableLabels } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import { createDemoRows, useFakeServer } from '../scenarios'
 

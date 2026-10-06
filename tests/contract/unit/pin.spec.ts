@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { CellContextMenuPayload, Column } from '@dolusoft/query-table'
+
 import {
   flush,
   makeRows,
   mountTable,
   propsOf,
   type Mounted
-} from '../../tests/support/mount-table'
-import type { CellContextMenuPayload, Column } from '../contract'
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

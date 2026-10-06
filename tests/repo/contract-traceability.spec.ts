@@ -1,24 +1,39 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { collectSuite, coveredIds, namedIds } from './test-names'
+import {
+  collectSuite,
+  coveredIds,
+  namedIds,
+  ruleSources,
+  sourcesOf,
+  taggedIds
+} from './test-names'
 
 // The behavior rules live in contract/rules.md as `### C-nn Title`. Every rule
 // needs a runnable test that stands under its ID (in its own title or in the
 // title of the `describe` around it), and a test may only name IDs that exist.
 // The specs are read as syntax trees (`test-names.ts`): a `describe` that holds
 // no test, a `.skip` or a `.todo` covers nothing.
+//
+// v3 (ADR 0004): a rule may name where its behavior comes from, with a
+// `Source: tanstack` / `Source: own` / `Source: tanstack, own` line under its
+// heading, and a test may carry the matching `[tanstack]` or `[own]` tag. Both
+// are optional until the core plugins land; `requireSource` turns the rule
+// side into a requirement.
+const requireSource = false
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
-const rules = [
-  ...readFileSync(join(root, 'contract', 'rules.md'), 'utf8').matchAll(
-    /^### (C-\d+) (.+)$/gm
-  )
-].map(match => ({ id: match[1], title: match[2] }))
+const rulesText = readFileSync(join(root, 'contract', 'rules.md'), 'utf8')
+const rules = [...rulesText.matchAll(/^### (C-\d+) (.+)$/gm)].map(match => ({
+  id: match[1],
+  title: match[2]
+}))
+const sources = sourcesOf(rulesText)
 
 const specFiles = (dir: string): string[] =>
   readdirSync(dir).flatMap(entry => {
@@ -34,13 +49,30 @@ const specFiles = (dir: string): string[] =>
       : []
   })
 
-// Unit specs sit next to the code in src/, the browser and cross-cutting ones
-// in tests/, the skin and playground specs in playground/.
-const suites = [
-  ...specFiles(join(root, 'src')),
-  ...specFiles(join(root, 'tests')),
-  ...specFiles(join(root, 'playground'))
-].map(file => ({
+/** `dir/*` that are directories, or nothing when `dir` does not exist. */
+const childDirs = (dir: string): string[] =>
+  existsSync(dir)
+    ? readdirSync(dir)
+        .map(entry => join(dir, entry))
+        .filter(path => statSync(path).isDirectory())
+    : []
+
+// Internal unit specs sit next to the code in src/; the behavior specs in
+// tests/contract, the repository checks in tests/repo; the skin and
+// playground specs in playground/. In the v3 workspace each package has its
+// own src/ and tests/, and apps/ holds the playground.
+const roots = [
+  join(root, 'src'),
+  join(root, 'tests'),
+  join(root, 'playground'),
+  ...childDirs(join(root, 'packages')).flatMap(pkg => [
+    join(pkg, 'src'),
+    join(pkg, 'tests')
+  ]),
+  ...childDirs(join(root, 'apps'))
+].filter(dir => existsSync(dir))
+
+const suites = roots.flatMap(specFiles).map(file => ({
   file: file.slice(root.length + 1).replace(/\\/g, '/'),
   suite: collectSuite(readFileSync(file, 'utf8'), file)
 }))
@@ -77,6 +109,35 @@ describe('contract traceability', () => {
         .map(id => `${file} names ${id}`)
     )
     expect(unknown).toEqual([])
+  })
+
+  it('names only known sources on the Source lines of the rules', () => {
+    const known = new Set<string>(ruleSources)
+    const wrong = [...sources].flatMap(([id, names]) =>
+      names.filter(name => !known.has(name)).map(name => `${id} ${name}`)
+    )
+    expect(wrong).toEqual([])
+  })
+
+  it('names the source of every rule once required', () => {
+    const missing = rules
+      .filter(rule => !sources.has(rule.id))
+      .map(rule => rule.id)
+    expect(requireSource ? missing : []).toEqual([])
+  })
+
+  it('tags a test only with a source of the rule it stands under', () => {
+    const known = new Set<string>(ruleSources)
+    const wrong = suites.flatMap(({ file, suite }) =>
+      taggedIds(suite)
+        .filter(
+          ({ id, tag }) =>
+            !known.has(tag) ||
+            (sources.has(id) && !sources.get(id)!.includes(tag))
+        )
+        .map(({ id, tag }) => `${file}: ${id} [${tag}]`)
+    )
+    expect(wrong).toEqual([])
   })
 })
 
@@ -117,6 +178,42 @@ describe('contract traceability reader', () => {
       'C-10'
     ])
     expect([...idsOf(`it.only('C-11 one', () => {})`)]).toEqual(['C-11'])
+  })
+
+  it('reads the Source line under a rule heading', () => {
+    const text = [
+      '### C-01 One',
+      '',
+      'Body.',
+      '',
+      'Source: tanstack, own',
+      '',
+      '### C-02 Two',
+      '',
+      'Body.',
+      '### C-03 Three',
+      'Source: Own'
+    ].join('\n')
+    expect([...sourcesOf(text)]).toEqual([
+      ['C-01', ['tanstack', 'own']],
+      ['C-03', ['own']]
+    ])
+  })
+
+  it('pairs the tags of a test with the rule IDs it stands under', () => {
+    expect(
+      taggedIds(
+        collectSuite(
+          `describe('C-05 paging [tanstack]', () => { it('x [own]', () => {}) })`
+        )
+      )
+    ).toEqual([
+      { id: 'C-05', tag: 'tanstack' },
+      { id: 'C-05', tag: 'own' }
+    ])
+    expect(taggedIds(collectSuite(`it.skip('C-05 [own]', () => {})`))).toEqual(
+      []
+    )
   })
 
   it('names the IDs of empty groups too, so an unknown one still fails', () => {
