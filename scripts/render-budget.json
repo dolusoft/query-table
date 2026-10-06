@@ -1,8 +1,8 @@
 {
-  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.9 (filter fell from 50 to 26 when the header got stable slots). v3 (PR-C) raised filter from 26 to 44: the filter draft is table state in the TanStack store (`filterInputFeature`), so each of the six keys re-renders `QueryTable`, `table-body` and the four filter cells (6 x 6 = 36) and Enter adds 8; the other scenarios are unchanged. Raise it only on purpose, in the change that adds the renders.",
+  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.9 (filter fell from 50 to 26 when the header got stable slots). v3 (PR-C) raised filter from 26 to 34: the filter draft is table state in the TanStack store (`filterInputFeature`), so each of the six keys re-renders the four filter cells (6 x 4 = 24) and Enter adds 10. The root and the header read `canClearAll` through a computed, which keeps them out of that (an earlier measurement, 44, had `QueryTable` and `table-body` re-render with every key too); the other scenarios are unchanged. Raise it only on purpose, in the change that adds the renders.",
   "scenarios": {
     "mount": { "queryUpdates": 0, "maxLibraryUpdates": 0 },
-    "filter": { "queryUpdates": 1, "maxLibraryUpdates": 44 },
+    "filter": { "queryUpdates": 1, "maxLibraryUpdates": 34 },
     "sort": { "queryUpdates": 2, "maxLibraryUpdates": 18 },
     "loading": { "queryUpdates": 0, "maxLibraryUpdates": 4 },
     "page": { "queryUpdates": 3, "maxLibraryUpdates": 24 }
