@@ -111,6 +111,8 @@ const shadcnClasses = (source: string): string[] => {
 interface ParityBlock {
   source: string
   excluded: string[]
+  /** Excluded classes listed without a reason. */
+  unexplained: string[]
   selector: string
   applied: string[]
 }
@@ -119,18 +121,27 @@ const parityOf = (block: TopBlock): ParityBlock => {
   const marker = block.marker ?? ''
   const head = marker.slice('shadcn:'.length).split('\n')[0].trim()
   const at = marker.indexOf('excluded:')
-  const excluded =
+  // Each excluded line is `<class>  <reason>`; a leading `*` of a comment
+  // line is not part of it.
+  const entries =
     at === -1
       ? []
       : marker
           .slice(at + 'excluded:'.length)
           .split('\n')
-          .map(line => line.trim().split(/\s+/)[0])
+          .map(line => line.trim().replace(/^\*\s*/, ''))
           .filter(Boolean)
+          .map(line => {
+            const [cls, ...reason] = line.split(/\s+/)
+            return { cls, reason: reason.join(' ') }
+          })
   const apply = /^@apply\s+([^;]+);$/.exec(block.body)
   return {
     source: head,
-    excluded,
+    excluded: entries.map(entry => entry.cls),
+    unexplained: entries
+      .filter(entry => entry.reason === '')
+      .map(entry => entry.cls),
     selector: block.prelude,
     applied: apply ? classesOf(apply[1]) : []
   }
@@ -205,6 +216,16 @@ describe('the table skin keeps class parity with shadcn-vue', () => {
           '  extra:   applied by mapping.css, not in shadcn (shadcn dropped it, or it was pasted by hand)\n' +
           '  stale:   listed under excluded:, no longer in shadcn (drop it from the list)'
       ).toEqual({ missing: [], extra: [], stale: [] })
+      expect(
+        block.unexplained,
+        `${name}: every class under excluded: needs a reason after it`
+      ).toEqual([])
+      // Exclusions are the exception: a block that drops half of the part
+      // no longer derives from it.
+      expect(
+        block.excluded.length,
+        `${name}: ${block.excluded.length} of ${source.length} shadcn-vue classes excluded`
+      ).toBeLessThan(source.length / 2)
     })
   }
 })
