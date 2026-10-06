@@ -1,6 +1,6 @@
 # Principles
 
-Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)).
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)).
 
 P1, P4, P9, P10 and P14 were amended for the local evaluator on 2026-10-06 ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)).
 
@@ -44,11 +44,11 @@ Check: the C-03 test that sends every emitted query through a JSON round trip; `
 
 ## P5 No CSS, no styling props
 
-The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag) and `--qt-pin-left` on a pinned cell. A geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS.
+The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag), `--qt-pin-left` on a cell pinned to the left and `--qt-pin-right` on a cell pinned to the right. A geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS.
 
 Why: every product has its own design system. A library that owns any of the look forces overrides.
 
-Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; C-31 asserts the only inline style; `contract/dom.ts` lists the inline style the DOM test allows.
+Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; C-31 asserts the only inline styles; `contract/dom.ts` lists the inline style the DOM test allows.
 
 ## P6 The DOM is public API
 
@@ -78,7 +78,7 @@ Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry 
 
 ## P9 One small, typed surface per package
 
-Each package has one entry per published path and one API report, nothing else. A new capability goes into the core plugins first; the Vue package exposes what the core provides. Releases are patch versions within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made.
+Each package has one entry per published path and one API report, nothing else. A new capability goes into the core plugins first; the Vue package exposes what the core provides. New surface is a minor release and fixes are patch releases, within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made.
 
 A data-source helper that is not table behavior (the local evaluator) lives in the protocol, with a thin binding in the Vue package; it is not a plugin and the core does not know it.
 
@@ -92,7 +92,7 @@ For the public API of `QueryTable`: a slot when the consumer draws something, an
 
 Why: slots and events keep the table thin; props and methods grow it. A behavior that lives in a plugin is usable without our component.
 
-Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. A C-rule names its source (`tanstack` or `own`) in `contract/rules.md`: C-01 to C-23, C-53 and C-56 to C-66 do; `tests/repo/contract-traceability.spec.ts` checks every source named but does not yet require one (`requireSource`).
+Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. A C-rule names its source (`tanstack` or `own`) in `contract/rules.md`: every rule except C-24 to C-52, C-54 and C-55 does; `tests/repo/contract-traceability.spec.ts` checks every source named but does not yet require one (`requireSource`).
 
 ## P11 Dependencies are few, pinned and layered
 
@@ -128,7 +128,7 @@ Check: the ESLint layer rule `layers/boundaries` (`scripts/eslint-layers.mjs`, t
 
 ## P15 TanStack holds the table; we add only what it lacks
 
-Table state that TanStack models (sorting, pagination, column filters, pinning order, expansion) lives in TanStack, as a projection of the consumer's props (P2), and is never kept a second time. What TanStack does is not rewritten; what it lacks is a plugin that implements the `TableFeature` interface, with its own state only for transient UI (drafts, drag preview, echo history, measured geometry). Plugins communicate through `shared/` (the `beforeAction` hooks, the dispatcher, `dispose`), never through each other.
+Table state that TanStack models (sorting, pagination, column filters, column visibility, column order, column and row pinning, expansion) lives in TanStack, as a projection of the consumer's props (P2), and is never kept a second time. What TanStack does is not rewritten; what it lacks is a plugin that implements the `TableFeature` interface, with its own state only for transient UI (drafts, drag preview, echo history, measured geometry). Plugins communicate through `shared/` (the `beforeAction` hooks, the dispatcher, `dispose`), never through each other.
 
 Why: two copies of one state drift apart. A plugin keeps our behavior usable by any TanStack table, not only ours.
 
