@@ -46,6 +46,21 @@ const option = (name, fallback) => {
 // A run with fewer tests than this is not an equivalence run (the specs did
 // not load, a filter matched nothing); it fails instead of passing on zero.
 const MIN_TESTS = 300
+// Tests of behavior a 2.2.x baseline does not have: the v3 additions (C-56
+// to C-65: cursor paging, search, selection, the TanStack path) and C-40,
+// whose DOM contract now lists the selection column. They cannot pass on
+// 2.2.x, so they are not compared and may fail on the baseline; the
+// candidate must still pass them. An entry is a spec file, or
+// `file > full test name`.
+const ADDED_AFTER_BASELINE = [
+  'tests/contract/unit/k6.spec.ts',
+  'tests/contract/browser/k6-pages.browser.spec.ts',
+  'tests/contract/browser/dom-contract.browser.spec.ts > C-40 the rendered DOM matches the DOM contract in every state'
+]
+const isAdded = name =>
+  ADDED_AFTER_BASELINE.some(
+    entry => name === entry || name.startsWith(`${entry} > `)
+  )
 const baseline = option('baseline', 'git:origin/main')
 const candidate = option('candidate', 'src')
 const runUnit = !args.includes('--browser-only')
@@ -179,7 +194,14 @@ const prepare = async target => {
 
 /** Runs the contract specs against one target; returns the report files. */
 const runSuites = (target, prepared) => {
-  const env = { ...process.env, HEADLESS: '1' }
+  // A built baseline starts cold (Vite optimizes its dependencies) and its
+  // failing added tests wait out their timeouts: the default 45 s per
+  // attempt of test-browser.mjs is too short for that run.
+  const env = {
+    BROWSER_TEST_TIMEOUT_MS: '240000',
+    ...process.env,
+    HEADLESS: '1'
+  }
   if (prepared.entry) {
     env.QT_TARGET = prepared.entry
   } else {
@@ -280,10 +302,19 @@ const main = async () => {
     ...results.candidate.keys()
   ])
   const differences = []
+  const added = []
   let traced = 0
   for (const name of [...names].sort()) {
     const a = results.baseline.get(name)
     const b = results.candidate.get(name)
+    if (isAdded(name)) {
+      added.push({
+        test: name,
+        baseline: a?.status ?? 'missing',
+        candidate: b?.status ?? 'missing'
+      })
+      continue
+    }
     if (!a || !b) {
       differences.push({
         test: name,
@@ -311,17 +342,21 @@ const main = async () => {
       })
     }
   }
+  // An added test counts as failing only in the candidate.
   const failing = role =>
     [...results[role]]
       .filter(([, r]) => r.status !== 'passed')
       .map(([name]) => name)
+      .filter(name => role === 'candidate' || !isAdded(name))
 
   const report = {
     baseline: labels.baseline,
     candidate: labels.candidate,
     tests: names.size,
+    compared: names.size - added.length,
     testsWithUpdates: traced,
     differences: differences.length,
+    addedAfterBaseline: added,
     failing: { baseline: failing('baseline'), candidate: failing('candidate') },
     details: differences
   }
@@ -333,7 +368,8 @@ const main = async () => {
   console.log(`\n[equivalence] baseline:  ${labels.baseline}`)
   console.log(`[equivalence] candidate: ${labels.candidate}`)
   console.log(
-    `[equivalence] ${names.size} tests, ${traced} with an update trace; ` +
+    `[equivalence] ${names.size} tests, ${names.size - added.length} compared, ` +
+      `${added.length} added after the baseline (not compared), ${traced} with an update trace; ` +
       `failing: baseline ${report.failing.baseline.length}, candidate ${report.failing.candidate.length}`
   )
   for (const difference of differences.slice(0, 20)) {

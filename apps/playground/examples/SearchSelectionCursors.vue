@@ -14,7 +14,7 @@ import {
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useCursorServer } from '../scenarios'
 
-// Three K6 features on one table. The query pages by cursor (`cursor` key):
+// Three features on one table. The query pages by cursor (`cursor` key):
 // the server answers with the cursors of the page shown and the page passes
 // them back as `cursors`. The toolbar search is typed text the table applies
 // after `searchDebounce`. The selection is the page's, through

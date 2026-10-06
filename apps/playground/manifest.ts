@@ -20,7 +20,7 @@ export interface PlaygroundPage {
   id: string
   title: string
   summary: string
-  /** File name in playground/examples, without `.vue`. */
+  /** File name in apps/playground/examples, without `.vue`. */
   example: string
   api: PageApi
   rules: string[]
