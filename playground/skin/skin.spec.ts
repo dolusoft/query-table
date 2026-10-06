@@ -93,7 +93,7 @@ describe('C-41 the test skin selects only the DOM contract', () => {
     const applies = mapping.match(/^\s*@apply\s/gm) ?? []
     const blocks =
       mapping.match(
-        /\/\*\s*shadcn:\s+[\w/-]+\.vue[^*]*(?:\*(?!\/)[^*]*)*\*\/\s*[^{}]+\{\s*@apply\b/g
+        /\/\*\s*shadcn:\s+[^*]*(?:\*(?!\/)[^*]*)*\*\/\s*[^{}]+\{\s*@apply\b/g
       ) ?? []
     expect(applies.length).toBe(blocks.length)
     expect(mapping).toContain('var(--border)')
