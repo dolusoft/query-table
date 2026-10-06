@@ -61,9 +61,12 @@ For anything the scripts do not answer, attach to the page under test in inspect
 
 ## Releasing
 
-A release is a version in `package.json` and a tag that names it; the `Release` workflow (`.github/workflows/release.yml`) does the rest.
+A release is a version in `package.json` and a tag that names it; the `Release` workflow (`.github/workflows/release.yml`) does the rest. Releases are made from `main`, which is the released 3.x line:
 
-1. In the pull request of the change, set `version` in `package.json` to the next patch version (releases are patch versions, P9). Update the install line of `README.md` to the same version (`tests/repo/package-manifest.spec.ts` fails when they differ).
+- A patch release (`3.0.1`) is a fix made directly on `main`, in its own pull request, and then merged into `next`.
+- A minor release (`3.1.0`) is the work collected on `next`: `next` is merged into `main` in one pull request (a merge commit) and released from there.
+
+1. In the pull request that `main` will release (the fix, or `next` → `main`), set `version` in the root `package.json` and in every `packages/*/package.json` to the new version; the three packages are versioned together (P9). Update the install lines of `README.md` to the same version (`tests/repo/package-manifest.spec.ts` fails when they differ).
 2. After the pull request is merged, tag the merge commit on `main` and push the tag:
 
    ```bash
