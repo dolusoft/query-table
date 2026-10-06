@@ -53,7 +53,7 @@ export type QueryChangeReason = (typeof queryChangeReasons)[number]
 export type ColumnType = (typeof columnTypes)[number]
 
 /** What the query has in both paging modes. */
-interface QueryBase {
+export interface QueryBase {
   pageSize: number
   /** `null` means unsorted. */
   sort: SortState | null
