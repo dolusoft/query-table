@@ -10,6 +10,7 @@ import {
   replaceRules,
   rulesOf,
   sameQuery,
+  sameRules,
   searchOf,
   withSearch
 } from '../src'
@@ -110,15 +111,22 @@ describe('C-60 keys the protocol does not know pass through', () => {
     expect(sameQuery(query, other as Query)).toBe(false)
   })
 
-  it('sameQuery ignores the extra properties of a rule', () => {
-    expect(
-      sameQuery(
-        pageQuery({ filters: [rule('a', '1')] }),
-        pageQuery({
-          filters: [{ ...rule('a', '1'), note: 'x' } as FilterRule]
-        })
-      )
-    ).toBe(true)
+  it('sameQuery compares the extra properties of a rule too (C-60)', () => {
+    const withNote = (note: unknown) =>
+      pageQuery({ filters: [{ ...rule('a', '1'), note } as FilterRule] })
+    const plain = pageQuery({ filters: [rule('a', '1')] })
+    expect(sameQuery(withNote('x'), withNote('x'))).toBe(true)
+    expect(sameQuery(withNote('x'), withNote('y'))).toBe(false)
+    expect(sameQuery(plain, withNote('x'))).toBe(false)
+    expect(sameQuery(withNote('x'), plain)).toBe(false)
+  })
+
+  it('sameRules compares nested extras by value, whatever the key order', () => {
+    const one = { ...rule('a', '1'), meta: { id: 1, tags: ['x'] }, z: 0 }
+    const two = { z: 0, meta: { tags: ['x'], id: 1 }, ...rule('a', '1') }
+    const diff = { ...two, meta: { tags: ['y'], id: 1 } }
+    expect(sameRules([one as FilterRule], [two as FilterRule])).toBe(true)
+    expect(sameRules([one as FilterRule], [diff as FilterRule])).toBe(false)
   })
 })
 
