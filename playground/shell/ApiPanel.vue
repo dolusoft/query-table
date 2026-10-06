@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import contractApi from '../../contract/api.json'
 import type { PageApi } from '../manifest'
+import { memberAnchor, sectionAnchors } from '../search/anchors'
 
 // The API members a page shows, read from contract/api.json, which
 // scripts/gen-contract.mjs generates from the component and src/contract.ts.
@@ -21,6 +22,7 @@ const groups = computed(() => {
     members.filter(member => names?.includes(member.name))
   return [
     {
+      kind: 'props' as const,
       title: 'Props',
       typeLabel: 'Type',
       rows: pick(contractApi.props, props.members.props).map<Row>(prop => ({
@@ -31,11 +33,13 @@ const groups = computed(() => {
       }))
     },
     {
+      kind: 'emits' as const,
       title: 'Events',
       typeLabel: 'Arguments',
       rows: pick(contractApi.emits, props.members.emits)
     },
     {
+      kind: 'slots' as const,
       title: 'Slots',
       typeLabel: 'Slot props',
       rows: pick(contractApi.slots, props.members.slots).map<Row>(slot => ({
@@ -45,16 +49,19 @@ const groups = computed(() => {
       }))
     },
     {
+      kind: 'exposed' as const,
       title: 'Exposed',
       typeLabel: 'Signature',
       rows: pick(contractApi.exposed, props.members.exposed)
     },
     {
+      kind: 'functions' as const,
       title: 'Functions',
       typeLabel: 'Signature',
       rows: pick(contractApi.functions, props.members.functions)
     },
     {
+      kind: 'types' as const,
       title: 'Types',
       typeLabel: 'Kind',
       rows: pick(contractApi.types, props.members.types).map<Row>(type => ({
@@ -68,7 +75,7 @@ const groups = computed(() => {
 </script>
 
 <template>
-  <section aria-label="API">
+  <section :id="sectionAnchors.api" aria-label="API">
     <h2 class="pb-2 text-lg font-semibold">API on this page</h2>
     <div class="flex flex-col gap-4">
       <div v-for="group in groups" :key="group.title">
@@ -91,6 +98,7 @@ const groups = computed(() => {
             <tbody>
               <tr
                 v-for="row in group.rows"
+                :id="memberAnchor(group.kind, row.name)"
                 :key="row.name"
                 class="border-b last:border-0"
               >

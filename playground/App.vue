@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { SearchIcon } from '@lucide/vue'
+import { useEventListener } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
 import { pages } from './manifest'
+import DocSearch from './search/DocSearch.vue'
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
@@ -11,6 +14,34 @@ watch(theme, value => setTheme(value === 'system' ? null : value), {
   immediate: true
 })
 const themes = ['system', 'light', 'dark'] as const
+
+// Documentation search: Ctrl+K / ⌘K anywhere, `/` when not typing.
+const searchOpen = ref(false)
+const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
+const isTyping = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+useEventListener(document, 'keydown', (event: KeyboardEvent) => {
+  if (
+    (event.ctrlKey || event.metaKey) &&
+    !event.altKey &&
+    event.key.toLowerCase() === 'k'
+  ) {
+    event.preventDefault()
+    searchOpen.value = !searchOpen.value
+  } else if (
+    event.key === '/' &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !searchOpen.value &&
+    !isTyping(event.target)
+  ) {
+    event.preventDefault()
+    searchOpen.value = true
+  }
+})
 </script>
 
 <template>
@@ -20,6 +51,19 @@ const themes = ['system', 'light', 'dark'] as const
     >
       <p class="pb-1 text-sm font-semibold">Query Table</p>
       <p class="pb-4 text-xs text-muted-foreground">Playground</p>
+      <button
+        type="button"
+        data-testid="doc-search-button"
+        class="mb-3 flex min-h-10 w-full items-center gap-2 rounded-md border bg-input/30 px-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground lg:mb-4 lg:min-h-8"
+        @click="searchOpen = true"
+      >
+        <SearchIcon class="size-4 shrink-0 opacity-60" />
+        <span class="flex-1 text-left">Search docs</span>
+        <kbd
+          class="rounded border bg-muted px-1.5 font-mono text-[10px] tracking-widest"
+          >{{ shortcut }}</kbd
+        >
+      </button>
       <nav
         aria-label="Examples"
         class="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
@@ -56,5 +100,6 @@ const themes = ['system', 'light', 'dark'] as const
       <!-- A new page instance per route: each page mounts its own example. -->
       <RouterView :key="$route.path" />
     </main>
+    <DocSearch v-model:open="searchOpen" />
   </div>
 </template>
