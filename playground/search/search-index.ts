@@ -67,11 +67,23 @@ const memberSignature = (kind: MemberKind, name: string): string => {
 const memberDescription = (kind: MemberKind, name: string): string =>
   api[kind].find(member => member.name === name)?.description ?? ''
 
-/** All documents of the playground: one per page and per page entry. */
+/**
+ * All documents of the playground: one per page, one per API member and one
+ * per rule. A member or rule listed on several pages is indexed once, on the
+ * first page in manifest order that lists it, so a search shows it once.
+ */
 export const buildDocuments = (
   pages: PlaygroundPage[] = manifestPages
-): SearchDoc[] =>
-  pages.flatMap(page => {
+): SearchDoc[] => {
+  const seen = new Set<string>()
+  const firstListing = (key: string) => {
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  }
+  return pages.flatMap(page => {
     const base = { pageId: page.id, pageTitle: page.title }
     const kinds = (Object.keys(memberKinds) as MemberKind[]).filter(
       kind => (page.api[kind] ?? []).length > 0
@@ -93,19 +105,21 @@ export const buildDocuments = (
       anchor: ''
     }
     const members = kinds.flatMap(kind =>
-      (page.api[kind] ?? []).map<SearchDoc>(name => ({
-        ...base,
-        id: `${page.id}:${kind}:${name}`,
-        kind: memberKinds[kind],
-        title: name,
-        heading: memberSignature(kind, name),
-        body: plain(memberDescription(kind, name)),
-        anchor: memberAnchor(kind, name)
-      }))
+      (page.api[kind] ?? [])
+        .filter(name => firstListing(`${kind}:${name}`))
+        .map<SearchDoc>(name => ({
+          ...base,
+          id: `${page.id}:${kind}:${name}`,
+          kind: memberKinds[kind],
+          title: name,
+          heading: memberSignature(kind, name),
+          body: plain(memberDescription(kind, name)),
+          anchor: memberAnchor(kind, name)
+        }))
     )
     const rules = page.rules.flatMap<SearchDoc>(id => {
       const rule = api.rules.find(candidate => candidate.id === id)
-      return rule
+      return rule && firstListing(`rule:${id}`)
         ? [
             {
               ...base,
@@ -121,6 +135,7 @@ export const buildDocuments = (
     })
     return [pageDoc, ...members, ...rules]
   })
+}
 
 // Words split on anything but letters and digits; camelCase parts are added
 // too, so `rows` finds `totalRows` and `C-01` finds rule C-01.
