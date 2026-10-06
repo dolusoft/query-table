@@ -9,6 +9,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 import vueEslintParser from 'vue-eslint-parser'
 
+import layers from './scripts/eslint-layers.mjs'
+
 // Variables are camelCase; tests may also use UPPER_CASE constants and
 // PascalCase component stand-ins.
 const namingConvention = variableFormats => [
@@ -46,7 +48,8 @@ export default defineConfig([
     'playground/skin/ui',
     'playground/skin/lib/utils.ts',
     'playground/dist',
-    '.equivalence'
+    '.equivalence',
+    'packages/*/dist'
   ]),
   {
     files: ['**/*.{js,mjs,ts,vue}'],
@@ -144,7 +147,12 @@ export default defineConfig([
   {
     // Tests and the playground run in happy-dom or a real browser and may
     // read Node's `process`; specs sit next to the unit they cover.
-    files: ['tests/**', 'playground/**', 'src/**/*.spec.ts'],
+    files: [
+      'tests/**',
+      'playground/**',
+      'src/**/*.spec.ts',
+      'packages/*/tests/**'
+    ],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {
       '@typescript-eslint/naming-convention': namingConvention([
@@ -153,6 +161,23 @@ export default defineConfig([
         'PascalCase'
       ])
     }
+  },
+  {
+    // The v3 layers point one way (ADR 0003): the protocol imports nothing,
+    // the core only the protocol and @tanstack/table-core, and a feature only
+    // itself and shared/. Re-exports and dynamic imports count.
+    files: ['packages/*/src/**/*.ts'],
+    ignores: ['packages/*/src/**/*.spec.ts'],
+    plugins: { layers },
+    rules: { 'layers/boundaries': 'error' }
+  },
+  {
+    // The spike registers features under the same names as packages/, and
+    // both sit in one TypeScript program: the merged `Plugins` entries make
+    // the spike's `as never` casts look unnecessary. The spike stays as it
+    // was measured.
+    files: ['spike/**/*.ts'],
+    rules: { '@typescript-eslint/no-unnecessary-type-assertion': 'off' }
   },
   {
     // A playground example is named after the feature it shows.

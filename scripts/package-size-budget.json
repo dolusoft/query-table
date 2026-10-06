@@ -1,0 +1,26 @@
+{
+  "note": "Budget for `node scripts/package-size.mjs --check` (CI, P8): the cost, minified + gzip, of an app built from each fixture in fixtures/packages, TanStack included, minus the empty app. `measuredGzipBytes` is the value when the budget was last set; `maxGzipBytes` is that plus 5%, capped at `ceilingGzipBytes`, the SPEC-v3 ceiling from spike/REPORT.md. A budget above its ceiling fails the check: that is a design question for the maintainer, not a budget raise. Raise a budget only on purpose, in the same change that adds the weight.",
+  "history": [
+    "3.0.0-next.0 (PR-B): first measurement. The core fixture has five stock features (sorting, pagination, column filtering, global filtering, row selection; no sizing, D10) and both plugins. Its +5% (18344 B) is over the 17500 B ceiling, so the budget is the ceiling: 30 B of room."
+  ],
+  "fixtures": {
+    "protocol": {
+      "measuredGzipBytes": 1052,
+      "maxGzipBytes": 1105,
+      "ceilingGzipBytes": 1500
+    },
+    "server-query": {
+      "measuredGzipBytes": 13580,
+      "maxGzipBytes": 14259
+    },
+    "filter-input": {
+      "measuredGzipBytes": 11254,
+      "maxGzipBytes": 11817
+    },
+    "core": {
+      "measuredGzipBytes": 17470,
+      "maxGzipBytes": 17500,
+      "ceilingGzipBytes": 17500
+    }
+  }
+}
