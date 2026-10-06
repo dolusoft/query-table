@@ -1,9 +1,11 @@
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
+import type { QueryChangeReason, TableQuery } from '@dolusoft/query-table'
+
 import { columns, makeQuery, rows } from './fixtures'
-import TestTable from '../../playground/harness/TestTable.vue'
-import type { QueryChangeReason, TableQuery } from '../../src/contract'
+import { traceUpdate } from './trace'
+import TestTable from '../../apps/playground/harness/TestTable.vue'
 
 export { columns, el, rows, rule, sleep } from './fixtures'
 
@@ -30,8 +32,10 @@ export const renderTable = async (props: Record<string, unknown> = {}) => {
       totalRows: 50,
       sortable: true,
       filterable: true,
-      record: (query: TableQuery, reason: QueryChangeReason) =>
-        updates.push({ at: performance.now() - t0, query, reason }),
+      record: (query: TableQuery, reason: QueryChangeReason) => {
+        traceUpdate(query, reason)
+        updates.push({ at: performance.now() - t0, query, reason })
+      },
       ...props
     } as never
   })
@@ -48,7 +52,7 @@ export const renderTable = async (props: Record<string, unknown> = {}) => {
 }
 
 /**
- * Saves a full-page PNG to tests/browser/__screenshots__/ (gitignored) for a
+ * Saves a full-page PNG to tests/contract/browser/__screenshots__/ (gitignored) for a
  * human or an agent to look at. Not a visual baseline: nothing compares it.
  */
 export const shot = (name: string) =>

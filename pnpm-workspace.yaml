@@ -1,3 +1,8 @@
+# The packages are published (ADR 0003); apps/ holds the playground, which is
+# never part of a package.
+packages:
+  - packages/*
+
 allowBuilds:
   esbuild: true
   unrs-resolver: false

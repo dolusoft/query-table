@@ -1,0 +1,127 @@
+import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
+
+import type {
+  FilterMenuSlotProps,
+  HeaderSlotProps
+} from '@dolusoft/query-table'
+import QueryTable from '@dolusoft/query-table'
+
+import {
+  makeColumns,
+  makeQuery,
+  makeRows,
+  mountTable,
+  reasons,
+  type Mounted
+} from '../../support/mount-table'
+
+let mounted: Mounted | null = null
+const mountIt = (...args: Parameters<typeof mountTable>) => {
+  mounted = mountTable(...args)
+  return mounted
+}
+
+afterEach(() => {
+  mounted?.wrapper.unmount()
+  mounted = null
+})
+
+describe('C-51 Header slot', () => {
+  const seen: HeaderSlotProps[] = []
+  const slots = {
+    'header-name': (props: HeaderSlotProps) => {
+      seen.push(props)
+      return h(
+        'button',
+        { type: 'button', class: 'mine', onClick: props.toggleSort },
+        `${props.column.title} ${props.sortDirection ?? '-'}`
+      )
+    }
+  }
+
+  it('replaces the label only: the th, aria-sort, filter row and handle stay', () => {
+    const m = mountIt(
+      {
+        sortable: true,
+        filterable: true,
+        resizable: true,
+        query: makeQuery({ sort: { field: 'name', direction: 'asc' } })
+      },
+      { slots }
+    )
+    const th = m.wrapper.find('th[data-field="name"]')
+    expect(th.find('.qt-sort').exists()).toBe(false)
+    expect(th.find('.qt-title').exists()).toBe(false)
+    expect(th.find('button.mine').text()).toBe('Name asc')
+    expect(th.attributes('aria-sort')).toBe('ascending')
+    expect(th.attributes('data-sort')).toBe('asc')
+    expect(th.attributes('scope')).toBe('col')
+    expect(th.find('.qt-filter').exists()).toBe(true)
+    expect(th.find('.qt-resize-handle').exists()).toBe(true)
+    // No nested button: the slot is not drawn inside one.
+    expect(th.find('button.mine').element.parentElement).toBe(th.element)
+    // Other headers keep the table's own sort button.
+    expect(m.wrapper.find('th[data-field="age"] .qt-sort').exists()).toBe(true)
+  })
+
+  it('sorts through toggleSort as a header click does', async () => {
+    const m = mountIt({ sortable: true }, { slots })
+    await m.wrapper.find('button.mine').trigger('click')
+    await m.wrapper.find('button.mine').trigger('click')
+    expect(reasons(m.events)).toEqual(['sort', 'sort'])
+    expect(m.events.map(([query]) => query.sort?.direction)).toEqual([
+      'asc',
+      'desc'
+    ])
+    expect(seen.at(-1)).toMatchObject({ sortable: true, sortDirection: 'desc' })
+    // The third click removes the sort (C-07).
+    await m.wrapper.find('button.mine').trigger('click')
+    expect(m.events.at(-1)?.[0].sort).toBeNull()
+    expect(seen.at(-1)).toMatchObject({ sortDirection: null })
+  })
+
+  it('reports a column that cannot sort and ignores toggleSort there', async () => {
+    const m = mountIt({ sortable: false }, { slots })
+    await m.wrapper.find('button.mine').trigger('click')
+    expect(m.events).toEqual([])
+    expect(seen.at(-1)).toMatchObject({ sortable: false, sortDirection: null })
+  })
+})
+
+describe('C-51 header slots given later', () => {
+  it('draws a header-<field> or filter-menu slot that appears after mount, and drops it again', async () => {
+    const show = ref(false)
+    const Host = defineComponent(
+      () => () =>
+        h(
+          QueryTable as never,
+          {
+            query: makeQuery(),
+            columns: makeColumns(),
+            rows: makeRows(),
+            filterable: true
+          },
+          show.value
+            ? {
+                'header-name': () => h('i', { class: 'late' }, 'late'),
+                'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger)
+              }
+            : {}
+        )
+    )
+    const wrapper = mount(Host, { attachTo: document.body })
+    expect(wrapper.find('.late').exists()).toBe(false)
+    expect(wrapper.find('.qt-filter-button').exists()).toBe(false)
+    show.value = true
+    await nextTick()
+    expect(wrapper.find('th[data-field="name"] .late').exists()).toBe(true)
+    expect(wrapper.find('.qt-filter-button').exists()).toBe(true)
+    show.value = false
+    await nextTick()
+    expect(wrapper.find('.late').exists()).toBe(false)
+    expect(wrapper.find('.qt-filter-button').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})

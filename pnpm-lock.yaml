@@ -187,6 +187,12 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.2)
+      '@tanstack/table-core':
+        specifier: 9.2.6
+        version: 9.2.6
+      '@tanstack/vue-table':
+        specifier: 9.2.6
+        version: 9.2.6(vue@3.5.43(typescript@6.0.3))
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -214,6 +220,9 @@ importers:
       '@vueuse/core':
         specifier: ^15.0.0
         version: 15.0.0(vue@3.5.43(typescript@6.0.3))
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       axe-core:
         specifier: ^4.13.0
         version: 4.13.0
@@ -307,6 +316,33 @@ importers:
       vue-tsc:
         specifier: ^3.3.12
         version: 3.3.12(typescript@6.0.3)
+
+  packages/query-protocol: {}
+
+  packages/query-table-core:
+    dependencies:
+      '@dolusoft/query-protocol':
+        specifier: workspace:*
+        version: link:../query-protocol
+      '@tanstack/table-core':
+        specifier: 9.2.6
+        version: 9.2.6
+
+  packages/vue:
+    dependencies:
+      '@dolusoft/query-protocol':
+        specifier: workspace:*
+        version: link:../query-protocol
+      '@dolusoft/query-table-core':
+        specifier: workspace:*
+        version: link:../query-table-core
+      '@tanstack/vue-table':
+        specifier: 9.2.6
+        version: 9.2.6(vue@3.5.43(typescript@6.0.3))
+    devDependencies:
+      vue:
+        specifier: ^3.5.43
+        version: 3.5.43(typescript@6.0.3)
 
 packages:
 
@@ -1295,8 +1331,21 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
+  '@tanstack/store@0.11.2':
+    resolution: {integrity: sha512-sJ4mjol8uQsHV0gOJzzjwXfh2Fwm+Sz0+8deqiTm4jGbMdjzNSW+xZCFm0kUa870uhd8yi+DpKnZb5Kc4apa0Q==}
+
+  '@tanstack/table-core@9.2.6':
+    resolution: {integrity: sha512-t5LaLx8gDCgzjvwtZo5xtLklJP11D9zaKOW8q6jOCyuQYhkqpTK1heqMfgTQwDlhl0dU8f1X66Xurbj3jpCUSw==}
+    engines: {node: '>=20'}
+
   '@tanstack/virtual-core@3.17.11':
     resolution: {integrity: sha512-+ILjvtHup6Y2hzQ6YzwMgX1Q+oQpxEGOXCEsCNaPoIP0VxMbizIBTmYTDtkerkIQS8/CbP1BRuyt8V/8BCsy1g==}
+
+  '@tanstack/vue-table@9.2.6':
+    resolution: {integrity: sha512-aXVhjatniGb7XkTt/JrMDzeqkK5cgxI++mOOwt1ibsz0du+8iluEvN7FZUBsTk49Lh0YVVIhrhN0mKFmkliqPg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      vue: '>=3.2'
 
   '@tanstack/vue-virtual@3.13.39':
     resolution: {integrity: sha512-AG8sI+6nfrDvN6ixuHJL9LaJTf3//0V5VITZYW3UOaIuSVexnEzsbMu4LH/JhMfRTxwhUXPnLqkl1DlzkZbRtg==}
@@ -5138,7 +5187,19 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.3.2(@types/node@26.6.4)(@vitejs/devtools@0.7.6)(jiti@2.7.0)(stylus@0.57.0(supports-color@7.2.0))(yaml@2.9.1)
 
+  '@tanstack/store@0.11.2': {}
+
+  '@tanstack/table-core@9.2.6':
+    dependencies:
+      '@tanstack/store': 0.11.2
+
   '@tanstack/virtual-core@3.17.11': {}
+
+  '@tanstack/vue-table@9.2.6(vue@3.5.43(typescript@6.0.3))':
+    dependencies:
+      '@tanstack/store': 0.11.2
+      '@tanstack/table-core': 9.2.6
+      vue: 3.5.43(typescript@6.0.3)
 
   '@tanstack/vue-virtual@3.13.39(vue@3.5.43(typescript@6.0.3))':
     dependencies:

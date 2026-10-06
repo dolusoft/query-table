@@ -1,0 +1,375 @@
+// The feature matrix: one data file that the "Features" page draws and
+// feature-matrix.spec.ts checks. A row says whether TanStack Table has the
+// feature, where Query Table offers it today and what it takes on the server.
+
+/**
+ * Where a feature can be used. `planned` is 3.1 (K8), `later` is further out,
+ * `recipe` is built from the slots and state in the playground, not shipped.
+ */
+export type Availability = 'yes' | 'planned' | 'later' | 'recipe' | 'no'
+
+/**
+ * What a feature takes when the data lives on a server:
+ * `server` works as the query goes to the server, `backend` needs the server
+ * to implement it, `client` works on rows that are all in the browser only.
+ */
+export type ServerMode = 'server' | 'backend' | 'client'
+
+export type FeatureGroup = 'open' | 'planned' | 'backend' | 'client' | 'own'
+
+export interface Feature {
+  /** Element id suffix on the page, the search anchor. */
+  id: string
+  group: FeatureGroup
+  title: string
+  summary: string
+  /** The TanStack feature behind it (an `id` of `tanstackFeatureGuides`), if TanStack has one. */
+  tanstack: string | null
+  /** The `QueryTable` component and `useQueryTable()`. */
+  component: Availability
+  /** TanStack Table with `serverQueryFeature` / `filterInputFeature`. */
+  tanstackPath: Availability
+  /** `null` when the question does not apply (a UI or process feature). */
+  mode: ServerMode | null
+  /** A playground page id (manifest) that shows it live. */
+  example?: string
+  /** A file of the repository that explains it. */
+  repoPath?: string
+}
+
+export const serverModeLabels: Record<ServerMode, string> = {
+  server: 'Works on the server',
+  backend: 'Needs backend support',
+  client: 'Client data only'
+}
+
+export const availabilityLabels: Record<Availability, string> = {
+  yes: 'Yes',
+  planned: '3.1',
+  later: 'Later',
+  recipe: 'Recipe',
+  no: 'No'
+}
+
+export const groupTitles: Record<FeatureGroup, string> = {
+  open: 'Open in Query Table today',
+  planned: 'Coming in 3.1',
+  backend: 'Needs support from your backend',
+  client: 'Client-side data only',
+  own: 'Only in Query Table'
+}
+
+export const groupNotes: Record<FeatureGroup, string> = {
+  open: 'TanStack Table has these and Query Table turns them into one query the server answers.',
+  planned:
+    'Usable today on the TanStack path; the `QueryTable` component gets them in 3.1.',
+  backend:
+    'TanStack has them, but the table cannot do them for rows it does not hold: the server must group, total or count, and the query has no way to ask yet.',
+  client:
+    'They run over every row in the browser, so they only make sense when all rows are loaded.',
+  own: 'What TanStack Table does not have and Query Table adds on top of it.'
+}
+
+export const featureGroups: FeatureGroup[] = [
+  'open',
+  'planned',
+  'backend',
+  'client',
+  'own'
+]
+
+export const features: Feature[] = [
+  // A: open today
+  {
+    id: 'sorting',
+    group: 'open',
+    title: 'Sorting',
+    summary:
+      'One sort at a time: ascending, descending, none. The click emits `query.sort`.',
+    tanstack: 'sorting',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'sorting'
+  },
+  {
+    id: 'pagination',
+    group: 'open',
+    title: 'Pagination (offset and cursor)',
+    summary:
+      'A page number and page size, or an opaque cursor when the total is unknown.',
+    tanstack: 'pagination',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'pagination'
+  },
+  {
+    id: 'column-filtering',
+    group: 'open',
+    title: 'Column filtering',
+    summary:
+      'Filter rules per column with ten conditions; the server evaluates them.',
+    tanstack: 'column-filtering',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'filtering'
+  },
+  {
+    id: 'global-search',
+    group: 'open',
+    title: 'Global search',
+    summary:
+      'One search text in `query.search`; the server decides what it matches.',
+    tanstack: 'global-filtering',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'search-selection-cursors'
+  },
+  {
+    id: 'row-selection',
+    group: 'open',
+    title: 'Row selection',
+    summary:
+      'A controlled map of row key to `true`; keys of other pages stay in it.',
+    tanstack: 'row-selection',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'search-selection-cursors'
+  },
+  {
+    id: 'row-expanding',
+    group: 'open',
+    title: 'Row expanding',
+    summary:
+      'A nested table or any content under a row; it opens the rows given and fetches nothing.',
+    tanstack: 'expanding',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'row-expansion'
+  },
+  {
+    id: 'column-pinning-left',
+    group: 'open',
+    title: 'Pinning columns to the left',
+    summary:
+      'Pinned columns come first and the table measures their sticky offsets.',
+    tanstack: 'column-pinning',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-pinning'
+  },
+  {
+    id: 'column-sizing',
+    group: 'open',
+    title: 'Column sizing and resizing',
+    summary:
+      'Drag or keyboard handles on the header; the consumer keeps the widths. On the TanStack path use TanStack’s own column resizing.',
+    tanstack: 'column-resizing',
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: 'server',
+    example: 'column-resizing'
+  },
+  // B: planned
+  {
+    id: 'column-visibility',
+    group: 'planned',
+    title: 'Column visibility',
+    summary:
+      'Show and hide columns from the table. Today `Column.hide` hides one from your own code.',
+    tanstack: 'column-visibility',
+    component: 'planned',
+    tanstackPath: 'yes',
+    mode: 'server'
+  },
+  {
+    id: 'column-ordering',
+    group: 'planned',
+    title: 'Column order',
+    summary: 'Let the user reorder columns.',
+    tanstack: 'column-ordering',
+    component: 'planned',
+    tanstackPath: 'yes',
+    mode: 'server'
+  },
+  {
+    id: 'column-pinning-right',
+    group: 'planned',
+    title: 'Pinning columns to the right',
+    summary: 'The `end` side of column pinning.',
+    tanstack: 'column-pinning',
+    component: 'planned',
+    tanstackPath: 'yes',
+    mode: 'server'
+  },
+  {
+    id: 'row-pinning',
+    group: 'planned',
+    title: 'Row pinning',
+    summary: 'Keep chosen rows at the top or bottom of the page.',
+    tanstack: 'row-pinning',
+    component: 'planned',
+    tanstackPath: 'yes',
+    mode: 'server'
+  },
+  // C: backend support
+  {
+    id: 'grouping',
+    group: 'backend',
+    title: 'Grouping and aggregation',
+    summary:
+      'Group rows by a column and total each group: only the server sees every row.',
+    tanstack: 'grouping',
+    component: 'no',
+    tanstackPath: 'no',
+    mode: 'backend'
+  },
+  {
+    id: 'faceting',
+    group: 'backend',
+    title: 'Faceting',
+    summary:
+      'Distinct values and counts of a column for a filter list: the server has to count them.',
+    tanstack: 'column-faceting',
+    component: 'no',
+    tanstackPath: 'no',
+    mode: 'backend'
+  },
+  // D: client data only
+  {
+    id: 'fuzzy-search',
+    group: 'client',
+    title: 'Fuzzy search',
+    summary:
+      'Ranks rows by similarity on the client; a server search is `query.search`.',
+    tanstack: 'fuzzy-filtering',
+    component: 'no',
+    tanstackPath: 'no',
+    mode: 'client'
+  },
+  {
+    id: 'client-functions',
+    group: 'client',
+    title: 'Client-side filter and sort functions',
+    summary:
+      '`filterFns` and `sortFns` run over every row; Query Table turns them off (`manual*`).',
+    tanstack: 'column-filtering',
+    component: 'no',
+    tanstackPath: 'no',
+    mode: 'client'
+  },
+  {
+    id: 'virtualization',
+    group: 'client',
+    title: 'Virtual scrolling',
+    summary:
+      'Draw only the rows in view. It will be a separate package, later.',
+    tanstack: 'virtualization',
+    component: 'later',
+    tanstackPath: 'later',
+    mode: 'client'
+  },
+  // E: only ours
+  {
+    id: 'filter-grammar',
+    group: 'own',
+    title: 'Filter text grammar, condition menu, debounce, echo guard',
+    summary:
+      'Type `*foo*`, `!foo` or `a,b` and get clean rules; a condition menu picks the rest. Typing is debounced and the answer to your own update never rewrites the input.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'filtering'
+  },
+  {
+    id: 'query-protocol',
+    group: 'own',
+    title: 'Server Query protocol, JSON Schema and a .NET example',
+    summary:
+      'The query is plain JSON with a JSON Schema; the guide has a .NET project that validates it.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    repoPath: 'docs/guide/protocol.md'
+  },
+  {
+    id: 'one-action-one-update',
+    group: 'own',
+    title: 'One action, one update, with a reason',
+    summary:
+      'Every user action emits one `update:query` with a `reason`; a pending filter goes first, in its own update.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'query-model'
+  },
+  {
+    id: 'cursor-protocol',
+    group: 'own',
+    title: 'Cursor protocol',
+    summary:
+      'Opaque cursors with a direction and a consumer-owned `prev`, for results with no known total.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'search-selection-cursors'
+  },
+  {
+    id: 'pin-offsets',
+    group: 'own',
+    title: 'Measured sticky offsets for pinned columns',
+    summary:
+      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: null,
+    example: 'column-pinning'
+  },
+  {
+    id: 'keyboard-resize',
+    group: 'own',
+    title: 'Keyboard and accessible resizing, with consumer veto',
+    summary:
+      'Arrow keys, Enter to fit, a separator role with values; the width only changes when you write it back.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: null,
+    example: 'column-resizing'
+  },
+  {
+    id: 'phone-mode',
+    group: 'own',
+    title: 'Phone mode: filter chips and a sheet',
+    summary:
+      'Narrower than 640 px the table switches to compact headers, filter chips and a filter sheet. They are built from the table’s slots in the playground harness; the package stays headless.',
+    tanstack: null,
+    component: 'recipe',
+    tanstackPath: 'recipe',
+    mode: null,
+    example: 'overview'
+  },
+  {
+    id: 'contract-tests',
+    group: 'own',
+    title: 'Contract tests',
+    summary:
+      'The API, the DOM hooks and the behavior rules are written down and the build fails when a rule has no test.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: null,
+    repoPath: 'contract/rules.md'
+  }
+]

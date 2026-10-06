@@ -1,0 +1,12 @@
+{
+  "page": 1,
+  "pageSize": 20,
+  "sort": { "field": "joined", "direction": "desc" },
+  "filters": [
+    { "field": "name", "condition": "StartsWith", "value": "Ali" },
+    { "field": "name", "condition": "Contains", "value": "veli" },
+    { "field": "age", "condition": "GreaterThanOrEqual", "value": 18 },
+    { "field": "active", "condition": "Equal", "value": true }
+  ],
+  "search": "ankara"
+}

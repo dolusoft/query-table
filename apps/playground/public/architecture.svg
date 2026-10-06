@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1340" viewBox="0 0 1600 1340" role="img" aria-labelledby="title desc">
+  <title id="title">Query Table v3 — architecture</title>
+  <desc id="desc">Bottom to top: TanStack Table v9, the independent zero-dependency query-protocol, query-table-core with two independent features using a shared contract, the CSS-free Vue package, and two consumer paths: the QueryTable component (with row selection, debounced search and cursor paging) and the TanStack path that uses the core features directly. Solid arrows point from consumer to dependency. Core depends separately on protocol and TanStack; protocol does not depend on TanStack. The application sends Query JSON to a backend that consumes the protocol or its generated schema.</desc>
+  <defs>
+    <marker id="dependency" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker>
+    <marker id="transport" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0f766e"/></marker>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #172033; }
+      .title { font-size: 40px; font-weight: 750; }
+      .package { font-family: Consolas, "Liberation Mono", monospace; font-size: 29px; font-weight: 700; }
+      .heading { font-size: 25px; font-weight: 700; }
+      .code { font-family: Consolas, "Liberation Mono", monospace; font-size: 23px; font-weight: 600; }
+      .body { font-size: 22px; }
+      .small { font-size: 19px; fill: #475569; }
+      .label { font-size: 18px; font-weight: 650; fill: #475569; }
+      .dep { fill: none; stroke: #475569; stroke-width: 2.5; marker-end: url(#dependency); stroke-linejoin: round; }
+      .flow { fill: none; stroke: #0f766e; stroke-width: 3; stroke-dasharray: 9 7; marker-end: url(#transport); stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- An opaque neutral card preserves contrast in both GitHub themes. -->
+  <rect width="1600" height="1340" rx="24" fill="#f8fafc"/>
+  <text x="70" y="68" class="title">Query Table v3</text>
+  <text x="70" y="106" class="body">Architecture · dependencies point to what is used</text>
+  <path d="M 966 60 H 1020" class="dep"/>
+  <text x="1038" y="66" class="small">imports / depends on</text>
+  <path d="M 966 99 H 1020" class="flow"/>
+  <text x="1038" y="105" class="small">Query JSON / application transport</text>
+
+  <!-- Main layer cards, ordered from consumers to foundations. -->
+  <rect x="120" y="156" width="1000" height="173" rx="16" fill="#eef2ff" stroke="#a5b4fc"/>
+  <rect x="145" y="209" width="450" height="72" rx="10" fill="#ffffff" stroke="#c7d2fe"/>
+  <rect x="640" y="209" width="455" height="72" rx="10" fill="#ffffff" stroke="#c7d2fe"/>
+  <rect x="120" y="389" width="1000" height="153" rx="16" fill="#eff6ff" stroke="#93c5fd"/>
+  <rect x="120" y="602" width="1000" height="318" rx="16" fill="#eff6ff" stroke="#93c5fd"/>
+  <rect x="145" y="674" width="450" height="128" rx="12" fill="#ffffff" stroke="#bfdbfe"/>
+  <rect x="640" y="674" width="455" height="128" rx="12" fill="#ffffff" stroke="#bfdbfe"/>
+  <rect x="145" y="851" width="950" height="47" rx="10" fill="#e2e8f0" stroke="#94a3b8"/>
+  <rect x="120" y="990" width="1000" height="128" rx="16" fill="#f0fdfa" stroke="#5eead4"/>
+  <rect x="812" y="1006" width="282" height="34" rx="17" fill="#ccfbf1"/>
+  <rect x="120" y="1181" width="1000" height="90" rx="16" fill="#f1f5f9" stroke="#94a3b8"/>
+  <rect x="1240" y="389" width="310" height="306" rx="16" fill="#f0fdfa" stroke="#5eead4"/>
+
+  <!-- Solid arrows always terminate at the dependency, never the importer. -->
+  <path d="M 370 329 V 389" class="dep"/>
+  <path d="M 870 329 V 357 H 1170 V 634 H 1120" class="dep"/>
+  <path d="M 370 542 V 602" class="dep"/>
+  <path d="M 370 802 V 851" class="dep"/>
+  <path d="M 870 802 V 851" class="dep"/>
+  <path d="M 620 920 V 990" class="dep"/>
+  <path d="M 120 640 H 70 V 1226 H 120" class="dep"/>
+  <path d="M 1395 695 V 1054 H 1120" class="dep"/>
+
+  <!-- Transport is the consumer application's responsibility. -->
+  <path d="M 1120 245 H 1395 V 389" class="flow"/>
+
+  <text x="145" y="191" class="heading">Consumers · controlled query authority</text>
+  <text x="370" y="253" text-anchor="middle" class="heading">QueryTable path</text>
+  <text x="868" y="236" text-anchor="middle" class="heading">TanStack path</text>
+  <text x="868" y="264" text-anchor="middle" class="small">TanStack + shadcn Table + features</text>
+  <text x="145" y="312" class="small">frontendx: QueryTable only until shadcn decision</text>
+  <text x="885" y="350" class="label">direct feature imports</text>
+
+  <text x="145" y="430" class="package">@dolusoft/query-table</text>
+  <text x="1089" y="429" text-anchor="end" class="body">Vue · ships no CSS</text>
+  <text x="145" y="474" class="code">QueryTable → useQueryTable()</text>
+  <text x="145" y="512" class="small">Vue adapter: @tanstack/vue-table</text>
+  <text x="1089" y="474" text-anchor="end" class="small">v-model:selection · debounced search</text>
+  <text x="1089" y="512" text-anchor="end" class="small">cursor paging (next / prev)</text>
+  <text x="390" y="578" class="label">uses core features</text>
+
+  <text x="145" y="636" class="package">@dolusoft/query-table-core</text>
+  <text x="145" y="664" class="small">Two independent TanStack features · no cross-feature imports</text>
+  <text x="170" y="711" class="code">serverQueryFeature</text>
+  <text x="170" y="740" class="small">/server-query</text>
+  <text x="170" y="772" class="small">TanStack state ↔ Query · reason · echo guard</text>
+  <text x="665" y="711" class="code">filterInputFeature</text>
+  <text x="665" y="740" class="small">/filter-input</text>
+  <text x="665" y="772" class="small">drafts · parse · debounce · flush</text>
+  <text x="620" y="830" text-anchor="middle" class="label">shared contract</text>
+  <text x="170" y="882" class="code">shared/</text>
+  <text x="328" y="882" class="body">beforeAction · dispatch(action, reason) · dispose</text>
+  <text x="640" y="962" class="label">protocol types / grammar</text>
+  <text x="48" y="933" transform="rotate(-90 48 933)" text-anchor="middle" class="label">core → TanStack feature API</text>
+
+  <text x="145" y="1039" class="package">@dolusoft/query-protocol</text>
+  <text x="953" y="1029" text-anchor="middle" class="label">ZERO DEPENDENCIES</text>
+  <text x="145" y="1074" class="body">Query and cursor types · filter grammar · parseFilterInput</text>
+  <text x="145" y="1102" class="small">JSON Schema (generated artifact)</text>
+  <text x="620" y="1156" text-anchor="middle" class="small">Independent foundations — no protocol → TanStack dependency</text>
+  <text x="145" y="1218" class="heading">TanStack Table v9</text>
+  <text x="145" y="1250" class="code">@tanstack/table-core</text>
+
+  <text x="1264" y="435" class="heading">Server / backend</text>
+  <text x="1264" y="491" class="body">Receives Query JSON</text>
+  <text x="1264" y="535" class="body">Consumes protocol</text>
+  <text x="1264" y="565" class="body">or generated schema</text>
+  <text x="1264" y="626" class="small">Application owns transport;</text>
+  <text x="1264" y="655" class="small">table library does not fetch.</text>
+  <text x="1235" y="229" class="label" style="fill:#0f766e">Query JSON</text>
+  <text x="1411" y="307" class="small" style="fill:#0f766e">application</text>
+  <text x="1411" y="333" class="small" style="fill:#0f766e">transport</text>
+  <text x="1258" y="1040" text-anchor="middle" class="label">protocol / schema</text>
+
+  <text x="120" y="1313" class="small">Solid arrows: consumer → dependency. No reverse imports. Dashed arrow: runtime data, not an import.</text>
+</svg>

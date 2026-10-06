@@ -1,0 +1,43 @@
+{
+  "name": "@dolusoft/query-table-core",
+  "version": "3.0.0",
+  "description": "Headless core of a server-side table: TanStack Table plugins that turn sort, filter, page and search actions into query updates the consumer owns.",
+  "private": false,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server-query": {
+      "types": "./dist/types/features/server-query/index.d.ts",
+      "default": "./dist/server-query.js"
+    },
+    "./filter-input": {
+      "types": "./dist/types/features/filter-input/index.d.ts",
+      "default": "./dist/filter-input.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dolusoft/query-table.git",
+    "directory": "packages/query-table-core"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/emit-type-extensions.mjs dist/types"
+  },
+  "dependencies": {
+    "@dolusoft/query-protocol": "workspace:*",
+    "@tanstack/table-core": "9.2.6"
+  }
+}

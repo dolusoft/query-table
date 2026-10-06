@@ -1,13 +1,15 @@
 name: Release
 
-# Publishes a version: push a tag `v<version>` that equals the `version` in
-# package.json (see CONTRIBUTING.md, "Releasing").
+# Publishes a version of the three packages together: push a tag
+# `v<version>` that equals the `version` of the root and of every
+# packages/*/package.json (see CONTRIBUTING.md, "Releasing").
 #
-#   verify   read-only token: runs every check of CI, builds, packs and
-#            uploads the tarball as a workflow artifact.
+#   verify   read-only token: runs every check of CI, builds, packs one
+#            tarball per package and uploads them as a workflow artifact.
 #   publish  write token, no install and no repository code: downloads the
-#            tarball, creates the GitHub Release, checks that the asset URL
-#            answers, and optionally tells one consumer repository:
+#            tarballs, creates one GitHub Release with all three, checks that
+#            every asset URL answers, and optionally tells one consumer
+#            repository the URL of the Vue tarball:
 #
 #   secret   CONSUMER_DISPATCH_TOKEN  a token allowed to dispatch to that repo
 #   variable CONSUMER_REPO            `owner/name` of that repo
@@ -49,7 +51,8 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: Tag matches package.json
+      # The three packages are released together under one version.
+      - name: Tag matches every package.json
         id: version
         run: |
           version="$(node -p "require('./package.json').version")"
@@ -57,6 +60,13 @@ jobs:
             echo "::error::Tag $TAG does not match package.json version $version (expected v$version)."
             exit 1
           fi
+          for dir in packages/*/; do
+            own="$(node -p "require('./${dir}package.json').version")"
+            if [ "$own" != "$version" ]; then
+              echo "::error::${dir}package.json is $own, the release is $version."
+              exit 1
+            fi
+          done
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - run: pnpm install --frozen-lockfile
@@ -64,6 +74,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm knip
       - run: pnpm contract:check
+      - run: pnpm schema:check
       - run: pnpm playground:build
       - run: pnpm test:coverage
 
@@ -85,26 +96,34 @@ jobs:
       # One build of dist/; the checks below and the pack use it.
       - run: pnpm build
       - run: pnpm check:package
+      - run: pnpm check:deps
       - run: pnpm check:size
+      - run: pnpm check:package-size
       - run: pnpm api:check
+      - run: pnpm pack-install
+        timeout-minutes: 5
 
+      # One tarball per package; pnpm writes the version in place of
+      # `workspace:*`. The Vue tarball is the one a consumer adds.
       - name: Pack
         id: pack
         run: |
           mkdir -p release
-          pnpm pack --pack-destination release
+          for dir in packages/query-protocol packages/query-table-core packages/vue; do
+            (cd "$dir" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/release")
+          done
           count="$(find release -maxdepth 1 -name '*.tgz' | wc -l)"
-          if [ "$count" -ne 1 ]; then
-            echo "::error::Expected one tarball in release/, found $count."
+          if [ "$count" -ne 3 ]; then
+            echo "::error::Expected three tarballs in release/, found $count."
             exit 1
           fi
-          file="$(find release -maxdepth 1 -name '*.tgz')"
-          echo "name=$(basename "$file")" >> "$GITHUB_OUTPUT"
+          echo "name=dolusoft-query-table-${{ steps.version.outputs.version }}.tgz" >> "$GITHUB_OUTPUT"
+          test -f "release/dolusoft-query-table-${{ steps.version.outputs.version }}.tgz"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: tarball
-          path: release/${{ steps.pack.outputs.name }}
+          name: tarballs
+          path: release/*.tgz
           if-no-files-found: error
           retention-days: 7
 
@@ -121,41 +140,49 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: tarball
+          name: tarballs
           path: release
 
+      # The three tarballs go up together, in one release.
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
-            # A re-run may only replace the asset of the same commit: if the
+            # A re-run may only replace the assets of the same commit: if the
             # tag now names another commit, stop instead of overwriting.
             tagged="$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)"
             if [ "$tagged" != "$GITHUB_SHA" ]; then
               echo "::error::Release $TAG exists for commit $tagged, this run is for $GITHUB_SHA."
               exit 1
             fi
-            gh release upload "$TAG" "release/$NAME" --clobber
+            gh release upload "$TAG" release/*.tgz --clobber
           else
-            gh release create "$TAG" "release/$NAME" --title "$TAG" --generate-notes --verify-tag
+            gh release create "$TAG" release/*.tgz --title "$TAG" --generate-notes --verify-tag
           fi
 
-      - name: Check the asset URL
+      # Every asset answers; the output is the URL of the Vue tarball.
+      - name: Check the asset URLs
         id: asset
         run: |
-          url="https://github.com/${GH_REPO}/releases/download/${TAG}/${NAME}"
-          for attempt in 1 2 3 4 5 6; do
-            status="$(curl -sSL -o /dev/null -w '%{http_code}' "$url" || true)"
-            echo "attempt $attempt: $status $url"
-            if [ "$status" = "200" ]; then
-              echo "url=$url" >> "$GITHUB_OUTPUT"
-              exit 0
+          for file in release/*.tgz; do
+            url="https://github.com/${GH_REPO}/releases/download/${TAG}/$(basename "$file")"
+            ok=""
+            for attempt in 1 2 3 4 5 6; do
+              status="$(curl -sSL -o /dev/null -w '%{http_code}' "$url" || true)"
+              echo "attempt $attempt: $status $url"
+              if [ "$status" = "200" ]; then
+                ok=1
+                break
+              fi
+              sleep 10
+            done
+            if [ -z "$ok" ]; then
+              echo "::error::The release asset does not answer 200: $url"
+              exit 1
             fi
-            sleep 10
           done
-          echo "::error::The release asset does not answer 200: $url"
-          exit 1
+          echo "url=https://github.com/${GH_REPO}/releases/download/${TAG}/${NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Tell the consumer repository
         env:

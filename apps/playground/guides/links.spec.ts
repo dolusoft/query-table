@@ -1,0 +1,47 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
+import { rawUrl, skillFiles } from './guides'
+import { tanstackFeatureGuides, tanstackGeneralLinks } from './tanstack'
+import { repositoryUrl } from '../home/home-content'
+
+// `pnpm check:links`: asks the network whether every external link of the
+// guide pages answers 200. It is opt-in (CHECK_LINKS=1) because a unit run
+// must not need a network. LINK_BRANCH checks the skill files on a branch
+// that is not merged yet (the page links `main`).
+const enabled = Boolean(process.env.CHECK_LINKS)
+const branch = process.env.LINK_BRANCH
+
+const urls = [
+  ...tanstackGeneralLinks.map(link => link.url),
+  ...tanstackFeatureGuides.map(link => link.url),
+  repositoryUrl,
+  ...skillFiles.map(path =>
+    branch ? rawUrl(path).replace('/main/', `/${branch}/`) : rawUrl(path)
+  )
+]
+
+describe.skipIf(!enabled)('external links', () => {
+  it('answers 200 for every link', async () => {
+    // Redirects are followed: tanstack.com sends `/table/v9/...` on to the
+    // current docs while v9 is the latest version, and the final answer
+    // must be 200.
+    const failed: string[] = []
+    let redirected = 0
+    await Promise.all(
+      urls.map(async url => {
+        const response = await fetch(url)
+        if (response.redirected) {
+          redirected += 1
+        }
+        if (response.status !== 200) {
+          failed.push(`${response.status} ${url}`)
+        }
+      })
+    )
+    console.info(
+      `checked ${urls.length} links, ${redirected} redirected, ${failed.length} failed`
+    )
+    expect(failed).toEqual([])
+  }, 60_000)
+})

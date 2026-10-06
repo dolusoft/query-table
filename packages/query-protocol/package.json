@@ -1,0 +1,32 @@
+{
+  "name": "@dolusoft/query-protocol",
+  "version": "3.0.0",
+  "description": "The query a server-side table emits and a backend answers: types, rules and the filter grammar. No dependencies.",
+  "private": false,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "main": "./dist/query-protocol.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/query-protocol.js"
+    },
+    "./query.schema.json": "./dist/query.schema.json"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dolusoft/query-table.git",
+    "directory": "packages/query-protocol"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/emit-type-extensions.mjs dist/types && node ../../scripts/gen-schema.mjs --copy"
+  }
+}
