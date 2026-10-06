@@ -5,9 +5,8 @@ import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
-
-import type { ColumnType, FilterCondition } from '../../src/contract'
-import { parseFilterInput } from '../../src/index'
+import type { ColumnType, FilterCondition } from '@dolusoft/query-table'
+import { parseFilterInput } from '@dolusoft/query-table'
 
 // `parseFilterInput` is the table's own filter grammar as a plain function:
 // it returns the rules the table would emit for the text typed into a

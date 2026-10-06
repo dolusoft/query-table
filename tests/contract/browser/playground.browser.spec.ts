@@ -2,8 +2,8 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
-import Overview from '../../playground/examples/Overview.vue'
-import { el } from '../support/helpers'
+import Overview from '../../../playground/examples/Overview.vue'
+import { el } from '../../support/helpers'
 
 const rowIds = () =>
   [...document.querySelectorAll('.qt-table tbody tr')].map(row =>

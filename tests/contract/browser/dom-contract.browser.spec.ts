@@ -3,10 +3,15 @@ import { userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
 import { h } from 'vue'
 
-import { domAttributes, domClasses, domInlineStyles } from '../../contract/dom'
-import type { FilterMenuSlotProps, TableQuery } from '../../src/contract'
-import QueryTable from '../../src/index'
-import { columns, makeQuery, rows, rule } from '../support/fixtures'
+import type { FilterMenuSlotProps, TableQuery } from '@dolusoft/query-table'
+import QueryTable from '@dolusoft/query-table'
+
+import {
+  domAttributes,
+  domClasses,
+  domInlineStyles
+} from '../../../contract/dom'
+import { columns, makeQuery, rows, rule } from '../../support/fixtures'
 
 // C-40: the table renders exactly the classes and attributes of the DOM
 // contract, and every entry of the contract shows up in some state. The table

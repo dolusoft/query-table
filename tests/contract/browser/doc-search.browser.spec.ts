@@ -2,11 +2,11 @@ import { afterEach, beforeEach, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
-import '../../playground/playground.css'
-import App from '../../playground/App.vue'
-import { router } from '../../playground/router'
-import { sectionAnchors } from '../../playground/search/anchors'
-import { revealAnchor } from '../../playground/search/reveal'
+import '../../../playground/playground.css'
+import App from '../../../playground/App.vue'
+import { router } from '../../../playground/router'
+import { sectionAnchors } from '../../../playground/search/anchors'
+import { revealAnchor } from '../../../playground/search/reveal'
 
 // The playground's documentation search: shortcuts, MiniSearch hits, the
 // jump to a page anchor, and focus handling of the dialog.

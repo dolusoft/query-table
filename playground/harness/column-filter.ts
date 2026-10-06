@@ -5,8 +5,8 @@ import type {
   ColumnType,
   FilterCondition,
   FilterRule
-} from '../../src/contract'
-import { parseFilterInput } from '../../src/index'
+} from '@dolusoft/query-table'
+import { parseFilterInput } from '@dolusoft/query-table'
 
 // Consumer-side helpers behind the compact (phone) filter UI of the
 // playground: the condition list a sheet offers, the text a chip shows, and

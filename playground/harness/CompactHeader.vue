@@ -3,9 +3,9 @@ import { FunnelIcon } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { Button } from '@/ui/button'
+import type { HeaderSlotProps } from '@dolusoft/query-table'
 
 import { titleOf } from './column-filter'
-import type { HeaderSlotProps } from '../../src/contract'
 
 // The `header-<field>` slot of a compact table: the slot replaces the
 // table's sort button, so it is drawn again here with `toggleSort`, and a

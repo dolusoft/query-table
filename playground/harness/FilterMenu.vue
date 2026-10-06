@@ -3,8 +3,7 @@ import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover'
-
-import type { FilterMenuSlotProps } from '../../src/contract'
+import type { FilterMenuSlotProps } from '@dolusoft/query-table'
 
 // What a consumer writes in the `filter-menu` slot: the table's own trigger
 // wrapped in a real shadcn-vue Popover, with the condition list, the sort

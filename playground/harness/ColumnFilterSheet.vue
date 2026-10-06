@@ -15,6 +15,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/ui/sheet'
+import type { Column, TableQuery } from '@dolusoft/query-table'
 
 import {
   commitDraft,
@@ -26,7 +27,6 @@ import {
   typeOf,
   type FilterDraft
 } from './column-filter'
-import type { Column, TableQuery } from '../../src/contract'
 
 // A bottom sheet that filters one column, for headers too narrow for a filter
 // row: shadcn-vue `Sheet` (reka-ui `Dialog`). The dialog keeps focus inside

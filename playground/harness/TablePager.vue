@@ -4,8 +4,7 @@ import { useId } from 'vue'
 import { Button } from '@/ui/button'
 import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
-
-import type { PaginationSlotProps } from '../../src/contract'
+import type { PaginationSlotProps } from '@dolusoft/query-table'
 
 // What a consumer puts in the `pagination` slot, after shadcn's data-table
 // example: muted page text on the left, page size and previous/next on the

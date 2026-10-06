@@ -1,11 +1,12 @@
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
+import type { Column, FooterRow, TableQuery } from '@dolusoft/query-table'
+
 import {
   type createDemoRows,
   filterDemoRows,
   queryDemoRows
 } from './fake-server'
-import type { Column, FooterRow, TableQuery } from '../../src/contract'
 
 // Scenario factories of the playground pages (the browser tests use their own
 // fixtures in tests/support). Every call returns new objects: there is no

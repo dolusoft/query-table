@@ -2,6 +2,12 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
+import type {
+  FilterMenuSlotProps,
+  HeaderSlotProps
+} from '@dolusoft/query-table'
+import QueryTable from '@dolusoft/query-table'
+
 import {
   makeColumns,
   makeQuery,
@@ -9,9 +15,7 @@ import {
   mountTable,
   reasons,
   type Mounted
-} from '../../tests/support/mount-table'
-import type { FilterMenuSlotProps, HeaderSlotProps } from '../contract'
-import QueryTable from '../index'
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

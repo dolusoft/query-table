@@ -3,9 +3,10 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 
-import type { Theme } from '../../playground/harness/theme'
-import type { Column, ColumnResizePayload } from '../../src/contract'
-import { el, renderTable, rows } from '../support/helpers'
+import type { Column, ColumnResizePayload } from '@dolusoft/query-table'
+
+import type { Theme } from '../../../playground/harness/theme'
+import { el, renderTable, rows } from '../../support/helpers'
 
 // Geometry of pinned and resized columns in a real browser, with the
 // playground skin (it makes `[data-pinned]` sticky at `--qt-pin-left`).

@@ -3,8 +3,9 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 
-import QueryTable from '../../src/index'
-import { el, makeQuery } from '../support/fixtures'
+import QueryTable from '@dolusoft/query-table'
+
+import { el, makeQuery } from '../../support/fixtures'
 
 // A cell slot is consumer markup, and a table's most common cell contents are
 // a selection checkbox and a link. Their default actions (toggle, navigate)

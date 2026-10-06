@@ -3,9 +3,9 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 
-import type { Theme } from '../../playground/harness/theme'
-import { makeQuery } from '../support/fixtures'
-import { columns, renderTable, rule } from '../support/helpers'
+import type { Theme } from '../../../playground/harness/theme'
+import { makeQuery } from '../../support/fixtures'
+import { columns, renderTable, rule } from '../../support/helpers'
 
 // PRINCIPLES.md P7: an automated accessibility scan (axe-core) of the table in
 // the states a user meets: filtered and sorted, a row expanded, no rows. The

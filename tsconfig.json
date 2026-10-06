@@ -13,7 +13,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "paths": { "@/*": ["./playground/skin/*"] }
+    "paths": {
+      "@/*": ["./playground/skin/*"],
+      "@dolusoft/query-table": ["./src/index.ts"]
+    }
   },
   "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "playground/**/*.ts", "playground/**/*.vue", "*.config.ts"]
 }

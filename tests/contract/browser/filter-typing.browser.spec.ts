@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 
-import { renderTable, rows, rule, shot, sleep } from '../support/helpers'
+import { renderTable, rows, rule, shot, sleep } from '../../support/helpers'
 
 // Real keystrokes, real timers, real focus. happy-dom's `setValue` writes the
 // whole value in one input event and has no focus model worth testing.

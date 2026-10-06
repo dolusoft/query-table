@@ -4,7 +4,7 @@ import type {
   FilterCondition,
   FilterRule,
   FilterValue
-} from '../../src/contract'
+} from '@dolusoft/query-table'
 
 // One table of filter inputs and the rules they stand for (C-53). The unit
 // test of `parseFilterInput` and the test that types the same text into the

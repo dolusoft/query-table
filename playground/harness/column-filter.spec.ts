@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
 
+import type { Column, FilterRule } from '@dolusoft/query-table'
+
 import { commitDraft, draftFrom, isComposing, same } from './column-filter'
-import type { Column, FilterRule } from '../../src/contract'
 
 // The draft a compact filter sheet edits: built from the committed rules when
 // it opens, turned back into rules (or kept, or refused) when it applies.

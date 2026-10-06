@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { page } from 'vitest/browser'
 
-import { renderTable, shot } from '../support/helpers'
+import { renderTable, shot } from '../../support/helpers'
 
 // The filter row at phone and tablet widths, with the test skin: however
 // narrow a column gets, its filter input and button stay inside its header

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 
+import type { CellContextMenuPayload, Column } from '@dolusoft/query-table'
+import QueryTable from '@dolusoft/query-table'
+
 import {
   flush,
   makeColumns,
@@ -9,9 +12,7 @@ import {
   mountTable,
   propsOf,
   type Mounted
-} from '../../tests/support/mount-table'
-import type { CellContextMenuPayload, Column } from '../contract'
-import QueryTable from '../index'
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {

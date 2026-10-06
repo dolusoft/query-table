@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
 import { Spinner } from '@/ui/spinner'
+import { QueryTable } from '@dolusoft/query-table'
 
-import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import { makeQuery, peopleColumns } from '../scenarios'
 

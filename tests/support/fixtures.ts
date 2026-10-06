@@ -1,4 +1,4 @@
-import type { Column, FilterRule, TableQuery } from '../../src/contract'
+import type { Column, FilterRule, TableQuery } from '@dolusoft/query-table'
 
 // Data and DOM helpers of the browser specs. Nothing here touches the
 // playground skin or its harness, so specs of the bare component (the DOM

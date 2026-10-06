@@ -6,8 +6,7 @@ import { computed, ref } from 'vue'
 import { Button } from '@/ui/button'
 import { Calendar } from '@/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover'
-
-import type { FilterDatetimeSlotProps } from '../../src/contract'
+import type { FilterDatetimeSlotProps } from '@dolusoft/query-table'
 
 // What a consumer puts in the `filter-datetime` slot: shadcn-vue's date
 // picker (a Popover with a Calendar) in place of the table's date input. It

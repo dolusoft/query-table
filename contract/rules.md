@@ -1,4 +1,4 @@
-Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/contract/contract-traceability.spec.ts`).
+Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/repo/contract-traceability.spec.ts`).
 
 "Applied" below means the table emitted `update:query` for it. The consumer decides whether to apply the emitted query.
 
