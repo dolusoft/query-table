@@ -8,6 +8,7 @@
 /eslint.config.js           @zahidzorbaz
 /scripts/*budget*           @zahidzorbaz
 /scripts/check-deps.mjs     @zahidzorbaz
+/scripts/eslint-layers.mjs  @zahidzorbaz
 /.github/                   @zahidzorbaz
 /AGENTS.md                  @zahidzorbaz
 /CLAUDE.md                  @zahidzorbaz
