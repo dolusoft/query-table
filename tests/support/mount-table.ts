@@ -1,8 +1,13 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick, type Component } from 'vue'
 
-import type { Column, QueryChangeReason, TableQuery } from '../../src/contract'
-import QueryTable from '../../src/index'
+import QueryTable, {
+  type Column,
+  type QueryChangeReason,
+  type TableQuery
+} from '@dolusoft/query-table'
+
+import { traceUpdate } from './trace'
 
 export interface Row {
   id: number
@@ -105,6 +110,7 @@ export const mountTable = (
       totalRows: 5,
       query: makeQuery(),
       'onUpdate:query': (query: TableQuery, reason: QueryChangeReason) => {
+        traceUpdate(query, reason)
         events.push([query, reason])
         if (apply) {
           void wrapper.setProps({ query })

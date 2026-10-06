@@ -14,6 +14,21 @@ import viteConfig from './vite.config.ts'
 export default defineConfig(({ mode }) => {
   const inspect = mode === 'inspect'
 
+  // Tests import the package by its name. By default the name answers with
+  // the source; QT_TARGET points it at a built entry instead (a `dist/*.js`
+  // of a packed tarball), so `scripts/equivalence.mjs` can run the same
+  // contract specs against two builds.
+  const packageEntry = process.env.QT_TARGET
+    ? resolve(process.env.QT_TARGET)
+    : resolve(import.meta.dirname, 'src/index.ts')
+  const packageAlias = [
+    { find: /^@dolusoft\/query-table$/, replacement: packageEntry }
+  ]
+  const skinAlias = {
+    find: '@',
+    replacement: resolve(import.meta.dirname, 'playground/skin')
+  }
+
   // The real-browser projects share everything but their name and files:
   // `browser` holds the tests, `measure` the render counting behind
   // `pnpm measure:renders` (not a test run, so `pnpm test:browser` skips it).
@@ -23,7 +38,7 @@ export default defineConfig(({ mode }) => {
     // library build never loads it.
     plugins: [tailwindcss(), ...(inspect ? [vueDevTools()] : [])],
     resolve: {
-      alias: { '@': resolve(import.meta.dirname, 'playground/skin') }
+      alias: [...packageAlias, skinAlias]
     },
     // Inspect mode only: no one-time code to paste for a local session.
     // The dev server stays bound to loopback.
@@ -45,7 +60,7 @@ export default defineConfig(({ mode }) => {
       testTimeout: 15_000,
       hookTimeout: 15_000,
       teardownTimeout: 10_000,
-      setupFiles: ['tests/support/setup.ts'],
+      setupFiles: ['tests/support/setup.ts', 'tests/support/trace.ts'],
       // Browser mode serves on this port. The default (63315) falls inside
       // a range Windows reserves for Hyper-V on some machines, and a fixed
       // port gives the inspect mode a stable URL.
@@ -73,7 +88,7 @@ export default defineConfig(({ mode }) => {
           !inspect &&
           (process.env.CI === 'true' || process.env.HEADLESS === '1'),
         ui: false,
-        screenshotDirectory: 'tests/browser/__screenshots__',
+        screenshotDirectory: 'tests/contract/browser/__screenshots__',
         // A desktop-sized viewport: the default is phone-sized, which
         // squeezes the table and distorts geometry assertions.
         viewport: { width: 1280, height: 800 },
@@ -106,23 +121,29 @@ export default defineConfig(({ mode }) => {
           // playground/skin/parity.spec.ts imports the shadcn-vue Button and
           // Badge variants; their components import `@/lib/utils`.
           resolve: {
-            alias: { '@': resolve(import.meta.dirname, 'playground/skin') }
+            alias: [...packageAlias, skinAlias]
           },
           test: {
             name: 'unit',
+            setupFiles: ['tests/support/trace.ts'],
             environment: 'happy-dom',
             // Unit specs sit next to the code they test (src/<feature>/);
-            // cross-cutting ones sit in tests/contract (traceability) and playground/ (skin, manifest, fake server).
+            // the behavior specs that use only the public API sit in tests/contract/unit,
+            // the repository checks in tests/repo, the playground ones in playground/.
             include: [
               'src/**/*.spec.ts',
               'tests/**/*.spec.ts',
-              'playground/**/*.spec.ts'
+              'playground/**/*.spec.ts',
+              // The TanStack feasibility spike of v3 (deleted at the end of PR-C).
+              'spike/**/*.spec.ts'
             ],
-            exclude: ['tests/browser/**'],
+            exclude: ['tests/contract/browser/**'],
             css: false
           }
         },
-        browserProject('browser', ['tests/browser/**/*.browser.spec.ts']),
+        browserProject('browser', [
+          'tests/contract/browser/**/*.browser.spec.ts'
+        ]),
         browserProject('measure', ['tests/measure/**/*.measure.ts'])
       ]
     }

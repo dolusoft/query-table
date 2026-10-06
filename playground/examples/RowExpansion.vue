@@ -2,8 +2,8 @@
 import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import { QueryTable, type QueryTableExpose } from '@dolusoft/query-table'
 
-import { QueryTable, type QueryTableExpose } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import {
   createDemoRows,

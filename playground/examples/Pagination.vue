@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
+import { QueryTable } from '@dolusoft/query-table'
 
-import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 

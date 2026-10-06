@@ -497,7 +497,7 @@ export interface QueryTableExpose {
 
 ## Behavior rules
 
-Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/contract/contract-traceability.spec.ts`).
+Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/repo/contract-traceability.spec.ts`).
 
 "Applied" below means the table emitted `update:query` for it. The consumer decides whether to apply the emitted query.
 
@@ -778,5 +778,5 @@ These are the only inline styles the table writes. A custom property carries dat
 - `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.
 - `pnpm api:check` compares the built declarations with `etc/query-table.api.md`.
 - `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `src/contract.ts`.
-- `tests/contract/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
+- `tests/repo/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
 - The browser tests compare the rendered DOM with the DOM contract and check that the test skin selects only what it lists.

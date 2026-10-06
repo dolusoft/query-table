@@ -1,4 +1,4 @@
-import type { FilterRule, FilterValue, TableQuery } from '../../src/contract'
+import type { FilterRule, FilterValue, TableQuery } from '@dolusoft/query-table'
 
 // A stand-in for a real server: it evaluates the query the table emits
 // (filters, sort, page) over an in-memory list. The table never filters or

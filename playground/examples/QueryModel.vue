@@ -5,9 +5,9 @@ import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
+import type { QueryChangeReason, TableQuery } from '@dolusoft/query-table'
+import { QueryTable, type QueryTableExpose } from '@dolusoft/query-table'
 
-import type { QueryChangeReason, TableQuery } from '../../src/contract'
-import { QueryTable, type QueryTableExpose } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
