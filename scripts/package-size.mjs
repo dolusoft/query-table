@@ -6,8 +6,9 @@
 // `pnpm build:packages`.
 //
 // `--check` (CI) compares each gzip cost with scripts/package-size-budget.json
-// and exits 1 when one is over its budget or a budget is over the SPEC-v3
-// ceiling of its fixture (spike/REPORT.md, "P8 budget proposal").
+// and exits 1 when one is over its budget or a budget is over the ceiling
+// of its fixture. Ceilings guard against silent drift (P8); a deliberate
+// growth raises budget and ceiling in the same change, with its reason.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
@@ -136,7 +137,7 @@ if (process.argv.includes('--check')) {
       entry.maxGzipBytes > entry.ceilingGzipBytes
     ) {
       console.error(
-        `[package-size] the ${name} budget ${entry.maxGzipBytes} B is over its ceiling of ${entry.ceilingGzipBytes} B: that is a design question, not a budget raise.`
+        `[package-size] the ${name} budget ${entry.maxGzipBytes} B is over its ceiling of ${entry.ceilingGzipBytes} B: raise both only for a deliberate growth, with its reason in the history (P8).`
       )
       failed = true
     }

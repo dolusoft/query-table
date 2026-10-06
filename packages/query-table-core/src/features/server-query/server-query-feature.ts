@@ -16,6 +16,7 @@ import {
   type QueryChangeReason,
   sameQuery,
   sameRules,
+  searchOf,
   withSearch
 } from '@dolusoft/query-protocol'
 import {
@@ -103,10 +104,14 @@ const emit = (
   if (!instance || isDisposed(table) || sameQuery(next, baseOf(table))) {
     return false
   }
-  instance.lastEmitted = cloneQuery(next)
+  const sent = cloneQuery(next)
+  instance.lastEmitted = sent
   instance.shownAtEmit = table.options.query
+  // The end of the tick clears this emit only; a later one keeps its base.
   queueMicrotask(() => {
-    instance.lastEmitted = null
+    if (instance.lastEmitted === sent) {
+      instance.lastEmitted = null
+    }
   })
   markEmitted(table)
   // A new object, sharing nothing with the base or the props (C-03).
@@ -203,6 +208,10 @@ const searchAction = (table: AnyTable, updater: Updater<unknown>) => {
   runBeforeAction(table)
   const base = cloneQuery(baseOf(broad(table)))
   const text = searchText(functionalUpdate(updater, base.search))
+  // C-58: the text the query has is no change, not a trip to the first page.
+  if (text === searchOf(base)) {
+    return
+  }
   emit(table, restart(withSearch(base, text)), 'search')
 }
 
@@ -294,9 +303,36 @@ export const serverQueryFeature: TableFeature = {
     onDispose(table, () => instances.delete(table))
   },
 
-  constructTableAPIs: table => {
+  constructTableAPIs: generic => {
+    const table = broad(generic)
+    // C-56: in cursor mode the page index is a position, not a page number,
+    // so `setPageIndex` moves by one step only (`old => old ± 1`). A number
+    // or a longer jump does nothing: TanStack would clamp it into a step.
+    // `nextPage` and `previousPage` do not go through this API.
+    const stock = table.setPageIndex as
+      ((updater: Updater<number>) => void) | undefined
     assignTableAPIs('serverQueryFeature', table, {
-      table_getBaseQuery: { fn: () => cloneQuery(baseOf(broad(table))) }
+      table_getBaseQuery: { fn: () => cloneQuery(baseOf(table)) },
+      ...(stock && {
+        table_setPageIndex: {
+          fn: (updater: Updater<number>) => {
+            if (isCursorQuery(baseOf(table))) {
+              const at = toPagination({
+                query: baseOf(table),
+                cursors: table.options.cursors,
+                pageRows: 0
+              }).pageIndex
+              if (
+                typeof updater !== 'function' ||
+                Math.abs(updater(at) - at) !== 1
+              ) {
+                return
+              }
+            }
+            stock(updater)
+          }
+        }
+      })
     })
   },
 

@@ -66,9 +66,11 @@ Check: C-44 (a test fails on a literal `aria-label="` in any `src/**/*.vue`) and
 
 Every package has a size budget, measured the way a consumer pays for it: a built application that imports the package by name, minus the same application without it, minified and gzipped, transitive code (TanStack included) counted. The fixtures are: protocol only, each core entry (`/server-query`, `/filter-input`), the composable, and the component. A complete application is measured on its own; budgets are not summed. The render budget stays: component updates per fixed scenario. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows.
 
+Size is not a goal in itself: a useful library may grow. A budget is the last measure plus 5%; a fixture can also have a ceiling. Both guard against silent drift. A deliberate growth raises the budget, and the ceiling when needed, in the same change, with a one-line reason in the budget's history; it needs no separate approval.
+
 Why: tables with thousands of rows on a page are a real use, and TanStack moves the size of the package (ADR 0001). A regression that nobody measures ships; a budget measured on a different thing than the consumer pays is not a budget.
 
-Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages, capped at the ceilings of `spike/REPORT.md`); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture _(v3, PR-C)_); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
+Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture _(v3, PR-C)_); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
 
 ## P9 One small, typed surface per package
 

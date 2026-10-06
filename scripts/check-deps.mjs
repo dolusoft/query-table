@@ -6,6 +6,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
+import { specifiersOf } from './specifiers.mjs'
+
 const root = join(import.meta.dirname, '..')
 
 /** Allowed runtime dependencies and peers, per package directory. */
@@ -59,9 +61,6 @@ const sourceFiles = dir => {
   return files
 }
 
-// Static, dynamic and re-export specifiers that are not relative.
-const specifierPattern =
-  /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"]([^'"./][^'"]*)['"]/g
 const packageOf = specifier => {
   const parts = specifier.split('/')
   return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]
@@ -102,7 +101,7 @@ for (const [dir, allow] of Object.entries(allowed)) {
   ])
   for (const file of sourceFiles(base)) {
     const code = readFileSync(file, 'utf8')
-    for (const [, specifier] of code.matchAll(specifierPattern)) {
+    for (const specifier of specifiersOf(code)) {
       if (specifier.startsWith('node:')) {
         problems.push(`${relative(root, file)} imports ${specifier}`)
       } else if (!imports.has(packageOf(specifier))) {

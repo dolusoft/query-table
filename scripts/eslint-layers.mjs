@@ -1,7 +1,8 @@
 // A local ESLint plugin for the layering of the v3 packages (ADR 0003,
 // PRINCIPLES P11, P14). `layers/boundaries` checks every module specifier of
-// a file in packages/*/src: imports, `export ... from` re-exports and
-// dynamic `import()`, which must name a literal.
+// a file in packages/*/src: imports, `export ... from` re-exports, dynamic
+// `import()`, `require()` and `import x = require()`, which must name a
+// literal. `import.meta.glob` (and any `import.meta` call) is refused.
 //
 //   protocol  packages/query-protocol/src          imports nothing outside itself
 //   core      packages/query-table-core/src        the protocol and @tanstack/table-core only
@@ -93,7 +94,8 @@ const boundaries = {
     messages: {
       layer: '{{reason}} (ADR 0003).',
       dynamic:
-        'A dynamic import() must name a literal module, so the layering can be checked.'
+        'A dynamic import() or require() must name a literal module, so the layering can be checked.',
+      glob: 'import.meta.glob and the other import.meta calls name no module, so the layering cannot be checked: import each module by name.'
     }
   },
   create(context) {
@@ -114,7 +116,32 @@ const boundaries = {
         context.report({ node, messageId: 'layer', data: { reason } })
       }
     }
+    const isImportMeta = node =>
+      node?.type === 'MetaProperty' &&
+      node.meta.name === 'import' &&
+      node.property.name === 'meta'
     return {
+      // `require('x')` is an import too, in any form.
+      CallExpression: node => {
+        if (
+          node.callee.type === 'Identifier' &&
+          node.callee.name === 'require'
+        ) {
+          check(node, node.arguments[0] ?? { type: 'Missing' })
+        } else if (
+          node.callee.type === 'MemberExpression' &&
+          isImportMeta(node.callee.object)
+        ) {
+          // import.meta.glob(...) names no module: nothing can be checked.
+          context.report({ node, messageId: 'glob' })
+        }
+      },
+      // `import x = require('x')`
+      TSImportEqualsDeclaration: node => {
+        if (node.moduleReference.type === 'TSExternalModuleReference') {
+          check(node, node.moduleReference.expression)
+        }
+      },
       ImportDeclaration: node => check(node, node.source),
       ExportNamedDeclaration: node => check(node, node.source),
       ExportAllDeclaration: node => check(node, node.source),

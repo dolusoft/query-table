@@ -398,6 +398,37 @@ describe('C-56 Cursor paging [own]', () => {
     t.table.setPageIndex(0)
     expect(t.updates).toEqual([])
   })
+
+  it('a page number is a jump: TanStack does not clamp it into a step', () => {
+    const t = makeTable({
+      query: cursorStart({ cursor: { token: 'n1', direction: 'next' } }),
+      cursors: { next: 'n2', prev: 'p1' }
+    })
+    // Position 1 of 3: 5 would clamp to 2 (next), 0 is one step back.
+    t.table.setPageIndex(5)
+    t.table.setPageIndex(0)
+    t.table.setPageIndex(2)
+    t.table.setPageIndex(old => old + 2)
+    expect(t.updates).toEqual([])
+  })
+
+  it('a step of one through setPageIndex is a cursor request', () => {
+    const t = makeTable({
+      query: cursorStart({ cursor: { token: 'n1', direction: 'next' } }),
+      cursors: { next: 'n2', prev: 'p1' },
+      answer: 'ignore'
+    })
+    t.table.setPageIndex(old => old + 1)
+    expect(t.updates).toEqual([
+      [cursorStart({ cursor: { token: 'n2', direction: 'next' } }), 'page']
+    ])
+  })
+
+  it('page mode still clamps a page number to the range', () => {
+    const t = makeTable({ rowCount: 30, answer: 'ignore' })
+    t.table.setPageIndex(5)
+    expect(t.queries()).toEqual([start({ page: 3 })])
+  })
 })
 
 describe('C-57 Cursor mode starts over [own]', () => {
@@ -457,6 +488,46 @@ describe('C-58 Global search [tanstack] [own]', () => {
     expect('search' in t.updates[0][0]).toBe(false)
     t.table.resetGlobalFilter(true)
     expect(t.updates).toHaveLength(1)
+  })
+
+  it('the same text emits nothing on page 2 either', () => {
+    const t = makeTable({ query: start({ page: 2, search: 'a' }) })
+    t.table.setGlobalFilter('a')
+    const blank = makeTable({ query: start({ page: 2 }) })
+    blank.table.setGlobalFilter('')
+    expect([...t.updates, ...blank.updates]).toEqual([])
+  })
+
+  it('the same text emits nothing in cursor mode past the first page', () => {
+    const t = makeTable({
+      query: cursorStart({
+        cursor: { token: 'n1', direction: 'next' },
+        search: 'a'
+      }),
+      cursors: { next: 'n2', prev: 'p1' }
+    })
+    t.table.setGlobalFilter('a')
+    expect(t.updates).toEqual([])
+  })
+})
+
+describe('C-14 the end of a tick clears its own emit only [own]', () => {
+  it('an emit from a later microtask keeps its base', async () => {
+    const t = makeTable({ answer: 'ignore', rowCount: 100 })
+    let base: unknown
+    // Runs after the first emit, before the microtask that ends its tick:
+    // the second emit must survive that reset.
+    queueMicrotask(() => {
+      // Reads after the first reset, before the second one.
+      queueMicrotask(() => {
+        base = t.table.getBaseQuery()
+      })
+      t.table.nextPage()
+    })
+    t.table.nextPage()
+    await tick()
+    expect(t.queries()).toEqual([start({ page: 2 }), start({ page: 3 })])
+    expect(base).toEqual(start({ page: 3 }))
   })
 })
 
