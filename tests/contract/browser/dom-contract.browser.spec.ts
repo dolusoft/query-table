@@ -12,9 +12,9 @@ import { columns, makeQuery, rows, rule } from '../../support/fixtures'
 // C-40: the table renders exactly the classes and attributes of the DOM
 // contract, and every entry of the contract shows up in some state. The table
 // is rendered bare: its own output only, no consumer styling or slot widgets
-// beyond the trigger it hands out. Hooks that only v3 adds (the selection
-// column, C-64) carry `addedBy` in the contract and are checked by C-66; this
-// test runs without `selection`, so it holds for the 2.2.x baseline too.
+// beyond the trigger it hands out. Hooks that only v3 adds carry `addedBy` in
+// the contract and are checked by C-66 (selection, C-64) and C-72 (3.1); this
+// test runs without them, so it holds for the 2.2.x baseline too.
 
 const slots = {
   'filter-menu': (menu: FilterMenuSlotProps) => h(menu.trigger),

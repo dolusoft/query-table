@@ -3,10 +3,10 @@
 // feature, where Query Table offers it today and what it takes on the server.
 
 /**
- * Where a feature can be used. `planned` is 3.1 (K8), `later` is further out,
- * `recipe` is built from the slots and state in the playground, not shipped.
+ * Where a feature can be used. `later` is further out, `recipe` is built
+ * from the slots and state in the playground, not shipped.
  */
-export type Availability = 'yes' | 'planned' | 'later' | 'recipe' | 'no'
+export type Availability = 'yes' | 'later' | 'recipe' | 'no'
 
 /**
  * What a feature takes when the data lives on a server:
@@ -15,7 +15,7 @@ export type Availability = 'yes' | 'planned' | 'later' | 'recipe' | 'no'
  */
 export type ServerMode = 'server' | 'backend' | 'client'
 
-export type FeatureGroup = 'open' | 'planned' | 'backend' | 'client' | 'own'
+export type FeatureGroup = 'open' | 'backend' | 'client' | 'own'
 
 export interface Feature {
   /** Element id suffix on the page, the search anchor. */
@@ -45,7 +45,6 @@ export const serverModeLabels: Record<ServerMode, string> = {
 
 export const availabilityLabels: Record<Availability, string> = {
   yes: 'Yes',
-  planned: '3.1',
   later: 'Later',
   recipe: 'Recipe',
   no: 'No'
@@ -53,7 +52,6 @@ export const availabilityLabels: Record<Availability, string> = {
 
 export const groupTitles: Record<FeatureGroup, string> = {
   open: 'Open in Query Table today',
-  planned: 'Coming in 3.1',
   backend: 'Needs support from your backend',
   client: 'Client-side data only',
   own: 'Only in Query Table'
@@ -61,8 +59,6 @@ export const groupTitles: Record<FeatureGroup, string> = {
 
 export const groupNotes: Record<FeatureGroup, string> = {
   open: 'TanStack Table has these and Query Table turns them into one query the server answers.',
-  planned:
-    'Usable today on the TanStack path; the `QueryTable` component gets them in 3.1.',
   backend:
     'TanStack has them, but the table cannot do them for rows it does not hold: the server must group, total or count, and the query has no way to ask yet.',
   client:
@@ -72,7 +68,6 @@ export const groupNotes: Record<FeatureGroup, string> = {
 
 export const featureGroups: FeatureGroup[] = [
   'open',
-  'planned',
   'backend',
   'client',
   'own'
@@ -165,6 +160,42 @@ export const features: Feature[] = [
     example: 'column-pinning'
   },
   {
+    id: 'column-pinning-right',
+    group: 'open',
+    title: 'Pinning columns to the right',
+    summary:
+      "`pinned: 'right'`: drawn last, with the measured `--qt-pin-right` offset.",
+    tanstack: 'column-pinning',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-pinning'
+  },
+  {
+    id: 'column-visibility',
+    group: 'open',
+    title: 'Column visibility',
+    summary:
+      'Hide a column from its header or filter menu (`control.hide()`); your own column picker shows it again by writing `columns`. The table emits `update:columns`.',
+    tanstack: 'column-visibility',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-layout'
+  },
+  {
+    id: 'column-ordering',
+    group: 'open',
+    title: 'Column order',
+    summary:
+      'Move a column within its region by dragging its handle, with the arrow keys, Home and End, or from a menu (`control.move`). The table emits `update:columns`.',
+    tanstack: 'column-ordering',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-layout'
+  },
+  {
     id: 'column-sizing',
     group: 'open',
     title: 'Column sizing and resizing',
@@ -176,49 +207,19 @@ export const features: Feature[] = [
     mode: 'server',
     example: 'column-resizing'
   },
-  // B: planned
-  {
-    id: 'column-visibility',
-    group: 'planned',
-    title: 'Column visibility',
-    summary:
-      'Show and hide columns from the table. Today `Column.hide` hides one from your own code.',
-    tanstack: 'column-visibility',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
-  {
-    id: 'column-ordering',
-    group: 'planned',
-    title: 'Column order',
-    summary: 'Let the user reorder columns.',
-    tanstack: 'column-ordering',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
-  {
-    id: 'column-pinning-right',
-    group: 'planned',
-    title: 'Pinning columns to the right',
-    summary: 'The `end` side of column pinning.',
-    tanstack: 'column-pinning',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
   {
     id: 'row-pinning',
-    group: 'planned',
+    group: 'open',
     title: 'Row pinning',
-    summary: 'Keep chosen rows at the top or bottom of the page.',
+    summary:
+      'A controlled map of row keys pinned to the top or bottom of the page; keys of other pages stay in it.',
     tanstack: 'row-pinning',
-    component: 'planned',
+    component: 'yes',
     tanstackPath: 'yes',
-    mode: 'server'
+    mode: 'server',
+    example: 'row-pinning'
   },
-  // C: backend support
+  // B: backend support
   {
     id: 'grouping',
     group: 'backend',
@@ -241,7 +242,7 @@ export const features: Feature[] = [
     tanstackPath: 'no',
     mode: 'backend'
   },
-  // D: client data only
+  // C: client data only
   {
     id: 'fuzzy-search',
     group: 'client',
@@ -275,7 +276,7 @@ export const features: Feature[] = [
     tanstackPath: 'later',
     mode: 'client'
   },
-  // E: only ours
+  // D: only ours
   {
     id: 'filter-grammar',
     group: 'own',
@@ -329,7 +330,7 @@ export const features: Feature[] = [
     group: 'own',
     title: 'Measured sticky offsets for pinned columns',
     summary:
-      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths.',
+      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths, for `--qt-pin-left` and `--qt-pin-right` alike.',
     tanstack: null,
     component: 'yes',
     tanstackPath: 'no',

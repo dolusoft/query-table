@@ -8,6 +8,7 @@ const defaultLabels: TableLabels = {
   filterInput: column => `Filter ${column}`,
   filterOptions: column => `Filter options for ${column}`,
   resizeColumn: column => `Resize ${column}`,
+  moveColumn: column => `Move ${column}`,
   boolAll: 'All',
   boolTrue: 'True',
   boolFalse: 'False',

@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
-import type { CellContextMenuPayload, Column } from '@dolusoft/query-table'
+import {
+  type CellContextMenuPayload,
+  type Column,
+  useQueryTable
+} from '@dolusoft/query-table'
 
 import {
   flush,
+  makeQuery,
   makeRows,
   mountTable,
   propsOf,
@@ -157,5 +163,141 @@ describe('C-47 Pin offsets', () => {
     })
     expect(fieldsOf(m, 'thead th')).toEqual(['id', 'name', 'joined'])
     expect(m.wrapper.findAll('[data-pinned]')).toHaveLength(0)
+  })
+})
+
+describe('C-71 Right pinning [tanstack] [own]', () => {
+  const sides = (): Column[] => [
+    { field: 'id', title: 'ID', pinned: 'right' },
+    { field: 'name', title: 'Name', pinned: 'left' },
+    { field: 'age', title: 'Age' },
+    { field: 'joined', title: 'Joined', pinned: 'right' }
+  ]
+
+  it('draws right-pinned columns last, in their order, with data-pinned="right"', () => {
+    const m = mountIt({
+      columns: sides(),
+      footerRows: [{ cells: [{ field: 'id', text: 1 }] }]
+    })
+    const order = ['name', 'age', 'id', 'joined']
+    expect(fieldsOf(m, 'thead th')).toEqual(order)
+    expect(fieldsOf(m, 'tbody tr[data-row-index="0"] td')).toEqual(order)
+    expect(fieldsOf(m, 'tfoot td')).toEqual(order)
+    for (const selector of [
+      'thead th',
+      'tbody tr[data-row-index="0"] td',
+      'tfoot td'
+    ]) {
+      expect(
+        m.wrapper
+          .findAll(selector)
+          .map(cell => cell.attributes('data-pinned') ?? null)
+      ).toEqual(['', null, 'right', 'right'])
+    }
+  })
+
+  it('utilities stay in flow when only the right side is pinned', () => {
+    const m = mountIt({
+      hasSubtable: true,
+      hasRightPanel: true,
+      columns: [
+        { field: 'id', title: 'ID', pinned: 'right' },
+        { field: 'name', title: 'Name' }
+      ],
+      footerRows: [{ cells: [{ field: 'id', text: 1 }] }]
+    })
+    const utilities = m.wrapper.findAll(
+      'thead > tr > :not([data-field]), tbody > tr > td:not([data-field]), tfoot td[colspan]'
+    )
+    expect(utilities.length).toBeGreaterThan(0)
+    expect(
+      utilities.every(cell => cell.attributes('data-pinned') === undefined)
+    ).toBe(true)
+  })
+
+  it('hasPinned of the composable counts only the left side', () => {
+    const scope = effectScope()
+    const hasPinned = (columns: Column[]) =>
+      scope.run(
+        () =>
+          useQueryTable({
+            query: makeQuery(),
+            columns,
+            onQueryChange: () => {}
+          }).hasPinned.value
+      )
+    expect(hasPinned([{ field: 'a', pinned: 'right' }, { field: 'b' }])).toBe(
+      false
+    )
+    expect(
+      hasPinned([
+        { field: 'a', pinned: 'right' },
+        { field: 'b', pinned: 'left' }
+      ])
+    ).toBe(true)
+    expect(
+      hasPinned([{ field: 'a', pinned: 'left', hide: true }, { field: 'b' }])
+    ).toBe(false)
+    scope.stop()
+  })
+
+  it('a hidden right-pinned column is not drawn', () => {
+    const m = mountIt({
+      columns: [{ field: 'id', pinned: 'right', hide: true }, { field: 'name' }]
+    })
+    expect(fieldsOf(m, 'thead th')).toEqual(['name'])
+    expect(m.wrapper.find('[data-pinned]').exists()).toBe(false)
+  })
+
+  it('writes --qt-pin-right from the measured widths, the last cell at 0px', async () => {
+    const callbacks: ResizeObserverCallback[] = []
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          callbacks.push(callback)
+        }
+        observe() {
+          return undefined
+        }
+        disconnect() {
+          return undefined
+        }
+      }
+    )
+    const widths: Record<string, number> = { age: 50, joined: 70 }
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return { width: widths[this.dataset.field ?? ''] ?? 30 } as DOMRect
+      }
+    )
+    const m = mountIt({
+      columns: [
+        { field: 'id', title: 'ID' },
+        { field: 'age', title: 'Age', pinned: 'right' },
+        { field: 'joined', title: 'Joined', pinned: 'right' }
+      ]
+    })
+    await flush()
+    const style = (selector: string) =>
+      (m.wrapper.find(selector).element as HTMLElement).style
+    const offset = (field: string) =>
+      style(`thead th[data-field="${field}"]`).getPropertyValue(
+        '--qt-pin-right'
+      )
+    expect(offset('joined')).toBe('0px')
+    expect(offset('age')).toBe('70px')
+    expect(
+      style(
+        'tbody tr[data-row-index="0"] td[data-field="age"]'
+      ).getPropertyValue('--qt-pin-right')
+    ).toBe('70px')
+    expect(m.wrapper.html()).not.toContain('--qt-pin-left')
+    widths.joined = 90
+    callbacks.at(-1)!([], {} as ResizeObserver)
+    await flush()
+    expect(offset('age')).toBe('90px')
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 })
