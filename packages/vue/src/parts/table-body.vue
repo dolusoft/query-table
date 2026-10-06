@@ -1,14 +1,14 @@
 <script setup lang="ts" generic="T extends object">
 import { useSlots } from 'vue'
 
+import { useCellView } from '../body/use-cell-view'
 import type {
   CellContextMenuPayload,
   TableLabels,
   TableSlots
 } from '../contract'
-import { useCellView } from './use-cell-view'
-import type { ColumnEntry } from '../core/use-columns'
 import { pinAttrs, utilityKey } from '../pin/pin'
+import type { ColumnEntry } from '../use-query-table'
 
 const props = defineProps<{
   rows: T[]
@@ -20,6 +20,10 @@ const props = defineProps<{
   columnCount: number
   hasSubtable: boolean
   hasRightPanel: boolean
+  /** Draw the selection checkbox column (C-59). */
+  hasSelection: boolean
+  isSelected: (row: T, index: number) => boolean
+  toggleSelected: (row: T, index: number) => void
   /** Pinned cells, utilities included, get `data-pinned` (C-47). */
   hasPinned: boolean
   /** `--qt-pin-left` of each pinned cell, by key. */
@@ -54,6 +58,8 @@ const rightPanelAttrs = () =>
   pinAttrs(props.hasPinned, props.offsets[utilityKey('right-panel')])
 const expandAttrs = () =>
   pinAttrs(props.hasPinned, props.offsets[utilityKey('subtable')])
+const selectAttrs = () =>
+  pinAttrs(props.hasPinned, props.offsets[utilityKey('select')])
 </script>
 
 <template>
@@ -62,6 +68,7 @@ const expandAttrs = () =>
       <tr
         :data-row-index="i"
         :data-expanded="isExpanded(row, i) ? '' : undefined"
+        :data-selected="hasSelection && isSelected(row, i) ? '' : undefined"
       >
         <td v-if="hasRightPanel" v-bind="rightPanelAttrs()">
           <button
@@ -108,6 +115,15 @@ const expandAttrs = () =>
               <polyline v-else points="9 6 15 12 9 18" />
             </svg>
           </button>
+        </td>
+        <td v-if="hasSelection" v-bind="selectAttrs()">
+          <input
+            type="checkbox"
+            class="qt-select-row"
+            :aria-label="labels.selectRow"
+            :checked="isSelected(row, i)"
+            @change="toggleSelected(row, i)"
+          />
         </td>
         <template v-for="entry in entries" :key="entry.column.field">
           <td v-if="hasCellSlot(entry.column)" v-bind="cellAttrs(entry)">

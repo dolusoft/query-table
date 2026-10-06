@@ -10,7 +10,9 @@ const defaultLabels: TableLabels = {
   resizeColumn: column => `Resize ${column}`,
   boolAll: 'All',
   boolTrue: 'True',
-  boolFalse: 'False'
+  boolFalse: 'False',
+  selectRow: 'Select row',
+  selectAllRows: 'Select all rows'
 }
 
 export const resolveLabels = (

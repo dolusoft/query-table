@@ -2,8 +2,8 @@ import type { Slots } from 'vue'
 
 import type { CellContextMenuPayload, CellSlotProps, Column } from '../contract'
 import { valueAt } from '../core/column'
-import type { ColumnEntry } from '../core/use-columns'
 import { pinAttrs } from '../pin/pin'
+import type { ColumnEntry } from '../use-query-table'
 
 export interface CellViewOptions<T extends object> {
   /** The slots the body received: `cell-<field>` is looked up. */

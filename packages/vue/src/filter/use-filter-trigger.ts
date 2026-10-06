@@ -1,8 +1,8 @@
 import { type Component, defineComponent, h } from 'vue'
 
 import type { Column, TableLabels } from '../contract'
-import IconFilter from './filter-icon.vue'
 import { columnName } from '../core/labels'
+import IconFilter from '../parts/filter-icon.vue'
 
 export interface FilterTriggerOptions {
   /** The column of this header cell, as the table has it now. */

@@ -251,7 +251,11 @@ const functions = indexFile.statements
       ts.ScriptTarget.ES2022,
       true
     )
-    return statement.exportClause.elements.map(element => {
+    // Inline type specifiers (`type X`) are types, not functions.
+    const values = statement.exportClause.elements.filter(
+      element => !element.isTypeOnly
+    )
+    return values.map(element => {
       const name = (element.propertyName ?? element.name).text
       const found = file.statements.find(
         node => ts.isFunctionDeclaration(node) && node.name?.text === name

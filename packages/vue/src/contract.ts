@@ -67,11 +67,64 @@ export interface TableQuery {
   /** `null` means unsorted. */
   sort: SortState | null
   filters: FilterRule[]
+  /**
+   * Text of the global search (C-58), absent or `''` when there is none. Set
+   * through the `toolbar` slot's `setSearch`; a new text goes back to page 1.
+   */
+  search?: string
 }
+
+/** One step to take in cursor mode (C-56). */
+export interface CursorRequest {
+  /**
+   * A cursor from `PageCursors`. Opaque: it may hold JSON or base64 and has
+   * no length limit; only the server reads inside it.
+   */
+  token: string
+  /**
+   * The side of the shown page the cursor leads to: `prev` asks for the page
+   * before it. Mapping this to the server's own direction is the consumer's.
+   */
+  direction: 'next' | 'prev'
+}
+
+/**
+ * The query of a table paged by cursor (C-56) instead of by page number. A
+ * table is in cursor mode when its query has a `cursor` key.
+ */
+export interface CursorQuery {
+  pageSize: number
+  /** `null` means unsorted. A server that fixes the order may ignore it (C-57). */
+  sort: SortState | null
+  filters: FilterRule[]
+  /** Text of the global search (C-58), absent or `''` when there is none. */
+  search?: string
+  /** The cursor to follow, `null` for the first page. */
+  cursor: CursorRequest | null
+}
+
+/** Either query a table takes: by page number or by cursor. */
+export type Query = TableQuery | CursorQuery
+
+/**
+ * The cursors of the page shown (cursor mode). `next` comes from the server;
+ * `prev` may come from the server or from the consumer's own stack of earlier
+ * cursors. `null` means there is no page on that side.
+ */
+export interface PageCursors {
+  next: string | null
+  prev: string | null
+}
+
+/**
+ * Rows the user selected (`v-model:selection`), keyed by the row identity
+ * (`rowKey`, as a string). Only `true` entries count.
+ */
+export type RowSelection = Record<string, boolean>
 
 /** What the user did to produce an `update:query` event. */
 export type QueryChangeReason =
-  'page' | 'pageSize' | 'sort' | 'filter' | 'reset'
+  'page' | 'pageSize' | 'sort' | 'filter' | 'reset' | 'search'
 
 /** Data type of a column; it picks the filter input and the default condition. */
 export type ColumnType =
@@ -136,9 +189,33 @@ export interface PaginationOptions {
   alwaysShow?: boolean
 }
 
-export interface TableProps<T extends object = Record<string, unknown>> {
-  /** The table state, used with `v-model:query`. Required: the table is always controlled. */
-  query: TableQuery
+export interface TableProps<
+  T extends object = Record<string, unknown>,
+  Q extends Query = TableQuery
+> {
+  /**
+   * The table state, used with `v-model:query`. Required: the table is
+   * always controlled. A `CursorQuery` (a `cursor` key) pages by cursor.
+   */
+  query: Q
+  /**
+   * Cursor mode: the cursors of the page shown (C-56). The next and previous
+   * page controls step to them; without the one on a side there is no page
+   * on that side.
+   */
+  cursors?: PageCursors | null
+  /**
+   * Rows the user selected, used with `v-model:selection`. Given, a column
+   * of checkboxes is drawn after the other utility columns; absent, there is
+   * no selection. Keys are the row identity (`rowKey`) as a string.
+   */
+  selection?: RowSelection
+  /**
+   * Milliseconds between the last key of a search typed through the
+   * `toolbar` slot and the search being applied (C-58). `0` applies every
+   * call at once, for a consumer that debounces on its own. Defaults to `300`.
+   */
+  searchDebounce?: number
   /** Column definitions. Never mutated. */
   columns: Column[]
   /**
@@ -230,6 +307,10 @@ export interface TableLabels {
   boolTrue: string
   /** Bool filter option for `false`. Default `'False'`. */
   boolFalse: string
+  /** Name of a row's selection checkbox. Default `'Select row'`. */
+  selectRow: string
+  /** Name of the checkbox that selects every row of the page. Default `'Select all rows'`. */
+  selectAllRows: string
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -254,12 +335,17 @@ export interface ColumnResizePayload {
 }
 
 /** Events of the table. */
-export type TableEmits<T> = {
+export type TableEmits<T, Q extends Query = TableQuery> = {
   /**
    * The user changed the query. `reason` says how. The query is a new object
    * with new `filters` and rule objects; apply it with `v-model:query`.
    */
-  'update:query': [query: TableQuery, reason: QueryChangeReason]
+  'update:query': [query: Q, reason: QueryChangeReason]
+  /**
+   * The user changed the selection: a new object holding the `true` entries
+   * (C-59). Apply it with `v-model:selection`.
+   */
+  'update:selection': [selection: RowSelection]
   /** The right-panel button of a row was clicked. */
   rowRightPanelClick: [row: T]
   /**
@@ -346,6 +432,15 @@ export interface ToolbarSlotProps {
   canClearFilters: boolean
   /** Remove every filter rule, the same as the clear-all button (C-22). */
   clearFilters: () => void
+  /** Search text to show: the text being typed, else `query.search`, else `''`. */
+  search: string
+  /**
+   * The search input changed: the text is applied after `searchDebounce`,
+   * at once when it is `0` (C-58).
+   */
+  setSearch: (text: string) => void
+  /** Apply a typed search now (Enter). Does nothing when nothing is pending. */
+  applySearch: () => void
 }
 
 export interface PaginationSlotProps {
@@ -364,6 +459,12 @@ export interface PaginationSlotProps {
   previousPage: () => void
   /** Change the page size and return to page 1 in one update. */
   setPageSize: (size: number) => void
+  /**
+   * The query pages by cursor (C-56). There is no page number then: `page`
+   * is `1`, `pageCount` is `null`, and `canPrevious` / `canNext` say whether
+   * `cursors` hold a cursor on that side.
+   */
+  cursorMode: boolean
 }
 
 /** Slots of the table. Slot names are kebab-case. */

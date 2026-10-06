@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Column, FooterRow } from '../contract'
-import type { ColumnEntry } from '../core/use-columns'
 import { pinAttrs } from '../pin/pin'
+import type { ColumnEntry } from '../use-query-table'
 
 defineProps<{
   footerRows: FooterRow[]
