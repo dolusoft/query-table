@@ -1,10 +1,17 @@
-// `pnpm measure:consumer-size`: how much an application that imports the
-// package ships. Builds two minified apps from fixtures/consumer (with the
-// table, and the same app without it), both against the built `dist/` through
-// the package `exports`, and writes the difference to
+// `pnpm measure:consumer-size`: how much a Vue application that uses
+// `@dolusoft/query-table` ships (P8). Builds minified apps from
+// fixtures/consumer against the built `dist/` of the packages, through their
+// `exports` maps, and subtracts the same app without the table
+// (`vue-only`): what is left is the package with TanStack, the core and the
+// protocol, Vue excluded. Two fixtures: `composable` (`useQueryTable()` with
+// the consumer's own markup) and `component` (`QueryTable`). Writes
 // node_modules/.cache/measure/consumer-size.json. Run after `pnpm build`
-// (the package script does). `--check` also compares the gzip package cost with
-// scripts/consumer-size-budget.json and exits 1 when it is over.
+// (the package script does).
+//
+// `--check` (CI) compares each gzip cost with scripts/consumer-size-budget.json
+// and exits 1 when one is over its budget or a budget is over the ceiling of
+// its fixture. A deliberate growth raises budget and ceiling in the same
+// change, with its reason in the history (K7).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
@@ -13,11 +20,18 @@ import { build } from 'vite'
 
 const root = join(import.meta.dirname, '..')
 const outDir = join(root, 'node_modules', '.cache', 'measure')
-if (!existsSync(join(root, 'dist', 'query-table.js'))) {
-  console.error(
-    '[measure:consumer-size] dist/ is missing: run `pnpm build` first'
-  )
-  process.exit(1)
+const vuePackage = join(root, 'packages', 'vue')
+for (const entry of [
+  'vue/dist/query-table.js',
+  'query-table-core/dist/index.js',
+  'query-protocol/dist/query-protocol.js'
+]) {
+  if (!existsSync(join(root, 'packages', entry))) {
+    console.error(
+      `[measure:consumer-size] packages/${entry} is missing: run \`pnpm build\` first`
+    )
+    process.exit(1)
+  }
 }
 mkdirSync(outDir, { recursive: true })
 
@@ -26,8 +40,9 @@ const buildApp = async name => {
     root,
     configFile: false,
     logLevel: 'warn',
-    // Self-reference by package name resolves through `exports` to dist/.
-    resolve: { alias: { '@dolusoft/query-table': root } },
+    // The package name resolves through `exports` to dist/; its own
+    // dependencies (core, protocol, TanStack) resolve from packages/vue.
+    resolve: { alias: { '@dolusoft/query-table': vuePackage } },
     build: {
       write: false,
       minify: true,
@@ -46,12 +61,13 @@ const buildApp = async name => {
   for (const chunk of chunks) {
     for (const [id, module] of Object.entries(chunk.modules)) {
       const path = id.replaceAll('\\', '/')
+      const workspace = /\/packages\/([^/]+)\/dist\//.exec(path)
       const dependency =
         /\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?((?:@[^/]+\/)?[^/]+)\//.exec(
           path
         )
-      const source = path.includes('/dist/query-table')
-        ? '@dolusoft/query-table'
+      const source = workspace
+        ? `packages/${workspace[1]}`
         : (dependency?.[1] ?? 'fixture')
       sources[source] = (sources[source] ?? 0) + module.renderedLength
     }
@@ -64,65 +80,95 @@ const buildApp = async name => {
   }
 }
 
-const withTable = await buildApp('with-table')
+const names = ['composable', 'component']
 const baseline = await buildApp('vue-only')
+const apps = {}
+const costs = {}
+for (const name of names) {
+  const app = await buildApp(name)
+  apps[name] = app
+  costs[name] = {
+    bytes: app.bytes - baseline.bytes,
+    gzipBytes: app.gzipBytes - baseline.gzipBytes,
+    brotliBytes: app.brotliBytes - baseline.brotliBytes
+  }
+}
+
 const version = name =>
   JSON.parse(
     readFileSync(join(root, 'node_modules', name, 'package.json'), 'utf8')
   ).version
 
-const result = {
-  generatedAt: new Date().toISOString(),
-  versions: {
-    package: JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
-      .version,
-    vue: version('vue'),
-    vite: version('vite')
-  },
-  note: 'minified app builds (vue bundled); the package cost is with-table minus vue-only',
-  withTable,
-  vueOnly: baseline,
-  packageCost: {
-    bytes: withTable.bytes - baseline.bytes,
-    gzipBytes: withTable.gzipBytes - baseline.gzipBytes,
-    brotliBytes: withTable.brotliBytes - baseline.brotliBytes
-  }
-}
 const file = join(outDir, 'consumer-size.json')
-writeFileSync(file, JSON.stringify(result, null, 2) + '\n')
+writeFileSync(
+  file,
+  `${JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      versions: {
+        package: JSON.parse(
+          readFileSync(join(vuePackage, 'package.json'), 'utf8')
+        ).version,
+        vue: version('vue'),
+        vite: version('vite')
+      },
+      note: 'minified app builds (Vue and TanStack bundled); each cost is the fixture minus vue-only',
+      vueOnly: baseline,
+      apps,
+      costs
+    },
+    null,
+    2
+  )}\n`
+)
 
 console.log(`[measure:consumer-size] ${file}`)
 console.log('                  bytes     gzip   brotli')
 for (const [label, entry] of [
-  ['with the table', withTable],
   ['vue only', baseline],
-  ['package cost', result.packageCost]
+  ...Object.entries(costs)
 ]) {
   console.log(
     `${label.padEnd(15)} ${String(entry.bytes).padStart(8)} ${String(entry.gzipBytes).padStart(8)} ${String(entry.brotliBytes).padStart(8)}`
   )
 }
 
-// `--check` (CI): fail when the package cost, minified + gzip, is over the
-// budget in scripts/consumer-size-budget.json.
 if (process.argv.includes('--check')) {
   const budget = JSON.parse(
     readFileSync(join(root, 'scripts', 'consumer-size-budget.json'), 'utf8')
   )
-  if (typeof budget.maxGzipBytes !== 'number') {
-    console.error(
-      '[measure:consumer-size] scripts/consumer-size-budget.json has no numeric `maxGzipBytes`: the check has no budget to compare with.'
-    )
+  let failed = false
+  for (const name of names) {
+    const entry = budget.fixtures?.[name]
+    if (typeof entry?.maxGzipBytes !== 'number') {
+      console.error(
+        `[measure:consumer-size] scripts/consumer-size-budget.json has no numeric \`maxGzipBytes\` for ${name}.`
+      )
+      failed = true
+      continue
+    }
+    if (
+      typeof entry.ceilingGzipBytes === 'number' &&
+      entry.maxGzipBytes > entry.ceilingGzipBytes
+    ) {
+      console.error(
+        `[measure:consumer-size] the ${name} budget ${entry.maxGzipBytes} B is over its ceiling of ${entry.ceilingGzipBytes} B: raise both only for a deliberate growth, with its reason in the history (P8).`
+      )
+      failed = true
+    }
+    const cost = costs[name].gzipBytes
+    if (cost > entry.maxGzipBytes) {
+      console.error(
+        `[measure:consumer-size] ${name} costs ${cost} B gzip, over its budget of ${entry.maxGzipBytes} B (measured ${entry.measuredGzipBytes} B when it was set). Shrink the build, or raise scripts/consumer-size-budget.json on purpose.`
+      )
+      failed = true
+    } else {
+      console.log(
+        `[measure:consumer-size] ${name} within budget: ${cost} B gzip of ${entry.maxGzipBytes} B`
+      )
+    }
+  }
+  if (failed) {
     process.exit(1)
   }
-  const cost = result.packageCost.gzipBytes
-  if (cost > budget.maxGzipBytes) {
-    console.error(
-      `[measure:consumer-size] package cost ${cost} B gzip is over the budget of ${budget.maxGzipBytes} B (measured ${budget.measuredGzipBytes} B when it was set). Shrink the build, or raise scripts/consumer-size-budget.json on purpose.`
-    )
-    process.exit(1)
-  }
-  console.log(
-    `[measure:consumer-size] within budget: ${cost} B gzip of ${budget.maxGzipBytes} B`
-  )
 }

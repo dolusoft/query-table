@@ -1,5 +1,7 @@
 # Principles
 
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)).
+
 These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
 
 The behavior rules (`C-nn`) are in [contract/rules.md](contract/rules.md); the generated contract is [CONTRACT.md](CONTRACT.md).
@@ -10,7 +12,7 @@ The table draws the rows it is given and reports, through `update:query`, what t
 
 Why: server-side data is the premise of the package. Any data logic inside the table becomes a second source of truth next to the server's.
 
-Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in `src/` (`no-restricted-globals`, `no-restricted-properties` in `eslint.config.js`).
+Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in the source of every package, `packages/*/src/**` (`no-restricted-globals`, `no-restricted-properties` in `eslint.config.js`).
 
 ## P2 Lasting state is controlled; internal state is short-lived
 
@@ -50,7 +52,7 @@ The classes in `contract/dom.ts` (all `qt-*`), its `data-*` attributes and `aria
 
 Why: consumer CSS depends on them. Markup that is not listed is markup nobody promised.
 
-Check: C-40 (`tests/browser/dom-contract.browser.spec.ts`) and C-41 (`playground/skin/skin.spec.ts`).
+Check: C-40 (`tests/contract/browser/dom-contract.browser.spec.ts`) and C-41 (`apps/playground/skin/skin.spec.ts`).
 
 ## P7 Native semantics first, then ARIA; no hardcoded text
 
@@ -58,39 +60,41 @@ The table uses real `table`, `th scope="col"` and `button` elements before ARIA.
 
 Why: products are localised, and accessibility that only works in English is not accessibility.
 
-Check: C-44 (a test fails on a literal `aria-label="` in any `src/**/*.vue`) and C-45; an axe-core scan of the table in light and dark themes (`tests/browser/accessibility.browser.spec.ts`).
+Check: C-44 (a test fails on a literal `aria-label="` in any `packages/vue/src/**/*.vue`, `packages/vue/src/core/labels.spec.ts`) and C-45; an axe-core scan of the table in light and dark themes (`tests/contract/browser/accessibility.browser.spec.ts`).
 
-## P8 Performance is a budget
+## P8 Performance is a budget, per consumer fixture
 
-The package has a size budget and a render budget. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows.
+Every package has a size budget, measured the way a consumer pays for it: a built application that imports the package by name, minus the same application without it, minified and gzipped, transitive code (TanStack included) counted. The fixtures are: protocol only, each core entry (`/server-query`, `/filter-input`), the composable, and the component. A complete application is measured on its own; budgets are not summed. The render budget stays: component updates per fixed scenario. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows.
 
-Why: tables with thousands of rows on a page are a real use. A regression that nobody measures ships.
+Size is not a goal in itself: a useful library may grow. A budget is the last measure plus 5%; a fixture can also have a ceiling. Both guard against silent drift. A deliberate growth raises the budget, and the ceiling when needed, in the same change, with a one-line reason in the budget's history; it needs no separate approval.
 
-Check: `pnpm check:size` (`scripts/consumer-size-budget.json`); `pnpm check:renders` (`scripts/render-budget.json`); C-26 for the pruning and C-28 for the single `tbody` listener.
+Why: tables with thousands of rows on a page are a real use, and TanStack moves the size of the package (ADR 0001). A regression that nobody measures ships; a budget measured on a different thing than the consumer pays is not a budget.
 
-## P9 One small, typed surface
+Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture: the composable and the component); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
 
-The public surface is `src/contract.ts` and the entry `src/index.ts`, nothing else. Releases are patch versions; a breaking change is decided explicitly before it is made.
+## P9 One small, typed surface per package
 
-Why: a version number only means something when the surface it versions is enumerable.
+Each package has one entry per published path and one API report, nothing else. A new capability goes into the core plugins first; the Vue package exposes what the core provides. Releases are patch versions within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made.
 
-Check: `pnpm api:check` (`etc/query-table.api.md`) and `pnpm contract:check`.
+Why: a version number only means something when the surface it versions is enumerable, and three packages released together must agree on one surface.
 
-## P10 Extension order: slot, event, prop, method
+Check: `pnpm api:check` (api-extractor, one report per package: `packages/<name>/etc/*.api.md`) and `pnpm contract:check`.
 
-A slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`.
+## P10 Extension order: slot, event, prop, method; inside, plugin first
 
-Why: slots and events keep the table thin; props and methods grow it.
+For the public API of `QueryTable`: a slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`. Inside the packages, a behavior is first a TanStack option, then a TanStack plugin of ours, and only then Vue code.
 
-Check: review, backed by the playground manifest: `playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers.
+Why: slots and events keep the table thin; props and methods grow it. A behavior that lives in a plugin is usable without our component.
 
-## P11 No runtime dependencies
+Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. A C-rule names its source (`tanstack` or `own`) in `contract/rules.md`: C-01 to C-23, C-53 and C-56 to C-66 do; `tests/repo/contract-traceability.spec.ts` checks every source named but does not yet require one (`requireSource`).
 
-`vue` is the only peer dependency and there are no runtime dependencies. The playground and its skin are never part of the package.
+## P11 Dependencies are few, pinned and layered
 
-Why: every dependency lands in the consumer's bundle and is a supply-chain risk.
+`@dolusoft/query-protocol` has no dependencies. `@dolusoft/query-table-core` depends on the protocol and `@tanstack/table-core` only; `@dolusoft/query-table` adds `@tanstack/vue-table` and has `vue` as its only peer. TanStack is pinned to an exact version (`@tanstack/store` comes with it); an upgrade runs the whole test suite and the equivalence gate. Nothing else is added. The playground and its skin are never part of a package.
 
-Check: `tests/contract/package-manifest.spec.ts` (`dependencies` empty, `vue` the only peer, only `dist` published); `pnpm knip`.
+Why: every dependency lands in the consumer's bundle and is a supply-chain risk. TanStack is accepted for one reason (ADR 0001) and only where it is used.
+
+Check: `tests/repo/package-manifest.spec.ts` (each of the three packages: its allow-listed dependencies, TanStack at an exact version, only `dist` published, `vue` the only peer of the Vue package; the workspace root: private, no dependencies); `scripts/check-deps.mjs` allow-list in CI (`pnpm check:deps`); `pnpm knip`.
 
 ## P12 Rule, test, code and generated docs move together
 
@@ -98,7 +102,7 @@ A behavior change starts as a rule in `contract/rules.md`, gets a test that asse
 
 Why: a rule without a test rots, and a hand-edited document lies.
 
-Check: `tests/contract/contract-traceability.spec.ts`, `pnpm contract:check` and `playground/manifest.spec.ts`.
+Check: `tests/repo/contract-traceability.spec.ts`, `pnpm contract:check` and `apps/playground/manifest.spec.ts`.
 
 ## P13 Page layout is out of scope
 
@@ -107,3 +111,19 @@ Panes, menus, popovers, tooltips and scroll containers belong to the consumer. T
 Why: layout is where products differ most, and a table that draws overlays fights the page it sits in.
 
 Check: review; C-34 states that the table draws no popover and no tooltip.
+
+## P14 Layers point one way
+
+protocol → core → vue → playground. A package imports only from the layers before it; inside core, a feature (`serverQueryFeature`, `filterInputFeature`) imports only `shared/` and the protocol, never another feature.
+
+Why: a layer that imports upward cannot be used without the one above it, and two features that import each other are one feature.
+
+Check: the ESLint layer rule `layers/boundaries` (`scripts/eslint-layers.mjs`, tested in `tests/repo/eslint-layers.spec.ts`) over imports, re-exports, dynamic imports, type imports and package sub-paths; `scripts/check-deps.mjs`.
+
+## P15 TanStack holds the table; we add only what it lacks
+
+Table state that TanStack models (sorting, pagination, column filters, pinning order, expansion) lives in TanStack, as a projection of the consumer's props (P2), and is never kept a second time. What TanStack does is not rewritten; what it lacks is a plugin that implements the `TableFeature` interface, with its own state only for transient UI (drafts, drag preview, echo history, measured geometry). Plugins communicate through `shared/` (the `beforeAction` hooks, the dispatcher, `dispose`), never through each other.
+
+Why: two copies of one state drift apart. A plugin keeps our behavior usable by any TanStack table, not only ours.
+
+Check: the plugin-level unit tests, one per C-rule, tagged `tanstack` or `own` (`packages/query-table-core/tests/`); the same-tick double update and consumer rejection tests, C-14 and C-19, in the core (`packages/query-table-core/tests/server-query.spec.ts`) and in the Vue layer (`tests/contract/unit/filter.spec.ts`, `tests/contract/unit/query-model.spec.ts`); review against ADR 0003 and ADR 0004.

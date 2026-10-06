@@ -5,7 +5,7 @@ import { playwright } from '@vitest/browser-playwright'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { defineConfig, mergeConfig } from 'vitest/config'
 
-import viteConfig from './vite.config.ts'
+import viteConfig from './packages/vue/vite.config.ts'
 
 // `vitest --mode inspect` (see the `test:browser:inspect` script) keeps a
 // headed browser and the dev server up, with Vue DevTools and Vite DevTools
@@ -14,16 +14,53 @@ import viteConfig from './vite.config.ts'
 export default defineConfig(({ mode }) => {
   const inspect = mode === 'inspect'
 
+  // Tests import the package by its name. By default the name answers with
+  // the source; QT_TARGET points it at a built entry instead (a `dist/*.js`
+  // of a packed tarball), so `scripts/equivalence.mjs` can run the same
+  // contract specs against two builds.
+  const packageEntry = process.env.QT_TARGET
+    ? resolve(process.env.QT_TARGET)
+    : resolve(import.meta.dirname, 'packages/vue/src/index.ts')
+  // The v3 workspace packages answer with their source too (the same map as
+  // the `paths` of tsconfig.json).
+  const packages = resolve(import.meta.dirname, 'packages')
+  const packageAlias = [
+    { find: /^@dolusoft\/query-table$/, replacement: packageEntry },
+    {
+      find: /^@dolusoft\/query-protocol$/,
+      replacement: resolve(packages, 'query-protocol/src/index.ts')
+    },
+    {
+      find: /^@dolusoft\/query-protocol\/query\.schema\.json$/,
+      replacement: resolve(packages, 'query-protocol/query.schema.json')
+    },
+    {
+      find: /^@dolusoft\/query-table-core$/,
+      replacement: resolve(packages, 'query-table-core/src/index.ts')
+    },
+    {
+      find: /^@dolusoft\/query-table-core\/([\w-]+)$/,
+      replacement: resolve(
+        packages,
+        'query-table-core/src/features/$1/index.ts'
+      )
+    }
+  ]
+  const skinAlias = {
+    find: '@',
+    replacement: resolve(import.meta.dirname, 'apps/playground/skin')
+  }
+
   // The real-browser projects share everything but their name and files:
   // `browser` holds the tests, `measure` the render counting behind
   // `pnpm measure:renders` (not a test run, so `pnpm test:browser` skips it).
   const browserProject = (name: string, include: string[]) => ({
     extends: true as const,
-    // Tailwind builds the test skin (playground/skin/test-skin.css); the
+    // Tailwind builds the test skin (apps/playground/skin/test-skin.css); the
     // library build never loads it.
     plugins: [tailwindcss(), ...(inspect ? [vueDevTools()] : [])],
     resolve: {
-      alias: { '@': resolve(import.meta.dirname, 'playground/skin') }
+      alias: [...packageAlias, skinAlias]
     },
     // Inspect mode only: no one-time code to paste for a local session.
     // The dev server stays bound to loopback.
@@ -45,7 +82,7 @@ export default defineConfig(({ mode }) => {
       testTimeout: 15_000,
       hookTimeout: 15_000,
       teardownTimeout: 10_000,
-      setupFiles: ['tests/support/setup.ts'],
+      setupFiles: ['tests/support/setup.ts', 'tests/support/trace.ts'],
       // Browser mode serves on this port. The default (63315) falls inside
       // a range Windows reserves for Hyper-V on some machines, and a fixed
       // port gives the inspect mode a stable URL.
@@ -73,7 +110,7 @@ export default defineConfig(({ mode }) => {
           !inspect &&
           (process.env.CI === 'true' || process.env.HEADLESS === '1'),
         ui: false,
-        screenshotDirectory: 'tests/browser/__screenshots__',
+        screenshotDirectory: 'tests/contract/browser/__screenshots__',
         // A desktop-sized viewport: the default is phone-sized, which
         // squeezes the table and distorts geometry assertions.
         viewport: { width: 1280, height: 800 },
@@ -86,8 +123,8 @@ export default defineConfig(({ mode }) => {
     test: {
       coverage: {
         provider: 'v8',
-        include: ['src/**'],
-        exclude: ['src/**/*.spec.ts'],
+        include: ['packages/vue/src/**'],
+        exclude: ['packages/vue/src/**/*.spec.ts'],
         reporter: ['text', 'json-summary', 'html'],
         reportsDirectory: 'coverage',
         // Measured 2026-10-05 (unit project): lines 98.3, statements 98.39, branches 96.48,
@@ -103,26 +140,36 @@ export default defineConfig(({ mode }) => {
       projects: [
         {
           extends: true,
-          // playground/skin/parity.spec.ts imports the shadcn-vue Button and
+          // apps/playground/skin/parity.spec.ts imports the shadcn-vue Button and
           // Badge variants; their components import `@/lib/utils`.
           resolve: {
-            alias: { '@': resolve(import.meta.dirname, 'playground/skin') }
+            alias: [...packageAlias, skinAlias]
           },
           test: {
             name: 'unit',
+            setupFiles: ['tests/support/trace.ts'],
             environment: 'happy-dom',
             // Unit specs sit next to the code they test (src/<feature>/);
-            // cross-cutting ones sit in tests/contract (traceability) and playground/ (skin, manifest, fake server).
+            // the behavior specs that use only the public API sit in tests/contract/unit,
+            // the repository checks in tests/repo, the playground ones in playground/.
             include: [
-              'src/**/*.spec.ts',
+              'packages/vue/src/**/*.spec.ts',
               'tests/**/*.spec.ts',
-              'playground/**/*.spec.ts'
+              'apps/playground/**/*.spec.ts',
+              // The v3 packages: pure unit tests, no DOM needed.
+              'packages/*/src/**/*.spec.ts',
+              'packages/*/tests/**/*.spec.ts',
+              // The guides: their code samples are compiled by `pnpm
+              // typecheck` and run here (docs/guide/guide.spec.ts).
+              'docs/guide/**/*.spec.ts'
             ],
-            exclude: ['tests/browser/**'],
+            exclude: ['tests/contract/browser/**'],
             css: false
           }
         },
-        browserProject('browser', ['tests/browser/**/*.browser.spec.ts']),
+        browserProject('browser', [
+          'tests/contract/browser/**/*.browser.spec.ts'
+        ]),
         browserProject('measure', ['tests/measure/**/*.measure.ts'])
       ]
     }

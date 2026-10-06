@@ -10,7 +10,10 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 
 | Name | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `query` | `TableQuery` | yes |  | The table state, used with `v-model:query`. Required: the table is always controlled. |
+| `query` | `Q` | yes |  | The table state, used with `v-model:query`. Required: the table is always controlled. A `CursorQuery` (a `cursor` key) pages by cursor. |
+| `cursors` | `PageCursors \| null` |  | `null` | Cursor mode: the cursors of the page shown (C-56). The next and previous page controls step to them; without the one on a side there is no page on that side. |
+| `selection` | `RowSelection` |  | `undefined` | Rows the user selected, used with `v-model:selection`. Given, a column of checkboxes is drawn after the other utility columns; absent, there is no selection. Keys are the row identity (`rowKey`) as a string. |
+| `searchDebounce` | `number` |  | `300` | Milliseconds between the last key of a search typed through the `toolbar` slot and the search being applied (C-58). `0` applies every call at once, for a consumer that debounces on its own. Defaults to `300`. |
 | `columns` | `Column[]` | yes |  | Column definitions. Never mutated. |
 | `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. With `hasSubtable` a row may carry an optional `isExpanded` boolean to seed its expansion state (for example a print or report view that opens every row). Whenever `rows` changes, `isExpanded: true` opens the row, `isExpanded: false` closes it, and a row without the field (or with any other value) keeps what the state is. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again. The field is not part of `T`; it is read from the row object as given. |
 | `totalRows` | `number \| null` |  | `null` | Total number of rows on the server, `null` when unknown. It only feeds the `pagination` slot; it never decides whether rows are drawn. |
@@ -30,7 +33,8 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 
 | Name | Arguments | Description |
 | --- | --- | --- |
-| `update:query` | `[query: TableQuery, reason: QueryChangeReason]` | The user changed the query. `reason` says how. The query is a new object with new `filters` and rule objects; apply it with `v-model:query`. |
+| `update:query` | `[query: Q, reason: QueryChangeReason]` | The user changed the query. `reason` says how. The query is a new object with new `filters` and rule objects; apply it with `v-model:query`. |
+| `update:selection` | `[selection: RowSelection]` | The user changed the selection: a new object holding the `true` entries (C-59). Apply it with `v-model:selection`. |
 | `rowRightPanelClick` | `[row: T]` | The right-panel button of a row was clicked. |
 | `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
 | `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
@@ -64,13 +68,24 @@ Exported from the package entry point next to the component.
 
 | Name | Signature | Description |
 | --- | --- | --- |
-| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. |
+| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
+| `useQueryTable` | `(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>` | The state and actions of a server-side table: TanStack Table with `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed with the scope (C-62). |
 
 ## Types
 
-Exported from the package entry point (`src/contract.ts`).
+Exported from the package entry point (`packages/vue/src/contract.ts`).
 
 ```ts
+import type {
+  ColumnType,
+  FilterCondition,
+  FilterRule,
+  PageCursors,
+  Query,
+  QueryChangeReason,
+  SortDirection,
+  TableQuery
+} from '@dolusoft/query-protocol'
 import type { Component } from 'vue'
 
 /**
@@ -83,72 +98,29 @@ import type { Component } from 'vue'
  */
 
 /**
- * Comparison applied to a column. A column with no rule is not filtered, so
- * "no filter" is not a condition.
+ * The query types are the protocol's (`@dolusoft/query-protocol`), exported
+ * again so a consumer of the Vue package imports them from here, as in 2.2.x.
  */
-export type FilterCondition =
-  | 'Contains'
-  | 'NotContains'
-  | 'Equal'
-  | 'NotEqual'
-  | 'StartsWith'
-  | 'EndsWith'
-  | 'GreaterThan'
-  | 'GreaterThanOrEqual'
-  | 'LessThan'
-  | 'LessThanOrEqual'
+export type {
+  ColumnType,
+  CursorQuery,
+  CursorRequest,
+  FilterCondition,
+  FilterRule,
+  FilterValue,
+  PageCursors,
+  Query,
+  QueryChangeReason,
+  SortDirection,
+  SortState,
+  TableQuery
+} from '@dolusoft/query-protocol'
 
 /**
- * Value of a rule: text columns give a string, `number` and `integer` columns
- * a number, `date` and `datetime` columns a string, `bool` columns a boolean.
+ * Rows the user selected (`v-model:selection`), keyed by the row identity
+ * (`rowKey`, as a string). Only `true` entries count.
  */
-export type FilterValue = string | number | boolean
-
-/**
- * One clean filter rule. Operator shortcuts the user types (`*`, `!`, `,`) are
- * parsed by the table and never appear here.
- *
- * Several rules may share one `field` (the user typed `a,b`). They combine
- * with OR; when every rule of the field is negative (`NotEqual`,
- * `NotContains`) they combine with AND. Rules of different fields combine
- * with AND. The table does not evaluate rules, the server does.
- */
-export interface FilterRule {
-  /** Column `field` the rule applies to. */
-  field: string
-  condition: FilterCondition
-  /** A non-empty value. */
-  value: FilterValue
-}
-
-export type SortDirection = 'asc' | 'desc'
-
-export interface SortState {
-  /** Column `field` the rows are ordered by. */
-  field: string
-  direction: SortDirection
-}
-
-/**
- * Everything the user can change about what the table shows. The consumer owns
- * it (`v-model:query`); the table only reads it and emits new objects.
- */
-export interface TableQuery {
-  /** 1-based page number. */
-  page: number
-  pageSize: number
-  /** `null` means unsorted. */
-  sort: SortState | null
-  filters: FilterRule[]
-}
-
-/** What the user did to produce an `update:query` event. */
-export type QueryChangeReason =
-  'page' | 'pageSize' | 'sort' | 'filter' | 'reset'
-
-/** Data type of a column; it picks the filter input and the default condition. */
-export type ColumnType =
-  'string' | 'number' | 'integer' | 'date' | 'datetime' | 'bool'
+export type RowSelection = Record<string, boolean>
 
 /**
  * Column definition. Pure data: the table never writes to these objects.
@@ -209,9 +181,33 @@ export interface PaginationOptions {
   alwaysShow?: boolean
 }
 
-export interface TableProps<T extends object = Record<string, unknown>> {
-  /** The table state, used with `v-model:query`. Required: the table is always controlled. */
-  query: TableQuery
+export interface TableProps<
+  T extends object = Record<string, unknown>,
+  Q extends Query = TableQuery
+> {
+  /**
+   * The table state, used with `v-model:query`. Required: the table is
+   * always controlled. A `CursorQuery` (a `cursor` key) pages by cursor.
+   */
+  query: Q
+  /**
+   * Cursor mode: the cursors of the page shown (C-56). The next and previous
+   * page controls step to them; without the one on a side there is no page
+   * on that side.
+   */
+  cursors?: PageCursors | null
+  /**
+   * Rows the user selected, used with `v-model:selection`. Given, a column
+   * of checkboxes is drawn after the other utility columns; absent, there is
+   * no selection. Keys are the row identity (`rowKey`) as a string.
+   */
+  selection?: RowSelection
+  /**
+   * Milliseconds between the last key of a search typed through the
+   * `toolbar` slot and the search being applied (C-58). `0` applies every
+   * call at once, for a consumer that debounces on its own. Defaults to `300`.
+   */
+  searchDebounce?: number
   /** Column definitions. Never mutated. */
   columns: Column[]
   /**
@@ -303,6 +299,10 @@ export interface TableLabels {
   boolTrue: string
   /** Bool filter option for `false`. Default `'False'`. */
   boolFalse: string
+  /** Name of a row's selection checkbox. Default `'Select row'`. */
+  selectRow: string
+  /** Name of the checkbox that selects every row of the page. Default `'Select all rows'`. */
+  selectAllRows: string
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -327,12 +327,17 @@ export interface ColumnResizePayload {
 }
 
 /** Events of the table. */
-export type TableEmits<T> = {
+export type TableEmits<T, Q extends Query = TableQuery> = {
   /**
    * The user changed the query. `reason` says how. The query is a new object
    * with new `filters` and rule objects; apply it with `v-model:query`.
    */
-  'update:query': [query: TableQuery, reason: QueryChangeReason]
+  'update:query': [query: Q, reason: QueryChangeReason]
+  /**
+   * The user changed the selection: a new object holding the `true` entries
+   * (C-59). Apply it with `v-model:selection`.
+   */
+  'update:selection': [selection: RowSelection]
   /** The right-panel button of a row was clicked. */
   rowRightPanelClick: [row: T]
   /**
@@ -419,6 +424,15 @@ export interface ToolbarSlotProps {
   canClearFilters: boolean
   /** Remove every filter rule, the same as the clear-all button (C-22). */
   clearFilters: () => void
+  /** Search text to show: the text being typed, else `query.search`, else `''`. */
+  search: string
+  /**
+   * The search input changed: the text is applied after `searchDebounce`,
+   * at once when it is `0` (C-58).
+   */
+  setSearch: (text: string) => void
+  /** Apply a typed search now (Enter). Does nothing when nothing is pending. */
+  applySearch: () => void
 }
 
 export interface PaginationSlotProps {
@@ -437,6 +451,12 @@ export interface PaginationSlotProps {
   previousPage: () => void
   /** Change the page size and return to page 1 in one update. */
   setPageSize: (size: number) => void
+  /**
+   * The query pages by cursor (C-56). There is no page number then: `page`
+   * is `1`, `pageCount` is `null`, and `canPrevious` / `canNext` say whether
+   * `cursors` hold a cursor on that side.
+   */
+  cursorMode: boolean
 }
 
 /** Slots of the table. Slot names are kebab-case. */
@@ -495,103 +515,256 @@ export interface QueryTableExpose {
 }
 ```
 
+The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.
+
+```ts
+/**
+ * Comparison applied to a column. A column with no rule is not filtered, so
+ * "no filter" is not a condition.
+ */
+export type FilterCondition = (typeof filterConditions)[number]
+
+/**
+ * Value of a rule: text columns give a string, `number` and `integer` columns
+ * a number, `date` and `datetime` columns a string, `bool` columns a boolean.
+ */
+export type FilterValue = string | number | boolean
+
+/**
+ * One clean filter rule. Operator shortcuts the user types (`*`, `!`, `,`) are
+ * parsed by the grammar and never appear here.
+ *
+ * Several rules may share one `field` (the user typed `a,b`). They combine
+ * with OR; when every rule of the field is negative (`NotEqual`,
+ * `NotContains`) they combine with AND. Rules of different fields combine
+ * with AND. The table does not evaluate rules, the server does.
+ *
+ * Properties besides these three are kept as they are: the table copies them
+ * and never drops them.
+ */
+export interface FilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: FilterCondition
+  /** A non-empty value. */
+  value: FilterValue
+}
+
+export type SortDirection = (typeof sortDirections)[number]
+
+export interface SortState {
+  /** Column `field` the rows are ordered by. */
+  field: string
+  direction: SortDirection
+}
+
+/** What the user did to produce an update. */
+export type QueryChangeReason = (typeof queryChangeReasons)[number]
+
+/** Data type of a column; it picks the filter grammar and default condition. */
+export type ColumnType = (typeof columnTypes)[number]
+
+/** The 2.2 name of a page-mode query. */
+export type TableQuery = PageQuery
+
+/** Which page of a cursor-paged result to fetch (K6). */
+export interface CursorRequest {
+  /**
+   * A cursor from `PageCursors`. Opaque: it may hold JSON or base64 and has
+   * no length limit; only the server reads inside it.
+   */
+  token: string
+  /**
+   * The side of the shown page the cursor leads to: `prev` asks for the page
+   * before it. Mapping this to the server's own direction is the consumer's.
+   */
+  direction: (typeof cursorDirections)[number]
+}
+
+/**
+ * Cursor mode: the server pages by opaque cursors and the total may be
+ * unknown. The query names the cursor to follow; `null` is the first page.
+ * A query is in cursor mode when it has a `cursor` key.
+ */
+export interface CursorQuery extends QueryBase {
+  cursor: CursorRequest | null
+}
+
+/**
+ * Everything the user can change about what the table shows. The consumer
+ * owns it; the table reads it and emits new objects. Keys the protocol does
+ * not know are kept as they are.
+ */
+export type Query = PageQuery | CursorQuery
+
+/**
+ * The cursors of the page shown (cursor mode). `next` comes from the server;
+ * `prev` may come from the server or from the consumer's own stack of earlier
+ * cursors, and the table does not tell them apart. `null` means there is no
+ * page on that side.
+ */
+export interface PageCursors {
+  next: string | null
+  prev: string | null
+}
+```
+
 ## Behavior rules
 
-Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/contract/contract-traceability.spec.ts`).
+Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/repo/contract-traceability.spec.ts`).
 
 "Applied" below means the table emitted `update:query` for it. The consumer decides whether to apply the emitted query.
+
+A `Source:` line under a rule says where its behavior comes from in v3 (ADR 0004): `tanstack` when TanStack Table does it through its options, `own` when the core plugins or the Vue layer do it, both when an override adjusts TanStack. A test may carry the matching `[tanstack]` or `[own]` tag. Where TanStack's default differs from a rule, the override is:
+
+| Rule | TanStack default | Override |
+| --- | --- | --- |
+| C-05 paging | 0-based `pageIndex`; next page allowed when the row count is unknown | 1-based `page` ↔ 0-based index; `pageCount` from the total, or from a full page when it is unknown (C-23) |
+| C-06 page size | `setPageSize` keeps the top row and lifts sizes below 1 to 1 | the plugin's action sets `pageSize` and `page: 1` and ignores sizes that are not whole; the Vue layer validates `setPageSize(n)` before calling TanStack |
+| C-07 header sort | `sortDescFirst` can start descending; `toggleSorting` reads the next direction from the drawn state | `sortDescFirst: false`, single sort; `column.toggleQuerySorting()` steps asc → desc → none from the base query, so two toggles in a tick are two steps |
+| C-03, C-10, C-17 rule order | one value per column | the filter value is the field's `FilterRule[]` with a no-op `filterFn`; `replaceRules` keeps rule order and unknown fields |
+| server data | client-side row models | `manualSorting`, `manualPagination`, `manualFiltering: true` (C-61) |
+| C-56 cursor paging | `pageIndex` and `pageCount` count pages | the position is always "here": `pageIndex` 1 or 0 by the previous cursor, `pageCount` one more by the next one; a ±1 step becomes a cursor request |
+| C-58 global search | the global filter filters rows on the client | `globalFilteringFeature` in manual mode; its slice is projected from `query.search` and a change emits the query |
+| C-59 row selection | the table keeps the selection | the slice is controlled: `state.rowSelection` is the consumer's, `onRowSelectionChange` tells the consumer |
 
 #### C-01 The table is controlled
 
 The table reads `query` and keeps no state of its own for `page`, `pageSize`, `sort` or `filters`. The only thing it holds is the query it last emitted, and only until the consumer's update arrives or the current tick ends, so that two updates of one action stack (C-14). When the consumer changes `query` from outside (route restore, a "reset" button), the table redraws to match and emits nothing. A `page` outside `[1, pageCount]`, or a `sort` or filter `field` that matches no column, is drawn as given and never corrected.
 
+Source: own
+
 #### C-02 Quiet by default
 
 Nothing is emitted on mount. Changing `rows`, `totalRows`, `columns` or `query` emits nothing and does not change the page.
+
+Source: own
 
 #### C-03 Inputs are never mutated
 
 The table never writes to `query`, `columns` or `rows`. The query it emits is a new object whose `filters` array and rule objects are new too; none of them is shared with the props.
 
+Source: own
+
 #### C-04 One action, one update
 
 A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. Text pending in several inputs is applied together, in that one `filter` update. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
+
+Source: own
 
 #### C-05 Paging
 
 `setPage`, `nextPage` and `previousPage` emit reason `page` and change only `page`. When the total is known the page is clamped to `[1, pageCount]`; `nextPage` does nothing on the last page and `previousPage` does nothing on page 1.
 
+Source: tanstack, own
+
 #### C-06 Page size
 
 `setPageSize(n)` emits one update with reason `pageSize`, `pageSize: n` and `page: 1`. Values below 1 or not whole numbers are ignored.
+
+Source: own
 
 #### C-07 Header sort
 
 A header click on a sortable column emits reason `sort`. The click cycles ascending, descending, none: the first click sorts ascending, the next on the same column descending, the next removes the sort: `sort: null` means no sort at all, since the query holds a single sort. A click on a column that is not the sorted one starts at ascending. The page is kept. A click does nothing when the table or the column is not sortable.
 
+Source: tanstack, own
+
 #### C-08 Sort from the filter menu
 
 `setSort(direction)` from the `filter-menu` slot emits reason `sort` with that direction, and keeps the page. It does nothing under the same condition as a header click (C-07): when the table or the column is not sortable, which the slot's `sortable` flag reports.
+
+Source: tanstack, own
 
 #### C-09 Typing applies a filter after the debounce
 
 Text typed into a filter input is applied `filterDebounce` milliseconds after the last key: reason `filter`, `page: 1`, and only the rules of that column are replaced. Several keystrokes make one update.
 
+Source: own
+
 #### C-10 Other rules pass through
 
 Rules of other columns, of hidden columns and of fields that match no column are kept as they are when one column's filter changes.
+
+Source: own
 
 #### C-11 Emptying an input applies at once
 
 Emptying a filter input does not wait for the debounce. The rules of that column are removed.
 
+Source: own
+
 #### C-12 Enter and zero debounce
 
 Enter in a filter input applies that input now. With `filterDebounce: 0` every keystroke applies synchronously.
+
+Source: own
 
 #### C-13 flushPendingFilters
 
 `flushPendingFilters()` applies every typed-but-pending filter in one `filter` update, on page 1; an input whose text changes no rule is left out of it. The update is emitted before the call returns.
 
+Source: own
+
 #### C-14 Pending filters go first
 
 A pending filter is applied before a page size change or a sort. The action is built on the result, so the consumer sees a `filter` update followed by the action's update, the second one containing the first one's filters. A page action (`setPage`, `nextPage`, `previousPage`) is dropped when applying the pending filter changed the filters: the page asked for belongs to the old filters, so the consumer sees one `filter` update, on page 1. A pending text that changes no filter does not drop it. Clear all does not apply what is pending, it discards it (C-22).
+
+Source: own
 
 #### C-15 Operator shortcuts
 
 In a text column the table turns shortcuts into clean rules: `*foo*` Contains, `foo*` StartsWith, `*foo` EndsWith, `!foo` NotEqual, `!*foo*` NotContains, `!foo*` and `!*foo` NotContains, `a,b` two rules. `*`, `!`, `!*` and empty segments make no rule. A segment without an operator uses the condition picked in the menu, `Contains` by default. The text in the input is never rewritten while the user types, and shortcuts never reach `query`.
 
+Source: own
+
 #### C-16 Value types
 
 Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`); `2.0` is the whole number `2`.
+
+Source: own
 
 #### C-17 Several rules for one field
 
 Rules of one `field` combine with OR, or with AND when all of them are negative (`NotEqual`, `NotContains`). Rules of different fields combine with AND. The table only produces the rules; evaluating them is the server's job.
 
+Source: own
+
 #### C-18 The input follows outside changes
 
 When `query.filters` changes from outside, the input and the condition label show the new rules. A change the table itself emitted (the echo) leaves the input text untouched, so the caret and the typed shortcut stay. This holds when the consumer answers late: an echo of an earlier emit never overwrites what the user has typed since. The table remembers the last eight emits of a column and only counts the older ones that are still unanswered: answers come in order, so the first answers that match nothing remembered are taken as those, and neither they nor the emits still in flight touch the input. Any other change is an outside change. Removing the rules from outside empties the input and removes the label.
+
+Source: own
 
 #### C-19 An ignored update changes nothing
 
 If the consumer does not apply an emitted query, the table keeps drawing the old one and the text typed in the input stays. The table remembers its own last emit only until the tick ends (C-01); after that every action builds on the `query` the consumer holds. A consumer that applies an emit late, after an `await` for example, makes the next action build on the old query and lose the earlier change. Apply the emitted query to your own copy in the same tick, which `v-model:query` does, and fetch with it afterwards.
 
+Source: own
+
 #### C-20 Picking a condition
 
 `setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `setCondition(null)` clears the filter.
+
+Source: own
 
 #### C-21 Clearing one column
 
 `clear()` from the `filter-menu` slot removes the rules of that column only (reason `filter`, `page: 1`). The sort is left alone.
 
+Source: own
+
 #### C-22 Clearing all filters
 
 The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. Text typed into a column that then leaves `columns` goes with it: it no longer enables the button and does not come back when the column does. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click).
 
+Source: own
+
 #### C-23 Page count and neighbours
 
 `pageCount` is `ceil(totalRows / pageSize)` (at least 1), or `null` when `totalRows` is unknown. `canPrevious` is `page > 1`. `canNext` is `page < pageCount`, or `rows.length >= pageSize` when the total is unknown.
+
+Source: tanstack, own
 
 #### C-24 Rows do not depend on the total
 
@@ -659,7 +832,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 #### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop and are checked by C-66. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 #### C-41 Skin selectors
 
@@ -713,6 +886,8 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 `parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
 
+Source: own
+
 #### C-54 focusFilter
 
 `focusFilter(field)` moves focus to the filter of the column with that `field` in this table's header: its filter input or select, or with a `filter-datetime` slot the first focusable element the slot draws. It returns `true` when that element took focus, and `false` when there is none (the table or the column is not filterable, the column is hidden, no column has that `field`, the slot draws nothing focusable) or it cannot take focus (a disabled bool select, C-42). It emits nothing and opens no menu. A table nested in a slot is not searched.
@@ -720,6 +895,72 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 #### C-55 expandAll
 
 `expandAll()` opens the rows currently in `rows`, by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
+
+#### C-56 Cursor paging
+
+A query with a `cursor` key is in cursor mode: the server pages by opaque cursors and the total may be unknown. `cursor: null` asks for the first page, `{ token, direction }` for the page on that side of the one shown. The consumer passes the cursors of the page shown (`{ next, prev }`, `null` where there is no page): `next` from its server, `prev` from its server or from its own stack of earlier cursors; the table does not tell them apart. A token is opaque: it may hold JSON or base64 and has no length limit, and only the server reads inside it. `direction: 'prev'` means the consumer asks for the page before the one shown with that cursor; mapping the direction to the server's is the consumer's. `nextPage` and `previousPage` emit reason `page` with the cursor on that side and change nothing else; they do nothing when that side has no cursor, and so does a jump to a page number. `canNext` and `canPrevious` say whether that side has a cursor.
+
+Source: tanstack, own
+
+#### C-57 Cursor mode starts over
+
+In cursor mode a sort, a filter change, a page size change, a search and clearing all filters emit `cursor: null`: a cursor belongs to the order, filters and size it was answered for. In page mode the same actions go to `page: 1`, except a sort, which keeps the page (C-07). Other inputs that invalidate a cursor (a time range, a set of sources) are outside the query: the consumer sets `cursor: null` itself when they change. A server that fixes the order of a cursor may ignore `sort`; the consumer then marks the columns `sortable: false`, so no header offers a sort that does nothing.
+
+Source: own
+
+#### C-58 Global search
+
+`search` is the text of a global search; the server decides what it matches. Setting it emits reason `search` with the text as given, spaces included, and `page: 1` (C-57 in cursor mode). Empty text removes the `search` key: an emitted query never holds `search: ''`, and an absent key and `''` mean the same. Setting the text the query already has emits nothing. A pending filter is applied first (C-14). The core emits each text it is given; debouncing typed text is the Vue layer's, with a configurable delay, and a delay of `0` turns it off for a consumer that debounces on its own, so the text is never debounced twice.
+
+Source: tanstack, own
+
+#### C-59 Controlled row selection
+
+The selection is the consumer's: a map of row key to `true`, passed in and drawn as given. Selecting or unselecting a row tells the consumer the new map and changes nothing until the consumer passes it back. Keys of rows that are not shown stay in the map. Selection never emits a query.
+
+Source: tanstack
+
+#### C-60 Unknown query keys pass through
+
+Keys of the query the protocol does not know, and properties of a rule besides `field`, `condition` and `value`, are kept as they are in every query the table emits, and they count when two queries are compared (C-04). The JSON Schema of the query (`@dolusoft/query-protocol/query.schema.json`) allows them.
+
+Source: own
+
+#### C-61 The plugin owns the query handlers
+
+`serverQueryFeature` owns TanStack's `onSortingChange`, `onColumnFiltersChange`, `onPaginationChange` and `onGlobalFilterChange`, and pins `manualSorting`, `manualFiltering`, `manualPagination` (all `true`), `sortDescFirst: false` and `enableMultiSort: false`. Table options that replace any of them make the table throw when it is built, naming them: the query would otherwise stop being the consumer's.
+
+Source: own
+
+#### C-62 Dispose and isolation
+
+Each table keeps its plugin state to itself: an action on one table never flushes, stacks on or emits for another. Disposing a table clears its pending debounce timers and makes it inert: nothing it does later, a late timer included, emits an update or brings its state back.
+
+Source: own
+
+#### C-63 Typed search is debounced
+
+The `toolbar` slot receives the search text to show (`search`: the text being typed, else `query.search`, else `''`), `setSearch` and `applySearch`. Text set with `setSearch` is applied `searchDebounce` milliseconds after the last call (default `300`), in one `search` update (C-58); blank text and a `searchDebounce` of `0` apply at once, so a consumer that debounces on its own is not debounced twice. `applySearch` applies a pending text now (Enter). A pending text is applied before a sort or page action, and a page action that it changed the query for is dropped, as with a pending filter (C-14). The typed text stays shown until the query answers with a new search.
+
+Source: own
+
+#### C-64 Selection column
+
+With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row of the page is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows of the page and keeps the keys of other pages. The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
+
+Source: tanstack, own
+
+#### C-65 Cursor paging controls
+
+With a `CursorQuery` the `pagination` slot receives `cursorMode: true`, `page: 1` and `pageCount: null`; `canPrevious` and `canNext` say whether `cursors` hold a cursor on that side. `nextPage` and `previousPage` emit a `page` update with the cursor of that side (C-56) and do nothing without one; `setPage` does nothing. `setPageSize` goes back to the first page (C-57).
+
+Source: tanstack, own
+
+#### C-66 DOM contract of the selection column
+
+With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list.
+
+Source: own
 
 ## DOM contract
 
@@ -742,6 +983,8 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-clear-all-button` | `th > button` | Clears every filter. Lives in the first utility header cell. |
 | `qt-expand` | `td > button` | Expand button of a row. |
 | `qt-right-panel-button` | `td > button` | Right panel button of a row. |
+| `qt-select-row` | `td > input` | Selection checkbox of a row, drawn when `selection` is given (C-64). |
+| `qt-select-all` | `th > input` | Checkbox in the header of the selection column: selects or deselects every row of the page (C-64). |
 | `qt-subtable-row` | `tbody > tr` | Row holding the `subtable` slot of an expanded row. |
 | `qt-empty-row` | `tbody > tr` | Row holding the `empty` slot. |
 | `qt-loading-row` | `tbody > tr` | Last row of the body while `loading` is on, holding the `loading` slot in one cell that spans every column. Place it over the rows in your CSS. |
@@ -761,6 +1004,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-filtered` | `th, .qt-filter-button` | Present when the column has at least one rule. |
 | `data-row-index` | `tbody > tr` | Index of the row in `rows`. The table reads it to tell which row was right-clicked. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
+| `data-selected` | `tbody > tr` | Present on a selected row (C-64). |
 | `data-pinned` | `th, td` | Present on every cell of a pinned column (header, body, footer) and, when some column is pinned, on the utility cells. The cell also carries `--qt-pin-left`. |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 
@@ -775,8 +1019,8 @@ These are the only inline styles the table writes. A custom property carries dat
 
 ## How the contract is kept
 
-- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.
+- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `packages/vue/src/contract.ts`, the rules and the DOM list cannot change without it.
 - `pnpm api:check` compares the built declarations with `etc/query-table.api.md`.
-- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `src/contract.ts`.
-- `tests/contract/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
+- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `packages/vue/src/contract.ts`.
+- `tests/repo/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
 - The browser tests compare the rendered DOM with the DOM contract and check that the test skin selects only what it lists.

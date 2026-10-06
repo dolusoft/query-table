@@ -10,6 +10,11 @@ export interface ClassEntry {
   /** CSS selector an element carrying the class must match. */
   on: string
   description: string
+  /**
+   * The rule that adds the hook on top of the 2.2.x table, when 2.2.x does
+   * not render it. C-40 checks the entries without it; C-66 the ones with it.
+   */
+  addedBy?: string
 }
 
 export interface AttributeEntry {
@@ -17,6 +22,8 @@ export interface AttributeEntry {
   /** CSS selector an element carrying the attribute must match. */
   on: string
   description: string
+  /** As on `ClassEntry`. */
+  addedBy?: string
 }
 
 export const domClasses: ClassEntry[] = [
@@ -78,6 +85,20 @@ export const domClasses: ClassEntry[] = [
     name: 'qt-right-panel-button',
     on: 'td > button',
     description: 'Right panel button of a row.'
+  },
+  {
+    name: 'qt-select-row',
+    on: 'td > input',
+    description:
+      'Selection checkbox of a row, drawn when `selection` is given (C-64).',
+    addedBy: 'C-64'
+  },
+  {
+    name: 'qt-select-all',
+    on: 'th > input',
+    description:
+      'Checkbox in the header of the selection column: selects or deselects every row of the page (C-64).',
+    addedBy: 'C-64'
   },
   {
     name: 'qt-subtable-row',
@@ -153,6 +174,12 @@ export const domAttributes: AttributeEntry[] = [
     name: 'data-expanded',
     on: 'tbody > tr',
     description: 'Present on an expanded row.'
+  },
+  {
+    name: 'data-selected',
+    on: 'tbody > tr',
+    description: 'Present on a selected row (C-64).',
+    addedBy: 'C-64'
   },
   {
     name: 'data-pinned',

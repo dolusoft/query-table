@@ -1,10 +1,22 @@
 {
-  "note": "Budget for `node scripts/consumer-size.mjs --check` (CI): the package cost, minified + gzip, of an app that imports the table. `measuredGzipBytes` is the value when the budget was last set; `maxGzipBytes` is that plus 5%. The value was measured on Windows locally; the CI runner may differ slightly, and the 5% margin covers that. Raise it only on purpose, in the same change that adds the weight.",
+  "note": "Budget for `node scripts/consumer-size.mjs --check` (CI, P8): the cost, minified + gzip, of a Vue app built from each fixture in fixtures/consumer (TanStack, the core and the protocol bundled), minus the same app without the table (fixtures/consumer/vue-only.ts). `measuredGzipBytes` is the value when the budget was last set; `maxGzipBytes` is that plus 5%, capped at `ceilingGzipBytes`. Measured on Windows locally; the 5% margin covers the CI runner. A deliberate growth raises the budget (and the ceiling when needed) in the same change, with a one-line reason in `history`.",
   "history": [
     "2.2.6: 7934 B.",
     "2.2.8: 10224 B (2.2.7 was 8279 B). +1945 B for column pinning (measured offsets, one ResizeObserver), column resizing (pointer, keyboard and autofit on an accessible separator) and the header slot.",
-    "2.2.11: 10792 B (+568 B since 2.2.8). The 2.2.9 to 2.2.11 fixes plus the echo memory of the filter drafts: a bounded memory (last 8 emits per column) that counts the older unanswered ones, so a late answer neither rewinds the input nor drops the emits still in flight (C-18)."
+    "2.2.11: 10792 B (+568 B since 2.2.8). The 2.2.9 to 2.2.11 fixes plus the echo memory of the filter drafts: a bounded memory (last 8 emits per column) that counts the older unanswered ones, so a late answer neither rewinds the input nor drops the emits still in flight (C-18).",
+    "2.2.12: 10815 B (+23 B). C-04, C-13, C-14: pending filter drafts are applied in one `filter` update (#31). The budget follows the measure plus 5%. This is the v3 baseline (ADR 0001).",
+    "3.0.0-next.0 (PR-C): one entry per fixture. `component` (QueryTable) 28490 B, `composable` (useQueryTable) 20242 B. The planned ceilings (component 23000 B, composable 16500 B) were set before the core existed; the core fixture alone is 17564 B (TanStack table-core with five features and both plugins), and the Vue package adds row expansion, column pinning, @tanstack/vue-table, the composable and, for the component, its parts. Ceilings raised to measure plus 5%, rounded up (K7: size is not a blocker; ceilings guard drift)."
   ],
-  "measuredGzipBytes": 10792,
-  "maxGzipBytes": 11331
+  "fixtures": {
+    "composable": {
+      "measuredGzipBytes": 20242,
+      "maxGzipBytes": 21254,
+      "ceilingGzipBytes": 21500
+    },
+    "component": {
+      "measuredGzipBytes": 28490,
+      "maxGzipBytes": 29915,
+      "ceilingGzipBytes": 30000
+    }
+  }
 }

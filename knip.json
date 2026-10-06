@@ -1,25 +1,43 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "src/index.ts",
-    "contract/dom.ts",
-    "scripts/*.mjs",
-    "playground/examples/*.vue",
-    "playground/skin/gen-skin.ts"
-  ],
-  "project": [
-    "src/**/*.{ts,vue}",
-    "contract/**/*.ts",
-    "scripts/*.mjs",
-    "tests/**/*.ts",
-    "playground/**/*.{ts,vue,css}"
-  ],
-  "ignore": [
-    "playground/skin/ui/table/TableFooter.vue",
-    "playground/skin/mapping.css",
-    "playground/skin/theme.css"
-  ],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "contract/dom.ts",
+        "scripts/*.mjs",
+        "apps/playground/examples/*.vue",
+        "apps/playground/skin/gen-skin.ts",
+        "fixtures/packages/*.ts",
+        "docs/guide/examples/*.ts"
+      ],
+      "project": [
+        "docs/guide/**/*.ts",
+        "contract/**/*.ts",
+        "scripts/*.mjs",
+        "tests/**/*.ts",
+        "apps/playground/**/*.{ts,vue,css}",
+        "fixtures/packages/*.ts"
+      ],
+      "ignore": [
+        "apps/playground/skin/ui/table/TableFooter.vue",
+        "apps/playground/skin/mapping.css",
+        "apps/playground/skin/theme.css"
+      ]
+    },
+    "packages/query-protocol": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    },
+    "packages/query-table-core": {
+      "entry": ["src/index.ts", "src/features/*/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    },
+    "packages/vue": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.{ts,vue}"]
+    }
+  },
   "ignoreIssues": {
-    "src/**/*.vue": ["types"]
+    "packages/vue/src/**/*.vue": ["types"]
   }
 }

@@ -1,6 +1,6 @@
 name: Playground
 
-# Builds the playground (playground/) and publishes it to GitHub Pages.
+# Builds the playground (apps/playground/) and publishes it to GitHub Pages.
 # Needs Pages enabled in the repository settings with "GitHub Actions" as
 # the source.
 
@@ -40,7 +40,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: playground/dist
+          path: apps/playground/dist
 
   deploy:
     needs: build

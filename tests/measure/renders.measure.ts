@@ -4,7 +4,7 @@ import { cleanup, config, render } from 'vitest-browser-vue'
 import type { ComponentInternalInstance, ComponentPublicInstance } from 'vue'
 
 import MeasureHost from './MeasureHost.vue'
-import type { Column, TableQuery } from '../../src/contract'
+import type { Column, TableQuery } from '../../packages/vue/src/contract'
 
 // Counts how often each component re-renders for a few fixed user scenarios
 // on a 1000-row dataset. `pnpm measure:renders` runs this file and turns the

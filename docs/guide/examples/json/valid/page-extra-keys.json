@@ -1,0 +1,9 @@
+{
+  "page": 2,
+  "pageSize": 20,
+  "sort": null,
+  "filters": [
+    { "field": "name", "condition": "Contains", "value": "a", "label": "Name" }
+  ],
+  "tenant": { "id": 7 }
+}

@@ -10,9 +10,16 @@ coverage
 .DS_Store
 
 # Browser test screenshots (inspection only, never baselines)
-tests/browser/__screenshots__/
+tests/contract/browser/__screenshots__/
 # Vitest browser-mode failure screenshots and attachments
 .vitest/
 
 # API Extractor scratch output
 temp/
+
+# scripts/equivalence.mjs: packed baselines, raw reports, report.json
+.equivalence/
+
+# docs/guide .NET example
+docs/guide/examples/dotnet/bin/
+docs/guide/examples/dotnet/obj/
