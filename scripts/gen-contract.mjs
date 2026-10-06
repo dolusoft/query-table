@@ -17,7 +17,7 @@
 //   node scripts/gen-contract.mjs           write CONTRACT.md and contract/api.json
 //   node scripts/gen-contract.mjs --check   fail when either file is stale
 import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import ts from 'typescript'
@@ -62,6 +62,53 @@ const nameOf = member => {
   return key
     ? key.getText().replace(/^`|`$/g, '').replace('${string}', '<field>')
     : '?'
+}
+
+const isDeclaredType = statement =>
+  ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)
+
+const typeEntry = statement => ({
+  name: statement.name.text,
+  kind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type',
+  description: docOf(statement)
+})
+
+// The query types are the protocol's: contract.ts re-exports them and the
+// protocol declares them. They stay in the contract's type list.
+const protocolTypesPath = at(
+  'packages',
+  'query-protocol',
+  'src',
+  'protocol',
+  'types.ts'
+)
+const protocolTypesFile = ts.createSourceFile(
+  protocolTypesPath,
+  read(protocolTypesPath),
+  ts.ScriptTarget.ES2022,
+  true
+)
+const reexportedNames = contractFile.statements
+  .filter(
+    statement =>
+      ts.isExportDeclaration(statement) &&
+      statement.moduleSpecifier?.text === '@dolusoft/query-protocol' &&
+      statement.exportClause &&
+      ts.isNamedExports(statement.exportClause)
+  )
+  .flatMap(statement =>
+    statement.exportClause.elements.map(element => element.name.text)
+  )
+const reexported = protocolTypesFile.statements.filter(
+  statement =>
+    isDeclaredType(statement) && reexportedNames.includes(statement.name.text)
+)
+for (const name of reexportedNames) {
+  if (!reexported.some(statement => statement.name.text === name)) {
+    throw new Error(
+      `contract.ts re-exports ${name}, which ${relative(root, protocolTypesPath)} does not declare`
+    )
+  }
 }
 
 const declaration = name => {
@@ -351,6 +398,10 @@ const sections = [
   '## Types',
   'Exported from the package entry point (`packages/vue/src/contract.ts`).',
   '```ts\n' + contractText.trim() + '\n```',
+  'The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.',
+  '```ts\n' +
+    reexported.map(statement => statement.getFullText().trim()).join('\n\n') +
+    '\n```',
   '## Behavior rules',
   rules.replace(/^### /gm, '#### '),
   '## DOM contract',
@@ -425,20 +476,18 @@ if (headingCount !== ruleEntries.length) {
 }
 
 // The exported types of src/contract.ts, with their JSDoc summary.
-const types = contractFile.statements
-  .filter(
-    statement =>
-      (ts.isInterfaceDeclaration(statement) ||
-        ts.isTypeAliasDeclaration(statement)) &&
-      statement.modifiers?.some(
-        modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
-      )
-  )
-  .map(statement => ({
-    name: statement.name.text,
-    kind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type',
-    description: docOf(statement)
-  }))
+const types = [
+  ...reexported.map(typeEntry),
+  ...contractFile.statements
+    .filter(
+      statement =>
+        isDeclaredType(statement) &&
+        statement.modifiers?.some(
+          modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
+        )
+    )
+    .map(typeEntry)
+]
 
 const api = {
   $comment:

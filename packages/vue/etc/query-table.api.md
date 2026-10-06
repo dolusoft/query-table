@@ -4,15 +4,26 @@
 
 ```ts
 
+import { ColumnType } from '@dolusoft/query-protocol';
 import type { Component } from 'vue';
 import { ComputedRef } from 'vue';
+import { CursorQuery } from '@dolusoft/query-protocol';
+import { CursorRequest } from '@dolusoft/query-protocol';
+import { FilterCondition } from '@dolusoft/query-protocol';
 import { FilterDraft } from '@dolusoft/query-protocol';
 import { FilterLabel } from '@dolusoft/query-table-core';
+import { FilterRule } from '@dolusoft/query-protocol';
+import { FilterValue } from '@dolusoft/query-protocol';
 import { MaybeRefOrGetter } from 'vue';
+import { PageCursors } from '@dolusoft/query-protocol';
 import { PublicProps } from 'vue';
-import { Query as Query_2 } from '@dolusoft/query-protocol';
+import { Query } from '@dolusoft/query-protocol';
+import { QueryChangeReason } from '@dolusoft/query-protocol';
 import { ShallowUnwrapRef } from 'vue';
+import { SortDirection } from '@dolusoft/query-protocol';
+import { SortState } from '@dolusoft/query-protocol';
 import { TableFeature } from '@tanstack/table-core';
+import { TableQuery } from '@dolusoft/query-protocol';
 import { VNode } from 'vue';
 import { VueTable } from '@tanstack/vue-table';
 
@@ -70,25 +81,11 @@ export interface ColumnResizePayload {
     width: number;
 }
 
-// @public
-export type ColumnType = 'string' | 'number' | 'integer' | 'date' | 'datetime' | 'bool';
+export { ColumnType }
 
-// @public
-export interface CursorQuery {
-    cursor: CursorRequest | null;
-    // (undocumented)
-    filters: FilterRule[];
-    // (undocumented)
-    pageSize: number;
-    search?: string;
-    sort: SortState | null;
-}
+export { CursorQuery }
 
-// @public
-export interface CursorRequest {
-    direction: 'next' | 'prev';
-    token: string;
-}
+export { CursorRequest }
 
 // Warning: (ae-forgotten-export) The symbol "__VLS_export" needs to be exported by the entry point index.d.ts
 //
@@ -97,8 +94,7 @@ const _default: typeof __VLS_export;
 export { _default as QueryTable }
 export default _default;
 
-// @public
-export type FilterCondition = 'Contains' | 'NotContains' | 'Equal' | 'NotEqual' | 'StartsWith' | 'EndsWith' | 'GreaterThan' | 'GreaterThanOrEqual' | 'LessThan' | 'LessThanOrEqual';
+export { FilterCondition }
 
 // @public
 export interface FilterConditionOption {
@@ -130,16 +126,9 @@ export interface FilterMenuSlotProps {
     trigger: Component;
 }
 
-// @public
-export interface FilterRule {
-    // (undocumented)
-    condition: FilterCondition;
-    field: string;
-    value: FilterValue;
-}
+export { FilterRule }
 
-// @public
-export type FilterValue = string | number | boolean;
+export { FilterValue }
 
 // @public
 export interface FooterRow {
@@ -159,13 +148,7 @@ export interface HeaderSlotProps {
     toggleSort: () => void;
 }
 
-// @public
-export interface PageCursors {
-    // (undocumented)
-    next: string | null;
-    // (undocumented)
-    prev: string | null;
-}
+export { PageCursors }
 
 // @public (undocumented)
 export interface PaginationOptions {
@@ -199,11 +182,9 @@ export interface PaginationSlotProps {
 // @public
 export function parseFilterInput(text: string, column: Column, condition?: FilterCondition | null): FilterRule[];
 
-// @public
-export type Query = TableQuery | CursorQuery;
+export { Query }
 
-// @public
-export type QueryChangeReason = 'page' | 'pageSize' | 'sort' | 'filter' | 'reset' | 'search';
+export { QueryChangeReason }
 
 // @public
 export interface QueryTableExpansion<T extends object> {
@@ -271,7 +252,7 @@ export interface QueryTableSort {
 }
 
 // @public (undocumented)
-export interface QueryTableState<T extends object, Q extends Query_2 = TableQuery> {
+export interface QueryTableState<T extends object, Q extends Query = TableQuery> {
     baseQuery: () => Q;
     columns: ComputedRef<ColumnEntry[]>;
     // (undocumented)
@@ -295,15 +276,9 @@ export type RowKey<T extends object> = TableProps<T>['rowKey'];
 // @public
 export type RowSelection = Record<string, boolean>;
 
-// @public (undocumented)
-export type SortDirection = 'asc' | 'desc';
+export { SortDirection }
 
-// @public (undocumented)
-export interface SortState {
-    // (undocumented)
-    direction: SortDirection;
-    field: string;
-}
+export { SortState }
 
 // @public (undocumented)
 export interface SubtableSlotProps<T> {
@@ -359,16 +334,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     totalRows?: number | null;
 }
 
-// @public
-export interface TableQuery {
-    // (undocumented)
-    filters: FilterRule[];
-    page: number;
-    // (undocumented)
-    pageSize: number;
-    search?: string;
-    sort: SortState | null;
-}
+export { TableQuery }
 
 // @public
 export interface TableSlots<T> {
@@ -393,10 +359,10 @@ export interface ToolbarSlotProps {
 }
 
 // @public
-export function useQueryTable<T extends object, Q extends Query_2 = TableQuery>(options: UseQueryTableOptions<T, Q>): QueryTableState<T, Q>;
+export function useQueryTable<T extends object, Q extends Query = TableQuery>(options: UseQueryTableOptions<T, Q>): QueryTableState<T, Q>;
 
 // @public (undocumented)
-export interface UseQueryTableOptions<T extends object, Q extends Query_2 = TableQuery> {
+export interface UseQueryTableOptions<T extends object, Q extends Query = TableQuery> {
     columns: MaybeRefOrGetter<Column[]>;
     cursors?: MaybeRefOrGetter<PageCursors | null | undefined>;
     filterDebounce?: MaybeRefOrGetter<number | undefined>;

@@ -25,8 +25,6 @@ export const conditionOptions: Record<ColumnType, FilterConditionOption[]>;
 // @public
 export const cursorDirections: readonly ["next", "prev"];
 
-// Warning: (ae-forgotten-export) The symbol "QueryBase" needs to be exported by the entry point index.d.ts
-//
 // @public
 export interface CursorQuery extends QueryBase {
     // (undocumented)
@@ -105,8 +103,9 @@ export interface PageQuery extends QueryBase {
     page: number;
 }
 
-// Warning: (ae-forgotten-export) The symbol "Parsed" needs to be exported by the entry point index.d.ts
-//
+// @public
+export type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>;
+
 // @public
 export const parseDraft: (column: FilterColumn, draft: FilterDraft) => Parsed;
 
@@ -128,6 +127,16 @@ export function previewCondition(raw: string, base: FilterCondition): FilterCond
 
 // @public
 export type Query = PageQuery | CursorQuery;
+
+// @public
+export interface QueryBase {
+    // (undocumented)
+    filters: FilterRule[];
+    // (undocumented)
+    pageSize: number;
+    search?: string;
+    sort: SortState | null;
+}
 
 // @public
 export type QueryChangeReason = (typeof queryChangeReasons)[number];
