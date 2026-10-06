@@ -321,8 +321,13 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   const pinningEnabled = computed(
     () => rowKey() !== undefined && pinnedRows() !== undefined
   )
-  const rowPinningState = () =>
-    pinningEnabled.value ? pinnedRows()! : noPinnedRows
+  const rowPinningState = computed(() => {
+    if (!pinningEnabled.value) {
+      return noPinnedRows
+    }
+    const map = pinnedRows()!
+    return { top: map.top ?? [], bottom: map.bottom ?? [] }
+  })
 
   const keyOf = (row: T, index: number): string | number => {
     const key = rowKey()
@@ -449,7 +454,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       if (!pinningEnabled.value) {
         return
       }
-      const current = rowPinningState()
+      const current = rowPinningState.value
       const next = functionalUpdate(updater, current)
       if (
         !sameKeys(next.top, current.top) ||
@@ -487,7 +492,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
         return columnPinning.value
       },
       get rowPinning() {
-        return rowPinningState()
+        return rowPinningState.value
       }
     }
   } as never)
@@ -897,7 +902,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   })
 
   const positionOf = (id: string): BodyRow<T>['pinned'] => {
-    const { top, bottom } = rowPinningState()
+    const { top, bottom } = rowPinningState.value
     return top.includes(id) ? 'top' : bottom.includes(id) ? 'bottom' : false
   }
 

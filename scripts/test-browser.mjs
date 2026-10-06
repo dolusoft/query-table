@@ -8,6 +8,7 @@
 // socket. The run then either fails with "Failed to connect to the browser
 // session" or "The iframe ... did not become ready within ...", or hangs: the
 // orchestrator waits for a `response:prepare` message that has no timeout.
+// A dropped request can also prevent a test module from loading from localhost.
 //
 // A run that hung or lost its connection is retried once; a run whose tests
 // failed is not. Both limits can be overridden:
@@ -24,7 +25,7 @@ const attemptTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 120_000
 const maxAttempts = Number(process.env.BROWSER_TEST_ATTEMPTS) || 2
 const project = process.env.BROWSER_TEST_PROJECT || 'browser'
 const lostConnection =
-  /Failed to connect to the browser session|The iframe "[^"\r\n]+" did not become ready within \d+ms/
+  /Failed to connect to the browser session|The iframe "[^"\r\n]+" did not become ready within \d+ms|Failed to fetch dynamically imported module: http:\/\/localhost:\d+\//
 
 const vitestBin = join(
   dirname(createRequire(import.meta.url).resolve('vitest/package.json')),

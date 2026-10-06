@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ArrowDownToLineIcon, ArrowUpToLineIcon, PinOffIcon } from '@lucide/vue'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, nextTick, ref, shallowRef } from 'vue'
 
 import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
-import { QueryTable, type RowPinning } from '@dolusoft/query-table'
+import {
+  QueryTable,
+  type CellSlotProps,
+  type RowPinning
+} from '@dolusoft/query-table'
 
 import TablePager from '../harness/TablePager.vue'
 import {
@@ -26,6 +30,22 @@ import {
 // rows it knows to `rows` itself, once per key. A real page fetches them by
 // key; this one reads them from its own demo data. With an unknown total
 // such rows would count for the next page button (C-23).
+// Moving a row can blur its button in the browser. Keep the user's focus
+// on the same control after Vue has applied the consumer's new map.
+const pinFromButton = async (
+  event: MouseEvent,
+  pinRow: CellSlotProps<DemoRow>['pinRow'],
+  position: 'top' | 'bottom'
+) => {
+  const button = event.currentTarget as HTMLButtonElement
+  const hadFocus = document.activeElement === button
+  pinRow(position)
+  await nextTick()
+  if (hadFocus && button.isConnected) {
+    button.focus()
+  }
+}
+
 const allRows = createDemoRows()
 const columns = peopleColumns()
 const { query, result } = useFakeServer(allRows, { pageSize: 10 })
@@ -85,8 +105,8 @@ const pinnedText = computed(() => {
             size="icon-xs"
             aria-label="Pin to top"
             title="Pin to top"
-            :disabled="rowPinned === 'top'"
-            @click="pinRow('top')"
+            :aria-pressed="rowPinned === 'top'"
+            @click="pinFromButton($event, pinRow, 'top')"
           >
             <ArrowUpToLineIcon />
           </Button>
@@ -95,8 +115,8 @@ const pinnedText = computed(() => {
             size="icon-xs"
             aria-label="Pin to bottom"
             title="Pin to bottom"
-            :disabled="rowPinned === 'bottom'"
-            @click="pinRow('bottom')"
+            :aria-pressed="rowPinned === 'bottom'"
+            @click="pinFromButton($event, pinRow, 'bottom')"
           >
             <ArrowDownToLineIcon />
           </Button>

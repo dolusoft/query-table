@@ -77,6 +77,22 @@ describe('C-74 Row pinning [tanstack] [own]', () => {
     expect(pinnedAttrs(m)).toEqual(['top', 'top', null, null, 'bottom'])
   })
 
+  it.each([
+    [{ top: ['3'] }, [2, 0, 1, 3, 4], ['top', null, null, null, null]],
+    [{ bottom: ['2'] }, [0, 2, 3, 4, 1], [null, null, null, null, 'bottom']],
+    [{}, [0, 1, 2, 3, 4], [null, null, null, null, null]]
+  ])(
+    'normalizes missing sides in a plain-JS map %j',
+    (rowPinning, order, attrs) => {
+      const input = deepFreeze(rowPinning)
+      const { m, changes } = mountPinning({ rowPinning: input })
+      expect(indexes(m)).toEqual(order)
+      expect(pinnedAttrs(m)).toEqual(attrs)
+      expect(changes).toEqual([])
+      expect(m.wrapper.props()).toHaveProperty('rowPinning', input)
+    }
+  )
+
   it('the subtable row follows its row with the same attribute', () => {
     const rows = makeRows().map(row =>
       row.id === 3 ? { ...row, isExpanded: true } : row
@@ -235,6 +251,28 @@ describe('C-74 Row pinning [tanstack] [own]', () => {
 })
 
 describe('C-74 composable: TanStack calls go to the consumer [tanstack]', () => {
+  it('resetRowPinning on an empty map emits no update:rowPinning', () => {
+    const changes: RowPinning[] = []
+    const scope = effectScope()
+    try {
+      const state = scope.run(() =>
+        useQueryTable({
+          query: makeQuery(),
+          columns: makeColumns(),
+          rows: makeRows(),
+          rowKey: 'id',
+          rowPinning: deepFreeze({ top: [], bottom: [] }),
+          onQueryChange: () => {},
+          onRowPinningChange: next => changes.push(next)
+        })
+      )!
+      state.table.resetRowPinning()
+      expect(changes).toEqual([])
+    } finally {
+      scope.stop()
+    }
+  })
+
   it('row.pin calls onRowPinningChange and the slice stays the option', () => {
     const changes: RowPinning[] = []
     const rowPinning: RowPinning = { top: ['2'], bottom: [] }
