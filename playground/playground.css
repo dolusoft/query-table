@@ -8,3 +8,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* The playground owns the touch targets around the unstyled table. Keep the
+   desktop skin's compact controls, but give phone and tablet users room to tap. */
+@media (max-width: 1023px) {
+  main button,
+  main select,
+  main input:not([type="checkbox"]) {
+    min-height: 2.5rem;
+  }
+
+  main button {
+    min-width: 2.5rem;
+  }
+
+  main input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  main label:has(> input[type="checkbox"]) {
+    min-height: 2.5rem;
+  }
+}

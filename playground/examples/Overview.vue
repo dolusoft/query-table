@@ -14,12 +14,12 @@ const { query, result } = useFakeServer(createDemoRows(), {
 </script>
 
 <template>
-  <!-- A fixed layout keeps the columns still while rows change; under 40rem
+  <!-- A fixed layout keeps the columns still while rows change; under 48rem
        the table scrolls sideways instead of squeezing them. Below 640px of
        width the header has no room for a filter row: the page hides it and
        offers the same filters in a panel behind one button. -->
   <div
-    class="@container [&_.qt-table]:min-w-160 [&_.qt-table]:table-fixed @max-[640px]:[&_.qt-filter]:hidden"
+    class="@container [&_.qt-table]:min-w-[48rem] [&_.qt-table]:table-fixed @max-[640px]:[&_.qt-filter]:hidden"
   >
     <QueryTable
       v-model:query="query"
