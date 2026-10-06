@@ -72,3 +72,16 @@ test('the docs link opens the first page and every page keeps its route', async 
   await router.push('/no-such-page')
   expect(router.currentRoute.value.path).toBe('/')
 })
+
+test('the first load shows skeleton rows and a blank footer, no totals yet', async () => {
+  await page.viewport(1280, 900)
+  await renderAt('/')
+  const root = showcase()!
+  expect(root.querySelectorAll('tbody [data-slot="skeleton"]').length).toBe(70)
+  expect(root.querySelector('tfoot')?.textContent).not.toMatch(/\d/)
+  await expect
+    .element(page.getByText('200 people match.'), { timeout: 3000 })
+    .toBeVisible()
+  expect(root.querySelectorAll('[data-slot="skeleton"]').length).toBe(0)
+  expect(root.querySelector('tfoot')?.textContent).toContain('200 people')
+})

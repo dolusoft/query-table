@@ -31,14 +31,14 @@ export const showcaseFeatures: Array<{ label: string; pageId: string }> = [
   { label: 'Nested rows', pageId: 'row-expansion' },
   { label: 'Cell slots', pageId: 'custom-cells' },
   { label: 'Footer totals', pageId: 'footer-rows' },
-  { label: 'Loading slot', pageId: 'loading-state' },
+  { label: 'Loading skeleton', pageId: 'loading-skeleton' },
   { label: 'Compact mode', pageId: 'overview' }
 ]
 
 export const showcase: HomeSection = {
   id: 'showcase',
   title: 'One table, most of the features',
-  text: 'A fake server answers every query after a short delay: it filters, sorts and pages 200 people. ID and Name stay pinned while the table scrolls sideways, header edges resize the columns, each row opens its orders in a nested table, and the footer sums the salary over every match. Narrower than 640 pixels the table switches to compact headers, filter chips and a filter sheet.'
+  text: 'A fake server answers every query after a short delay: it filters, sorts and pages 200 people. The first load shows skeleton rows in the shape of the page, and later requests dim the rows they keep. ID and Name stay pinned while the table scrolls sideways, header edges resize the columns, each row opens its orders in a nested table, and the footer sums the salary over every match. Narrower than 640 pixels the table switches to compact headers, filter chips and a filter sheet.'
 }
 
 /** Features with a page of their own that the showcase does not use. */
