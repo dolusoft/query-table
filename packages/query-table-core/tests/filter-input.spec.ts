@@ -316,3 +316,28 @@ describe('C-22 Clearing all filters [own]', () => {
     expect(t.table.store.state.filterDrafts).toEqual({})
   })
 })
+
+describe('C-60 extra rule properties count in comparison [own]', () => {
+  const noted = (note: number): FilterRule =>
+    ({ ...rule('name', 'a'), note }) as FilterRule
+
+  it('setFilterValue with rules that differ only in an extra property emits', () => {
+    const t = makeTable({ query: start({ page: 3, filters: [noted(1)] }) })
+    t.column('name').setFilterValue([noted(2)])
+    expect(t.updates).toEqual([[start({ filters: [noted(2)] }), 'filter']])
+  })
+
+  it('setFilterValue with identical rules, extras included, emits nothing', () => {
+    const t = makeTable({ query: start({ page: 3, filters: [noted(1)] }) })
+    t.column('name').setFilterValue([noted(1)])
+    expect(t.updates).toEqual([])
+  })
+
+  it('typing the text a rule already holds does not drop its extras', () => {
+    const t = makeTable({ query: start({ filters: [noted(1)] }) })
+    t.column('name').setFilterInput('a')
+    t.column('name').applyFilterInput()
+    vi.runAllTimers()
+    expect(t.updates).toEqual([])
+  })
+})
