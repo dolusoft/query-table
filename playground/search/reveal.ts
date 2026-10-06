@@ -23,6 +23,32 @@ const waitFor = (id: string, stale: Element | null, timeoutMs = 2000) =>
     look()
   })
 
+const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
+
+// Resolves when the item's content has finished its opening animation (the
+// skin's `animate-accordion-down`), or after `timeoutMs` when there is none
+// (reduced motion, no animation in the skin).
+const opened = async (item: HTMLElement, timeoutMs = 500) => {
+  await nextTick()
+  await frame()
+  await frame()
+  const content = item.querySelector<HTMLElement>(
+    '[data-slot="accordion-content"]'
+  )
+  if (!content || content.getAnimations().length === 0) {
+    return
+  }
+  await new Promise<void>(resolve => {
+    const done = () => {
+      clearTimeout(timer)
+      content.removeEventListener('animationend', done)
+      resolve()
+    }
+    const timer = setTimeout(done, timeoutMs)
+    content.addEventListener('animationend', done)
+  })
+}
+
 export const revealAnchor = async (
   id: string,
   stale: Element | null = null
@@ -36,10 +62,15 @@ export const revealAnchor = async (
   if (!element) {
     return null
   }
-  // A rule sits in a closed <details>: open it so its text shows.
-  const details = element.closest('details') ?? element.querySelector('details')
-  if (details) {
-    details.open = true
+  // A rule is a closed Accordion item: press its trigger so its text shows,
+  // and scroll once it has opened: the item grows while it animates, so a
+  // scroll before that centres the closed item.
+  const trigger = element.querySelector<HTMLElement>(
+    '[data-slot="accordion-trigger"][aria-expanded="false"]'
+  )
+  if (trigger) {
+    trigger.click()
+    await opened(element)
   }
   element.scrollIntoView({ block: 'center' })
   element.setAttribute('data-search-target', '')
