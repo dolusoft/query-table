@@ -25,6 +25,7 @@ import {
   snippet,
   type SearchHit
 } from './search-index'
+import { guidePages } from '../guides/guides'
 import { pages } from '../manifest'
 
 // The documentation search dialog: shadcn-vue `CommandDialog` (reka-ui
@@ -186,7 +187,7 @@ const choose = (hit: SearchHit) => {
               Home
             </CommandItem>
             <CommandItem
-              v-for="page in pages"
+              v-for="page in [...pages, ...guidePages]"
               :key="page.id"
               :value="`page:${page.id}`"
               @select="go(page.id, '')"

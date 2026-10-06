@@ -1,5 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
+import AiPage from './guides/AiPage.vue'
+import FeatureMatrixPage from './guides/FeatureMatrixPage.vue'
+import TanstackPage from './guides/TanstackPage.vue'
 import HomePage from './home/HomePage.vue'
 import { pages } from './manifest'
 import PageView from './shell/PageView.vue'
@@ -19,6 +22,9 @@ export const router = createRouter({
       component: PageView,
       props: { page }
     })),
+    { path: '/features', component: FeatureMatrixPage },
+    { path: '/tanstack', component: TanstackPage },
+    { path: '/ai', component: AiPage },
     { path: '/:unknown(.*)', redirect: '/' }
   ]
 })

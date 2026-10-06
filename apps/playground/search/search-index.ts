@@ -1,6 +1,7 @@
 import MiniSearch from 'minisearch'
 
 import { memberAnchor, ruleAnchor, type MemberKind } from './anchors'
+import { guideDocuments } from './guide-docs'
 import api from '../../../contract/api.json'
 import { homeSections, installCommand, pitch } from '../home/home-content'
 import { pages as manifestPages, type PlaygroundPage } from '../manifest'
@@ -23,6 +24,8 @@ export type DocKind =
   | 'function'
   | 'type'
   | 'rule'
+  | 'feature'
+  | 'link'
 
 export interface SearchDoc {
   /** Unique per page and entry. */
@@ -172,10 +175,14 @@ const pageDocuments = (pages: PlaygroundPage[]): SearchDoc[] => {
   })
 }
 
-/** All documents of the playground: the home page first, then the pages. */
+/** All documents: the home page, the example pages, then the guide pages. */
 export const buildDocuments = (
   pages: PlaygroundPage[] = manifestPages
-): SearchDoc[] => [...homeDocuments(), ...pageDocuments(pages)]
+): SearchDoc[] => [
+  ...homeDocuments(),
+  ...pageDocuments(pages),
+  ...guideDocuments()
+]
 
 // Words split on anything but letters and digits; camelCase parts are added
 // too, so `rows` finds `totalRows` and `C-01` finds rule C-01.
