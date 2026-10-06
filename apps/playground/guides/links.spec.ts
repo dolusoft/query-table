@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { rawUrl, skillFiles } from './guides'
 import { tanstackFeatureGuides, tanstackGeneralLinks } from './tanstack'
 import { repositoryUrl } from '../home/home-content'
+import { externalLinks } from '../shell/external-links'
 
 // `pnpm check:links`: asks the network whether every external link of the
 // guide pages answers 200. It is opt-in (CHECK_LINKS=1) because a unit run
@@ -16,6 +17,8 @@ const urls = [
   ...tanstackGeneralLinks.map(link => link.url),
   ...tanstackFeatureGuides.map(link => link.url),
   repositoryUrl,
+  // The outside links with a logo (llms.txt is a file of this site: local).
+  ...externalLinks.filter(link => !link.local).map(link => link.url),
   ...skillFiles.map(path =>
     branch ? rawUrl(path).replace('/main/', `/${branch}/`) : rawUrl(path)
   )
