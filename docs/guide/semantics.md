@@ -1,6 +1,6 @@
 # The `tr-1` semantics profile
 
-> Draft: tr-1 freezes with 3.1.0.
+> Stable: `tr-1` freezes with 3.1.0.
 
 This document is the meaning of a `Query` when it is evaluated over a set of rows under the semantics profile `tr-1`: what a filter matches, in which order rows are sorted, how a page is cut and which error comes first. It is the authority for every implementation: the local evaluator in `@dolusoft/query-protocol/local`, a .NET evaluator, and any server endpoint that claims the profile. Where an implementation departs from this text, the implementation is fixed. The decision behind it is [ADR 0008](../decisions/0008-local-query-evaluation.md).
 
@@ -242,7 +242,7 @@ Rules:
 
 - **The meaning of a profile never changes.** Where code departs from this document, the code is fixed (a patch); the document and the cases stay as they are.
 - When an ambiguity is found in this document, the intended reading is written into it, and **every** implementation (TypeScript, .NET, servers) is judged by it. The current behavior of the TypeScript evaluator is evidence, not authority. A reading that changes the result of a published case is a new profile.
-- This document carries the "Draft" line until the filters and the search of the local evaluator are merged; `tr-1` freezes with the 3.1.0 release.
+- This document was a draft until the filters and the search of the local evaluator were merged; `tr-1` freezes with the 3.1.0 release.
 - A new profile comes in a minor release; an old profile stays at least until the next major; removing one happens only in a major, with a decision record.
 - The profile is not part of the wire. Which profile to evaluate with is the data source's knowledge.
 - "This endpoint is `tr-1` conformant" means it passes the suite with **zero applicable failures**; a pass with an allowlist is "partially aligned".

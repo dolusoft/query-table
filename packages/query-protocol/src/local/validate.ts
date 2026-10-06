@@ -2,15 +2,98 @@
 // steps 2 to 9). Query errors are found without looking at the rows, so an
 // empty data set never hides a malformed query.
 
-import type { Dataset } from './dataset'
-import { fieldOf, isPlainObject } from './dataset'
+import type { Dataset, DatasetField } from './dataset'
+import { fieldOf, isPlainObject, offsetOf } from './dataset'
 import type { Failure } from './errors'
 import { fail } from './errors'
 import { profiles, reservedQueryKeys } from './profiles'
-import { isWellFormed, trimSearch } from './text'
+import { parseDate, parseDateTimeRule } from './temporal'
+import { compareOrdinal, isWellFormed, matchKey, trimSearch } from './text'
+import type { ColumnType } from '../protocol/types'
 
 // Conditions reserved inside the evaluator, refused as extensions (R4).
 const reservedConditions: readonly unknown[] = ['IsNull', 'IsNotNull']
+
+/** A condition that holds on a value; a negative one is its complement. */
+type Positive =
+  | 'Contains'
+  | 'StartsWith'
+  | 'EndsWith'
+  | 'Equal'
+  | 'GreaterThan'
+  | 'GreaterThanOrEqual'
+  | 'LessThan'
+  | 'LessThanOrEqual'
+
+const textTypes: readonly ColumnType[] = ['string']
+const anyType: readonly ColumnType[] = [
+  'string',
+  'number',
+  'integer',
+  'bool',
+  'date',
+  'datetime'
+]
+const orderedTypes: readonly ColumnType[] = [
+  'number',
+  'integer',
+  'date',
+  'datetime'
+]
+
+/**
+ * The condition x type matrix (semantics.md#condition-by-type): the types a
+ * condition is allowed on, and the positive condition it is evaluated as. A
+ * Map, so a condition named like an Object.prototype member is unknown.
+ */
+const matrix: ReadonlyMap<
+  string,
+  { readonly types: readonly ColumnType[]; readonly positive: Positive }
+> = /* @__PURE__ */ new Map([
+  ['Contains', { types: textTypes, positive: 'Contains' }],
+  ['NotContains', { types: textTypes, positive: 'Contains' }],
+  ['StartsWith', { types: textTypes, positive: 'StartsWith' }],
+  ['EndsWith', { types: textTypes, positive: 'EndsWith' }],
+  ['Equal', { types: anyType, positive: 'Equal' }],
+  ['NotEqual', { types: anyType, positive: 'Equal' }],
+  ['GreaterThan', { types: orderedTypes, positive: 'GreaterThan' }],
+  [
+    'GreaterThanOrEqual',
+    { types: orderedTypes, positive: 'GreaterThanOrEqual' }
+  ],
+  ['LessThan', { types: orderedTypes, positive: 'LessThan' }],
+  ['LessThanOrEqual', { types: orderedTypes, positive: 'LessThanOrEqual' }]
+])
+
+/**
+ * The value a rule compares with, computed once per evaluation: the match
+ * fold of a text, a number, a boolean or an instant, or the half-open range
+ * `[start, end)` of a day (day numbers on a `date` field, milliseconds on a
+ * `datetime` field).
+ */
+type Operand =
+  | { readonly kind: 'text'; readonly text: string }
+  | { readonly kind: 'value'; readonly value: number | boolean }
+  | { readonly kind: 'range'; readonly start: number; readonly end: number }
+
+/** One rule, ready to test a value read from a row. */
+export interface PlanRule {
+  readonly positive: Positive
+  /** `NotEqual` and `NotContains`: the exact complement, true on null. */
+  readonly negative: boolean
+  readonly operand: Operand
+}
+
+/** The rules of one field (C-17): AND when all are negative, else OR. */
+interface PlanGroup {
+  /** Index of the field in `Plan.used`. */
+  readonly at: number
+  /** A `string` field: its value is compared by its match fold. */
+  readonly text: boolean
+  /** Every rule is negative, so every rule must hold. */
+  readonly every: boolean
+  readonly rules: readonly PlanRule[]
+}
 
 /** What a valid query asks of the rows. */
 export interface Plan {
@@ -21,6 +104,17 @@ export interface Plan {
    * each once.
    */
   readonly used: readonly string[]
+  /** The rule groups; every group must hold. */
+  readonly groups: readonly PlanGroup[]
+  /**
+   * An active search: the needle `M(C(trimmed))` and the indexes in `used`
+   * of the search fields, in ordinal name order. `null` when the search is
+   * absent, null or blank.
+   */
+  readonly search: {
+    readonly needle: string
+    readonly at: readonly number[]
+  } | null
 }
 
 type Checked = { ok: true; plan: Plan } | Failure
@@ -156,6 +250,7 @@ export const validate = (
     )
   }
   const filters: readonly unknown[] = q.filters
+  const rules: { field: string; text: boolean; rule: PlanRule }[] = []
   for (let rule = 0; rule < filters.length; rule++) {
     const path = '/filters/' + String(rule)
     const item = filters[rule]
@@ -216,16 +311,34 @@ export const validate = (
         `The condition ${item.condition} is reserved and not evaluated.`
       )
     }
-    // PR-L1 only: rules are refused until PR-L2 brings the condition x type
-    // matrix (checkRule). Not released (no release between L1 and L2); L2
-    // deletes this block and its tests.
-    return fail(
-      'unsupported-operator',
-      { field, rule, path: path + '/condition' },
-      'Rules are not evaluated yet.'
-    )
+    const allowed = matrix.get(item.condition)
+    if (!allowed || !allowed.types.includes(definition.type)) {
+      return fail(
+        'unsupported-operator',
+        { field, rule, path: path + '/condition' },
+        `The condition ${item.condition} is not allowed on the ${definition.type} field ${field}.`
+      )
+    }
+    const operand = operandOf(definition, item.value, offsetOf(dataset, field))
+    if (!operand) {
+      return fail(
+        'invalid-value',
+        { field, rule, path: path + '/value' },
+        `The rule value does not fit the ${definition.type} field ${field}.`
+      )
+    }
+    rules.push({
+      field,
+      text: definition.type === 'string',
+      rule: {
+        positive: allowed.positive,
+        negative: allowed.positive !== item.condition,
+        operand
+      }
+    })
   }
-  // 9. Search.
+  // 9. Search: trimmed of the listed units only, then composed and folded.
+  let needle = ''
   const search = q.search
   if (search !== undefined && search !== null) {
     if (typeof search !== 'string') {
@@ -242,23 +355,107 @@ export const validate = (
         'search has an unpaired surrogate.'
       )
     }
-    // PR-L1 only: an active search is refused until PR-L2; L2 replaces this
-    // with "no search fields" and adds the search fields to `used`.
-    if (trimSearch(search) !== '') {
+    needle = matchKey(trimSearch(search))
+  }
+  // A blank search is no search, also on a dataset without search fields.
+  const searchFields: string[] = []
+  if (needle !== '') {
+    const names = Object.keys(dataset.fields)
+    for (let i = 0; i < names.length; i++) {
+      if (dataset.fields[names[i]].search === true) {
+        searchFields.push(names[i])
+      }
+    }
+    if (searchFields.length === 0) {
       return fail(
         'search-not-supported',
         { path: '/search' },
-        'Search is not evaluated yet.'
+        'The search is active but the dataset has no search field.'
       )
     }
+    searchFields.sort(compareOrdinal)
   }
-  // 10 (order only). The key is always read last.
+  // 10 (order only): sort field, rule fields in rule order, search fields
+  // in ordinal name order, key; each once.
   const used: string[] = []
+  const use = (name: string): number => {
+    const at = used.indexOf(name)
+    if (at >= 0) {
+      return at
+    }
+    used.push(name)
+    return used.length - 1
+  }
   if (sort) {
-    used.push(sort.field)
+    use(sort.field)
   }
-  if (!used.includes(dataset.key)) {
-    used.push(dataset.key)
+  const groups: {
+    at: number
+    text: boolean
+    every: boolean
+    rules: PlanRule[]
+  }[] = []
+  for (let i = 0; i < rules.length; i++) {
+    const at = use(rules[i].field)
+    const rule = rules[i].rule
+    let group = groups.find(item => item.at === at)
+    if (!group) {
+      group = { at, text: rules[i].text, every: true, rules: [] }
+      groups.push(group)
+    }
+    group.rules.push(rule)
+    group.every = group.every && rule.negative
   }
-  return { ok: true, plan: { sort, used } }
+  const searchAt = searchFields.map(use)
+  use(dataset.key)
+  return {
+    ok: true,
+    plan: {
+      sort,
+      used,
+      groups,
+      search: needle === '' ? null : { needle, at: searchAt }
+    }
+  }
+}
+
+/**
+ * The comparable form of a rule value (semantics.md#types), or null when it
+ * does not fit the field (`invalid-value`). Nothing is converted, and a text
+ * is not trimmed: a blank value is a value, an empty one is not.
+ */
+const operandOf = (
+  definition: DatasetField<never>,
+  value: unknown,
+  offset: number | null
+): Operand | null => {
+  switch (definition.type) {
+    case 'string':
+      return typeof value === 'string' && value !== '' && isWellFormed(value)
+        ? { kind: 'text', text: matchKey(value) }
+        : null
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value)
+        ? { kind: 'value', value }
+        : null
+    case 'integer':
+      return Number.isSafeInteger(value)
+        ? { kind: 'value', value: value as number }
+        : null
+    case 'bool':
+      return typeof value === 'boolean' ? { kind: 'value', value } : null
+    case 'date': {
+      const day = parseDate(value)
+      return day === null ? null : { kind: 'range', start: day, end: day + 1 }
+    }
+    case 'datetime': {
+      const read = parseDateTimeRule(value, offset)
+      if (!read.ok) {
+        return null
+      }
+      return read.kind === 'day'
+        ? { kind: 'range', start: read.start, end: read.end }
+        : { kind: 'value', value: read.ms }
+    }
+  }
 }

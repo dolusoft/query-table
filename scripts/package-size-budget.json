@@ -4,7 +4,8 @@
     "3.0.0-next.0 (PR-B): first measurement. The core fixture has five stock features (sorting, pagination, column filtering, global filtering, row selection; no sizing, D10) and both plugins. Its +5% (18344 B) was over the 17500 B ceiling of the spike, so the budget was the ceiling: 30 B of room.",
     "3.0.0-next.0 (PR-B review): core 17564 B (+94 B: same-text search, cursor-mode setPageIndex, per-emit microtask reset). K7 (Zahid, 2026-10-06): size is not a blocker; the core ceiling is 18500 B and the budget is the measure plus 5%.",
     "3.1.0 (PR-L1, 2026-10-06): protocol-local fixture added for the /local entry (C-75), measured 29 B with only the `profiles` skeleton; ceiling 500 B until PR-L1 measures a real evaluation. protocol unchanged at 1052 B.",
-    "3.1.0 (PR-L1, 2026-10-06): protocol-local 4027 B. The local evaluator: parsing, ordering and paging; rules and search arrive in PR-L2. The fixture now defines a dataset and runs applyQuery; budget 31 B -> 4229 B (measured + 5%), ceiling 500 B -> 5000 B (the 500 B guess predates any evaluator code; measured x 1.2, rounded up to 500)."
+    "3.1.0 (PR-L1, 2026-10-06): protocol-local 4027 B. The local evaluator: parsing, ordering and paging; rules and search arrive in PR-L2. The fixture now defines a dataset and runs applyQuery; budget 31 B -> 4229 B (measured + 5%), ceiling 500 B -> 5000 B (the 500 B guess predates any evaluator code; measured x 1.2, rounded up to 500).",
+    "3.1.0 (PR-L2, 2026-10-06): protocol-local 5057 B (+1030 B). The condition x type matrix, rule values, composition and the search; budget 4229 B -> 5310 B (measured + 5%), ceiling 5000 B -> 6500 B (measured x 1.2, rounded up to 500). The other fixtures do not import /local and stay in their budgets."
   ],
   "fixtures": {
     "protocol": {
@@ -13,9 +14,9 @@
       "ceilingGzipBytes": 1500
     },
     "protocol-local": {
-      "measuredGzipBytes": 4027,
-      "maxGzipBytes": 4229,
-      "ceilingGzipBytes": 5000
+      "measuredGzipBytes": 5057,
+      "maxGzipBytes": 5310,
+      "ceilingGzipBytes": 6500
     },
     "server-query": {
       "measuredGzipBytes": 13676,

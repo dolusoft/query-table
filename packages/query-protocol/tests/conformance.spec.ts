@@ -7,120 +7,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { Dataset, LocalQueryError } from '../src/local'
 import { applyQuery, defineDataset } from '../src/local'
+import { columnTypes, filterConditions } from '../src/protocol/constants'
 import type { Query } from '../src/protocol/types'
 
 // The runner of the conformance suite (C-79). It reads the manifest, checks
 // it and every case file against the published schemas, checks every hash
 // and count, and runs every active run with applyQuery.
-// PR-L1 only: runs the evaluator cannot pass before PR-L2 are listed here
-// and reported as todo; L2 empties the list. The list is computed by the
-// independent oracle of the suite: a run is pending when it needs a rule or
-// an active search to reach its expectation.
-const PENDING_L2: ReadonlySet<string> = new Set([
-  'C49.2',
-  'C12.1',
-  'C12.2',
-  'C12.3',
-  'C13.1',
-  'C13.2',
-  'C13.3',
-  'C14.1',
-  'C37.3',
-  'C37.4',
-  'C39.1',
-  'C39.2',
-  'C40.1',
-  'C40.2',
-  'C40.3',
-  'C63.1',
-  'C15.1',
-  'C15.2',
-  'C16.1',
-  'C17.1',
-  'C18.1',
-  'C19.1',
-  'C20.1',
-  'C23.1',
-  'C23.2',
-  'C30.1',
-  'C30.2',
-  'C33.1',
-  'C34.1',
-  'C41.1',
-  'C41.2',
-  'C59.1',
-  'C59.2',
-  'C59.3',
-  'C59.4',
-  'C59.5',
-  'C59.6',
-  'C59.7',
-  'C59.8',
-  'C59.9',
-  'C59.10',
-  'C59.11',
-  'C59.12',
-  'C60.1',
-  'C60.2',
-  'C60.3',
-  'C60.4',
-  'C60.5',
-  'C60.6',
-  'C60.7',
-  'C60.8',
-  'C60.9',
-  'C61.1',
-  'C61.2',
-  'C61.3',
-  'C61.4',
-  'C62.1',
-  'C62.2',
-  'C24.1',
-  'C24.2',
-  'C25.1',
-  'C26.1',
-  'C26.2',
-  'C27.3',
-  'C42.1',
-  'C42.2',
-  'C42.3',
-  'C42.4',
-  'C52.1',
-  'C52.2',
-  'C52.3',
-  'C52.4',
-  'C52.5',
-  'C52.6',
-  'C52.7',
-  'C52.8',
-  'C52.9',
-  'C52.10',
-  'C52.11',
-  'C52.12',
-  'C52.13',
-  'C52.14',
-  'C52.15',
-  'C52.16',
-  'C21.1',
-  'C22.1',
-  'C51.1',
-  'C51.2',
-  'C51.3',
-  'C53.2',
-  'C53.3',
-  'C53.4',
-  'C29.3',
-  'C50.2',
-  'C55.1',
-  'C55.6',
-  'C66.1',
-  'C66.2',
-  'C66.3',
-  'C66.5',
-  'C66.6',
-  'C66.7',
-  'C66.8'
-])
 
 type Row = Record<string, unknown>
 interface Data {
@@ -311,10 +203,6 @@ for (const { path, doc } of suite.files) {
       for (const run of kase.runs) {
         runIds.add(run.id)
         const title = `${run.id} ${kase.title}`
-        if (PENDING_L2.has(run.id)) {
-          it.todo(title)
-          continue
-        }
         it(title, () => {
           const { dataset, rows } = suite.data(path, run.data ?? kase.data)
           // A partial `options` is merged field by field over the defaults.
@@ -349,9 +237,72 @@ for (const { path, doc } of suite.files) {
   })
 }
 
-describe('the pending list', () => {
-  it('names only runs of the suite', () => {
-    expect([...PENDING_L2].filter(id => !runIds.has(id))).toEqual([])
+describe('the cases', () => {
+  // The cells of the table in semantics.md#condition-by-type: a row of
+  // conditions by a column of types. The unit tests of C-80 try every
+  // single condition on every single type; the suite pins every cell.
+  const rows: readonly (readonly string[])[] = [
+    ['Contains', 'NotContains', 'StartsWith', 'EndsWith'],
+    ['Equal', 'NotEqual'],
+    ['GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual']
+  ]
+  const columns: readonly (readonly string[])[] = [
+    ['string'],
+    ['number', 'integer'],
+    ['bool'],
+    ['date', 'datetime']
+  ]
+  const allowed = [
+    [true, false, false, false],
+    [true, true, true, true],
+    [false, true, false, true]
+  ]
+
+  it('group every condition and every type of the protocol once', () => {
+    expect(rows.flat().sort()).toEqual([...filterConditions].sort())
+    expect(columns.flat().sort()).toEqual([...columnTypes].sort())
+  })
+
+  it('cover every cell of the condition x type matrix', () => {
+    // [row][column]: a run that accepts the pair, a run that refuses it.
+    const accepted = rows.map(() => columns.map(() => false))
+    const refused = rows.map(() => columns.map(() => false))
+    const cellOf = (condition: string, type: string): [number, number] => [
+      rows.findIndex(row => row.includes(condition)),
+      columns.findIndex(column => column.includes(type))
+    ]
+    for (const { path, doc } of suite.files) {
+      for (const kase of doc.cases) {
+        if (kase.withdrawn) {
+          continue
+        }
+        for (const run of kase.runs) {
+          const filters = (run.query as { filters?: unknown } | null)?.filters
+          if (!Array.isArray(filters)) {
+            continue
+          }
+          const { dataset } = suite.data(path, run.data ?? kase.data)
+          type Rule = { field: string; condition: string }
+          const cellOfRule = (rule: Rule) =>
+            cellOf(rule.condition, dataset.fields[rule.field].type)
+          if ('keys' in run.expect) {
+            for (const rule of filters as Rule[]) {
+              const [r, c] = cellOfRule(rule)
+              accepted[r][c] = true
+            }
+          } else if (run.expect.error.code === 'unsupported-operator') {
+            const [r, c] = cellOfRule(
+              (filters as Rule[])[run.expect.error.rule!]
+            )
+            if (r >= 0) {
+              refused[r][c] = true
+            }
+          }
+        }
+      }
+    }
+    expect(accepted).toEqual(allowed)
+    expect(refused).toEqual(allowed.map(row => row.map(cell => !cell)))
   })
 })
 

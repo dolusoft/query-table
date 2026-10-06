@@ -23,5 +23,5 @@
       "@dolusoft/query-table-core/*": ["./packages/query-table-core/src/features/*/index.ts"]
     }
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.vue", "packages/*/tests/**/*.ts", "packages/*/*.config.ts", "fixtures/**/*.ts", "contract/**/*.ts", "docs/guide/**/*.ts", "tests/**/*.ts", "tests/**/*.vue", "apps/playground/**/*.ts", "apps/playground/**/*.vue", "*.config.ts"]
+  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.vue", "packages/*/tests/**/*.ts", "packages/*/bench/**/*.ts","packages/*/*.config.ts", "fixtures/**/*.ts", "contract/**/*.ts", "docs/guide/**/*.ts", "tests/**/*.ts", "tests/**/*.vue", "apps/playground/**/*.ts", "apps/playground/**/*.vue", "*.config.ts"]
 }
