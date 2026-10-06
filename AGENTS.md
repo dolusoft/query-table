@@ -11,8 +11,9 @@ Read this before changing anything. It is short on purpose; the details live in 
 
 ## Branches
 
-- `main` is 2.2.x and in production. Only small fixes go there.
-- `next` is v3. Pull requests for v3 target `next`. Never force push.
+- `main` is the released 3.x line. Patch fixes go to `main` directly, in their own pull request, and are then merged into `next`.
+- `next` is the work of the next minor version (3.1). Pull requests target `next`; when the minor is released, `next` is merged into `main`.
+- Never force push.
 
 ## v3 layers (P14)
 

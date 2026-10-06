@@ -5,6 +5,7 @@ import {
   CheckIcon,
   CopyIcon,
   PaintbrushIcon,
+  SparklesIcon,
   ServerIcon,
   ShieldCheckIcon
 } from '@lucide/vue'
@@ -17,6 +18,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/ui/card'
 import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 
 import {
+  aiHome,
   architecture,
   installCommand,
   moreFeatures,
@@ -29,6 +31,8 @@ import {
   tanstackLine
 } from './home-content'
 import ShowcaseTable from './ShowcaseTable.vue'
+import BrandIcon from '../shell/BrandIcon.vue'
+import { tanstackDocsUrl } from '../shell/external-links'
 import InlineCode from '../shell/InlineCode.vue'
 
 // The home page: what the library is, how to install it, one table that
@@ -47,6 +51,7 @@ const principleIcons: Record<string, typeof BlocksIcon> = {
 // once it has loaded, so a missing file leaves the text alone.
 const diagramUrl = `${import.meta.env.BASE_URL}architecture.svg`
 const diagramLoaded = ref(false)
+const base = import.meta.env.BASE_URL
 </script>
 
 <template>
@@ -110,7 +115,26 @@ const diagramLoaded = ref(false)
           </RouterLink>
         </Button>
         <Button as-child size="lg" variant="outline">
-          <a :href="repositoryUrl" target="_blank" rel="noopener">GitHub</a>
+          <a
+            :href="repositoryUrl"
+            target="_blank"
+            rel="noopener"
+            aria-label="GitHub (opens in a new tab)"
+          >
+            <BrandIcon name="github" />
+            GitHub
+          </a>
+        </Button>
+        <Button as-child size="lg" variant="outline">
+          <a
+            :href="tanstackDocsUrl"
+            target="_blank"
+            rel="noopener"
+            aria-label="TanStack Table docs (opens in a new tab)"
+          >
+            <BrandIcon name="tanstack" />
+            TanStack Table
+          </a>
         </Button>
       </div>
     </section>
@@ -200,6 +224,48 @@ const diagramLoaded = ref(false)
         </Button>
         <Button as-child variant="ghost">
           <RouterLink to="/tanstack">TanStack Table</RouterLink>
+        </Button>
+      </div>
+    </section>
+
+    <section
+      :id="aiHome.id"
+      aria-labelledby="use-with-ai-title"
+      class="flex scroll-mt-20 flex-col gap-4"
+    >
+      <h2
+        id="use-with-ai-title"
+        class="flex items-center gap-2 text-2xl font-semibold tracking-tight"
+      >
+        <SparklesIcon aria-hidden="true" class="size-5 text-primary" />
+        {{ aiHome.title }}
+      </h2>
+      <p class="max-w-3xl text-muted-foreground">
+        <InlineCode :text="aiHome.text" />
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <Button as-child variant="outline">
+          <RouterLink to="/ai#ai-skill">
+            <SparklesIcon />
+            Claude Code skill
+          </RouterLink>
+        </Button>
+        <Button as-child variant="outline">
+          <a
+            :href="`${base}llms.txt`"
+            target="_blank"
+            rel="noopener"
+            aria-label="llms.txt (opens in a new tab)"
+          >
+            <BrandIcon name="llms" />
+            llms.txt
+          </a>
+        </Button>
+        <Button as-child variant="ghost">
+          <RouterLink to="/ai">
+            Use with AI
+            <ArrowRightIcon data-icon="inline-end" />
+          </RouterLink>
         </Button>
       </div>
     </section>
