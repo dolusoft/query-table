@@ -264,3 +264,19 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-22', 'C-44', 'C-45']
   }
 ]
+
+/**
+ * Rules of the v3 core (packages/query-table-core) that the 2.2 component
+ * does not implement: cursor paging, search, selection, plugin ownership and
+ * dispose. They have no page yet; PR-C, which puts the component on the
+ * core, maps them to pages and empties this list.
+ */
+export const coreOnlyRules: string[] = [
+  'C-56',
+  'C-57',
+  'C-58',
+  'C-59',
+  'C-60',
+  'C-61',
+  'C-62'
+]
