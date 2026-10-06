@@ -51,6 +51,16 @@ export const skillFiles = [
 
 export const rawUrl = (path: string) => `${rawBase}/${path}`
 
+/**
+ * The AI group of the sidebar: the page and the two parts people come for.
+ * 	o is a route; the hash is a section id of the AI page (iSections).
+ */
+export const aiNav: Array<{ id: string; title: string; to: string }> = [
+  { id: 'ai', title: 'Use with AI', to: '/ai' },
+  { id: 'ai-skill', title: 'Claude Code skill', to: '/ai#ai-skill' },
+  { id: 'ai-llms', title: 'llms.txt / llms-full.txt', to: '/ai#ai-llms' }
+]
+
 /** Where the skill goes in a project. */
 export const skillTarget = '.claude/skills/query-table'
 
