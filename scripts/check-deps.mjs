@@ -12,7 +12,7 @@ const root = join(import.meta.dirname, '..')
 
 /** Allowed runtime dependencies and peers, per package directory. */
 const allowed = {
-  '.': { dependencies: {}, peerDependencies: { vue: '^3.5.0' } },
+  '.': { dependencies: {}, peerDependencies: {} },
   'packages/query-protocol': { dependencies: {}, peerDependencies: {} },
   'packages/query-table-core': {
     dependencies: {
@@ -20,6 +20,14 @@ const allowed = {
       '@tanstack/table-core': '9.2.6'
     },
     peerDependencies: {}
+  },
+  'packages/vue': {
+    dependencies: {
+      '@dolusoft/query-protocol': 'workspace:*',
+      '@dolusoft/query-table-core': 'workspace:*',
+      '@tanstack/vue-table': '9.2.6'
+    },
+    peerDependencies: { vue: '^3.5.0' }
   }
 }
 

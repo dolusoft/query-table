@@ -5,7 +5,7 @@ import { cleanup } from 'vitest-browser-vue'
 
 import type { Column, ColumnResizePayload } from '@dolusoft/query-table'
 
-import type { Theme } from '../../../playground/harness/theme'
+import type { Theme } from '../../../apps/playground/harness/theme'
 import { el, renderTable, rows } from '../../support/helpers'
 
 // Geometry of pinned and resized columns in a real browser, with the

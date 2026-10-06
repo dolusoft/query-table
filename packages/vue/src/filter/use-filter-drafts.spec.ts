@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, type EffectScope } from 'vue'
 
-import { makeColumns, makeQuery } from '../../tests/support/mount-table'
+import { makeColumns, makeQuery } from '../../../../tests/support/mount-table'
 import type { Column, QueryChangeReason, TableQuery } from '../contract'
 import { type FilterDrafts, useFilterDrafts } from './use-filter-drafts'
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { coreOnlyRules, pages, type PageApi } from './manifest'
-import api from '../contract/api.json'
+import api from '../../contract/api.json'
 
 // The playground must show the whole public contract: every API member and
 // every behavior rule has a page, and a page names only what exists.

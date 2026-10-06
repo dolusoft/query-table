@@ -9,7 +9,7 @@ import {
   searchDocs,
   snippet
 } from './search-index'
-import api from '../../contract/api.json'
+import api from '../../../contract/api.json'
 import { coreOnlyRules, pages } from '../manifest'
 
 // The search index is built from contract/api.json and the manifest: every

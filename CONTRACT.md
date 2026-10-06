@@ -68,7 +68,7 @@ Exported from the package entry point next to the component.
 
 ## Types
 
-Exported from the package entry point (`src/contract.ts`).
+Exported from the package entry point (`packages/vue/src/contract.ts`).
 
 ```ts
 import type { Component } from 'vue'
@@ -878,8 +878,8 @@ These are the only inline styles the table writes. A custom property carries dat
 
 ## How the contract is kept
 
-- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.
+- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `packages/vue/src/contract.ts`, the rules and the DOM list cannot change without it.
 - `pnpm api:check` compares the built declarations with `etc/query-table.api.md`.
-- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `src/contract.ts`.
+- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `packages/vue/src/contract.ts`.
 - `tests/repo/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.
 - The browser tests compare the rendered DOM with the DOM contract and check that the test skin selects only what it lists.

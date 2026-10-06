@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { Badge } from '@/ui/badge'
 
-import api from '../../contract/api.json'
+import api from '../../../contract/api.json'
 import { ruleAnchor, sectionAnchors } from '../search/anchors'
 
 // The behavior rules (contract/rules.md) this page shows, with their text

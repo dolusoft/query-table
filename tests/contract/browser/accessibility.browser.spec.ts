@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 
-import type { Theme } from '../../../playground/harness/theme'
+import type { Theme } from '../../../apps/playground/harness/theme'
 import { makeQuery } from '../../support/fixtures'
 import { columns, renderTable, rule } from '../../support/helpers'
 

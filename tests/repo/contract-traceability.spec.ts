@@ -62,9 +62,7 @@ const childDirs = (dir: string): string[] =>
 // playground specs in playground/. In the v3 workspace each package has its
 // own src/ and tests/, and apps/ holds the playground.
 const roots = [
-  join(root, 'src'),
   join(root, 'tests'),
-  join(root, 'playground'),
   ...childDirs(join(root, 'packages')).flatMap(pkg => [
     join(pkg, 'src'),
     join(pkg, 'tests')

@@ -3,7 +3,7 @@ import { effectScope, ref } from 'vue'
 
 import type { QueryChangeReason, TableQuery } from '../contract'
 import { useQueryEmitter } from './use-query-emitter'
-import { makeQuery } from '../../tests/support/mount-table'
+import { makeQuery } from '../../../../tests/support/mount-table'
 
 describe('useQueryEmitter', () => {
   const setup = () => {

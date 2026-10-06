@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { nextDirection } from './sort'
 import { useSort } from './use-sort'
-import { makeQuery } from '../../tests/support/mount-table'
+import { makeQuery } from '../../../../tests/support/mount-table'
 
 describe('sort direction', () => {
   it('C-07 sorts ascending first, then descending, then none', () => {
