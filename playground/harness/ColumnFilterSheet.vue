@@ -20,6 +20,8 @@ import {
   commitDraft,
   conditionsFor,
   draftFrom,
+  isComposing,
+  same,
   titleOf,
   typeOf,
   type FilterDraft
@@ -131,7 +133,12 @@ onBeforeUnmount(() =>
   window.visualViewport?.removeEventListener('resize', fitKeyboard)
 )
 
+// Unchanged rules write nothing: a write is a request to the server, resets
+// the page and moves the column's rules to the end of `query.filters`.
 const write = (name: string, rules: TableQuery['filters']) => {
+  if (same(rulesOf(name), rules)) {
+    return
+  }
   query.value = {
     ...query.value,
     page: 1,
@@ -167,12 +174,20 @@ const clear = () => {
 
 // Enter applies, but not while an input method is composing a word.
 const onEnter = (event: KeyboardEvent) => {
-  if (event.isComposing || event.keyCode === 229) {
+  if (isComposing(event)) {
     return
   }
   event.preventDefault()
   apply()
 }
+
+// Only an element that is rendered: the hint shows for a text column alone.
+const describedBy = computed(() => {
+  if (error.value) {
+    return errorId
+  }
+  return type.value === 'string' ? hintId : undefined
+})
 
 const placeholder = computed(() =>
   type.value === 'string' ? 'Text to match' : ''
@@ -246,6 +261,7 @@ defineExpose({ open })
               class="w-full [&_select]:h-11 [&_select]:bg-background [&_select]:text-base"
               :aria-invalid="error ? 'true' : undefined"
               :aria-describedby="error ? errorId : undefined"
+              @keydown.enter="onEnter"
             >
               <NativeSelectOption value="">Any</NativeSelectOption>
               <NativeSelectOption value="true">Yes</NativeSelectOption>
@@ -262,7 +278,7 @@ defineExpose({ open })
               autocomplete="off"
               class="h-11 text-base md:text-base"
               :aria-invalid="error ? 'true' : undefined"
-              :aria-describedby="error ? errorId : hintId"
+              :aria-describedby="describedBy"
               @keydown.enter="onEnter"
             />
           </div>

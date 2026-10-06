@@ -49,8 +49,12 @@ const groups = computed(() => groupByPage(hits.value))
 
 const go = async (pageId: string, anchor: string) => {
   open.value = false
+  // The element of the page being left, when another page is opened: the
+  // new page can carry the same anchor id.
+  const leaving = router.currentRoute.value.path !== `/${pageId}`
+  const stale = leaving && anchor ? document.getElementById(anchor) : null
   await router.push(`/${pageId}`)
-  await revealAnchor(anchor)
+  await revealAnchor(anchor, stale)
 }
 
 const choose = (hit: SearchHit) => {

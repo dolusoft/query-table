@@ -54,7 +54,7 @@ test.each([
       'aside nav [data-slot="scroll-area-viewport"]'
     )!
     expect(nav.scrollWidth).toBeGreaterThan(nav.clientWidth)
-    expect(rect('aside nav a').height).toBeGreaterThanOrEqual(40)
+    expect(rect('aside nav a').height).toBeGreaterThanOrEqual(44)
     const scroller = document.querySelector<HTMLElement>(
       '.qt-table-responsive'
     )!
