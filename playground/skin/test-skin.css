@@ -178,179 +178,376 @@
 /* ==== mapping.css, in the components layer ==== */
 @layer components {
 /*
- * Test skin: maps the table's DOM contract onto shadcn-vue's class strings.
- * Hand-written, but it only selects what contract/dom.ts lists (rule C-41),
- * and every value comes from the shadcn-vue components added by the CLI
- * (Table, Input, Button) through `@apply`; colors come from the theme above.
+ * Test skin: the table's DOM contract drawn with shadcn's design tokens.
+ * Hand-written, but it only selects what contract/dom.ts lists (rule C-41).
+ * Every color and radius is a token of the shadcn-vue theme above
+ * (`--background`, `--foreground`, `--border`, `--input`, `--muted`,
+ * `--muted-foreground`, `--secondary`, `--popover`, `--ring`, `--radius`),
+ * so the table follows the theme, light or dark, like a shadcn component
+ * does. Sizes follow shadcn's data-table example (Table, Input, Button).
  */
 
 .qt-datatable {
-  @apply bg-background text-sm text-foreground;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
-/* Table, TableHeader, TableBody, TableRow, TableHead, TableCell, inside the
-   `rounded-md border` box of shadcn's data-table example */
+/* The `rounded-md border` box of shadcn's data-table example. It is the
+   table's own scroll container, so it cannot be a ScrollArea (that would
+   need markup the table does not render, and sticky pinned cells stick to
+   this element); its native scrollbar takes the ScrollArea's look instead. */
 .qt-table-responsive {
-  @apply relative w-full overflow-x-auto rounded-md border;
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   /* Lets `cqw` in the subtable slot mean the visible width (see the README,
      "Pinned columns": a subtable row stays in view while the table scrolls). */
   container-type: inline-size;
 }
+
+/* Table, TableHeader, TableBody, TableRow, TableHead, TableCell */
 .qt-table {
-  @apply w-full caption-bottom text-sm;
-}
-.qt-table thead {
-  @apply [&_tr]:border-b;
-}
-.qt-table tbody {
-  @apply [&_tr:last-child]:border-0;
+  width: 100%;
+  caption-side: bottom;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 .qt-table tr {
-  @apply border-b transition-colors hover:bg-muted/50;
+  border-bottom: 1px solid var(--border);
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.qt-table tbody tr:last-child {
+  border-bottom-width: 0;
+}
+@media (hover: hover) {
+  .qt-table tr:hover {
+    background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+  }
 }
 .qt-table th,
 .qt-table thead td {
-  @apply h-10 px-2 py-2 text-left align-middle font-medium whitespace-nowrap text-foreground;
+  height: 2.5rem;
+  padding: 0.5rem;
+  color: var(--foreground);
+  font-weight: 500;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .qt-table td {
-  @apply p-2 align-middle whitespace-nowrap tabular-nums;
+  padding: 0.5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 /* Vertical column borders: the same border token as the row lines. */
 .qt-table th,
 .qt-table td {
-  @apply border-r last:border-r-0;
+  border-right: 1px solid var(--border);
+
+  &:last-child {
+    border-right-width: 0;
+  }
 }
 
 /* TableFooter */
 .qt-footer {
-  @apply border-t bg-muted/50 font-medium [&>tr]:last:border-b-0;
+  border-top: 1px solid var(--border);
+  background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+  font-weight: 500;
+
+  & > tr:last-child {
+    border-bottom-width: 0;
+  }
 }
 
 /* Utility columns */
 thead :is(th, td):not([data-field]),
 td:has(> .qt-expand),
 td:has(> .qt-right-panel-button) {
-  @apply w-8;
+  width: 2rem;
 }
 
 /* Pinned columns: the table writes `data-pinned` and the measured offset
    `--qt-pin-left`; sticky positioning, the layer and an opaque background
    are the skin's. The header and footer sit above the body cells. */
 .qt-table [data-pinned] {
-  @apply sticky left-(--qt-pin-left) z-10 bg-background;
+  position: sticky;
+  left: var(--qt-pin-left);
+  z-index: 10;
+  background-color: var(--background);
 }
 .qt-table thead [data-pinned] {
-  @apply z-20;
+  z-index: 20;
 }
-.qt-table tbody tr:hover > [data-pinned],
 .qt-table tr[data-expanded] > [data-pinned],
 .qt-footer [data-pinned] {
   /* muted/50 over the page background, opaque: what the other cells show */
-  @apply bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))];
+  background-color: color-mix(in oklab, var(--muted) 50%, var(--background));
+}
+@media (hover: hover) {
+  .qt-table tbody tr:hover > [data-pinned] {
+    background-color: color-mix(in oklab, var(--muted) 50%, var(--background));
+  }
 }
 /* Collapsed borders belong to the table, not to the cell: they stay behind
    when a sticky cell moves and let the scrolled cells show through. With a
    pinned column the table separates its borders and draws the row lines on
    the cells. */
 .qt-table:has([data-pinned]) {
-  @apply border-separate border-spacing-0;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 .qt-table:has([data-pinned]) :is(th, td) {
-  @apply border-b;
+  border-bottom: 1px solid var(--border);
 }
 .qt-table:has([data-pinned]) tbody:last-child > tr:last-child > td,
 .qt-table:has([data-pinned]) .qt-footer > tr:last-child > td {
-  @apply border-b-0;
+  border-bottom-width: 0;
 }
 /* A shadow on the last pinned cell shows where the scrolled part starts. */
 .qt-table [data-pinned]:not(:has(+ [data-pinned])) {
-  @apply shadow-[1px_0_0_var(--border),4px_0_6px_-4px_var(--border)];
+  box-shadow:
+    1px 0 0 var(--border),
+    4px 0 6px -4px var(--border);
 }
 
 /* Resize handle: an 8px hit area over the right edge of the header cell,
    invisible at rest; a 1px line on header hover, the ring on keyboard focus. */
 .qt-table th[data-field]:not([data-pinned]) {
-  @apply relative;
+  position: relative;
 }
 .qt-resize-handle {
-  @apply absolute inset-y-0 -right-1 z-30 w-2 cursor-col-resize touch-none outline-none select-none after:absolute after:inset-y-2 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-transparent focus-visible:after:bg-ring;
+  position: absolute;
+  inset-block: 0;
+  right: -0.25rem;
+  z-index: 30;
+  width: 0.5rem;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+  user-select: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-block: 0.5rem;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background-color: transparent;
+  }
+
+  &:focus-visible::after {
+    background-color: var(--ring);
+  }
 }
 /* The last handle stays inside the table, or it widens the scroll area. */
 .qt-table th:last-child > .qt-resize-handle {
-  @apply right-0;
+  right: 0;
 }
-.qt-table th:hover > .qt-resize-handle:not(:focus-visible) {
-  @apply after:bg-border;
+.qt-table th:hover > .qt-resize-handle:not(:focus-visible)::after {
+  background-color: var(--border);
 }
 
-/* Sorting */
+/* Sorting: a ghost button around the header text. */
 .qt-sort {
-  @apply inline-flex items-center gap-1 rounded-sm font-medium outline-none select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: calc(var(--radius) - 4px);
+  font-weight: 500;
+  outline: none;
+  user-select: none;
+
+  &:hover {
+    color: var(--foreground);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
 }
 .qt-sort-icon {
-  @apply shrink-0 text-muted-foreground/40;
+  flex-shrink: 0;
+  color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
 }
 th[data-sort] .qt-sort-icon {
-  @apply text-foreground;
+  color: var(--foreground);
 }
 
 /* Filter row: Input and Button side by side. The condition label shows up
    on the first keystroke; it sits inside the input's end like an inline
-   adornment, so the cell, the row and the column never change size. */
+   adornment, so the cell, the row and the column never change size. The
+   filter row is a size container, so it never widens its column and the
+   narrow-column rules below follow the width the column really has. */
 .qt-filter {
-  @apply relative mt-1 flex items-center gap-1 font-normal;
-}
-.qt-filter-input {
-  @apply h-8 w-0 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30;
-}
-th[data-filtered] .qt-filter-input {
-  @apply border-foreground/40;
-}
-.qt-filter-button {
-  @apply inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50;
-}
-.qt-filter-button[data-filtered] {
-  @apply bg-muted text-foreground;
-}
-/* Badge, variant secondary, over the input's end (the button is size-8 + gap-1) */
-.qt-filter-condition {
-  @apply pointer-events-none absolute top-1/2 right-10 max-w-[30%] -translate-y-1/2 truncate rounded-sm bg-secondary px-1.5 py-0.5 text-xs leading-none font-medium text-secondary-foreground;
-}
-/* The input always keeps room for the label: any padding that came and went
-   with it would change the column's width in the auto table layout. */
-.qt-filter-input {
-  @apply pr-[calc(30%+--spacing(1))];
-}
-
-/* Narrow columns. The filter row is a size container, so it never widens its
-   column and the rules below follow the width the column really has. A
-   filter row under 6rem moves the button into the input's end and drops
-   the condition label (the input's border still marks a filtered column);
-   below 4rem only the button is left. A data column keeps 5.5rem in the auto
-   layout; past that the table scrolls inside `.qt-table-responsive`. */
-.qt-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  font-weight: 400;
   container: qt-filter / inline-size;
 }
+
+/* Input */
+.qt-filter-input {
+  flex: 1 1 0%;
+  width: 0;
+  min-width: 0;
+  height: 2rem;
+  /* The input always keeps room for the label: any padding that came and
+     went with it would change the column's width in the auto table layout. */
+  padding: 0.25rem calc(30% + 0.25rem) 0.25rem 0.625rem;
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  background-color: transparent;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  outline: none;
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (width >= 48rem) {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  @variant dark {
+    background-color: color-mix(in oklab, var(--input) 30%, transparent);
+  }
+
+  &::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  &:focus-visible {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+
+  &:disabled {
+    pointer-events: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+th[data-filtered] .qt-filter-input {
+  border-color: color-mix(in oklab, var(--foreground) 40%, transparent);
+}
+
+/* Button, variant outline, size icon */
+.qt-filter-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--background);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  outline: none;
+  user-select: none;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @variant dark {
+    border-color: var(--input);
+    background-color: color-mix(in oklab, var(--input) 30%, transparent);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--muted);
+      color: var(--foreground);
+
+      @variant dark {
+        background-color: color-mix(in oklab, var(--input) 50%, transparent);
+      }
+    }
+  }
+
+  &:focus-visible {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+
+  &:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  &[data-filtered] {
+    background-color: var(--muted);
+    color: var(--foreground);
+  }
+}
+
+/* Badge, variant secondary, over the input's end (the button is 2rem wide
+   plus the 0.25rem gap) */
+.qt-filter-condition {
+  position: absolute;
+  top: 50%;
+  right: 2.5rem;
+  max-width: 30%;
+  overflow: hidden;
+  padding: 0.125rem 0.375rem;
+  border-radius: calc(var(--radius) - 4px);
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Narrow columns. A filter row under 6rem moves the button into the input's
+   end and drops the condition label (the input's border still marks a
+   filtered column); below 4rem only the button is left. A data column keeps
+   5.5rem in the auto layout; past that the table scrolls inside
+   `.qt-table-responsive`. */
 .qt-table th[data-field] {
-  @apply min-w-22;
+  min-width: 5.5rem;
 }
 @container qt-filter (width < 6rem) {
   .qt-filter-input {
-    @apply pr-8;
+    padding-right: 2rem;
   }
   .qt-filter-button {
-    @apply absolute top-1/2 right-0.5 size-7 -translate-y-1/2 border-transparent bg-transparent dark:border-transparent dark:bg-transparent;
+    position: absolute;
+    top: 50%;
+    right: 0.125rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-color: transparent;
+    background-color: transparent;
+    transform: translateY(-50%);
   }
   .qt-filter-condition {
-    @apply hidden;
+    display: none;
   }
 }
 @container qt-filter (width < 4rem) {
   .qt-filter-input {
-    @apply hidden;
+    display: none;
   }
   .qt-filter-button {
-    @apply static translate-y-0;
+    position: static;
+    transform: none;
   }
 }
 
@@ -358,18 +555,46 @@ th[data-filtered] .qt-filter-input {
 .qt-clear-all-button,
 .qt-expand,
 .qt-right-panel-button {
-  @apply inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--muted-foreground);
+  outline: none;
+  user-select: none;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--muted);
+      color: var(--foreground);
+    }
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+
+  &:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
 }
 
 /* Row states */
-tr[data-expanded] {
-  @apply bg-muted/50;
+.qt-table tr[data-expanded] {
+  background-color: color-mix(in oklab, var(--muted) 50%, transparent);
 }
 .qt-subtable-row td {
-  @apply whitespace-normal;
+  white-space: normal;
 }
 .qt-empty-row td {
-  @apply h-24 text-center text-muted-foreground;
+  height: 6rem;
+  color: var(--muted-foreground);
+  text-align: center;
 }
 
 /* Loading: the table keeps the rows and adds `tr.qt-loading-row` as the last
@@ -378,30 +603,54 @@ tr[data-expanded] {
    moves. Without rows it is the only row and stays in the flow, as tall as
    the empty row. */
 .qt-datatable[data-loading] tbody {
-  @apply relative;
+  position: relative;
 }
-.qt-loading-row {
-  @apply absolute inset-0 z-40 flex items-center justify-center border-0 bg-background/60 hover:bg-background/60;
+.qt-table .qt-loading-row {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 0;
+  background-color: color-mix(in oklab, var(--background) 60%, transparent);
 }
-/* Over the rows the cell is a small card in the middle of the body. */
-.qt-loading-row > td {
-  @apply rounded-md border bg-popover px-3 py-1.5 text-popover-foreground shadow-sm last:border;
+/* Over the rows the cell is a small card (Popover surface) in the middle of
+   the body. */
+.qt-table .qt-loading-row > td {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 1px 3px 0 color-mix(in oklab, black 10%, transparent),
+    0 1px 2px -1px color-mix(in oklab, black 10%, transparent);
 }
 /* The last data row keeps the borderless end it has without the overlay. */
 .qt-datatable[data-loading] tbody > tr:nth-last-child(2) {
-  @apply border-0;
+  border-width: 0;
 }
-.qt-loading-row:only-child {
-  @apply static table-row;
+.qt-table .qt-loading-row:only-child {
+  position: static;
+  display: table-row;
 }
-.qt-loading-row:only-child > td {
-  @apply h-24 rounded-none border-0 bg-transparent p-2 text-center text-muted-foreground shadow-none last:border-r-0;
+.qt-table .qt-loading-row:only-child > td {
+  height: 6rem;
+  padding: 0.5rem;
+  border-width: 0;
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--muted-foreground);
+  text-align: center;
+  box-shadow: none;
 }
 
 /* Pagination block below the bordered table, as in shadcn's data-table
-   example. The consumer's slot content sits inside it; px-2.25 is the cell's
-   p-2 plus the 1px border, so the text lines up with the cell text. */
+   example. The consumer's slot content sits inside it; the inline padding
+   is the cell's 0.5rem plus the 1px border, so the text lines up with the
+   cell text. */
 .qt-pagination {
-  @apply px-2.25 py-4;
+  padding: 1rem 0.5625rem;
 }
 }
