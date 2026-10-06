@@ -271,64 +271,70 @@ sameSet(
 // function declaration in the module they come from.
 // ---------------------------------------------------------------------------
 
-const indexPath = at('packages', 'vue', 'src', 'index.ts')
-const indexFile = ts.createSourceFile(
-  indexPath,
-  read(indexPath),
-  ts.ScriptTarget.ES2022,
-  true
-)
-const functions = indexFile.statements
-  .filter(
-    statement =>
-      ts.isExportDeclaration(statement) &&
-      !statement.isTypeOnly &&
-      statement.moduleSpecifier &&
-      statement.exportClause &&
-      ts.isNamedExports(statement.exportClause)
+const functionsOf = indexPath => {
+  const indexFile = ts.createSourceFile(
+    indexPath,
+    read(indexPath),
+    ts.ScriptTarget.ES2022,
+    true
   )
-  .flatMap(statement => {
-    const modulePath = join(
-      dirname(indexPath),
-      `${statement.moduleSpecifier.text.replace(/^\.\//, '')}.ts`
+  return indexFile.statements
+    .filter(
+      statement =>
+        ts.isExportDeclaration(statement) &&
+        !statement.isTypeOnly &&
+        statement.moduleSpecifier &&
+        statement.exportClause &&
+        ts.isNamedExports(statement.exportClause)
     )
-    const file = ts.createSourceFile(
-      modulePath,
-      read(modulePath),
-      ts.ScriptTarget.ES2022,
-      true
-    )
-    // Inline type specifiers (`type X`) are types, not functions.
-    const values = statement.exportClause.elements.filter(
-      element => !element.isTypeOnly
-    )
-    return values.map(element => {
-      const name = (element.propertyName ?? element.name).text
-      const found = file.statements.find(
-        node => ts.isFunctionDeclaration(node) && node.name?.text === name
+    .flatMap(statement => {
+      const modulePath = join(
+        dirname(indexPath),
+        `${statement.moduleSpecifier.text.replace(/^\.\//, '')}.ts`
       )
-      if (!found) {
-        throw new Error(
-          `packages/vue/src/index.ts exports ${name}, but ${modulePath} declares no function of that name`
+      const file = ts.createSourceFile(
+        modulePath,
+        read(modulePath),
+        ts.ScriptTarget.ES2022,
+        true
+      )
+      // Inline type specifiers (`type X`) are types, not functions.
+      const values = statement.exportClause.elements.filter(
+        element => !element.isTypeOnly
+      )
+      return values.map(element => {
+        const name = (element.propertyName ?? element.name).text
+        const found = file.statements.find(
+          node => ts.isFunctionDeclaration(node) && node.name?.text === name
         )
-      }
-      const parameters = found.parameters
-        .map(parameter =>
-          parameter.initializer
-            ? `${parameter.name.getText()}?: ${parameter.type?.getText() ?? 'unknown'}`
-            : parameter.getText()
-        )
-        .join(', ')
-      return {
-        name: element.name.text,
-        type: `(${parameters}) => ${found.type?.getText() ?? 'void'}`.replace(
-          /\s+/g,
-          ' '
-        ),
-        description: docOf(found)
-      }
+        if (!found) {
+          throw new Error(
+            `${relative(root, indexPath)} exports ${name}, but ${modulePath} declares no function of that name`
+          )
+        }
+        const parameters = found.parameters
+          .map(parameter =>
+            parameter.initializer
+              ? `${parameter.name.getText()}?: ${parameter.type?.getText() ?? 'unknown'}`
+              : parameter.getText()
+          )
+          .join(', ')
+        return {
+          name: element.name.text,
+          type: `(${parameters}) => ${found.type?.getText() ?? 'void'}`.replace(
+            /\s+/g,
+            ' '
+          ),
+          description: docOf(found)
+        }
+      })
     })
-  })
+}
+const functionEntries = [
+  at('packages', 'vue', 'src', 'index.ts'),
+  at('packages', 'vue', 'src', 'local', 'index.ts')
+].map(functionsOf)
+const functions = functionEntries.flat()
 
 // ---------------------------------------------------------------------------
 // Markdown
@@ -393,7 +399,21 @@ const sections = [
   'Exported from the package entry point next to the component.',
   table(
     ['Name', 'Signature', 'Description'],
-    functions.map(item => [code(item.name), code(item.type), item.description])
+    functionEntries[0].map(item => [
+      code(item.name),
+      code(item.type),
+      item.description
+    ])
+  ),
+  '### Local evaluation (`@dolusoft/query-table/local`)',
+  'Opt-in data-source helpers, separate from the component and the default entry.',
+  table(
+    ['Name', 'Signature', 'Description'],
+    functionEntries[1].map(item => [
+      code(item.name),
+      code(item.type),
+      item.description
+    ])
   ),
   '## Types',
   'Exported from the package entry point (`packages/vue/src/contract.ts`).',

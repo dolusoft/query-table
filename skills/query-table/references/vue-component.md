@@ -52,6 +52,8 @@ const columns = shallowRef<Column[]>(initialColumns)
 - The sides are physical (`left`, `right`): an LTR layout is assumed.
 - None of these emits `update:query`.
 
+For a source with all rows already loaded, see [local query evaluation](local-query.md) (`useLocalQuery` from the opt-in `/local` entry).
+
 ## Page mode, with a pager
 
 ```vue

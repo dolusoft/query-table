@@ -75,6 +75,14 @@ Exported from the package entry point next to the component.
 | `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
 | `useQueryTable` | `(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>` | The state and actions of a server-side table: TanStack Table with `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed with the scope (C-62). |
 
+### Local evaluation (`@dolusoft/query-table/local`)
+
+Opt-in data-source helpers, separate from the component and the default entry.
+
+| Name | Signature | Description |
+| --- | --- | --- |
+| `useLocalQuery` | `(options: UseLocalQueryOptions<T>) => LocalQuery<T>` | Evaluates locally without rerunning filtering, search or sorting for a page-only change. |
+
 ## Types
 
 Exported from the package entry point (`packages/vue/src/contract.ts`).

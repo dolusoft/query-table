@@ -9,7 +9,7 @@ export interface PageApi {
   emits?: string[]
   slots?: string[]
   exposed?: string[]
-  /** Functions exported from src/index.ts next to the component. */
+  /** Functions exported from the default and opt-in local entries. */
   functions?: string[]
   /** Exported types of src/contract.ts. */
   types?: string[]
@@ -59,6 +59,15 @@ export const pages: PlaygroundPage[] = [
       'C-40',
       'C-41'
     ]
+  },
+  {
+    id: 'local-query',
+    title: 'Local query',
+    summary:
+      'All rows in memory: opt-in tr-1 filtering, search, sorting and paging, with an unpaged print view.',
+    example: 'LocalQuery',
+    api: { functions: ['useLocalQuery'] },
+    rules: ['C-75', 'C-76', 'C-77', 'C-78', 'C-79', 'C-80', 'C-81']
   },
   {
     id: 'filtering',
@@ -342,18 +351,4 @@ export const pages: PlaygroundPage[] = [
     },
     rules: ['C-22', 'C-44', 'C-45']
   }
-]
-
-/**
- * Rules whose page lands later in the same release: the local evaluator's
- * rules wait for the `local-query` page (PR-L3). Must be empty at release.
- */
-export const pendingRules: readonly string[] = [
-  'C-75',
-  'C-76',
-  'C-77',
-  'C-78',
-  'C-79',
-  'C-80',
-  'C-81'
 ]

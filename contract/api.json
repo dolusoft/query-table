@@ -258,6 +258,11 @@
       "name": "useQueryTable",
       "type": "(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>",
       "description": "The state and actions of a server-side table: TanStack Table with\n`serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed\nwith the scope (C-62)."
+    },
+    {
+      "name": "useLocalQuery",
+      "type": "(options: UseLocalQueryOptions<T>) => LocalQuery<T>",
+      "description": "Evaluates locally without rerunning filtering, search or sorting for a page-only change."
     }
   ],
   "types": [
