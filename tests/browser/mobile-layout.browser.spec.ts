@@ -119,3 +119,31 @@ test.each([
   },
   30_000
 )
+
+// The sorting page mixes sortable columns (title in a 2.5rem sort button on a
+// phone) with an unsortable one (title as plain text): every filter row of
+// the header must still start at the same height.
+test.each([375, 390])(
+  'filter rows share one top on the sorting page at %ipx',
+  async width => {
+    await page.viewport(width, 844)
+    await render(App, { global: { plugins: [router] } })
+    await router.push('/sorting')
+    await expect
+      .poll(() => document.querySelectorAll('thead .qt-title').length, {
+        timeout: 5000
+      })
+      .toBeGreaterThan(0)
+    await frame()
+    const tops = [
+      ...document.querySelectorAll<HTMLElement>(
+        '.qt-table thead tr:first-child .qt-filter'
+      )
+    ].map(filter => filter.getBoundingClientRect().top)
+    expect(tops.length).toBeGreaterThan(1)
+    for (const top of tops) {
+      expect(Math.abs(top - tops[0])).toBeLessThanOrEqual(1)
+    }
+  },
+  30_000
+)
