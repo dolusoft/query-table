@@ -12,5 +12,6 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0004](0004-state-ownership.md)             | The consumer owns lasting state; TanStack holds projections | Accepted |
 | [0005](0005-composable-and-component.md)    | `useQueryTable` and `QueryTable`, and the consumer fence    | Accepted |
 | [0006](0006-release-3.md)                   | Releasing 3.0.0: the `next` branch and the equivalence gate | Accepted |
+| [0008](0008-local-query-evaluation.md)      | Local query evaluation as a data source                     | Accepted |
 
 Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code.
