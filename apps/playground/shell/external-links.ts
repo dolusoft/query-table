@@ -1,8 +1,8 @@
 import { repositoryUrl } from '../home/home-content'
 
 // The small outside links with a logo: the TanStack Table docs, the GitHub
-// repository, its releases and `llms.txt`. The sidebar, the home page header,
-// the home page footer and the home page body show them from this one list.
+// repository, its releases and `llms.txt`. Two corners show them from this
+// one list: the sidebar footer and the home page footer.
 // `links.spec.ts` (`pnpm check:links`) asks the network about the absolute
 // URLs; `llms.txt` is a file of this site and is generated at build time.
 
@@ -16,7 +16,7 @@ export interface ExternalLink {
   local?: boolean
 }
 
-export const tanstackDocsUrl = 'https://tanstack.com/table/v9/docs/overview'
+const tanstackDocsUrl = 'https://tanstack.com/table/v9/docs/overview'
 
 export const externalLinks: ExternalLink[] = [
   { id: 'tanstack', label: 'TanStack Table', url: tanstackDocsUrl },
