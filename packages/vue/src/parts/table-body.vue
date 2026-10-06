@@ -8,10 +8,14 @@ import type {
   TableSlots
 } from '../contract'
 import { pinAttrs, utilityKey } from '../pin/pin'
-import type { ColumnEntry } from '../use-query-table'
+import type { BodyRow, ColumnEntry } from '../use-query-table'
 
 const props = defineProps<{
   rows: T[]
+  /** The rows in drawing order: pinned top, the others, pinned bottom (C-74). */
+  bodyRows: BodyRow<T>[]
+  /** Pin a row or unpin it (C-74). */
+  pinRow: (row: T, index: number, position: 'top' | 'bottom' | false) => void
   /** The consumer is fetching: no empty row, the `loading` row instead (C-52). */
   loading: boolean
   /** The columns to draw, hidden ones already dropped. */
@@ -51,7 +55,8 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
     entries: () => props.entries,
     offsets: () => props.offsets,
     listening: () => props.hasContextMenuListener(),
-    onContextMenu: payload => emit('cellContextMenu', payload)
+    onContextMenu: payload => emit('cellContextMenu', payload),
+    pinRow: (row, index, position) => props.pinRow(row, index, position)
   })
 
 // Utilities are pinned only with a left-pinned column (C-46, C-71).
@@ -64,9 +69,13 @@ const selectAttrs = () => utilityAttrs('select')
 
 <template>
   <tbody @contextmenu="onContextMenu">
-    <template v-for="(row, i) in rows" :key="keyOf(row, i)">
+    <template
+      v-for="{ row, index: i, pinned } in bodyRows"
+      :key="keyOf(row, i)"
+    >
       <tr
         :data-row-index="i"
+        :data-pinned-row="pinned || undefined"
         :data-expanded="isExpanded(row, i) ? '' : undefined"
         :data-selected="hasSelection && isSelected(row, i) ? '' : undefined"
       >
@@ -129,7 +138,7 @@ const selectAttrs = () => utilityAttrs('select')
           <td v-if="hasCellSlot(entry.column)" v-bind="cellAttrs(entry)">
             <slot
               :name="`cell-${entry.column.field}`"
-              v-bind="slotProps(row, entry.column, i)"
+              v-bind="slotProps(row, entry.column, i, pinned)"
             />
           </td>
           <td v-else v-bind="cellAttrs(entry)">
@@ -137,7 +146,11 @@ const selectAttrs = () => utilityAttrs('select')
           </td>
         </template>
       </tr>
-      <tr v-if="isExpanded(row, i)" class="qt-subtable-row">
+      <tr
+        v-if="isExpanded(row, i)"
+        class="qt-subtable-row"
+        :data-pinned-row="pinned || undefined"
+      >
         <td :colspan="columnCount">
           <slot name="subtable" :row="row" :row-index="i" />
         </td>

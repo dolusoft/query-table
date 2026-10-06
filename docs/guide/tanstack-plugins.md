@@ -267,6 +267,10 @@ If your backend only answers forward you can build `prev` yourself: see the stac
 
 Selection is TanStack's `rowSelectionFeature`, used as it is, except that its state is **yours**: pass `state.rowSelection`, and `onRowSelectionChange` tells you the new map (row key → `true`) instead of writing it. Nothing changes until you pass it back. Keys of rows that are not on the page stay in the map, and a selection change never emits a query (C-59). Keys are strings (use `getRowId`); convert a numeric id back before you send it to an API.
 
+## Row pinning
+
+Row pinning is TanStack's `rowPinningFeature`, controlled the same way: pass `state.rowPinning` (`{ top, bottom }`, row ids in pinning order) and `onRowPinningChange` tells you the new map. Draw `getTopRows()`, `getCenterRows()` and `getBottomRows()` in that order. With server data the row models hold only the rows of the page, so `keepPinnedRows` cannot bring back a row of another page: its id stays in the map and the row is not drawn until its page is shown. Use a real row identity (`getRowId`), never the index, or a pinned "row 3" is another row on the next page. `QueryTable` does this with `v-model:rowPinning` and `rowKey` (C-74). To show a pinned row on every page, add it to the rows you pass, once; with an unknown total it then counts toward a full page (C-23).
+
 ## Dispose
 
 TanStack's `TableFeature` has no dispose hook, so the plugins give you one. Call `dispose(table)` when the table goes away. It clears the pending debounce timers and makes the table inert: nothing it does later, a late timer included, emits an update (C-62). Two tables on one page share nothing.
@@ -322,7 +326,7 @@ export function replaceTheHandler(): string {
 
 ## What TanStack does, and what stays our own
 
-The rule behind the split: a behavior is first a TanStack option, then a thin plugin of ours, and only then framework code. TanStack holds the table state it models (sorting, pagination, column filters, column visibility, column order, column pinning, expansion), as a projection of your props, never a second copy ([ADR 0004](../decisions/0004-state-ownership.md)). Where TanStack's default differs from a Query Table rule, the plugin overrides it:
+The rule behind the split: a behavior is first a TanStack option, then a thin plugin of ours, and only then framework code. TanStack holds the table state it models (sorting, pagination, column filters, column visibility, column order, column pinning, row pinning, expansion), as a projection of your props, never a second copy ([ADR 0004](../decisions/0004-state-ownership.md)). Where TanStack's default differs from a Query Table rule, the plugin overrides it:
 
 | Rule                      | TanStack default                                                       | What the plugin does                                                                                                         |
 | ------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -337,6 +341,7 @@ The rule behind the split: a behavior is first a TanStack option, then a thin pl
 | C-67 column visibility    | TanStack keeps `columnVisibility`                                      | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns`                            |
 | C-69 column order         | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
 | C-71 right pinning        | `columnPinningFeature` computes offsets from `getSize()`               | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3)                      |
+| C-74 row pinning          | TanStack keeps `rowPinning`; `keepPinnedRows` shows pinned rows of other pages | the slice is controlled by the consumer; the row models hold only `rows`, so a key outside `rows` is not drawn; pinning a row to the position it has emits nothing |
 
 What stays **own**, outside TanStack (ADR 0004, decisions D3 and D10):
 

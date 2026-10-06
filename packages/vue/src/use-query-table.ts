@@ -32,8 +32,10 @@ import {
   globalFilteringFeature,
   rowExpandingFeature,
   rowPaginationFeature,
+  rowPinningFeature,
   rowSelectionFeature,
   rowSortingFeature,
+  type Row,
   tableFeatures,
   type Updater,
   useTable,
@@ -64,6 +66,7 @@ import type {
   PageCursors,
   PaginationSlotProps,
   QueryChangeReason,
+  RowPinning,
   RowSelection,
   SortDirection,
   TableProps,
@@ -85,6 +88,8 @@ const features = tableFeatures({
   // D3: start = left, end = right; order and region only, offsets are
   // measured by the table, not computed from sizes.
   columnPinningFeature,
+  // C-74: controlled by `rowPinning`; on only with `rowKey`.
+  rowPinningFeature,
   serverQueryFeature,
   filterInputFeature
 })
@@ -116,6 +121,11 @@ export interface UseQueryTableOptions<
   searchDebounce?: MaybeRefOrGetter<number | undefined>
   /** The selected rows; `undefined` turns selection off. */
   selection?: MaybeRefOrGetter<RowSelection | undefined>
+  /**
+   * The pinned rows (C-74); `undefined`, or no `rowKey`, turns row pinning
+   * off.
+   */
+  rowPinning?: MaybeRefOrGetter<RowPinning | undefined>
   /** Identity of a row. Without it the row index is the identity. */
   rowKey?: MaybeRefOrGetter<RowKey<T>>
   /** Rows can expand (the `subtable` column). Defaults to `false`. */
@@ -131,6 +141,29 @@ export interface UseQueryTableOptions<
    * (C-68).
    */
   onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void
+  /** Called with the new map when the user pins or unpins a row (C-74). */
+  onRowPinningChange?: (rowPinning: RowPinning) => void
+}
+
+/** A row of the body in drawing order (C-74). */
+export interface BodyRow<T> {
+  row: T
+  /** The row's index in `rows`. */
+  index: number
+  pinned: 'top' | 'bottom' | false
+}
+
+/** Row pinning (C-74), owned by the consumer. */
+export interface QueryTableRowPinning<T extends object> {
+  /** `rowPinning` and `rowKey` were given: rows can be pinned. */
+  enabled: ComputedRef<boolean>
+  /** The rows to draw: pinned to the top first, pinned to the bottom last. */
+  rows: ComputedRef<BodyRow<T>[]>
+  /**
+   * Pin a row or unpin it (`false`): tells the consumer the new map; nothing
+   * for the position the row has, or while row pinning is off.
+   */
+  pin: (row: T, index: number, position: 'top' | 'bottom' | false) => void
 }
 
 /** A column the table draws and its position in `columns`, hidden ones included. */
@@ -243,6 +276,7 @@ export interface QueryTable<T extends object, Q extends Query = TableQuery> {
   pagination: ComputedRef<PaginationSlotProps>
   expansion: QueryTableExpansion<T>
   selection: QueryTableSelection<T>
+  rowPinning: QueryTableRowPinning<T>
   /** The query a new action builds on (an update not yet answered included). */
   baseQuery: () => Q
 }
@@ -257,6 +291,14 @@ const defaultPageSizes = [10, 20, 30, 50, 100]
 /** Only the `true` entries: the selection a consumer stores. */
 const selectedOnly = (selection: RowSelection): RowSelection =>
   Object.fromEntries(Object.entries(selection).filter(([, value]) => value))
+
+const noPinnedRows: RowPinning = Object.freeze({
+  top: Object.freeze([]) as unknown as string[],
+  bottom: Object.freeze([]) as unknown as string[]
+})
+
+const sameKeys = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((key, i) => key === b[i])
 
 /**
  * The state and actions of a server-side table: TanStack Table with
@@ -273,6 +315,14 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   const columns = () => toValue(options.columns)
   const rowKey = () => toValue(options.rowKey)
   const hasSubtable = () => toValue(options.hasSubtable) ?? false
+  const pinnedRows = () => toValue(options.rowPinning)
+  // C-74: without a row identity an index would pin another row on the next
+  // page, so the map needs `rowKey`.
+  const pinningEnabled = computed(
+    () => rowKey() !== undefined && pinnedRows() !== undefined
+  )
+  const rowPinningState = () =>
+    pinningEnabled.value ? pinnedRows()! : noPinnedRows
 
   const keyOf = (row: T, index: number): string | number => {
     const key = rowKey()
@@ -391,6 +441,26 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
         applyPinning(columns(), functionalUpdate(updater, columnPinning.value)),
         'pin'
       ),
+    // C-74: the slice is controlled; a change is a new map for the consumer.
+    get enableRowPinning() {
+      return pinningEnabled.value
+    },
+    onRowPinningChange: (updater: Updater<RowPinning>) => {
+      if (!pinningEnabled.value) {
+        return
+      }
+      const current = rowPinningState()
+      const next = functionalUpdate(updater, current)
+      if (
+        !sameKeys(next.top, current.top) ||
+        !sameKeys(next.bottom, current.bottom)
+      ) {
+        options.onRowPinningChange?.({
+          top: [...next.top],
+          bottom: [...next.bottom]
+        })
+      }
+    },
     state: {
       get sorting() {
         return projection.value.state.sorting
@@ -415,6 +485,9 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       },
       get columnPinning() {
         return columnPinning.value
+      },
+      get rowPinning() {
+        return rowPinningState()
       }
     }
   } as never)
@@ -805,6 +878,43 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     toggleAll: value => table.toggleAllPageRowsSelected(value)
   }
 
+  // ---- row pinning (C-74) ---------------------------------------------------
+
+  const bodyRows = computed<BodyRow<T>[]>(() => {
+    // Off: the rows as given, without TanStack's row model (the 3.0 path).
+    if (!pinningEnabled.value) {
+      return rows().map((row, index) => ({ row, index, pinned: false }))
+    }
+    const of = (
+      row: Row<QueryTableFeatures, T>,
+      pinned: BodyRow<T>['pinned']
+    ): BodyRow<T> => ({ row: row.original, index: row.index, pinned })
+    return [
+      ...table.getTopRows().map(row => of(row, 'top')),
+      ...table.getCenterRows().map(row => of(row, false)),
+      ...table.getBottomRows().map(row => of(row, 'bottom'))
+    ]
+  })
+
+  const positionOf = (id: string): BodyRow<T>['pinned'] => {
+    const { top, bottom } = rowPinningState()
+    return top.includes(id) ? 'top' : bottom.includes(id) ? 'bottom' : false
+  }
+
+  const rowPinning: QueryTableRowPinning<T> = {
+    enabled: pinningEnabled,
+    rows: bodyRows,
+    pin: (row, index, position) => {
+      const id = idOf(row, index)
+      // TanStack moves a row pinned again to the end of its region; the rule
+      // is that the position the row has is no change.
+      if (!pinningEnabled.value || positionOf(id) === position) {
+        return
+      }
+      table.getRow(id, true)?.pin(position)
+    }
+  }
+
   return {
     table,
     columns: entries,
@@ -816,6 +926,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     pagination,
     expansion,
     selection,
+    rowPinning,
     baseQuery
   }
 }

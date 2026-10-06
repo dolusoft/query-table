@@ -175,5 +175,10 @@ export const usedTanstackFeatures: Array<{
     feature: 'columnPinningFeature',
     guide: 'column-pinning',
     role: 'The regions of pinned columns, a projection of `Column.pinned` (`start` is left, `end` is right); the sticky offsets are measured by the table.'
+  },
+  {
+    feature: 'rowPinningFeature',
+    guide: 'row-pinning',
+    role: 'The pinned rows, controlled by the consumer (`v-model:rowPinning`, keyed by `rowKey`); the body draws the top, center and bottom rows in that order.'
   }
 ]

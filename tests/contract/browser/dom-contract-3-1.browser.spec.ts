@@ -7,7 +7,7 @@ import { createCollector } from '../../support/dom-collector'
 import { makeQuery, rows } from '../../support/fixtures'
 
 // C-72: with the 3.1 features on, the table renders the hooks the DOM
-// contract marks `addedBy` C-71 and C-73 (C-74 comes with row pinning), each
+// contract marks `addedBy` C-71, C-73 and C-74, each
 // on its element, and nothing outside the contract. Not compared with a
 // 3.0.0 baseline (`ADDED_AFTER_BASELINE`); C-40 covers the table with them
 // off.
@@ -85,9 +85,33 @@ test('C-72 the DOM with 3.1 features matches the DOM contract', async () => {
   handle.dispatchEvent(new PointerEvent('pointercancel', pointer(0, 0)))
   cleanup()
 
+  // C-74: a pinned row with its subtable row open.
+  await render(QueryTable as never, {
+    props: {
+      columns: [
+        { field: 'id', title: 'ID', type: 'number' },
+        { field: 'name', title: 'Name' }
+      ],
+      rows: rows(3).map(row =>
+        row.id === 2 ? { ...row, isExpanded: true } : row
+      ),
+      totalRows: 3,
+      query: makeQuery(),
+      rowKey: 'id',
+      rowPinning: { top: ['2'], bottom: [] },
+      hasSubtable: true
+    } as never,
+    slots: { subtable: '<span>details</span>' }
+  })
+  await frames()
+  dom.collect()
+  cleanup()
+
   dom.expectNothingOutsideContract()
   const added = (entry: { addedBy?: string }) =>
-    entry.addedBy === 'C-71' || entry.addedBy === 'C-73'
+    entry.addedBy === 'C-71' ||
+    entry.addedBy === 'C-73' ||
+    entry.addedBy === 'C-74'
   dom.expectEntriesRendered(added)
   dom.expectInlineStyles(added)
 })

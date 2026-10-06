@@ -184,6 +184,13 @@ export const domAttributes: AttributeEntry[] = [
     description: 'Present on an expanded row.'
   },
   {
+    name: 'data-pinned-row',
+    on: 'tbody > tr',
+    description:
+      '`top` or `bottom` on a pinned row and on its subtable row (C-74).',
+    addedBy: 'C-74'
+  },
+  {
     name: 'data-selected',
     on: 'tbody > tr',
     description: 'Present on a selected row (C-64).',

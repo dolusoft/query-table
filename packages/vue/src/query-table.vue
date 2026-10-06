@@ -35,6 +35,7 @@ defineOptions({ name: 'QueryTable' })
 const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   cursors: null,
   selection: undefined,
+  rowPinning: undefined,
   searchDebounce: 300,
   rows: () => [],
   totalRows: null,
@@ -68,12 +69,14 @@ const state = useQueryTable<T, Q>({
   filterDebounce: () => props.filterDebounce,
   searchDebounce: () => props.searchDebounce,
   selection: () => props.selection,
+  rowPinning: () => props.rowPinning,
   rowKey: () => props.rowKey,
   hasSubtable: () => props.hasSubtable,
   pageSizeOptions: () => props.pagination?.pageSizeOptions,
   onQueryChange: (query, reason) => emit('update:query', query, reason),
   onSelectionChange: selection => emit('update:selection', selection),
-  onColumnsChange: (columns, reason) => emit('update:columns', columns, reason)
+  onColumnsChange: (columns, reason) => emit('update:columns', columns, reason),
+  onRowPinningChange: rowPinning => emit('update:rowPinning', rowPinning)
 })
 const { filters, sort, search, expansion } = state
 const rowSelection = state.selection
@@ -253,6 +256,8 @@ defineExpose(exposed)
         </thead>
         <table-body
           :rows="rows"
+          :body-rows="state.rowPinning.rows.value"
+          :pin-row="state.rowPinning.pin"
           :loading="loading"
           :entries="entries"
           :column-count="columnCount"

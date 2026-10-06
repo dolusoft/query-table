@@ -17,6 +17,7 @@ A `Source:` line under a rule says where its behavior comes from in v3 (ADR 0004
 | C-67 column visibility | TanStack keeps `columnVisibility` | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns` |
 | C-69 column order | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
 | C-71 right pinning | `columnPinningFeature` computes offsets from `getSize()` | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3) |
+| C-74 row pinning | TanStack keeps `rowPinning`; `keepPinnedRows` shows pinned rows of other pages; `row.pin` moves a row already at that position to the end | the slice is controlled (`state.rowPinning` is the consumer's, `onRowPinningChange` tells it); in server mode the row models hold only `rows`, so a key outside `rows` is not drawn; pinning a row to the position it has emits nothing |
 
 ### C-01 The table is controlled
 
@@ -170,7 +171,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 ### C-27 Cell slots
 
-`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`. A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
+`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`, and `rowPinned` and `pinRow` (C-74). A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 ### C-28 Context menu
 
@@ -190,7 +191,7 @@ The table ships no CSS and takes no styling props. It writes three inline styles
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74). `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -391,5 +392,11 @@ Source: own
 ### C-73 Reorder handle
 
 With the table's `reorderable` and the column's `reorderable` not `false`, the header cell starts with a `button.qt-reorder-handle` (`type="button"`), named by `labels.moveColumn` and carrying `aria-keyshortcuts="ArrowLeft ArrowRight Home End"`. Pressing the primary button on it focuses it and captures the pointer; while it moves, the dragged header cell carries `data-dragging` and the visible header cell of the same region under the pointer carries `data-drop` (`before` or `after`, by the half the pointer is over). Nothing is emitted and nothing is moved in the DOM during the drag. Releasing emits one `update:columns` with reason `order` that places the column before or after that cell (C-69); a release where the order stays emits nothing. Escape, a `pointercancel`, a lost pointer capture or a change of `columns` from outside ends the drag without an event and drops the attributes. On a focused handle, ArrowLeft and ArrowRight move the column one visible position in its region (C-69), Home and End to the start and the end of the region; each key is one `update:columns`, and a key at the edge does nothing. A key held with Alt, Ctrl or Meta is left to the browser. When the consumer writes the new order back and the handle had the focus, the focus returns to the handle of the same column. Nothing on the handle sorts: pointer, click and keys on it never emit `update:query`. The table draws no live region: announcing the new position is the consumer's, from `update:columns`.
+
+Source: tanstack, own
+
+### C-74 Row pinning
+
+The pinned rows are the consumer's: `rowPinning` is `{ top, bottom }`, row keys (`rowKey` as a string) in the order they were pinned, used with `v-model:rowPinning`. With `rowPinning` and `rowKey` given, the rows of `rows` whose key is in `top` are drawn first and those in `bottom` last, in map order, the others between them in the order of `rows`; a pinned row carries `data-pinned-row` (`top` or `bottom`), and so does its `qt-subtable-row`, which follows it. `data-row-index` stays the row's index in `rows` (C-28). A key whose row is not in `rows` is not drawn and stays in the map: the table never asks for a row. The `cell-<field>` slot receives `rowPinned` (`'top'`, `'bottom'` or `false`) and `pinRow(position)`, which emits one `update:rowPinning` with the new map (`false` unpins) and changes nothing until the consumer passes it back; pinning to the position the row has emits nothing. Without `rowKey` the prop is ignored and `pinRow` does nothing: an index is not a row identity across pages. Row pinning never emits `update:query`. A consumer that wants a pinned row on every page adds it to `rows` itself, once (keys stay unique, C-26); with an unknown total such a row counts for `canNext` (C-23).
 
 Source: tanstack, own

@@ -28,6 +28,15 @@ import { VNode } from 'vue';
 import { VueTable } from '@tanstack/vue-table';
 
 // @public
+export interface BodyRow<T> {
+    index: number;
+    // (undocumented)
+    pinned: 'top' | 'bottom' | false;
+    // (undocumented)
+    row: T;
+}
+
+// @public
 export interface CellContextMenuPayload<T> {
     cellValue: unknown;
     column: Column;
@@ -46,10 +55,12 @@ export interface CellSlotProps<T> {
     cellValue: unknown;
     // (undocumented)
     column: Column;
+    pinRow: (position: 'top' | 'bottom' | false) => void;
     // (undocumented)
     row: T;
     // (undocumented)
     rowIndex: number;
+    rowPinned: 'top' | 'bottom' | false;
 }
 
 // @public
@@ -249,6 +260,13 @@ export interface QueryTableLayout {
 }
 
 // @public
+export interface QueryTableRowPinning<T extends object> {
+    enabled: ComputedRef<boolean>;
+    pin: (row: T, index: number, position: 'top' | 'bottom' | false) => void;
+    rows: ComputedRef<BodyRow<T>[]>;
+}
+
+// @public
 export interface QueryTableSearch {
     apply: () => boolean;
     set: (text: string) => void;
@@ -286,6 +304,8 @@ export interface QueryTableState<T extends object, Q extends Query = TableQuery>
     layout: QueryTableLayout;
     pagination: ComputedRef<PaginationSlotProps>;
     // (undocumented)
+    rowPinning: QueryTableRowPinning<T>;
+    // (undocumented)
     search: QueryTableSearch;
     // (undocumented)
     selection: QueryTableSelection<T>;
@@ -296,6 +316,14 @@ export interface QueryTableState<T extends object, Q extends Query = TableQuery>
 
 // @public
 export type RowKey<T extends object> = TableProps<T>['rowKey'];
+
+// @public
+export interface RowPinning {
+    // (undocumented)
+    bottom: string[];
+    // (undocumented)
+    top: string[];
+}
 
 // @public
 export type RowSelection = Record<string, boolean>;
@@ -320,6 +348,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     cellContextMenu: [payload: CellContextMenuPayload<T>];
     columnResize: [payload: ColumnResizePayload];
     'update:columns': [columns: Column[], reason: ColumnChangeReason];
+    'update:rowPinning': [rowPinning: RowPinning];
 };
 
 // @public
@@ -354,6 +383,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     reorderable?: boolean;
     resizable?: boolean;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
+    rowPinning?: RowPinning;
     rows?: T[];
     searchDebounce?: number;
     selection?: RowSelection;
@@ -396,10 +426,12 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     hasSubtable?: MaybeRefOrGetter<boolean | undefined>;
     onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void;
     onQueryChange: (query: Q, reason: QueryChangeReason) => void;
+    onRowPinningChange?: (rowPinning: RowPinning) => void;
     onSelectionChange?: (selection: RowSelection) => void;
     pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>;
     query: MaybeRefOrGetter<Q>;
     rowKey?: MaybeRefOrGetter<RowKey<T>>;
+    rowPinning?: MaybeRefOrGetter<RowPinning | undefined>;
     rows?: MaybeRefOrGetter<T[] | undefined>;
     searchDebounce?: MaybeRefOrGetter<number | undefined>;
     selection?: MaybeRefOrGetter<RowSelection | undefined>;

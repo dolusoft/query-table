@@ -18,6 +18,8 @@ export interface CellViewOptions<T extends object> {
   /** Someone listens to `cellContextMenu`; without one the menu is left alone. */
   listening: () => boolean
   onContextMenu: (payload: CellContextMenuPayload<T>) => void
+  /** Pin a row or unpin it (C-74). */
+  pinRow: (row: T, index: number, position: 'top' | 'bottom' | false) => void
 }
 
 /**
@@ -85,12 +87,15 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
   const slotProps = (
     row: T,
     column: Column,
-    rowIndex: number
+    rowIndex: number,
+    rowPinned: CellSlotProps<T>['rowPinned']
   ): CellSlotProps<T> => ({
     row,
     rowIndex,
     column,
-    cellValue: valueAt(row, column.field)
+    cellValue: valueAt(row, column.field),
+    rowPinned,
+    pinRow: position => options.pinRow(row, rowIndex, position)
   })
 
   return { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu }
