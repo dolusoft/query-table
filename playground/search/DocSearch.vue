@@ -20,6 +20,7 @@ import {
   createSearchIndex,
   groupByPage,
   highlight,
+  homePageId,
   searchDocs,
   snippet,
   type SearchHit
@@ -67,7 +68,7 @@ const choose = (hit: SearchHit) => {
   <CommandDialog
     v-model:open="open"
     title="Search the documentation"
-    description="Props, events, slots, methods, types, rules and pages"
+    description="Props, events, slots, methods, types, rules, pages and home page sections"
     class="top-[12vh] sm:max-w-xl max-sm:top-0 max-sm:left-0 max-sm:h-dvh max-sm:max-w-none max-sm:translate-x-0 max-sm:rounded-none!"
   >
     <div data-slot="command-input-wrapper" class="p-1 pb-0">
@@ -127,6 +128,7 @@ const choose = (hit: SearchHit) => {
                   class="truncate font-medium"
                   :class="
                     hit.kind !== 'page' &&
+                    hit.kind !== 'section' &&
                     hit.kind !== 'rule' &&
                     'font-mono text-xs'
                   "
@@ -175,6 +177,14 @@ const choose = (hit: SearchHit) => {
             </CommandItem>
           </CommandGroup>
           <CommandGroup heading="Pages">
+            <CommandItem value="page:home" @select="go(homePageId, '')">
+              <Badge
+                variant="outline"
+                class="w-16 font-mono text-[10px] text-muted-foreground uppercase"
+                >page</Badge
+              >
+              Home
+            </CommandItem>
             <CommandItem
               v-for="page in pages"
               :key="page.id"
