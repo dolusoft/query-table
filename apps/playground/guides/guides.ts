@@ -32,11 +32,14 @@ export const guidePages: GuidePage[] = [
   }
 ]
 
-/** Raw files of a branch on GitHub: what an agent downloads. */
-const rawBase = 'https://raw.githubusercontent.com/dolusoft/query-table/next'
+/**
+ * Raw files of `main` on GitHub: what an agent downloads. `main` holds the
+ * latest release, and the Pages site that links here is built from it.
+ */
+const rawBase = 'https://raw.githubusercontent.com/dolusoft/query-table/main'
 
 /** A file of the repository, shown on GitHub. */
-export const blobUrl = (path: string) => `${repositoryUrl}/blob/next/${path}`
+export const blobUrl = (path: string) => `${repositoryUrl}/blob/main/${path}`
 
 /** The files of the Claude Code skill, relative to the repository root. */
 export const skillFiles = [

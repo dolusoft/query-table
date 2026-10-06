@@ -4,7 +4,7 @@ Read this before changing anything. It is short on purpose; the details live in 
 
 ## Where the rules are
 
-- [PRINCIPLES.md](PRINCIPLES.md): the boundaries. A change that crosses one changes the principle first, in its own pull request, approved by a code owner. On `next` the file is a v3 draft awaiting approval.
+- [PRINCIPLES.md](PRINCIPLES.md): the boundaries. A change that crosses one changes the principle first, in its own pull request, approved by a code owner.
 - [docs/decisions/](docs/decisions/README.md): the v3 architecture decisions (ADRs). Do not work against one; propose a new record that supersedes it.
 - [contract/rules.md](contract/rules.md): the behavior rules `C-nn`. Rule, test, code and generated docs move together (P12).
 - [CONTRIBUTING.md](CONTRIBUTING.md): layout, commands, measuring, releasing.

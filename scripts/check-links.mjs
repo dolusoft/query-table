@@ -1,7 +1,7 @@
 // `pnpm check:links` (opt-in, needs a network): every external link of the
 // playground guide pages must answer 200. Runs apps/playground/guides/links.spec.ts
 // with CHECK_LINKS set. `LINK_BRANCH=<branch>` checks the skill files on a
-// branch that is not merged into `next` yet.
+// branch that is not merged into `main` yet.
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 
