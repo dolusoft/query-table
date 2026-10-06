@@ -4,6 +4,7 @@ import { computed, defineAsyncComponent, ref, watch, type Component } from 'vue'
 import ApiPanel from './ApiPanel.vue'
 import RuleList from './RuleList.vue'
 import type { PlaygroundPage } from '../manifest'
+import { sectionAnchors } from '../search/anchors'
 
 // One page: the live example, its source (the same file, imported raw), the
 // API members it shows and the behavior rules it covers.
@@ -40,10 +41,10 @@ watch(
         {{ page.summary.replaceAll('`', '') }}
       </p>
     </header>
-    <section aria-label="Example">
+    <section :id="sectionAnchors.example" aria-label="Example">
       <component :is="example" :key="page.id" />
     </section>
-    <section aria-label="Source">
+    <section :id="sectionAnchors.source" aria-label="Source">
       <h2 class="pb-2 text-lg font-semibold">Source</h2>
       <p class="pb-2 text-xs text-muted-foreground">
         playground/examples/{{ page.example }}.vue

@@ -73,6 +73,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
+    "@lucide/vue": "^1.52.0",
     "@microsoft/api-extractor": "^7.59.3",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.4",
@@ -95,6 +96,7 @@
     "globals": "^17.13.0",
     "happy-dom": "^20.14.5",
     "knip": "^6.39.0",
+    "minisearch": "^7.2.0",
     "playwright": "^1.63.0",
     "prettier": "^3.9.9",
     "publint": "^0.3.25",

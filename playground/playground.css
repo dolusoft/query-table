@@ -31,3 +31,21 @@
     min-height: 2.5rem;
   }
 }
+
+/* The element a documentation search result points to, marked for a moment
+   after the page scrolls to it (playground/search/reveal.ts). */
+[data-search-target] {
+  animation: search-target 1.6s ease-out;
+}
+
+@keyframes search-target {
+  0%,
+  40% {
+    background-color: color-mix(in oklab, var(--ring) 30%, transparent);
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
