@@ -20,24 +20,31 @@ const names = (name: string) =>
 const root = (name: string) =>
   section(name).querySelector<HTMLElement>('.qt-datatable')!
 
-// Short server delay, then ask the tables for a new answer.
+// A short server delay, and a new request on both tables: it replaces the
+// ones the page sent on mount with the default delay, so no test waits 1.5 s.
 const fast = async () => {
   await userEvent.selectOptions(
     page.getByRole('combobox', { name: 'Server delay' }),
     '300'
   )
+  await userEvent.click(page.getByRole('button', { name: 'Reload' }))
+  await userEvent.click(page.getByRole('button', { name: 'Load from empty' }))
 }
 
-test('the first load shows one skeleton row per row of the page, then the people', async () => {
+test('the first load shows one skeleton row per row of the page, as tall as the people that replace them', async () => {
   await render(LoadingSkeleton)
   await fast()
-  await userEvent.click(page.getByRole('button', { name: 'Load from empty' }))
   expect(root('First load').hasAttribute('data-loading')).toBe(true)
   expect(root('First load').getAttribute('aria-busy')).toBe('true')
   expect(bodyRows('First load')).toHaveLength(5)
   // Six columns, five rows; the cells hold bars and no text.
   expect(bars('First load')).toBe(30)
   expect(bodyRows('First load')[0].textContent?.trim()).toBe('')
+  const heights = () =>
+    bodyRows('First load').map(row =>
+      Math.round(row.getBoundingClientRect().height)
+    )
+  const skeleton = heights()
   await expect.poll(() => bars('First load'), { timeout: 3000 }).toBe(0)
   expect(root('First load').hasAttribute('data-loading')).toBe(false)
   expect(names('First load')).toEqual([
@@ -47,18 +54,7 @@ test('the first load shows one skeleton row per row of the page, then the people
     'Dave',
     'Eve'
   ])
-})
-
-test('a skeleton row is as tall as a row of people, so nothing moves', async () => {
-  await render(LoadingSkeleton)
-  await fast()
-  await userEvent.click(page.getByRole('button', { name: 'Load from empty' }))
-  const heights = () =>
-    bodyRows('First load').map(row =>
-      Math.round(row.getBoundingClientRect().height)
-    )
-  const skeleton = heights()
-  await expect.poll(() => bars('First load'), { timeout: 3000 }).toBe(0)
+  // Nothing moves when the people arrive.
   expect(heights()).toEqual(skeleton)
 })
 
