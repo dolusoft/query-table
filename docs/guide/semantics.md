@@ -19,7 +19,7 @@ The numbers in parentheses, such as (case C27), name the cases of the conformanc
 ## Reading values
 
 - A field's value is read with the field's `get(row)`, or else by the dotted path of the field name: the name is split at `.`, and each step is a case-sensitive property read, the same way the table reads a cell (C-30); an array index is read as `items.0`. When a step meets a null or missing value, the result is **missing**. A property whose name contains a dot cannot be read by path; it needs a `get`. Field names are not normalized.
-- In JavaScript a path step reads own and inherited properties, as the table does; use names that are not on `Object.prototype`. A .NET evaluator sees only the row's own properties.
+- Implementation note (not part of the profile's meaning): in JavaScript a path step reads own and inherited properties, as the table does, while a .NET evaluator typically sees only the row's own properties. Use field names that are not on `Object.prototype`. The conformance suite does not cover this difference.
 - `undefined`, missing and `null` are the same: **null**. No other value is null (`''`, `0` and `false` are not).
 - `get` is synchronous, deterministic and free of side effects; in one evaluation it is called **at most once** per row for each field that is used. If it throws, the result is `invalid-data` (`field`, `row`). If it returns a promise, that does not fit the type and is `invalid-data` too.
 - Before evaluation starts, the **used** fields of every row (in the order of [Validation order](#validation-order)) are type-checked; the first value that does not fit is `invalid-data`. Fields that are not used are not read (case C27). When a row is not an object, all of its fields are missing; its `key` is then null, which is `invalid-data`.
@@ -73,7 +73,7 @@ Two texts `a` and `b` are composed first (`C`), then compared:
 
    The class decides first, then the order inside the class; the first unit that differs decides. When one text is a prefix of the other, the shorter one comes first.
 
-2. **Tertiary:** when the primary level is equal, `C(a)` and `C(b)` ordinally (`String.CompareOrdinal`). **Two different composed texts are never equal.** `I` + U+0307 + `pek` and `İpek` compose to the same text, and the tie is broken by the `key`.
+2. **Tertiary:** when the primary level is equal, `C(a)` and `C(b)` ordinally (`String.CompareOrdinal`). **Two different composed texts are never equal.** `Ipek` written as U+0049 U+0307 `pek` and `İpek` written as U+0130 `pek` compose to the same text, and the tie is broken by the `key`.
 
 Consequences: `"50%_off" < "Ankara" < "IĞDIR" < "Iğdır" < "ırmak" < "Istanbul" < "istanbul" < "İzmir"`; `"ALİ" < "Ali" < "ali"` (case C44). Numbers inside text are not numbers: `"dosya10" < "dosya2"`, `"1072" < "128"` (case C36).
 
@@ -151,7 +151,7 @@ The table's filter menu does not offer `GreaterThanOrEqual` and `LessThanOrEqual
 - `sort: null` → the order of `allRows` ([Source context](#source-context); case C56).
 - With a `sort`, values are ordered by the comparison of their type. Null is the smallest: first in `asc`, last in `desc`.
 - `desc` reverses the whole value comparison, the tertiary level included.
-- Equal values are broken by **`key` ascending**, whatever the direction. Comparing keys: an `integer` key numerically; a `string` key by the ordinal UTF-16 order of the **raw** value (no composition, no folding): `"1" < "10" < "2"`, and `"é"` and `"e"` + U+0301 are two different identities (case C57).
+- Equal values are broken by **`key` ascending**, whatever the direction. Comparing keys: an `integer` key numerically; a `string` key by the ordinal UTF-16 order of the **raw** value (no composition, no folding): `"1" < "10" < "2"`, and `é` written as U+00E9 and `é` written as U+0065 U+0301 are two different identities (case C57).
 - The `key` must be unique; a repeat is `duplicate-key` (`field`, `row` = the index of the second occurrence), even on a row that is filtered out or off the page. A null `key` is `invalid-data`.
 - The result is total: the same input gives the same order on every engine.
 
@@ -203,6 +203,30 @@ The order in which `dataset.fields` is written carries no meaning anywhere (Java
 
 `path` is a JSON Pointer into the query (`/filters/2/value`); `''` is the query itself. `rule` is the index into `query.filters`, `row` the zero-based index into `allRows`, `name` the key or condition of an `unsupported-extension`. The codes and the location fields are part of the conformance suite; `message` is not (it is English, for logs, never shown as it is and never compared). The codes **do not imply an HTTP status**: query errors may map to 400, while broken stored data and a repeated identity are server or data errors; the backend adapter decides the mapping.
 
+### Error locations
+
+An error carries exactly the location fields below, no more and no fewer; `i` is the index of the rule in `query.filters`. The conformance suite compares the error without `message` to the expected object as a whole.
+
+| Code                           | Fields                          | `path`                                                                                       |
+| ------------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------- |
+| `unknown-profile`              | `code` only                     | —                                                                                            |
+| `invalid-query`                | `path`                          | `''` (the query), `/sort`, `/sort/field`, `/sort/direction`, `/filters`, `/search`           |
+| `invalid-query` (rule)         | `path`, `rule`                  | `/filters/i` (not an object), `/filters/i/field`, `/filters/i/condition`, `/filters/i/value` |
+| `cursor-not-supported`         | `path`                          | `/cursor`                                                                                    |
+| `invalid-page`                 | `path`                          | `/page` or `/pageSize`                                                                       |
+| `unsupported-extension`        | `name`, `path`                  | the reserved key: `/sorts`, `/any`, `/group`, `/aggregates`                                  |
+| `unsupported-extension` (rule) | `name`, `path`, `field`, `rule` | `/filters/i/condition` (`name` is `IsNull` or `IsNotNull`)                                   |
+| `unknown-field`                | `field`, `path`                 | `/sort/field`                                                                                |
+| `unknown-field` (rule)         | `field`, `path`, `rule`         | `/filters/i/field`                                                                           |
+| `unsupported-field`            | `field`, `path`                 | `/sort/field`                                                                                |
+| `unsupported-field` (rule)     | `field`, `path`, `rule`         | `/filters/i/field`                                                                           |
+| `unsupported-operator`         | `field`, `path`, `rule`         | `/filters/i/condition`                                                                       |
+| `invalid-value`                | `field`, `path`, `rule`         | `/filters/i/value`                                                                           |
+| `invalid-value` (search)       | `path`                          | `/search`                                                                                    |
+| `search-not-supported`         | `path`                          | `/search`                                                                                    |
+| `invalid-data`                 | `field`, `row`                  | —                                                                                            |
+| `duplicate-key`                | `field`, `row`                  | —                                                                                            |
+
 ## Versioning
 
 There are four separate versions; none implies another.
@@ -241,7 +265,7 @@ Rules:
 
 ## Implementing in .NET
 
-The profile is written so that a .NET evaluator can follow it line by line, including in containers that run with `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true`, where `Normalize()` returns the text unchanged and culture-aware comparisons fall back to ordinal ones.
+The profile is written so that a .NET evaluator can follow it line by line, including in containers that run with `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true`, where culture-aware operations do not behave as they do with ICU. Do not call `Normalize()`: the profile never normalizes.
 
 - **Text is `char`, not `Rune`.** Walk a string with an index over its `char`s. Check for unpaired surrogates with `char.IsHighSurrogate` and `char.IsLowSurrogate` before anything else.
 - **`C`, `S` and `M` are `switch` statements on `char`**, written from the tables above. Do not use `ToLowerInvariant`, `ToUpperInvariant`, `ToLower(culture)`, `Normalize()`, `CompareInfo` or `StringComparer.Create(culture, …)`: none of them gives `tr-1`, and in invariant mode they give something else again.
@@ -250,25 +274,25 @@ The profile is written so that a .NET evaluator can follow it line by line, incl
 // C: compose one pair of code units, or return '\0' when the pair is not in the table.
 static char Compose(char c, char mark) => (c, mark) switch
 {
-    ('I', '̇') => 'İ',
-    ('C', '̧') => 'Ç', ('c', '̧') => 'ç',
-    ('G', '̆') => 'Ğ', ('g', '̆') => 'ğ',
-    ('O', '̈') => 'Ö', ('o', '̈') => 'ö',
-    ('S', '̧') => 'Ş', ('s', '̧') => 'ş',
-    ('U', '̈') => 'Ü', ('u', '̈') => 'ü',
+    ('I', '\u0307') => '\u0130',
+    ('C', '\u0327') => '\u00C7', ('c', '\u0327') => '\u00E7',
+    ('G', '\u0306') => '\u011E', ('g', '\u0306') => '\u011F',
+    ('O', '\u0308') => '\u00D6', ('o', '\u0308') => '\u00F6',
+    ('S', '\u0327') => '\u015E', ('s', '\u0327') => '\u015F',
+    ('U', '\u0308') => '\u00DC', ('u', '\u0308') => '\u00FC',
     _ => '\0'
 };
 
 // S: the sort fold of one composed code unit.
 static char FoldSort(char c) => c switch
 {
-    'I' => 'ı',
-    'İ' => 'i',
-    'Ç' => 'ç',
-    'Ğ' => 'ğ',
-    'Ö' => 'ö',
-    'Ş' => 'ş',
-    'Ü' => 'ü',
+    'I' => '\u0131',
+    '\u0130' => 'i',
+    '\u00C7' => '\u00E7',
+    '\u011E' => '\u011F',
+    '\u00D6' => '\u00F6',
+    '\u015E' => '\u015F',
+    '\u00DC' => '\u00FC',
     >= 'A' and <= 'Z' => (char)(c + 0x20),
     _ => c
 };
@@ -277,7 +301,7 @@ static char FoldSort(char c) => c switch
 static char FoldMatch(char c)
 {
     char s = FoldSort(c);
-    return s == 'ı' ? 'i' : s;
+    return s == '\u0131' ? 'i' : s;
 }
 ```
 
@@ -300,4 +324,4 @@ static long DaysFromCivil(long y, long m, long d)
 ```
 
 - **Paging uses `long` and `checked`.** Return an empty page when `page - 1 >= ceil(n / pageSize)`, computed as `n == 0 ? 0 : (n - 1) / pageSize + 1`, before multiplying; then `checked((page - 1) * pageSize)` cannot overflow.
-- **Reading values** sees only the row's own properties (see [Reading values](#reading-values)); keep field names off the names JavaScript inherits from `Object.prototype`, so both sides read the same thing.
+- **Reading values** by path on a .NET object usually sees only its own properties, while JavaScript also reads inherited ones (the implementation note in [Reading values](#reading-values)); keep field names off the names JavaScript inherits from `Object.prototype`, so both sides read the same thing.

@@ -6,7 +6,7 @@ Status: Accepted (2026-10-06)
 
 Some tables hold every row in the browser: a report drill-down, a disk list, a list of completed jobs. In frontendx they run today on the old `vue3-datatable` with `is-server-mode="false"`, or on a `computed` that sorts by hand. Query Table only knows the server side (P1), so these tables cannot move to it; if they did, each would write its own sorting code and each would give a different order.
 
-The goal is that a table moved to Query Table can later move from local data to a server **by changing only its data source**: the template, the columns and the query stay. That needs one meaning of a `Query`, written down, that a local evaluation and a backend both follow. Today there is none: the backend paths (ClickHouse, Mongo, an in-memory list) differ from each other in case folding, null order and wildcard handling, and none of them folds the Turkish `İ`/`ı`.
+The goal is that a table moved to Query Table can later move from local data to a server **by changing only its data source**: the template, the columns and the query stay. The promise is conditional: equivalent results require the same dataset semantics, source scope, snapshot, default order, and supported query capabilities. That needs one meaning of a `Query`, written down, that a local evaluation and a backend both follow. Today there is none: the backend paths (ClickHouse, Mongo, an in-memory list) differ from each other in case folding, null order and wildcard handling, and none of them folds the Turkish `İ`/`ı`.
 
 Three designs were weighed:
 
@@ -34,7 +34,8 @@ Three designs were weighed:
 - The protocol package gets a second API report (`etc/query-protocol-local.api.md`), and the Vue package a second one for its `/local` entry. The reports of the default entries do not change.
 - The layer rule gains the `local` parts in both directions, and a check of the built entry graph stands next to it: the lint rule alone cannot see a path through a shared chunk.
 - `semantics.md` is a draft until the filters and search land; `tr-1` freezes with 3.1.0.
-- The backend aligns to the document, not the other way round. Its known divergences are tracked in `dolusoft/gecko-project-backend#1168`; until an endpoint passes the suite with zero applicable failures, moving a table to it may change what the table shows.
+- The backend aligns to the document, not the other way round. Its known divergences are tracked in `dolusoft/gecko-project-backend#1168`; until an endpoint passes the suite with zero applicable failures, moving a table to it may change what the table shows. An endpoint that passes only with entries in an allowlist is "partially aligned", not conformant.
+- Passing the suite is necessary, not sufficient. When the local source and the endpoint differ in dataset semantics, source scope, snapshot or default order, a different result is use outside the contract, not a fault of either evaluator. The default order is an obligation of the data source: with `sort: null` the local evaluator keeps the order of `allRows`, so the local snapshot must come in the order the endpoint returns by default (a stable order field where needed).
 
 ## Trade-off
 
