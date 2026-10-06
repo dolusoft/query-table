@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { pages, type PageApi } from './manifest'
+import { pages, type PageApi, pendingRules } from './manifest'
 import api from '../../contract/api.json'
 
 // The playground must show the whole public contract: every API member and
@@ -46,8 +46,17 @@ describe('playground manifest', () => {
 
   it('maps every behavior rule to a page', () => {
     const mapped = new Set(pages.flatMap(page => page.rules))
-    const missing = api.rules.map(rule => rule.id).filter(id => !mapped.has(id))
+    const missing = api.rules
+      .map(rule => rule.id)
+      .filter(id => !mapped.has(id) && !pendingRules.includes(id))
     expect(missing).toEqual([])
+  })
+
+  it('lists only existing, unmapped rules as pending', () => {
+    const known = new Set(api.rules.map(rule => rule.id))
+    const mapped = new Set(pages.flatMap(page => page.rules))
+    expect(pendingRules.filter(id => !known.has(id))).toEqual([])
+    expect(pendingRules.filter(id => mapped.has(id))).toEqual([])
   })
 
   it('names only existing rules', () => {

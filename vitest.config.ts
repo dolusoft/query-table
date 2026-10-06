@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
       replacement: resolve(packages, 'query-protocol/src/index.ts')
     },
     {
+      find: /^@dolusoft\/query-protocol\/local$/,
+      replacement: resolve(packages, 'query-protocol/src/local/index.ts')
+    },
+    {
       find: /^@dolusoft\/query-protocol\/query\.schema\.json$/,
       replacement: resolve(packages, 'query-protocol/query.schema.json')
     },

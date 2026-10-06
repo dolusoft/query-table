@@ -1100,6 +1100,36 @@ The pinned rows are the consumer's: `rowPinning` is `{ top, bottom }`, row keys 
 
 Source: tanstack, own
 
+#### C-75 The local evaluator is separate
+
+The local evaluator comes only from `@dolusoft/query-protocol/local`, and its Vue binding only from `@dolusoft/query-table/local`. The default entries of the three packages neither export nor import it, and no path in their built module graph reaches it. The table never filters, searches, sorts or slices the rows it is given, and it cannot tell a local source from a remote one (P1, ADR 0008).
+
+Source: own
+
+#### C-76 Pipeline, page mode and result
+
+`applyQuery` validates the query, validates the row values it uses, filters and searches, counts, sorts and slices. Its inputs are never written: the rows returned are the objects given, always in a new array. `totalRows` is the count after the rules and the search, independent of the page. A page past the end is empty with the same total, and the page is not corrected. `paginate: false` returns the whole ordered list and still validates `cursor`, `page` and `pageSize`. `sort: null` keeps the order of `allRows`; ties break by `key` ascending in both directions (`integer` numerically, `string` by the ordinal order of the raw value). Only page mode is evaluated: a `cursor` key, even `null`, is `cursor-not-supported`; `page` and `pageSize` are safe integers of at least 1, and the slice is computed without overflow. `slicePage` validates the paging part of a query the same way and slices rows that are already in order.
+
+Source: own
+
+#### C-77 Structural errors
+
+A query the evaluator does not support, or data that does not fit the dataset, is returned as a value, `{ ok: false, error }`, with one of the codes of `semantics.md` and its location fields (`path`, `field`, `rule`, `row`, `name`). The error is the first one in the validation order of the profile; query errors are found before any row is read, and there is no partial result. A query, a sort or a rule that is not a plain object is `invalid-query`. A malformed definition passed to `defineDataset`, and a broken precondition of `applyQuery` (a dataset not made by `defineDataset`, options that are not an object, a `paginate` that is not a boolean), throw `TypeError`. Unknown top-level keys that are not reserved, and extra properties of a rule, are ignored. `sorts`, `any`, `group`, `aggregates` and the conditions `IsNull` and `IsNotNull` are `unsupported-extension`. A read that throws (a `get`, or a getter met by a path read), or a value that does not fit the field type, is `invalid-data`; values are never converted. A repeated key is `duplicate-key`, even on a row that is filtered out or off the page.
+
+Source: own
+
+#### C-78 Semantics profile
+
+Every evaluation names a semantics profile, and there is no default: a missing or unknown profile is the error `unknown-profile`, not a throw. `tr-1` is the meaning written in `semantics.md` and never changes; a new meaning is a new profile. `profiles` lists the profiles of the build.
+
+Source: own
+
+#### C-79 The conformance suite ships
+
+`@dolusoft/query-protocol` publishes its conformance suite under `conformance/`: a manifest with `fixtureFormat`, `revision`, the profiles, the SHA-256 of the query schema it was written against, the SHA-256 of each data file, and for each case file its counts of active cases, withdrawn cases and runs and the SHA-256 of its bytes. A runner refuses an unknown `fixtureFormat`, a broken reference and a hash that does not match. The expected result of a case never changes while its profile lives: a wrong case is withdrawn, not edited, and every semantic change raises `revision`.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.

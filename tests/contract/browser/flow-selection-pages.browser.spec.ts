@@ -9,7 +9,7 @@ import QueryTable, {
 } from '@dolusoft/query-table'
 
 import TablePager from '../../../apps/playground/harness/TablePager.vue'
-import { columns, el, makeQuery, rows } from '../../support/fixtures'
+import { columns, el, makeQuery, rows, sleep } from '../../support/fixtures'
 
 test('F3 C-59 C-64 selection survives page and filter round-trips and select all affects only the current page', async () => {
   const query = ref(makeQuery({ pageSize: 3 }))
@@ -76,7 +76,7 @@ test('F3 C-59 C-64 selection survives page and filter round-trips and select all
     await userEvent.click(target)
     await expect.poll(() => updates).toHaveLength(count + 1)
     expect(updates[count]).toEqual(expected)
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await sleep(0)
     expect(updates).toHaveLength(count + 1)
     expect(selection.value).toEqual(expected)
     expect(queries).toHaveLength(queryCount)
@@ -111,7 +111,7 @@ test('F3 C-59 C-64 selection survives page and filter round-trips and select all
   const queryCount = queries.length
   await userEvent.keyboard(' ')
   await expect.poll(() => updates).toHaveLength(count + 1)
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await sleep(0)
   expect(updates).toHaveLength(count + 1)
   expect(selection.value).toEqual({ 1: true, 4: true })
   expect(updates[count]).toEqual({ 1: true, 4: true })

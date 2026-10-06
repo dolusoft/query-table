@@ -25,7 +25,7 @@
       ]
     },
     "packages/query-protocol": {
-      "entry": ["src/index.ts"],
+      "entry": ["src/index.ts", "src/local/index.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/query-table-core": {

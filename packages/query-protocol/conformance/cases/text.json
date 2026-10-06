@@ -1,0 +1,259 @@
+{
+  "fixtureFormat": 1,
+  "cases": [
+    {
+      "id": "C12",
+      "title": "Matching folds the i family",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C12.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "Equal", "value": "istanbul" }]
+          },
+          "expect": { "keys": [2, 5], "totalRows": 2 }
+        },
+        {
+          "id": "C12.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "Contains", "value": "I\u011eD" }]
+          },
+          "expect": { "keys": [4, 8], "totalRows": 2 }
+        },
+        {
+          "id": "C12.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "Contains", "value": "i" }]
+          },
+          "expect": { "keys": [1, 2, 3, 8], "totalRows": 4 }
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "title": "The composition table and accents",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+          "rows": [
+            { "id": 1, "v": "I\u0307pek" },
+            { "id": 2, "v": "ipek" },
+            { "id": 3, "v": "Ipek" },
+            { "id": 4, "v": "\u00c7ay" },
+            { "id": 5, "v": "Cay" },
+            { "id": 6, "v": "i\u0307pek" },
+            { "id": 7, "v": "C\u0327ay" }
+          ]
+        }
+      },
+      "runs": [
+        {
+          "id": "C13.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Equal", "value": "\u0130PEK" }]
+          },
+          "expect": { "keys": [1, 2, 3], "totalRows": 3 }
+        },
+        {
+          "id": "C13.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Equal", "value": "\u00e7ay" }]
+          },
+          "expect": { "keys": [4, 7], "totalRows": 2 }
+        },
+        {
+          "id": "C13.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Equal", "value": "cay" }]
+          },
+          "expect": { "keys": [5], "totalRows": 1 }
+        },
+        {
+          "id": "C13.4",
+          "query": { "page": 1, "pageSize": 50, "sort": { "field": "v", "direction": "asc" }, "filters": [] },
+          "expect": { "keys": [5, 4, 7, 3, 2, 1, 6], "totalRows": 7 }
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "title": "No wildcards",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C14.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "Contains", "value": "%_" }]
+          },
+          "expect": { "keys": [7], "totalRows": 1 }
+        }
+      ]
+    },
+    {
+      "id": "C37",
+      "title": "An empty string is not null",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+          "rows": [{ "id": 1, "v": "" }, { "id": 2, "v": null }, { "id": 3, "v": "a" }]
+        }
+      },
+      "runs": [
+        {
+          "id": "C37.1",
+          "query": { "page": 1, "pageSize": 50, "sort": { "field": "v", "direction": "asc" }, "filters": [] },
+          "expect": { "keys": [2, 1, 3], "totalRows": 3 }
+        },
+        {
+          "id": "C37.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "v", "direction": "desc" },
+            "filters": []
+          },
+          "expect": { "keys": [3, 1, 2], "totalRows": 3 }
+        },
+        {
+          "id": "C37.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "NotEqual", "value": "a" }]
+          },
+          "expect": { "keys": [1, 2], "totalRows": 2 }
+        },
+        {
+          "id": "C37.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Contains", "value": "a" }]
+          },
+          "expect": { "keys": [3], "totalRows": 1 }
+        }
+      ]
+    },
+    {
+      "id": "C39",
+      "title": "\u0130 and \u0131 folding",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+          "rows": [
+            { "id": 1, "v": "FORT\u0130GATE" },
+            { "id": 2, "v": "FortiGate" },
+            { "id": 3, "v": "FORTIGATE" },
+            { "id": 4, "v": "FORTINET" }
+          ]
+        }
+      },
+      "runs": [
+        {
+          "id": "C39.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Equal", "value": "fortigate" }]
+          },
+          "expect": { "keys": [1, 2, 3], "totalRows": 3 }
+        },
+        {
+          "id": "C39.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Contains", "value": "\u0130GA" }]
+          },
+          "expect": { "keys": [1, 2, 3], "totalRows": 3 }
+        }
+      ]
+    },
+    {
+      "id": "C40",
+      "title": "Prefix, suffix and a single NotContains",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C40.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "StartsWith", "value": "ist" }]
+          },
+          "expect": { "keys": [2, 5], "totalRows": 2 }
+        },
+        {
+          "id": "C40.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "EndsWith", "value": "DIR" }]
+          },
+          "expect": { "keys": [4, 8], "totalRows": 2 }
+        },
+        {
+          "id": "C40.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "NotContains", "value": "a" }]
+          },
+          "expect": { "keys": [4, 5, 6, 7, 8], "totalRows": 5 }
+        }
+      ]
+    },
+    {
+      "id": "C63",
+      "title": "A rule value is not trimmed",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C63.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "Equal", "value": " ali" }]
+          },
+          "expect": { "keys": [], "totalRows": 0 }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,606 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dolusoft/query-table/packages/query-protocol/conformance/schema/case-file.schema.json",
+  "title": "Conformance case file",
+  "description": "One file of the local query conformance suite (fixtureFormat 1). A run is evaluated with applyQuery(rows, query, defineDataset(dataset), options).",
+  "type": "object",
+  "required": [
+    "fixtureFormat",
+    "cases"
+  ],
+  "properties": {
+    "fixtureFormat": {
+      "const": 1
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Case"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Case": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "profile",
+        "data",
+        "runs"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^C\\d{2}b?$",
+          "description": "Unique across the suite."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "$ref": "#/$defs/DataSource"
+        },
+        "runs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Run"
+          }
+        },
+        "withdrawn": {
+          "type": "object",
+          "description": "A withdrawn case stays in its file, is counted and hashed, and is not run.",
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "replacedBy": {
+              "type": "string",
+              "pattern": "^C\\d{2}b?$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Run": {
+      "type": "object",
+      "required": [
+        "id",
+        "query",
+        "expect"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^C\\d{2}b?\\.\\d+$",
+          "description": "Unique across the suite; allowlists and reports name runs."
+        },
+        "data": {
+          "$ref": "#/$defs/DataSource",
+          "description": "The data of this run; when absent, the data of its case."
+        },
+        "query": {
+          "description": "Any JSON value, passed as it is: a malformed query is a case too."
+        },
+        "options": {
+          "type": "object",
+          "description": "Merged field by field over { profile: <the profile of the case>, paginate: true }; a missing field keeps its default.",
+          "properties": {
+            "profile": {
+              "type": "string",
+              "minLength": 1
+            },
+            "paginate": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "expect": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "keys",
+                "totalRows"
+              ],
+              "properties": {
+                "keys": {
+                  "type": "array",
+                  "description": "The keys of the returned rows, in order, compared with their JSON type (2 and \"2\" differ)."
+                },
+                "totalRows": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "error"
+              ],
+              "properties": {
+                "error": {
+                  "$ref": "#/$defs/Error"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "DataSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "ref"
+          ],
+          "properties": {
+            "ref": {
+              "type": "string",
+              "minLength": 1,
+              "description": "A Data file, relative to the case file."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "inline"
+          ],
+          "properties": {
+            "inline": {
+              "$ref": "#/$defs/Data"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Data": {
+      "type": "object",
+      "description": "A dataset definition (the input of defineDataset, without get) and the rows.",
+      "required": [
+        "dataset",
+        "rows"
+      ],
+      "properties": {
+        "dataset": {
+          "type": "object",
+          "required": [
+            "key",
+            "fields"
+          ],
+          "properties": {
+            "key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Field"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "rows": {
+          "type": "array",
+          "description": "Any JSON values: a row that is not an object is a case too."
+        }
+      },
+      "additionalProperties": false
+    },
+    "Field": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "string",
+            "number",
+            "integer",
+            "bool",
+            "date",
+            "datetime"
+          ]
+        },
+        "sortable": {
+          "type": "boolean"
+        },
+        "filterable": {
+          "type": "boolean"
+        },
+        "search": {
+          "type": "boolean"
+        },
+        "offset": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Error": {
+      "description": "The expected error without its message: exactly the location fields of its code (semantics.md#error-locations).",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "const": "unknown-profile"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "invalid-query"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "path",
+            "rule"
+          ],
+          "properties": {
+            "code": {
+              "const": "invalid-query"
+            },
+            "path": {
+              "type": "string"
+            },
+            "rule": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "cursor-not-supported"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "invalid-page"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "name",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "unsupported-extension"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "name",
+            "path",
+            "field",
+            "rule"
+          ],
+          "properties": {
+            "code": {
+              "const": "unsupported-extension"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "rule": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "unknown-field"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "path",
+            "rule"
+          ],
+          "properties": {
+            "code": {
+              "const": "unknown-field"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            },
+            "rule": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "unsupported-field"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "path",
+            "rule"
+          ],
+          "properties": {
+            "code": {
+              "const": "unsupported-field"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            },
+            "rule": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "path",
+            "rule"
+          ],
+          "properties": {
+            "code": {
+              "const": "unsupported-operator"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            },
+            "rule": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "path",
+            "rule"
+          ],
+          "properties": {
+            "code": {
+              "const": "invalid-value"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string"
+            },
+            "rule": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "invalid-value"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "path"
+          ],
+          "properties": {
+            "code": {
+              "const": "search-not-supported"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "row"
+          ],
+          "properties": {
+            "code": {
+              "const": "invalid-data"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "row": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "code",
+            "field",
+            "row"
+          ],
+          "properties": {
+            "code": {
+              "const": "duplicate-key"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "row": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

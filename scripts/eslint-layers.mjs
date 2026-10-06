@@ -3,34 +3,77 @@
 // a file in packages/*/src: imports, `export ... from` re-exports, dynamic
 // `import()`, `require()` and `import x = require()`, which must name a
 // literal. `import.meta.glob` (and any `import.meta` call) is refused.
+// Bare specifiers match exactly: a package sub-path is allowed only when it
+// is listed.
 //
 //   protocol  packages/query-protocol/src          imports nothing outside itself
+//     local/                                       itself and protocol/{types,constants,query} only (C-75)
+//     the rest                                     never local/
 //   core      packages/query-table-core/src        the protocol and @tanstack/table-core only
 //     shared/                                      shared/ only (and the two packages)
 //     features/<a>/                                features/<a>/ and shared/, never features/<b>/
 //     the entry files (src/*.ts)                   anything in core
 //   vue       packages/vue/src                     the protocol, the core, @tanstack/vue-table and vue
+//     local/                                       itself, vue and the two protocol entries only (C-75)
+//     the rest                                     never local/ nor the local evaluator
+import { readFileSync } from 'node:fs'
 import { dirname, posix, relative, resolve, sep } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
 
-/** Bare specifiers each package may import. */
-const allowedPackages = {
+/** The published sub-paths of the core: its `exports` keys but `.`. */
+const coreSubpaths = Object.keys(
+  JSON.parse(
+    readFileSync(
+      resolve(root, 'packages/query-table-core/package.json'),
+      'utf8'
+    )
+  ).exports
+)
+  .filter(key => key !== '.')
+  .map(key => `@dolusoft/query-table-core${key.slice(1)}`)
+
+/** The entries of the local evaluator and of its Vue binding (C-75). */
+const localEntries = [
+  '@dolusoft/query-protocol/local',
+  '@dolusoft/query-table/local'
+]
+
+/** Bare specifiers each part may import, exactly. */
+const allowedSpecifiers = {
   'query-protocol': [],
+  'query-protocol:local': [],
   'query-table-core': ['@dolusoft/query-protocol', '@tanstack/table-core'],
   vue: [
     '@dolusoft/query-protocol',
+    '@dolusoft/query-protocol/query.schema.json',
     '@dolusoft/query-table-core',
+    ...coreSubpaths,
     '@tanstack/vue-table',
     'vue'
+  ],
+  'vue:local': [
+    'vue',
+    '@dolusoft/query-protocol',
+    '@dolusoft/query-protocol/local'
   ]
 }
+
+/** The packages whose src/local/ is a part of its own. */
+const localParts = new Set(['query-protocol', 'vue'])
+
+/** The protocol modules the local evaluator may import (C-75). */
+const protocolBasics = /^protocol\/(types|constants|query)(\.[jt]s)?$/
+
+const localFence =
+  'the local evaluator is reached only through its own entry (C-75)'
 
 const toPosix = path => path.split(sep).join(posix.sep)
 
 /**
- * Where a file sits: its package, and inside query-table-core its part
- * (`shared`, `feature:<name>` or `entry`). `null` outside packages/*\/src.
+ * Where a file sits: its package, its path under src/ (`rest`) and its part:
+ * in query-table-core `shared`, `feature:<name>` or `entry`; in the protocol
+ * and vue `local` (src/local/) or `main`. `null` outside packages/*\/src.
  */
 export const layerOf = file => {
   const path = toPosix(relative(root, resolve(file)))
@@ -39,17 +82,20 @@ export const layerOf = file => {
     return null
   }
   const [, pkg, rest] = match
+  if (localParts.has(pkg)) {
+    return { pkg, rest, part: /^local(\/|$)/.test(rest) ? 'local' : 'main' }
+  }
   if (pkg !== 'query-table-core') {
-    return { pkg, part: 'all' }
+    return { pkg, rest, part: 'all' }
   }
   if (/^shared(\/|$)/.test(rest)) {
-    return { pkg, part: 'shared' }
+    return { pkg, rest, part: 'shared' }
   }
   const feature = /^features\/([^/]+)(\/|$)/.exec(rest)
   if (feature) {
-    return { pkg, part: `feature:${feature[1]}` }
+    return { pkg, rest, part: `feature:${feature[1]}` }
   }
-  return { pkg, part: 'entry' }
+  return { pkg, rest, part: 'entry' }
 }
 
 const isBare = specifier =>
@@ -62,17 +108,36 @@ export const violation = (file, specifier) => {
     return null
   }
   if (isBare(specifier)) {
-    const allowed = allowedPackages[from.pkg] ?? []
-    const ok = allowed.some(
-      name => specifier === name || specifier.startsWith(`${name}/`)
-    )
-    return ok
-      ? null
-      : `${from.pkg} may import ${allowed.length ? allowed.join(' and ') : 'no package'}, not "${specifier}"`
+    const local = from.part === 'local'
+    const allowed = allowedSpecifiers[local ? `${from.pkg}:local` : from.pkg]
+    if ((allowed ?? []).includes(specifier)) {
+      return null
+    }
+    if (localEntries.includes(specifier)) {
+      return localFence
+    }
+    const name = local ? `${from.pkg}/src/local` : from.pkg
+    return `${name} may import ${allowed?.length ? allowed.join(' and ') : 'no package'}, not "${specifier}"`
   }
   const target = layerOf(resolve(dirname(file), specifier))
   if (!target || target.pkg !== from.pkg) {
     return `"${specifier}" leaves packages/${from.pkg}/src: import another package by its name`
+  }
+  if (from.part === 'main') {
+    return target.part === 'local' ? localFence : null
+  }
+  if (from.part === 'local') {
+    if (target.part === 'local') {
+      return null
+    }
+    if (from.pkg === 'query-protocol' && protocolBasics.test(target.rest)) {
+      return null
+    }
+    const reach =
+      from.pkg === 'query-protocol'
+        ? 'protocol/types, protocol/constants, protocol/query and itself'
+        : 'itself'
+    return `the local evaluator may not import "${specifier}": it reaches only ${reach} (C-75)`
   }
   if (from.part === 'all' || from.part === 'entry') {
     return null
@@ -95,7 +160,7 @@ const boundaries = {
     type: 'problem',
     docs: {
       description:
-        'Keeps the v3 layers pointing one way: protocol → core, features → shared/.'
+        'Keeps the v3 layers pointing one way: protocol → core, features → shared/, the local evaluator apart.'
     },
     schema: [],
     messages: {

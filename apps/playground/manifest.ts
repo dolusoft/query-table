@@ -343,3 +343,15 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-22', 'C-44', 'C-45']
   }
 ]
+
+/**
+ * Rules whose page lands later in the same release: the local evaluator's
+ * rules wait for the `local-query` page (PR-L3). Must be empty at release.
+ */
+export const pendingRules: readonly string[] = [
+  'C-75',
+  'C-76',
+  'C-77',
+  'C-78',
+  'C-79'
+]

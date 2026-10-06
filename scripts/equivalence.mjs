@@ -64,7 +64,7 @@ const COLUMNS_UNIT = 'tests/contract/unit/columns.spec.ts'
 const ADDED_AFTER_BASELINE = [
   // 3.0.1 has no rowPinning prop or data-pinned-row on rows and subtables
   // (C-74); the other new selection and expansion tests run on both builds.
-  'tests/contract/browser/row-expansion.browser.spec.ts > F4 C-26 C-55 pinned rows keep adjacent full-width details and expandAll opens only supplied rows',
+  'tests/contract/browser/row-expansion.browser.spec.ts > F4 C-74 row-pinned details follow their row with the same data-pinned-row placement',
   // This existing playground case calls the C-74 cell-slot pinRow method
   // and reads rowPinned; neither slot member exists in 3.0.1.
   'tests/contract/browser/playground.browser.spec.ts > C-74 playground pin buttons stay enabled and focused after keyboard pinning',

@@ -1,6 +1,8 @@
 // `pnpm pack-install`: installs the three packed tarballs into a new app
 // outside the workspace, the way the README tells a consumer to, then
-// typechecks and builds that app. Catches what the workspace hides: a
+// typechecks and builds that app, and runs the conformance suite of the
+// installed protocol tarball (fixtures/pack-install/conformance.mjs: every
+// hash of its manifest, two runs). Catches what the workspace hides: a
 // `workspace:*` range left in a manifest, a file missing from `files`, a type
 // that only resolves through the workspace `paths`, an override the README
 // forgets.
@@ -11,6 +13,7 @@
 // temporary directory, and is removed afterwards unless PACK_INSTALL_KEEP=1.
 import { execFileSync } from 'node:child_process'
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -220,12 +223,15 @@ const parsed = parseRules('a*', { field: 'name' }).length + Object.keys(serverQu
     join(app, 'src', 'main.ts'),
     `import { createApp, h, ref } from 'vue'
 
+import type { LocalQueryResult } from '@dolusoft/query-protocol/local'
 import QueryTableDefault, { parseFilterInput, useQueryTable, type TableQuery } from '@dolusoft/query-table'
 
 import App from './App.vue'
 
 const rules = parseFilterInput('>5', { field: 'age', type: 'number' })
 const query = ref<TableQuery>({ page: 1, pageSize: 10, sort: null, filters: rules })
+
+export type LocalResult = LocalQueryResult<{ age: number }>
 
 createApp({
   components: { QueryTableDefault },
@@ -245,14 +251,22 @@ createApp({
 `
   )
 
-  // 4. Install, typecheck, build.
+  copyFileSync(
+    join(root, 'fixtures', 'pack-install', 'conformance.mjs'),
+    join(app, 'conformance.mjs')
+  )
+
+  // 4. Install, typecheck, build, run the conformance suite of the tarball.
   run('pnpm', ['install', '--prefer-offline'], app)
   run('pnpm', ['exec', 'vue-tsc', '--noEmit'], app)
   run('pnpm', ['exec', 'vite', 'build'], app)
+  run('node', ['conformance.mjs'], app)
   console.log(
     `[pack-install] ok: ${Object.values(packed)
       .map(entry => entry.file)
-      .join(', ')} installed, typechecked and built outside the workspace`
+      .join(
+        ', '
+      )} installed, typechecked, built and checked against the conformance suite outside the workspace`
   )
 } finally {
   if (process.env.PACK_INSTALL_KEEP === '1') {

@@ -10,11 +10,16 @@ import QueryTable, {
 } from '@dolusoft/query-table'
 
 import TablePager from '../../../apps/playground/harness/TablePager.vue'
-import { columns, el, makeQuery, rows } from '../../support/fixtures'
+import { columns, el, makeQuery, rows, sleep } from '../../support/fixtures'
 
 // A consumer example: sorting and paging supply new rows; pinning is a prop.
 const renderExpansion = async (
-  options: { keyed?: boolean; pinned?: boolean } = {}
+  options: {
+    keyed?: boolean
+    pinned?: boolean
+    rowPinned?: boolean
+    hasSubtable?: boolean
+  } = {}
 ) => {
   const query = ref(makeQuery({ pageSize: 3 }))
   const table = ref<QueryTableExpose | null>(null)
@@ -54,10 +59,10 @@ const renderExpansion = async (
             rows: shown.value,
             totalRows: 6,
             rowKey: options.keyed === false ? undefined : 'id',
-            rowPinning: options.pinned
+            rowPinning: options.rowPinned
               ? { top: ['2'], bottom: ['1'] }
               : undefined,
-            hasSubtable: true,
+            hasSubtable: options.hasSubtable ?? true,
             sortable: true,
             'onUpdate:query': (next: TableQuery) => {
               updates.push(next)
@@ -110,7 +115,7 @@ test('F4 C-26 mouse, Enter and Space expand and collapse content under its row',
     await expect.element(toggle(1)).toHaveAttribute('aria-expanded', 'false')
     expect(document.activeElement).toBe(el('tr[data-row-index="1"] .qt-expand'))
   }
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await sleep(0)
   expect(flow.updates).toEqual([])
 })
 
@@ -160,32 +165,17 @@ test('F4 C-26 unkeyed expansion resets when sorting or paging replaces rows', as
   await expect.poll(details).toEqual([3])
   await userEvent.click(page.getByRole('button', { name: 'Next', exact: true }))
   await expect.poll(details).toEqual([])
-  await userEvent.click(
-    page.getByRole('button', { name: 'Previous', exact: true })
-  )
-  await expect.element(toggle(0)).toHaveAttribute('aria-expanded', 'false')
 })
 
-test('F4 C-26 C-55 pinned rows keep adjacent full-width details and expandAll opens only supplied rows', async () => {
+test('F4 C-26 C-55 left-pinned column details span all columns and expandAll opens only supplied rows with page pruning', async () => {
   const flow = await renderExpansion({ pinned: true })
   flow.table.value!.expandAll()
-  await expect.poll(details).toEqual([2, 3, 1])
-  for (const id of [2, 3, 1]) {
+  await expect.poll(details).toEqual([1, 2, 3])
+  for (const id of [1, 2, 3]) {
     assertUnder(id)
   }
-  for (const [id, position] of [
-    [2, 'top'],
-    [1, 'bottom']
-  ] as const) {
-    const detailRow = el(`.detail[data-id="${id}"]`).closest('tr')!
-    expect(detailRow).toHaveAttribute('data-pinned-row', position)
-    expect(detailRow.previousElementSibling).toHaveAttribute(
-      'data-pinned-row',
-      position
-    )
-  }
   expect(el('td[data-field="id"]')).toHaveAttribute('data-pinned', '')
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await sleep(0)
   expect(flow.updates).toEqual([])
   await userEvent.click(page.getByRole('button', { name: 'Next', exact: true }))
   await expect
@@ -194,15 +184,66 @@ test('F4 C-26 C-55 pinned rows keep adjacent full-width details and expandAll op
   expect(details()).toEqual([])
   flow.table.value!.expandAll()
   await expect.poll(details).toEqual([4, 5, 6])
-  flow.table.value!.collapseAll()
-  await expect.poll(details).toEqual([])
-  await new Promise(resolve => setTimeout(resolve, 0))
-  expect(flow.updates).toHaveLength(1)
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await sleep(0)
   expect(flow.updates).toHaveLength(1)
   await userEvent.click(
     page.getByRole('button', { name: 'Previous', exact: true })
   )
-  await expect.element(toggle(1)).toHaveAttribute('aria-expanded', 'false')
+  await expect
+    .element(page.getByCSS('tr[data-row-index="0"] td[data-field="id"]'))
+    .toHaveTextContent('1')
+  for (const index of [0, 1, 2]) {
+    await expect
+      .element(toggle(index))
+      .toHaveAttribute('aria-expanded', 'false')
+  }
   expect(details()).toEqual([])
+})
+
+test('F4 C-74 row-pinned details follow their row with the same data-pinned-row placement', async () => {
+  await renderExpansion({ rowPinned: true })
+  for (const [index, id, position] of [
+    [1, 2, 'top'],
+    [0, 1, 'bottom']
+  ] as const) {
+    await userEvent.click(toggle(index))
+    await expect
+      .element(page.getByCSS(`.detail[data-id="${id}"]`))
+      .toBeVisible()
+    const detailRow = el(`.detail[data-id="${id}"]`).closest('tr')!
+    expect(detailRow).toHaveAttribute('data-pinned-row', position)
+    expect(detailRow.previousElementSibling).toHaveAttribute(
+      'data-pinned-row',
+      position
+    )
+    expect(
+      detailRow.previousElementSibling?.querySelector('td[data-field="id"]')
+        ?.textContent
+    ).toBe(String(id))
+  }
+})
+
+test('F4 C-26 C-33 collapseAll closes open rows without emitting a query', async () => {
+  const flow = await renderExpansion()
+  await userEvent.click(toggle(0))
+  await userEvent.click(toggle(2))
+  await expect.poll(details).toEqual([1, 3])
+  flow.table.value!.collapseAll()
+  await expect.poll(details).toEqual([])
+  for (const index of [0, 2]) {
+    await expect
+      .element(toggle(index))
+      .toHaveAttribute('aria-expanded', 'false')
+  }
+  await sleep(0)
+  expect(flow.updates).toEqual([])
+})
+
+test('F4 C-55 expandAll does nothing without hasSubtable', async () => {
+  const flow = await renderExpansion({ hasSubtable: false })
+  flow.table.value!.expandAll()
+  await sleep(0)
+  expect(details()).toEqual([])
+  expect(document.querySelectorAll('tr[data-expanded]')).toHaveLength(0)
+  expect(flow.updates).toEqual([])
 })

@@ -1,6 +1,7 @@
-// The API report of every package (api-extractor): `etc/<name>.api.md` in
-// each package is the reviewed public surface of its `dist/types`. A change
-// to the public API shows up as a diff of that file.
+// The API report of every published TypeScript entry (api-extractor): each
+// `api-extractor*.json` of a package writes one `etc/<name>.api.md`, the
+// reviewed public surface of that entry in `dist/types`. A change to the
+// public API shows up as a diff of that file.
 //
 //   node scripts/api-report.mjs           fails when a report is out of date
 //   node scripts/api-report.mjs --local   rewrites the reports
@@ -18,11 +19,17 @@ const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
   .filter(entry => entry.isDirectory())
   .map(entry => join(root, 'packages', entry.name))
 
+/** `api-extractor.json` and `api-extractor.<entry>.json` of each package. */
+const configs = packages.flatMap(dir =>
+  readdirSync(dir)
+    .filter(file => /^api-extractor(\..+)?\.json$/.test(file))
+    .sort()
+    .map(file => ({ dir, file }))
+)
+
 let failed = false
-for (const dir of packages) {
-  const config = ExtractorConfig.loadFileAndPrepare(
-    join(dir, 'api-extractor.json')
-  )
+for (const { dir, file } of configs) {
+  const config = ExtractorConfig.loadFileAndPrepare(join(dir, file))
   if (local) {
     mkdirSync(config.reportFolder, { recursive: true })
   }
@@ -30,7 +37,7 @@ for (const dir of packages) {
     localBuild: local,
     showVerboseMessages: false
   })
-  const name = config.packageJson?.name ?? dir
+  const name = `${config.packageJson?.name ?? dir} (${file})`
   if (result.succeeded) {
     console.log(
       `api-report: ${name} ${result.apiReportChanged ? 'updated' : 'unchanged'}`
