@@ -28,6 +28,8 @@ describe('F2 F7 server search and cursor flows', () => {
     expect(flow.updates).toEqual([
       { reason: 'search', query: makeQuery({ search: 'bursa' }) }
     ])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(flow.updates).toHaveLength(1)
     expect(flow.ids()).toEqual([4, 9, 14, 19, 24, 29, 34, 39, 44, 49])
 
     await userEvent.fill(search, 'alice')
@@ -37,6 +39,8 @@ describe('F2 F7 server search and cursor flows', () => {
       reason: 'search',
       query: makeQuery({ search: 'alice' })
     })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(flow.updates).toHaveLength(2)
     expect(flow.ids()).toEqual([2, 17, 32, 47, 62, 77, 92, 107, 122, 137])
     await userEvent.fill(search, 'pending')
     await vi.advanceTimersByTimeAsync(299)
@@ -45,10 +49,14 @@ describe('F2 F7 server search and cursor flows', () => {
     await nextTick()
     expect(flow.updates[2]).toEqual({ reason: 'search', query: makeQuery() })
     expect(flow.updates[2].query).not.toHaveProperty('search')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(flow.updates).toHaveLength(3)
     // The canceled timer must not emit later; setting the same text is quiet.
     await userEvent.fill(search, '')
     await vi.advanceTimersByTimeAsync(1000)
     await nextTick()
+    expect(flow.updates).toHaveLength(3)
+    await vi.advanceTimersByTimeAsync(0)
     expect(flow.updates).toHaveLength(3)
     expect(flow.requests).toEqual([
       makeQuery({ page: 3 }),
@@ -64,6 +72,8 @@ describe('F2 F7 server search and cursor flows', () => {
     )
     await userEvent.fill(page.getByRole('searchbox'), 'bursa')
     await expect.poll(() => flow.updates.length).toBe(1)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(flow.updates).toHaveLength(1)
     const searched = makeQuery({
       search: 'bursa',
       sort: { field: 'id', direction: 'desc' }
@@ -71,6 +81,8 @@ describe('F2 F7 server search and cursor flows', () => {
     expect(flow.updates[0]).toEqual({ reason: 'search', query: searched })
     await userEvent.fill(flow.filter('name'), 'Alice')
     await expect.poll(() => flow.updates.length).toBe(2)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(flow.updates).toHaveLength(2)
     const filtered = {
       ...searched,
       filters: [rule('name', 'Contains', 'Alice')]
@@ -81,6 +93,8 @@ describe('F2 F7 server search and cursor flows', () => {
       .toBeVisible()
     await userEvent.click(page.getByCSS('.qt-clear-all-button'))
     await expect.poll(() => flow.updates.length).toBe(3)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(flow.updates).toHaveLength(3)
     expect(flow.updates[2]).toEqual({ reason: 'reset', query: searched })
     expect(flow.ids()).toEqual([
       199, 194, 189, 184, 179, 174, 169, 164, 159, 154
@@ -111,6 +125,8 @@ describe('F2 F7 server search and cursor flows', () => {
     expect(flow.ids()).toEqual([2, 17, 32, 47, 62, 77, 92, 107, 122, 137])
     await userEvent.click(next)
     await expect.poll(() => flow.updates.length).toBe(1)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(flow.updates).toHaveLength(1)
     const forward = {
       ...initial,
       cursor: { token: btoa('10'), direction: 'next' as const }
@@ -121,6 +137,8 @@ describe('F2 F7 server search and cursor flows', () => {
     await expect.element(previous).toBeEnabled()
     await userEvent.click(previous)
     await expect.poll(() => flow.updates.length).toBe(2)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(flow.updates).toHaveLength(2)
     const backward = {
       ...initial,
       cursor: { token: btoa('0'), direction: 'prev' as const }
@@ -143,6 +161,8 @@ describe('F2 F7 server search and cursor flows', () => {
           page.getByRole('button', { name: 'Next', exact: true })
         )
         await expect.poll(() => flow.updates.length).toBe(1)
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(flow.updates).toHaveLength(1)
         expect(flow.updates[0]).toEqual({
           reason: 'page',
           query: {
@@ -188,6 +208,8 @@ describe('F2 F7 server search and cursor flows', () => {
             break
         }
         await expect.poll(() => flow.updates.length).toBe(2)
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(flow.updates).toHaveLength(2)
         expect(flow.updates[1]).toEqual({ reason: action, query: expected })
         expect(flow.updates[1].query).not.toHaveProperty('page')
         expect(flow.ids()).toEqual(firstIds)

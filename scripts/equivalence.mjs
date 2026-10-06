@@ -34,6 +34,8 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 
+import { build } from 'vite'
+
 const root = resolve(import.meta.dirname, '..')
 const work = join(root, '.equivalence')
 const releaseUrl = version =>
@@ -76,8 +78,6 @@ const ADDED_AFTER_BASELINE = [
   `${K6_PAGES} > typed search is applied once, after the debounce, from the first page`,
   `${K6_PAGES} > the checkbox column selects rows into the page selection`,
   `${K6_PAGES} > the TanStack path sorts, filters and pages through the query`,
-  // Server-flow search and cursor tests use the v3-only toolbar and paging API.
-  'tests/contract/browser/flow-search-cursor.browser.spec.ts > F2 F7 server search and cursor flows',
   // C-66: the selection column's DOM hooks.
   'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract',
   // 3.1 additions (C-67 to C-74, ADR 0007): not in a 3.0.0 baseline.
@@ -153,8 +153,8 @@ const entryOfTarball = (tarball, into) => {
   return { entry: join(pkgDir, file), version: manifest.version }
 }
 
-/** Exports `ref`, builds its library and packs it, like a release does. */
-const packGitRef = ref => {
+/** Exports `ref`, builds its library and packs it for the comparison. */
+const packGitRef = async ref => {
   const sha = spawnSync('git', ['rev-parse', ref], {
     cwd: root,
     encoding: 'utf8'
@@ -178,8 +178,82 @@ const packGitRef = ref => {
       'bin',
       'vite.js'
     )
-    must(process.execPath, [vite, 'build', '--logLevel', 'warn'], { cwd: dir })
-    must('pnpm', ['pack', '--pack-destination', work], { cwd: dir })
+    const vueDir = join(dir, 'packages', 'vue')
+    const workspace = existsSync(join(vueDir, 'package.json'))
+    if (workspace) {
+      const manifest = JSON.parse(
+        readFileSync(join(vueDir, 'package.json'), 'utf8')
+      )
+      const externalPackages = [
+        ...Object.keys(manifest.peerDependencies ?? {}),
+        ...Object.keys(manifest.dependencies ?? {}).filter(
+          name => !name.startsWith('@dolusoft/')
+        )
+      ]
+      // Bundle this ref's protocol and core into its Vue entry. Otherwise the
+      // test aliases would silently substitute the candidate's workspace code.
+      const nodeEnv = process.env.NODE_ENV
+      try {
+        await build({
+          root: vueDir,
+          configFile: join(vueDir, 'vite.config.ts'),
+          logLevel: 'warn',
+          resolve: {
+            alias: [
+              {
+                find: /^@dolusoft\/query-protocol$/,
+                replacement: join(dir, 'packages/query-protocol/src/index.ts')
+              },
+              {
+                find: /^@dolusoft\/query-table-core$/,
+                replacement: join(dir, 'packages/query-table-core/src/index.ts')
+              },
+              {
+                find: /^@dolusoft\/query-table-core\/([\w-]+)$/,
+                replacement: join(
+                  dir,
+                  'packages/query-table-core/src/features/$1/index.ts'
+                )
+              }
+            ]
+          },
+          build: {
+            rollupOptions: {
+              external: id =>
+                externalPackages.some(
+                  name => id === name || id.startsWith(`${name}/`)
+                )
+            }
+          }
+        })
+      } finally {
+        // Vite sets NODE_ENV during a build; the test runner must retain its
+        // original environment (Vue Test Utils records emits via devtools).
+        if (nodeEnv === undefined) {
+          delete process.env.NODE_ENV
+        } else {
+          process.env.NODE_ENV = nodeEnv
+        }
+      }
+      // The bundled workspace packages need no install or workspace resolution
+      // when packing this disposable test artifact.
+      manifest.dependencies = Object.fromEntries(
+        Object.entries(manifest.dependencies ?? {}).filter(
+          ([name]) => !name.startsWith('@dolusoft/')
+        )
+      )
+      writeFileSync(
+        join(vueDir, 'package.json'),
+        `${JSON.stringify(manifest, null, 2)}\n`
+      )
+    } else {
+      must(process.execPath, [vite, 'build', '--logLevel', 'warn'], {
+        cwd: dir
+      })
+    }
+    must('pnpm', ['pack', '--pack-destination', work], {
+      cwd: workspace ? vueDir : dir
+    })
     const packed = readdirSync(work).find(
       name => name.startsWith('dolusoft-query-table-') && name.endsWith('.tgz')
     )
@@ -216,7 +290,7 @@ const prepare = async target => {
   let tarball
   let label
   if (kind === 'git') {
-    ;({ tarball, label } = packGitRef(value))
+    ;({ tarball, label } = await packGitRef(value))
   } else if (kind === 'release') {
     tarball = join(work, `release-${value}.tgz`)
     if (!existsSync(tarball)) {

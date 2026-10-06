@@ -44,7 +44,7 @@ test('typed search is applied once, after the debounce, from the first page C-58
   expect(firstIds()[0]).toBe('4')
 })
 
-test('the checkbox column selects rows into the page selection C-59 C-64', async () => {
+test('the checkbox column selects rows into the page selection', async () => {
   await render(SearchSelectionCursors)
   const rows = document.querySelectorAll<HTMLInputElement>('.qt-select-row')
   expect(rows).toHaveLength(10)
