@@ -110,10 +110,20 @@ export const architecture: HomeSection = {
   text: 'Your page owns the query and the rows. The table turns clicks and typing into a new query and emits it through v-model:query; your code sends that query to the server and passes the answer back as rows and totalRows. The table keeps no copy of the data and no state that outlives an emit: what it draws always comes from the props you hold.'
 }
 
+/** The line under the pitch: what the table stands on. */
+export const tanstackLine = 'Built on TanStack Table v9'
+
+export const onTopOfTanstack: HomeSection = {
+  id: 'on-top-of-tanstack',
+  title: 'What we add on top of TanStack',
+  text: 'TanStack Table gives the state and the headless core; Query Table adds the part a server-driven table needs: a filter text grammar and a condition menu, one JSON query with a JSON Schema for your backend, one update with a reason for every user action, a cursor protocol, measured sticky offsets, accessible resizing and a phone mode. The feature matrix shows what is open today and what is coming.'
+}
+
 /** Sections of the home page in the order they render, for the search. */
 export const homeSections: HomeSection[] = [
   showcase,
   ...moreFeatures,
+  onTopOfTanstack,
   ...principles,
   architecture
 ]

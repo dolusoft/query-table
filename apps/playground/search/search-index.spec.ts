@@ -11,6 +11,9 @@ import {
   snippet
 } from './search-index'
 import api from '../../../contract/api.json'
+import { features } from '../guides/feature-matrix'
+import { aiSections, guidePages } from '../guides/guides'
+import { tanstackFeatureGuides, tanstackGeneralLinks } from '../guides/tanstack'
 import { homeSections } from '../home/home-content'
 import { pages } from '../manifest'
 
@@ -50,11 +53,51 @@ describe('documentation search index', () => {
     const titles = documents
       .filter(doc => doc.kind === 'page')
       .map(doc => doc.title)
-    expect(titles).toEqual(['Home', ...pages.map(page => page.title)])
+    expect(titles).toEqual([
+      'Home',
+      ...pages.map(page => page.title),
+      ...guidePages.map(page => page.title)
+    ])
+  })
+
+  it('contains every feature row, TanStack link and AI section of the guide pages', () => {
+    const ids = new Set(documents.map(doc => doc.id))
+    for (const feature of features) {
+      expect(ids, feature.id).toContain(`features:${feature.id}`)
+    }
+    for (const link of [...tanstackGeneralLinks, ...tanstackFeatureGuides]) {
+      expect(ids, link.id).toContain(`tanstack:link:${link.id}`)
+    }
+    for (const section of aiSections) {
+      expect(ids, section.id).toContain(`ai:${section.id}`)
+    }
+    expect(ids.size).toBe(documents.length)
+  })
+
+  it('finds the guide pages by what they say', () => {
+    const first = (query: string) => searchDocs(index, query)[0]
+    expect(
+      searchDocs(index, 'row pinning')
+        .slice(0, 3)
+        .map(hit => hit.id)
+    ).toContain('features:row-pinning')
+    expect(
+      searchDocs(index, 'faceting').find(hit => hit.pageId === 'features')?.id
+    ).toBe('features:faceting')
+    expect(first('virtual scrolling')?.id).toBe('features:virtualization')
+    expect(first('llms.txt')?.pageId).toBe('ai')
+    expect(first('custom features')?.id).toBe('tanstack:link:custom-features')
+    expect(
+      searchDocs(index, 'table-core').some(
+        hit => hit.id === 'tanstack:versions'
+      )
+    ).toBe(true)
   })
 
   it('contains every home page section, on the home page', () => {
-    const sections = documents.filter(doc => doc.kind === 'section')
+    const sections = documents.filter(
+      doc => doc.kind === 'section' && doc.pageId === homePageId
+    )
     expect(sections.map(doc => doc.anchor)).toEqual(
       homeSections.map(section => section.id)
     )
@@ -65,15 +108,21 @@ describe('documentation search index', () => {
   })
 
   it('finds the home page and its sections', () => {
-    expect(searchDocs(index, 'install')[0]?.id).toBe('page:home')
+    // Other pages say "install" too (the TanStack installation guide).
+    expect(
+      searchDocs(index, 'install')
+        .slice(0, 3)
+        .map(hit => hit.id)
+    ).toContain('page:home')
     expect(searchDocs(index, 'headless')[0]?.anchor).toBe('principle-headless')
     expect(searchDocs(index, 'architecture')[0]?.anchor).toBe('architecture')
   })
 
   it('maps each entry to the first page that lists it', () => {
     const kinds = Object.keys(memberKinds) as Array<keyof typeof memberKinds>
-    for (const doc of documents.filter(
-      entry => entry.kind !== 'page' && entry.kind !== 'section'
+    const apiKinds: string[] = [...Object.values(memberKinds), 'rule']
+    for (const doc of documents.filter(entry =>
+      apiKinds.includes(entry.kind)
     )) {
       const kind = kinds.find(candidate => memberKinds[candidate] === doc.kind)
       const first = pages.find(page =>

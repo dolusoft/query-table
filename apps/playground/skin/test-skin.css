@@ -353,8 +353,8 @@ td:has(> .qt-right-panel-button) {
     4px 0 6px -4px var(--border);
 }
 
-/* own: resize handle, an 8px hit area over the right edge of the header
-   cell, invisible at rest; a 1px line on header hover, the ring on keyboard
+/* own: resize handle, a 24px hit area (WCAG 2.5.8) over the right edge of the
+   header cell, invisible at rest; a 1px line on header hover, the ring on keyboard
    focus. */
 .qt-table th[data-field]:not([data-pinned]) {
   position: relative;
@@ -363,9 +363,9 @@ td:has(> .qt-right-panel-button) {
 .qt-resize-handle {
   position: absolute;
   inset-block: 0;
-  right: -0.25rem;
+  right: -0.75rem;
   z-index: 30;
-  width: 0.5rem;
+  width: 1.5rem;
   cursor: col-resize;
   touch-action: none;
   outline: none;
@@ -457,6 +457,16 @@ th[data-sort] .qt-sort-icon {
   flex: 1 1 0%;
   width: 0;
   padding-right: calc(30% + 0.25rem);
+}
+/* own: a date input has no condition label to make room for: its text and
+   the picker icon take the whole box. The condition stays in the filter
+   menu. */
+.qt-filter-input[type='date'] {
+  padding-right: 0.25rem;
+}
+/* own: no condition label over a date input; the filter menu names it. */
+.qt-filter:has(.qt-filter-input[type='date']) .qt-filter-condition {
+  display: none;
 }
 /* own: a filtered column's input shows a stronger border. */
 th[data-filtered] .qt-filter-input {
