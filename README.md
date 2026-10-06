@@ -276,6 +276,10 @@ Every text the table writes itself (accessible names of its buttons and filter i
 />
 ```
 
+## Guides
+
+The v3 guides (protocol, TanStack plugins, architecture, migration) are in [`docs/guide/`](./docs/guide/README.md).
+
 ## Contract
 
 [`CONTRACT.md`](./CONTRACT.md) is the full public contract: props, events, slots, types, behavior rules and the DOM the table renders. It is generated from the source and checked in CI.
