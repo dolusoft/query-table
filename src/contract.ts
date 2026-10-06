@@ -415,8 +415,8 @@ export interface QueryTableExpose {
    */
   focusFilter(field: string): boolean
   /**
-   * Apply typed-but-not-yet-applied filter text now. Every `update:query` it
-   * causes has been emitted when the call returns.
+   * Apply typed-but-not-yet-applied filter text now, in one `update:query`
+   * that has been emitted when the call returns.
    */
   flushPendingFilters(): void
 }

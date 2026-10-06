@@ -70,30 +70,48 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     }
   }
 
-  /** Applies the draft of `field` to the query. */
-  const commit = (field: string): boolean => {
-    cancel(field)
-    const column = columnOf(field)
-    if (!column) {
-      return false
-    }
+  /**
+   * Writes the draft of each field into one copy of the base query and emits
+   * it as a single `filter` update (C-04): flushing several inputs is one
+   * action. A field whose draft changes nothing is left out.
+   */
+  const commitFields = (fields: readonly string[]): boolean => {
     const base = options.base()
-    const rules: FilterRule[] = parseDraft(column, draftOf(field)).map(
-      rule => ({ field, condition: rule.condition, value: rule.value })
-    )
-    if (sameRules(rulesOf(base.filters, field), rules)) {
+    let filters = base.filters
+    const changed: Array<[string, FilterRule[]]> = []
+    for (const field of fields) {
+      cancel(field)
+      const column = columnOf(field)
+      if (!column) {
+        continue
+      }
+      const rules: FilterRule[] = parseDraft(column, draftOf(field)).map(
+        rule => ({ field, condition: rule.condition, value: rule.value })
+      )
+      if (sameRules(rulesOf(filters, field), rules)) {
+        continue
+      }
+      filters = replaceRules(filters, field, rules)
+      changed.push([field, rules])
+    }
+    if (changed.length === 0) {
       return false
     }
     const next = cloneQuery(base)
     next.page = 1
-    next.filters = replaceRules(base.filters, field, rules)
-    const sent = [...(emitted.get(field) ?? []), rules]
-    const over = Math.max(0, sent.length - emittedLimit)
-    emitted.set(field, sent.slice(over))
-    forgotten.set(field, (forgotten.get(field) ?? 0) + over)
+    next.filters = filters
+    for (const [field, rules] of changed) {
+      const sent = [...(emitted.get(field) ?? []), rules]
+      const over = Math.max(0, sent.length - emittedLimit)
+      emitted.set(field, sent.slice(over))
+      forgotten.set(field, (forgotten.get(field) ?? 0) + over)
+    }
     options.update(next, 'filter')
     return true
   }
+
+  /** Applies the draft of `field` to the query. */
+  const commit = (field: string): boolean => commitFields([field])
 
   const schedule = (field: string) => {
     cancel(field)
@@ -121,14 +139,11 @@ export const useFilterDrafts = (options: FilterDraftsOptions) => {
     }
   }
 
-  /** Applies every pending draft; `true` when any of them changed the filters. */
-  const flushAll = (): boolean => {
-    let changed = false
-    for (const field of [...timers.keys()]) {
-      changed = commit(field) || changed
-    }
-    return changed
-  }
+  /**
+   * Applies every pending draft in one update; `true` when any of them
+   * changed the filters.
+   */
+  const flushAll = (): boolean => commitFields([...timers.keys()])
 
   const setCondition = (field: string, condition: FilterCondition | null) => {
     if (condition === null) {
