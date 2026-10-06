@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
 import { rawUrl, skillFiles } from './guides'
@@ -22,16 +23,25 @@ const urls = [
 
 describe.skipIf(!enabled)('external links', () => {
   it('answers 200 for every link', async () => {
+    // Redirects are followed: tanstack.com sends `/table/v9/...` on to the
+    // current docs while v9 is the latest version, and the final answer
+    // must be 200.
     const failed: string[] = []
+    let redirected = 0
     await Promise.all(
       urls.map(async url => {
-        const response = await fetch(url, { redirect: 'manual' })
+        const response = await fetch(url)
+        if (response.redirected) {
+          redirected += 1
+        }
         if (response.status !== 200) {
           failed.push(`${response.status} ${url}`)
         }
       })
     )
-    console.info(`checked ${urls.length} links, ${failed.length} failed`)
+    console.info(
+      `checked ${urls.length} links, ${redirected} redirected, ${failed.length} failed`
+    )
     expect(failed).toEqual([])
-  })
+  }, 60_000)
 })

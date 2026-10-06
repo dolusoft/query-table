@@ -17,13 +17,13 @@
   }
 
   /* In a narrow column the skin moves the filter button into the input's end
-     (`@container qt-filter (width < 6rem)`, 1.75rem). The 2.5rem floor above
-     would stretch it over the whole box and leave the input a few pixels of
-     text, so the button keeps the skin's size there. */
+     (`@container qt-filter (width < 6rem)`, 1.75rem wide). The 2.5rem width
+     floor above would stretch it over the whole box and leave the input a
+     few pixels of text, so the button keeps the skin's width there; the
+     height floor stays, it is the touch target. */
   @container qt-filter (width < 6rem) {
     main button.qt-filter-button:not([role="checkbox"]) {
       min-width: 0;
-      min-height: 0;
     }
   }
 

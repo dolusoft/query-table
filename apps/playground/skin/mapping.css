@@ -280,14 +280,10 @@ th[data-sort] .qt-sort-icon {
   padding-right: calc(30% + 0.25rem);
 }
 /* own: a date input has no condition label to make room for: its text and
-   the picker icon take the whole box, and its column keeps the width the
-   whole `mm/dd/yyyy` needs. The condition stays in the filter menu. */
+   the picker icon take the whole box. The condition stays in the filter
+   menu. */
 .qt-filter-input[type='date'] {
   padding-right: 0.25rem;
-}
-/* own: the date column keeps the width the whole `mm/dd/yyyy` needs. */
-.qt-table th[data-field]:has(.qt-filter-input[type='date']) {
-  min-width: 11rem;
 }
 /* own: no condition label over a date input; the filter menu names it. */
 .qt-filter:has(.qt-filter-input[type='date']) .qt-filter-condition {
