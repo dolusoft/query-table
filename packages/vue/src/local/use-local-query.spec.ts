@@ -1,4 +1,4 @@
-import type { PageQuery, Query } from '@dolusoft/query-protocol'
+import type { FilterRule, PageQuery, Query } from '@dolusoft/query-protocol'
 import {
   applyQuery,
   defineDataset,
@@ -179,6 +179,44 @@ describe('C-81 useLocalQuery [own]', () => {
     expect(state.rows.value).toEqual([rows[1]])
     expect(reads).toBeGreaterThan(previous)
     equal(state, rows, query.value, schema)
+  })
+
+  it('compares nested extra rule properties by value, whatever their key order', () => {
+    let reads = 0
+    const schema = defineDataset<Row>({
+      key: 'id',
+      fields: {
+        id: { type: 'integer' },
+        name: {
+          type: 'string',
+          get: row => {
+            reads++
+            return row.name
+          }
+        }
+      }
+    })
+    type ExtraRule = FilterRule & { extra: { token: Record<string, number> } }
+    const rule = (token: Record<string, number>): ExtraRule => ({
+      field: 'name',
+      condition: 'NotEqual',
+      value: 'Zeki',
+      extra: { token }
+    })
+    const query = ref<PageQuery>({ ...page(), filters: [rule({ a: 1, b: 2 })] })
+    const state = local({ allRows: rows, dataset: schema, query })
+    expect(state.rows.value).toEqual([rows[0]])
+    let count = reads
+    query.value = { ...query.value, filters: [rule({ b: 2, a: 1 })] }
+    expect(state.rows.value).toEqual([rows[0]])
+    expect(reads).toBe(count)
+    ;(query.value.filters[0] as ExtraRule).extra.token.a = 3
+    expect(state.rows.value).toEqual([rows[0]])
+    expect(reads).toBeGreaterThan(count)
+    count = reads
+    query.value = { ...query.value, filters: [rule({ a: 3, b: 2 })] }
+    expect(state.rows.value).toEqual([rows[0]])
+    expect(reads).toBe(count)
   })
 
   it('in-place changes of the query are seen', () => {
