@@ -47,19 +47,39 @@ const option = (name, fallback) => {
 // not load, a filter matched nothing); it fails instead of passing on zero.
 const MIN_TESTS = 300
 // Tests of behavior a 2.2.x baseline does not have: the v3 additions (C-56
-// to C-65: cursor paging, search, selection, the TanStack path) and C-40,
-// whose DOM contract now lists the selection column. They cannot pass on
-// 2.2.x, so they are not compared and may fail on the baseline; the
-// candidate must still pass them. An entry is a spec file, or
-// `file > full test name`.
+// to C-66: cursor paging, search, selection, `useQueryTable`, the TanStack
+// path). They cannot pass on 2.2.x, so they are not compared and may fail on
+// the baseline; the candidate must still pass them. Every other test is
+// compared, the v3 spec files' own tests of old behavior included.
+//
+// An entry is `file > name`, where the name is the full title of a test or
+// the title of a `describe` (every test under it). An entry that matches no
+// test fails the run, so the list cannot go stale.
+const K6_UNIT = 'tests/contract/unit/k6.spec.ts'
+const K6_PAGES = 'tests/contract/browser/k6-pages.browser.spec.ts'
 const ADDED_AFTER_BASELINE = [
-  'tests/contract/unit/k6.spec.ts',
-  'tests/contract/browser/k6-pages.browser.spec.ts',
-  'tests/contract/browser/dom-contract.browser.spec.ts > C-40 the rendered DOM matches the DOM contract in every state'
+  // C-63 search, C-65 cursor paging controls, C-62 `useQueryTable`: no such
+  // surface in 2.2.x. (C-64's "draws no column without `selection`" is
+  // compared: 2.2.x draws none either.)
+  `${K6_UNIT} > C-63 Typed search is debounced [own]`,
+  `${K6_UNIT} > C-64 Selection column [tanstack] [own] toggles a row and emits the new map, keyed by rowKey`,
+  `${K6_UNIT} > C-64 Selection column [tanstack] [own] the header checkbox selects the page and keeps other keys`,
+  `${K6_UNIT} > C-64 Selection column [tanstack] [own] keys rows by index without rowKey`,
+  `${K6_UNIT} > C-65 Cursor paging controls [tanstack] [own]`,
+  `${K6_UNIT} > C-62 Dispose and isolation [own]`,
+  // Pages of the playground that use the v3 surface. The TanStack path page
+  // never loads the package under test (it builds on the core plugins), so
+  // it passes on both builds and a comparison would say nothing.
+  `${K6_PAGES} > cursor paging walks forward and back with the cursors of the server`,
+  `${K6_PAGES} > typed search is applied once, after the debounce, from the first page`,
+  `${K6_PAGES} > the checkbox column selects rows into the page selection`,
+  `${K6_PAGES} > the TanStack path sorts, filters and pages through the query`,
+  // C-66: the selection column's DOM hooks.
+  'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
-    entry => name === entry || name.startsWith(`${entry} > `)
+    entry => name === entry || name.startsWith(`${entry} `)
   )
 const baseline = option('baseline', 'git:origin/main')
 const candidate = option('candidate', 'src')
@@ -301,6 +321,13 @@ const main = async () => {
     ...results.baseline.keys(),
     ...results.candidate.keys()
   ])
+  // A run narrowed to one suite cannot tell which entries are stale.
+  const stale = (runUnit && runBrowser ? ADDED_AFTER_BASELINE : []).filter(
+    entry =>
+      ![...results.candidate.keys()].some(
+        name => name === entry || name.startsWith(`${entry} `)
+      )
+  )
   const differences = []
   const added = []
   let traced = 0
@@ -401,6 +428,9 @@ const main = async () => {
     problems.push(
       `baseline and candidate resolve to the same entry (${resolvedEntries.baseline}): the comparison is a build against itself`
     )
+  }
+  for (const entry of stale) {
+    problems.push(`ADDED_AFTER_BASELINE entry matches no test: ${entry}`)
   }
   for (const problem of problems) {
     console.error(`[equivalence] FAIL: ${problem}`)

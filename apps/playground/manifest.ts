@@ -282,7 +282,7 @@ export const pages: PlaygroundPage[] = [
         'PaginationSlotProps'
       ]
     },
-    rules: ['C-56', 'C-57', 'C-58', 'C-59', 'C-63', 'C-64', 'C-65']
+    rules: ['C-56', 'C-57', 'C-58', 'C-59', 'C-63', 'C-64', 'C-65', 'C-66']
   },
   {
     id: 'tanstack-path',
