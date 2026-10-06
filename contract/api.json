@@ -737,12 +737,17 @@
     {
       "id": "C-77",
       "title": "Structural errors",
-      "text": "A query the evaluator does not support, or data that does not fit the dataset, is returned as a value, `{ ok: false, error }`, with one of the codes of `semantics.md` and its location fields (`path`, `field`, `rule`, `row`, `name`). The error is the first one in the validation order of the profile; query errors are found before any row is read, and there is no partial result. A malformed definition passed to `defineDataset`, and a broken precondition of `applyQuery` (a dataset not made by `defineDataset`, options that are not an object, a `paginate` that is not a boolean), throw `TypeError`. Unknown top-level keys that are not reserved, and extra properties of a rule, are ignored. `sorts`, `any`, `group`, `aggregates` and the conditions `IsNull` and `IsNotNull` are `unsupported-extension`. A `get` that throws, or returns a value that does not fit the field type, is `invalid-data`; values are never converted. A repeated key is `duplicate-key`, even on a row that is filtered out or off the page. Source: own"
+      "text": "A query the evaluator does not support, or data that does not fit the dataset, is returned as a value, `{ ok: false, error }`, with one of the codes of `semantics.md` and its location fields (`path`, `field`, `rule`, `row`, `name`). The error is the first one in the validation order of the profile; query errors are found before any row is read, and there is no partial result. A query, a sort or a rule that is not a plain object is `invalid-query`. A malformed definition passed to `defineDataset`, and a broken precondition of `applyQuery` (a dataset not made by `defineDataset`, options that are not an object, a `paginate` that is not a boolean), throw `TypeError`. Unknown top-level keys that are not reserved, and extra properties of a rule, are ignored. `sorts`, `any`, `group`, `aggregates` and the conditions `IsNull` and `IsNotNull` are `unsupported-extension`. A read that throws (a `get`, or a getter met by a path read), or a value that does not fit the field type, is `invalid-data`; values are never converted. A repeated key is `duplicate-key`, even on a row that is filtered out or off the page. Source: own"
     },
     {
       "id": "C-78",
       "title": "Semantics profile",
       "text": "Every evaluation names a semantics profile, and there is no default: a missing or unknown profile is the error `unknown-profile`, not a throw. `tr-1` is the meaning written in `semantics.md` and never changes; a new meaning is a new profile. `profiles` lists the profiles of the build. Source: own"
+    },
+    {
+      "id": "C-79",
+      "title": "The conformance suite ships",
+      "text": "`@dolusoft/query-protocol` publishes its conformance suite under `conformance/`: a manifest with `fixtureFormat`, `revision`, the profiles, the SHA-256 of the query schema it was written against, the SHA-256 of each data file, and for each case file its counts of active cases, withdrawn cases and runs and the SHA-256 of its bytes. A runner refuses an unknown `fixtureFormat`, a broken reference and a hash that does not match. The expected result of a case never changes while its profile lives: a wrong case is withdrawn, not edited, and every semantic change raises `revision`. Source: own"
     }
   ]
 }

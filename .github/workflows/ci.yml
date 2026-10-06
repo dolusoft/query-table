@@ -38,6 +38,7 @@ jobs:
       - run: pnpm contract:check
       # The JSON Schema of the protocol is generated from its constants.
       - run: pnpm schema:check
+      - run: pnpm conformance:check
       - run: pnpm playground:build
       - run: pnpm test:coverage
 

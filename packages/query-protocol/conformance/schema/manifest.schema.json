@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dolusoft/query-table/packages/query-protocol/conformance/schema/manifest.schema.json",
+  "title": "Conformance manifest",
+  "description": "The index of the local query conformance suite: its format, revision and profiles, the query schema it was written against, and the counts and SHA-256 of every case file. Paths are relative to the manifest.",
+  "type": "object",
+  "required": [
+    "fixtureFormat",
+    "suite",
+    "revision",
+    "profiles",
+    "querySchema",
+    "files",
+    "data"
+  ],
+  "properties": {
+    "fixtureFormat": {
+      "const": 1,
+      "description": "The version of the file format; a runner refuses one it does not know."
+    },
+    "suite": {
+      "const": "query-local-conformance"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Raised on every change of meaning: a case added or withdrawn, a data or format change."
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "querySchema": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "active",
+          "withdrawn",
+          "executions",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^cases/[a-z0-9-]+\\.json$"
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Cases that are not withdrawn."
+          },
+          "withdrawn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "executions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Runs of the active cases."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "The SHA-256 of the bytes of the file."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "data": {
+      "type": "array",
+      "description": "The data files the cases refer to.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^data/[a-z0-9-]+\\.json$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "The SHA-256 of the bytes of the file."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

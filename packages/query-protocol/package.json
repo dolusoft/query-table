@@ -19,7 +19,8 @@
       "types": "./dist/types/local/index.d.ts",
       "default": "./dist/local.js"
     },
-    "./query.schema.json": "./dist/query.schema.json"
+    "./query.schema.json": "./dist/query.schema.json",
+    "./conformance/*": "./dist/conformance/*"
   },
   "engines": {
     "node": ">=22.12"
@@ -31,6 +32,6 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/emit-type-extensions.mjs dist/types && node ../../scripts/gen-schema.mjs --copy"
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/emit-type-extensions.mjs dist/types && node ../../scripts/gen-schema.mjs --copy && node ../../scripts/copy-conformance.mjs"
   }
 }
