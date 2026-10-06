@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Label } from '@/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 
 import { QueryTable, type QueryTableExpose } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
@@ -31,17 +33,14 @@ const focus = () => {
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-3 text-sm">
-      <label class="flex items-center gap-2">
+      <Label class="font-normal">
         Field
-        <select
-          v-model="field"
-          class="h-7 rounded-lg border border-input bg-background px-2"
-        >
-          <option v-for="name in fields" :key="name" :value="name">
+        <NativeSelect v-model="field" size="sm">
+          <NativeSelectOption v-for="name in fields" :key="name" :value="name">
             {{ name }}
-          </option>
-        </select>
-      </label>
+          </NativeSelectOption>
+        </NativeSelect>
+      </Label>
       <Button variant="outline" size="sm" @click="focus">
         focusFilter('{{ field }}')
       </Button>

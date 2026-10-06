@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
+import { Label } from '@/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 
 import type { ColumnType, FilterCondition } from '../../src/contract'
 import { parseFilterInput } from '../../src/index'
@@ -48,47 +51,46 @@ const rules = computed(() =>
 <template>
   <div class="flex flex-col gap-3 text-sm">
     <div class="flex flex-wrap items-end gap-3">
-      <label class="flex flex-col gap-1">
+      <Label class="flex-col items-start gap-1.5">
         Column type
-        <select
-          v-model="type"
-          class="h-8 rounded-lg border border-input bg-background px-2"
-        >
-          <option v-for="name in types" :key="name" :value="name">
+        <NativeSelect v-model="type">
+          <NativeSelectOption v-for="name in types" :key="name" :value="name">
             {{ name }}
-          </option>
-        </select>
-      </label>
-      <label class="flex flex-col gap-1">
+          </NativeSelectOption>
+        </NativeSelect>
+      </Label>
+      <Label class="flex-col items-start gap-1.5">
         Menu condition
-        <select
-          v-model="condition"
-          class="h-8 rounded-lg border border-input bg-background px-2"
-        >
-          <option value="">type default</option>
-          <option v-for="name in conditions" :key="name" :value="name">
+        <NativeSelect v-model="condition">
+          <NativeSelectOption value="">type default</NativeSelectOption>
+          <NativeSelectOption
+            v-for="name in conditions"
+            :key="name"
+            :value="name"
+          >
             {{ name }}
-          </option>
-        </select>
-      </label>
-      <label class="flex min-w-64 flex-1 flex-col gap-1">
+          </NativeSelectOption>
+        </NativeSelect>
+      </Label>
+      <Label class="min-w-64 flex-1 flex-col items-stretch gap-1.5">
         Typed text
         <Input v-model="text" class="font-mono" />
-      </label>
+      </Label>
     </div>
     <div
       class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
     >
       Try:
-      <button
+      <Button
         v-for="sample in examples"
         :key="sample"
-        type="button"
-        class="rounded-md border px-2 py-0.5 font-mono text-foreground hover:bg-muted"
+        variant="outline"
+        size="xs"
+        class="font-mono"
         @click="text = sample"
       >
         {{ sample }}
-      </button>
+      </Button>
     </div>
     <div class="rounded-md border bg-muted/50 p-3">
       <p class="pb-1 text-xs font-medium text-muted-foreground">

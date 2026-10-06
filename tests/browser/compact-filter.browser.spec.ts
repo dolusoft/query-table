@@ -14,10 +14,11 @@ import type { TableQuery } from '../../src/contract'
 
 const funnel = (field: string) =>
   page.getByCSS(`th[data-field="${field}"] .column-filter-trigger`)
+// The sheet is a shadcn-vue `Sheet` (reka-ui `Dialog`): its content is in the
+// DOM while open or closing, and `data-state` says which.
 const sheet = () =>
-  document.querySelector<HTMLDialogElement>(
-    '[data-testid="column-filter-sheet"]'
-  )!
+  document.querySelector<HTMLElement>('[data-testid="column-filter-sheet"]')
+const sheetOpen = () => sheet()?.dataset.state === 'open'
 const chipTexts = () =>
   [...document.querySelectorAll('[data-testid="filter-chip"]')].map(chip =>
     chip.textContent?.trim()
@@ -46,11 +47,11 @@ test('at 375px the filter row is off, funnels open a sheet and nothing overflows
   expect(funnel('city').element().closest('.qt-sort')).toBeNull()
 
   await userEvent.click(funnel('city'))
-  expect(sheet().open).toBe(true)
+  expect(sheetOpen()).toBe(true)
   await expect
     .element(page.getByRole('dialog'))
     .toHaveAccessibleName('Filter City')
-  expect(document.activeElement).toBe(sheet().querySelector('input'))
+  expect(document.activeElement).toBe(sheet()?.querySelector('input'))
   expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(375)
 })
 
@@ -68,7 +69,7 @@ test('Apply commits once, goes to page 1 and returns focus', async () => {
   await expect.element(pageInfo()).toHaveTextContent('Page 2 of 14')
   await userEvent.keyboard('{Enter}')
 
-  expect(sheet().open).toBe(false)
+  expect(sheetOpen()).toBe(false)
   await expect.element(pageInfo()).toHaveTextContent('Page 1 of 4')
   expect(chipTexts()).toEqual(['Age greater than 44'])
   expect(document.activeElement).toBe(funnel('age').element())
@@ -80,7 +81,7 @@ test('Escape discards the draft and restores focus', async () => {
   await userEvent.click(funnel('name'))
   await userEvent.type(page.getByRole('textbox', { name: 'Value' }), 'zzz')
   await userEvent.keyboard('{Escape}')
-  await expect.poll(() => sheet().open).toBe(false)
+  await expect.poll(() => sheetOpen()).toBe(false)
   expect(chipTexts()).toEqual([])
   await expect.element(pageInfo()).toHaveTextContent('Page 1 of 14')
   expect(document.activeElement).toBe(funnel('name').element())
@@ -91,9 +92,9 @@ test('invalid numbers are rejected with a message, not cleared', async () => {
   await userEvent.click(funnel('salary'))
   await userEvent.type(page.getByRole('textbox', { name: 'Value' }), '3x')
   await userEvent.click(page.getByRole('button', { name: 'Apply' }))
-  expect(sheet().open).toBe(true)
+  expect(sheetOpen()).toBe(true)
   await expect
-    .poll(() => sheet().querySelector('[role="alert"]')?.textContent)
+    .poll(() => sheet()?.querySelector('[role="alert"]')?.textContent)
     .toContain('Enter a number')
   expect(chipTexts()).toEqual([])
 })
@@ -117,7 +118,7 @@ test('chips edit and remove; the add-filter picker reaches any column', async ()
     .element(page.getByRole('textbox', { name: 'Value' }))
     .toHaveValue('ank')
   await userEvent.keyboard('{Escape}')
-  await expect.poll(() => sheet().open).toBe(false)
+  await expect.poll(() => sheetOpen()).toBe(false)
 
   await userEvent.click(
     page.getByRole('button', { name: 'Remove filter: City contains ank' })

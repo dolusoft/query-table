@@ -2,6 +2,9 @@
 import { computed, ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 
 import type { QueryChangeReason, TableQuery } from '../../src/contract'
 import { QueryTable, type QueryTableExpose } from '../../src/index'
@@ -50,21 +53,18 @@ const resetFromOutside = () => {
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-3 text-sm">
-      <label class="flex items-center gap-2">
-        <input v-model="applyUpdates" type="checkbox" />
+      <Label class="font-normal">
+        <Checkbox v-model="applyUpdates" />
         Apply emitted queries
-      </label>
-      <label class="flex items-center gap-2">
+      </Label>
+      <Label class="font-normal">
         filterDebounce
-        <select
-          v-model.number="filterDebounce"
-          class="h-7 rounded-lg border border-input bg-background px-2"
-        >
-          <option :value="0">0</option>
-          <option :value="100">100</option>
-          <option :value="1000">1000</option>
-        </select>
-      </label>
+        <NativeSelect v-model="filterDebounce" size="sm">
+          <NativeSelectOption :value="0">0</NativeSelectOption>
+          <NativeSelectOption :value="100">100</NativeSelectOption>
+          <NativeSelectOption :value="1000">1000</NativeSelectOption>
+        </NativeSelect>
+      </Label>
       <Button variant="outline" size="sm" @click="table?.flushPendingFilters()">
         flushPendingFilters()
       </Button>
