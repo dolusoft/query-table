@@ -24,8 +24,7 @@ import {
   principles,
   repositoryUrl,
   showcase,
-  showcaseFeatures,
-  version
+  showcaseFeatures
 } from './home-content'
 import ShowcaseTable from './ShowcaseTable.vue'
 import InlineCode from '../shell/InlineCode.vue'
@@ -56,7 +55,9 @@ const diagramLoaded = ref(false)
       aria-labelledby="home-title"
       class="flex flex-col items-start gap-5"
     >
-      <Badge variant="secondary">Vue 3 · v{{ version }}</Badge>
+      <!-- No version here: package.json carries the next version before its
+           release exists. -->
+      <Badge variant="secondary">Vue 3 · headless</Badge>
       <h1
         id="home-title"
         class="text-4xl font-semibold tracking-tight sm:text-5xl"
@@ -66,13 +67,15 @@ const diagramLoaded = ref(false)
       <p class="max-w-2xl text-lg text-balance text-muted-foreground">
         {{ pitch }}
       </p>
+      <!-- The command scrolls sideways in its own box; the copy button sits
+           next to it, never over the text. -->
       <div
-        class="relative w-full max-w-4xl rounded-lg border bg-muted/50"
+        class="flex w-full max-w-4xl items-center gap-1 rounded-lg border bg-muted/50 pr-1"
         data-testid="install-command"
       >
-        <ScrollArea class="w-full">
+        <ScrollArea class="min-w-0 flex-1">
           <pre
-            class="w-max py-3 pr-14 pl-4 font-mono text-sm"
+            class="w-max py-3 pr-2 pl-4 font-mono text-sm"
           ><code>{{ installCommand }}</code></pre>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
@@ -80,7 +83,7 @@ const diagramLoaded = ref(false)
           type="button"
           variant="ghost"
           size="icon-sm"
-          class="absolute inset-y-0 right-1 my-auto size-11 bg-muted sm:right-2 sm:size-7"
+          class="size-11 shrink-0 sm:size-8"
           :aria-label="copied ? 'Copied' : 'Copy install command'"
           data-testid="copy-install"
           @click="copy(installCommand)"

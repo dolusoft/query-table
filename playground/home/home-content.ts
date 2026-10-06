@@ -13,8 +13,6 @@ export const pitch =
 /** The package is published as a GitHub release tarball, not on npm. */
 export const installCommand = `pnpm add ${repositoryUrl}/releases/download/v${version}/dolusoft-query-table-${version}.tgz`
 
-export { version }
-
 export interface HomeSection {
   /** Element id on the home page, the search anchor. */
   id: string
