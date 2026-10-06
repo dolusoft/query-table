@@ -616,17 +616,17 @@
     {
       "id": "C-56",
       "title": "Cursor paging",
-      "text": "A query with a `cursor` key is in cursor mode: the server pages by opaque cursors and the total may be unknown. `cursor: null` asks for the first page, `{ token, direction }` for the page on that side of the one shown. The consumer passes the cursors its server answered with (`{ next, prev }`, `null` where there is no page). `nextPage` and `previousPage` emit reason `page` with the cursor on that side and change nothing else; they do nothing when that side has no cursor, and so does a jump to a page number. `canNext` and `canPrevious` say whether that side has a cursor. Source: tanstack, own"
+      "text": "A query with a `cursor` key is in cursor mode: the server pages by opaque cursors and the total may be unknown. `cursor: null` asks for the first page, `{ token, direction }` for the page on that side of the one shown. The consumer passes the cursors of the page shown (`{ next, prev }`, `null` where there is no page): `next` from its server, `prev` from its server or from its own stack of earlier cursors; the table does not tell them apart. A token is opaque: it may hold JSON or base64 and has no length limit, and only the server reads inside it. `direction: 'prev'` means the consumer asks for the page before the one shown with that cursor; mapping the direction to the server's is the consumer's. `nextPage` and `previousPage` emit reason `page` with the cursor on that side and change nothing else; they do nothing when that side has no cursor, and so does a jump to a page number. `canNext` and `canPrevious` say whether that side has a cursor. Source: tanstack, own"
     },
     {
       "id": "C-57",
       "title": "Cursor mode starts over",
-      "text": "In cursor mode a sort, a filter change, a page size change, a search and clearing all filters emit `cursor: null`: a cursor belongs to the order, filters and size it was answered for. In page mode the same actions go to `page: 1`, except a sort, which keeps the page (C-07). Source: own"
+      "text": "In cursor mode a sort, a filter change, a page size change, a search and clearing all filters emit `cursor: null`: a cursor belongs to the order, filters and size it was answered for. In page mode the same actions go to `page: 1`, except a sort, which keeps the page (C-07). Other inputs that invalidate a cursor (a time range, a set of sources) are outside the query: the consumer sets `cursor: null` itself when they change. A server that fixes the order of a cursor may ignore `sort`; the consumer then marks the columns `sortable: false`, so no header offers a sort that does nothing. Source: own"
     },
     {
       "id": "C-58",
       "title": "Global search",
-      "text": "`search` is the text of a global search; the server decides what it matches. Setting it emits reason `search` with the text as given, spaces included, and `page: 1` (C-57 in cursor mode). Empty text removes the `search` key: an emitted query never holds `search: ''`, and an absent key and `''` mean the same. Setting the text the query already has emits nothing. A pending filter is applied first (C-14). Source: tanstack, own"
+      "text": "`search` is the text of a global search; the server decides what it matches. Setting it emits reason `search` with the text as given, spaces included, and `page: 1` (C-57 in cursor mode). Empty text removes the `search` key: an emitted query never holds `search: ''`, and an absent key and `''` mean the same. Setting the text the query already has emits nothing. A pending filter is applied first (C-14). The core emits each text it is given; debouncing typed text is the Vue layer's, with a configurable delay, and a delay of `0` turns it off for a consumer that debounces on its own, so the text is never debounced twice. Source: tanstack, own"
     },
     {
       "id": "C-59",
