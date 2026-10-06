@@ -62,6 +62,12 @@ const K6_UNIT = 'tests/contract/unit/k6.spec.ts'
 const K6_PAGES = 'tests/contract/browser/k6-pages.browser.spec.ts'
 const COLUMNS_UNIT = 'tests/contract/unit/columns.spec.ts'
 const ADDED_AFTER_BASELINE = [
+  // 3.0.1 has no rowPinning prop or data-pinned-row on rows and subtables
+  // (C-74); the other new selection and expansion tests run on both builds.
+  'tests/contract/browser/row-expansion.browser.spec.ts > F4 C-74 row-pinned details follow their row with the same data-pinned-row placement',
+  // This existing playground case calls the C-74 cell-slot pinRow method
+  // and reads rowPinned; neither slot member exists in 3.0.1.
+  'tests/contract/browser/playground.browser.spec.ts > C-74 playground pin buttons stay enabled and focused after keyboard pinning',
   // C-63 search, C-65 cursor paging controls, C-62 `useQueryTable`: no such
   // surface in 2.2.x. (C-64's "draws no column without `selection`" is
   // compared: 2.2.x draws none either.)
@@ -98,7 +104,6 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/row-pinning.spec.ts > C-74 Row pinning [tanstack] [own]',
   'tests/contract/unit/row-pinning.spec.ts > C-74 composable: TanStack calls go to the consumer [tanstack]',
   'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
-  'tests/contract/browser/playground.browser.spec.ts > C-74 playground pin buttons stay enabled and focused after keyboard pinning',
   // `moveColumn` is its own test, so the other C-44 tests still compare.
   'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
 ]
