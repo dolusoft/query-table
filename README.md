@@ -15,12 +15,12 @@ The three packages are released together as GitHub Release tarballs. The Vue pac
 ```yaml
 # pnpm-workspace.yaml
 overrides:
-  '@dolusoft/query-protocol': https://github.com/dolusoft/query-table/releases/download/v3.0.1/dolusoft-query-protocol-3.0.1.tgz
-  '@dolusoft/query-table-core': https://github.com/dolusoft/query-table/releases/download/v3.0.1/dolusoft-query-table-core-3.0.1.tgz
+  '@dolusoft/query-protocol': https://github.com/dolusoft/query-table/releases/download/v3.1.0/dolusoft-query-protocol-3.1.0.tgz
+  '@dolusoft/query-table-core': https://github.com/dolusoft/query-table/releases/download/v3.1.0/dolusoft-query-table-core-3.1.0.tgz
 ```
 
 ```bash
-pnpm add https://github.com/dolusoft/query-table/releases/download/v3.0.1/dolusoft-query-table-3.0.1.tgz
+pnpm add https://github.com/dolusoft/query-table/releases/download/v3.1.0/dolusoft-query-table-3.1.0.tgz
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
