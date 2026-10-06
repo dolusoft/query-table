@@ -16,15 +16,26 @@ Legitimate transient state, owned by the plugins or the Vue layer: draft text, t
 
 **Hybrid behavior.** A rule is first expressed through TanStack options. Where TanStack differs, a thin override is written and listed in the contract, rule by rule:
 
-| Rule                        | TanStack default                                                     | Override                                                                                                       |
-| --------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| C-05 paging                 | 0-based `pageIndex`; next page allowed when the row count is unknown | 1-based `page` ↔ 0-based index; `pageCount` from `totalRows`; next page checks the supplied total              |
-| C-06 page size              | `setPageSize` keeps the top row                                      | not used; our action sets `pageSize` and `page: 1`                                                             |
-| C-07 header sort            | `sortDescFirst` can start descending                                 | `sortDescFirst: false`; asc → desc → none                                                                      |
-| C-03, C-10, C-17 rule order | one value per column                                                 | the filter value is `FilterRule[]` with a no-op `filterFn`; `replaceRules` keeps rule order and unknown fields |
-| server data                 | client-side row models                                               | `manualSorting`, `manualPagination`, `manualFiltering: true`                                                   |
+| Rule                        | TanStack default                                                     | Override                                                                                                                                           |
+| --------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C-05 paging                 | 0-based `pageIndex`; next page allowed when the row count is unknown | 1-based `page` ↔ 0-based index; `pageCount` from `totalRows`; next page checks the supplied total                                                  |
+| C-06 page size              | `setPageSize` keeps the top row                                      | not used; our action sets `pageSize` and `page: 1`                                                                                                 |
+| C-07 header sort            | `sortDescFirst` can start descending                                 | `sortDescFirst: false`; asc → desc → none                                                                                                          |
+| C-03, C-10, C-17 rule order | one value per column                                                 | the filter value is `FilterRule[]` with a no-op `filterFn`; `replaceRules` keeps rule order and unknown fields                                     |
+| server data                 | client-side row models                                               | `manualSorting`, `manualPagination`, `manualFiltering: true`                                                                                       |
+| C-06 values below 1         | `setPageSize` turns them into 1                                      | the Vue layer validates `setPageSize(n)` before calling TanStack; the plugin ignores sizes that are not whole                                      |
+| C-07 two toggles in a tick  | `toggleSorting` reads the next direction from the drawn state        | the sort action derives the next direction from the base query (the spike shows the second toggle is lost)                                         |
+| cursor paging (K6)          | `pageIndex` and `pageCount` count pages                              | the position is always "here": `pageIndex` 1 or 0 by the previous cursor, `pageCount` one more by the next one; a ±1 step becomes a cursor request |
 
 `getDefaultTableOptions` is pinned by a unit test.
+
+**K6 additions (2026-10-06).** The three features v3 adds follow the same ownership rule:
+
+- **Row selection.** `rowSelectionFeature` is used as is, but its slice is controlled: the consumer owns `v-model:selection` (row key → `true`), `state.rowSelection` is that prop, and `onRowSelectionChange` emits `update:selection` instead of writing. Keys of rows that are not on the current page stay in the selection. Rows are keyed by `getRowId` (the table's `rowKey`).
+- **Cursor paging.** The protocol gets a cursor mode next to page numbers: the query carries the cursor to follow and its direction, the consumer passes the cursors its server answered with, and the total may be unknown. `serverQueryFeature` carries both modes; TanStack's own `getCanPreviousPage`, `getCanNextPage`, `previousPage` and `nextPage` work unchanged through the projection in the table above. A filter, a sort or a page size change starts over at the first cursor.
+- **Global search.** `Query.search` in the protocol; `globalFilteringFeature` in manual mode, its slice projected from `query.search` like the column filters. Not part of the spike; designed in PR-B.
+
+The feasibility of the ownership model, including cursor paging and controlled selection, is measured in [`spike/REPORT.md`](../../spike/REPORT.md).
 
 **Pin geometry is own code.** `--qt-pin-left` comes from a single `ResizeObserver` measurement of the rendered pinned cells, in rendered order, utility cells included. `columnSizingFeature` is not used for offsets, and measurements are never written back into committed sizes. `columnPinningFeature` is used for order only, with an explicit mapping of the physical `left` side to TanStack's `start`. `Column.width` stays a CSS string; TanStack's numeric `size` is not adopted. A resize the consumer does not accept reverts to the committed width.
 

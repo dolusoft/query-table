@@ -5,14 +5,16 @@
     "contract/dom.ts",
     "scripts/*.mjs",
     "playground/examples/*.vue",
-    "playground/skin/gen-skin.ts"
+    "playground/skin/gen-skin.ts",
+    "spike/size/*.{ts,mjs}"
   ],
   "project": [
     "src/**/*.{ts,vue}",
     "contract/**/*.ts",
     "scripts/*.mjs",
     "tests/**/*.ts",
-    "playground/**/*.{ts,vue,css}"
+    "playground/**/*.{ts,vue,css}",
+    "spike/**/*.{ts,mjs}"
   ],
   "ignore": [
     "playground/skin/ui/table/TableFooter.vue",

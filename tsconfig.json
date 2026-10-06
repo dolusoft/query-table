@@ -18,5 +18,5 @@
       "@dolusoft/query-table": ["./src/index.ts"]
     }
   },
-  "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "playground/**/*.ts", "playground/**/*.vue", "*.config.ts"]
+  "include": ["contract/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "playground/**/*.ts", "playground/**/*.vue", "spike/**/*.ts", "*.config.ts"]
 }
