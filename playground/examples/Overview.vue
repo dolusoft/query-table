@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
+import FilterSheet from '../harness/FilterSheet.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 
@@ -13,8 +14,13 @@ const { query, result } = useFakeServer(createDemoRows(), {
 </script>
 
 <template>
-  <!-- A fixed layout keeps the columns still while rows change. -->
-  <div class="[&_.qt-table]:table-fixed">
+  <!-- A fixed layout keeps the columns still while rows change; under 40rem
+       the table scrolls sideways instead of squeezing them. Below 640px of
+       width the header has no room for a filter row: the page hides it and
+       offers the same filters in a panel behind one button. -->
+  <div
+    class="@container [&_.qt-table]:min-w-160 [&_.qt-table]:table-fixed @max-[640px]:[&_.qt-filter]:hidden"
+  >
     <QueryTable
       v-model:query="query"
       :columns="columns"
@@ -26,9 +32,14 @@ const { query, result } = useFakeServer(createDemoRows(), {
       filterable
     >
       <template #toolbar>
-        <p class="pb-2 text-sm text-muted-foreground">
-          {{ result.totalRows }} people match.
-        </p>
+        <div class="flex items-center justify-between gap-2 pb-2">
+          <p class="text-sm text-muted-foreground">
+            {{ result.totalRows }} people match.
+          </p>
+          <div class="@min-[640px]:hidden">
+            <FilterSheet v-model:query="query" :columns="columns" />
+          </div>
+        </div>
       </template>
       <template #filter-menu="menu">
         <FilterMenu :menu="menu" />

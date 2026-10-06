@@ -143,6 +143,38 @@ th[data-filtered] .qt-filter-input {
   @apply pr-[calc(30%+--spacing(1))];
 }
 
+/* Narrow columns. The filter row is a size container, so it never widens its
+   column and the rules below follow the width the column really has. A
+   filter row under 6rem moves the button into the input's end and drops
+   the condition label (the input's border still marks a filtered column);
+   below 4rem only the button is left. A data column keeps 5.5rem in the auto
+   layout; past that the table scrolls inside `.qt-table-responsive`. */
+.qt-filter {
+  container: qt-filter / inline-size;
+}
+.qt-table th[data-field] {
+  @apply min-w-22;
+}
+@container qt-filter (width < 6rem) {
+  .qt-filter-input {
+    @apply pr-8;
+  }
+  .qt-filter-button {
+    @apply absolute top-1/2 right-0.5 size-7 -translate-y-1/2 border-transparent bg-transparent dark:border-transparent dark:bg-transparent;
+  }
+  .qt-filter-condition {
+    @apply hidden;
+  }
+}
+@container qt-filter (width < 4rem) {
+  .qt-filter-input {
+    @apply hidden;
+  }
+  .qt-filter-button {
+    @apply static translate-y-0;
+  }
+}
+
 /* Icon buttons in the utility columns: Button, variant ghost, size icon-xs */
 .qt-clear-all-button,
 .qt-expand,
