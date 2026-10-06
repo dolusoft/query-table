@@ -11,3 +11,7 @@
 /.github/                   @zahidzorbaz
 /AGENTS.md                  @zahidzorbaz
 /CLAUDE.md                  @zahidzorbaz
+/scripts/equivalence.mjs    @zahidzorbaz
+/tests/repo/                @zahidzorbaz
+/knip.json                  @zahidzorbaz
+/vitest.config.ts           @zahidzorbaz
