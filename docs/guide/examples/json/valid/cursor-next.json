@@ -1,0 +1,7 @@
+{
+  "cursor": { "token": "eyJ0IjoiMjAyNi0xMC0wNiIsImlkIjo0Mn0=", "direction": "next" },
+  "pageSize": 50,
+  "sort": null,
+  "filters": [{ "field": "level", "condition": "Equal", "value": "error" }],
+  "search": "timeout"
+}

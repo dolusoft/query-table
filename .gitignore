@@ -19,3 +19,7 @@ temp/
 
 # scripts/equivalence.mjs: packed baselines, raw reports, report.json
 .equivalence/
+
+# docs/guide .NET example
+docs/guide/examples/dotnet/bin/
+docs/guide/examples/dotnet/obj/
