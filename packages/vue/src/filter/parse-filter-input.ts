@@ -1,5 +1,6 @@
+import { parseFilterInput as parse } from '@dolusoft/query-protocol'
+
 import type { Column, FilterCondition, FilterRule } from '../contract'
-import { parseDraft } from './filter-draft'
 
 /**
  * The rules the table emits when `text` is typed into the filter input of
@@ -19,20 +20,12 @@ import { parseDraft } from './filter-draft'
  * type's default applies (`Contains` for text, `Equal` otherwise). Empty or
  * blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`.
  * Invalid input never throws. Pure: no Vue, no DOM; the column is not written.
+ * The grammar is the protocol's (`@dolusoft/query-protocol`).
  */
 export function parseFilterInput(
   text: string,
   column: Column,
   condition: FilterCondition | null = null
 ): FilterRule[] {
-  // Runtime guard for JavaScript callers: the type says `string`, but an
-  // untyped caller may pass `null`, a number or a URL parameter that is absent.
-  if (typeof text !== 'string') {
-    return []
-  }
-  return parseDraft(column, { text, condition }).map(rule => ({
-    field: column.field,
-    condition: rule.condition,
-    value: rule.value
-  }))
+  return parse(text, column, condition)
 }

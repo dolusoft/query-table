@@ -1,34 +1,39 @@
-<script setup lang="ts" generic="T extends object">
+<script
+  setup
+  lang="ts"
+  generic="T extends object, Q extends Query = TableQuery"
+>
 import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
 
-import TableBody from './body/table-body.vue'
-import TableFooter from './body/table-footer.vue'
-import { useExpansion } from './body/use-expansion'
 import type {
   CellSlotProps,
   HeaderSlotProps,
+  Query,
+  QueryTableExpose,
   TableEmits,
   TableProps,
+  TableQuery,
   TableSlots,
-  QueryTableExpose
+  ToolbarSlotProps
 } from './contract'
 import { resolveLabels } from './core/labels'
 import { provideTableContext } from './core/table-context'
-import { useColumns } from './core/use-columns'
-import { useQueryEmitter } from './core/use-query-emitter'
 import { focusFilterOf } from './filter/focus-filter'
-import { useFilterDrafts } from './filter/use-filter-drafts'
-import TableHeader from './header/table-header.vue'
-import TablePagination from './pagination/table-pagination.vue'
-import { usePagination } from './pagination/use-pagination'
-import { utilityKey } from './pin/pin'
+import TableBody from './parts/table-body.vue'
+import TableFooter from './parts/table-footer.vue'
+import TableHeader from './parts/table-header.vue'
+import TablePagination from './parts/table-pagination.vue'
+import { utilityKey, type Utility } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
 import { useColumnResize } from './resize/use-column-resize'
-import { useSort } from './sort/use-sort'
+import { useQueryTable } from './use-query-table'
 
 defineOptions({ name: 'QueryTable' })
 
-const props = withDefaults(defineProps<TableProps<T>>(), {
+const props = withDefaults(defineProps<TableProps<T, Q>>(), {
+  cursors: null,
+  selection: undefined,
+  searchDebounce: 300,
   rows: () => [],
   totalRows: null,
   footerRows: () => [],
@@ -43,42 +48,32 @@ const props = withDefaults(defineProps<TableProps<T>>(), {
   labels: undefined
 })
 
-const emit = defineEmits<TableEmits<T>>()
+const emit = defineEmits<TableEmits<T, Q>>()
 
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
-// The table never writes to its props (see use-query-emitter.ts).
-const { base, update } = useQueryEmitter({
+// Every piece of state lives in the composable; the component draws it. The
+// table never writes to its props.
+const state = useQueryTable<T, Q>({
   query: () => props.query,
-  emit: (query, reason) => emit('update:query', query, reason)
-})
-
-const drafts = useFilterDrafts({
-  query: () => props.query,
-  base,
   columns: () => props.columns,
-  debounce: () => props.filterDebounce,
-  update
-})
-
-const { paginationProps, showPagination } = usePagination({
-  props,
-  base,
-  update,
-  flushFilters: () => drafts.flushAll(),
-  hasSlot: () => !!slots.pagination
-})
-
-const sort = useSort({
+  rows: () => props.rows,
+  totalRows: () => props.totalRows,
+  cursors: () => props.cursors,
   sortable: () => props.sortable,
-  query: () => props.query,
-  base,
-  update,
-  flushFilters: () => {
-    drafts.flushAll()
-  }
+  filterDebounce: () => props.filterDebounce,
+  searchDebounce: () => props.searchDebounce,
+  selection: () => props.selection,
+  rowKey: () => props.rowKey,
+  hasSubtable: () => props.hasSubtable,
+  pageSizeOptions: () => props.pagination?.pageSizeOptions,
+  onQueryChange: (query, reason) => emit('update:query', query, reason),
+  onSelectionChange: selection => emit('update:selection', selection)
 })
+const { filters, sort, search, expansion } = state
+const rowSelection = state.selection
+const paginationProps = state.pagination
 
 const labels = computed(() => resolveLabels(props.labels))
 
@@ -92,18 +87,19 @@ const hasContextMenuListener = () => {
   return !!(vnodeProps?.onCellContextMenu || vnodeProps?.onCellContextMenuOnce)
 }
 
-const {
-  entries,
-  visibleColumns,
-  utilities,
-  utilityCount,
-  columnCount,
-  hasPinned
-} = useColumns({
-  columns: () => props.columns,
-  hasSubtable: () => props.hasSubtable,
-  hasRightPanel: () => props.hasRightPanel
-})
+const entries = state.columns
+const visibleColumns = computed(() => entries.value.map(e => e.column))
+const hasPinned = state.hasPinned
+/** Right panel first, then subtable, then selection (C-22: the first hosts clear-all). */
+const utilities = computed(() =>
+  [
+    props.hasRightPanel ? 'right-panel' : null,
+    props.hasSubtable ? 'subtable' : null,
+    rowSelection.enabled.value ? 'select' : null
+  ].filter((name): name is Utility => name !== null)
+)
+const utilityCount = computed(() => utilities.value.length)
+const columnCount = computed(() => entries.value.length + utilityCount.value)
 
 const tableEl = shallowRef<HTMLTableElement | null>(null)
 const { widths, tableWidth, offsets } = useHeaderGeometry({
@@ -131,22 +127,30 @@ const resize = useColumnResize({
 })
 
 provideTableContext({
-  drafts,
+  filters,
   sort,
   resize,
+  selection: rowSelection,
   labels: () => labels.value
 })
 
-const { keyOf, isExpanded, toggle, collapseAll, expandAll } = useExpansion({
-  rows: () => props.rows,
-  rowKey: () => props.rowKey,
-  enabled: () => props.hasSubtable
-})
+const showPagination = computed(
+  () =>
+    !!slots.pagination &&
+    (props.rows.length > 0 ||
+      (props.totalRows ?? 0) > 0 ||
+      (props.pagination?.alwaysShow ?? false))
+)
 
-const toolbarProps = () => ({
-  canClearFilters: drafts.canClearAll(),
+const toolbarProps = (): ToolbarSlotProps => ({
+  canClearFilters: filters.canClearAll(),
   clearFilters: () => {
-    drafts.clearAll()
+    filters.clearAll()
+  },
+  search: search.text.value,
+  setSearch: search.set,
+  applySearch: () => {
+    search.apply()
   }
 })
 
@@ -173,11 +177,11 @@ const headerSlotNames = () =>
     .join(' ')
 
 const exposed: QueryTableExpose = {
-  collapseAll,
-  expandAll,
+  collapseAll: expansion.collapseAll,
+  expandAll: expansion.expandAll,
   focusFilter: field => focusFilterOf(tableEl.value, field),
   flushPendingFilters: () => {
-    drafts.flushAll()
+    filters.flushAll()
   }
 }
 defineExpose(exposed)
@@ -228,11 +232,14 @@ defineExpose(exposed)
           :column-count="columnCount"
           :has-subtable="hasSubtable"
           :has-right-panel="hasRightPanel"
+          :has-selection="rowSelection.enabled.value"
+          :is-selected="rowSelection.isSelected"
+          :toggle-selected="rowSelection.toggle"
           :has-pinned="hasPinned"
           :offsets="offsets"
-          :key-of="keyOf"
-          :is-expanded="isExpanded"
-          :toggle="toggle"
+          :key-of="expansion.keyOf"
+          :is-expanded="expansion.isExpanded"
+          :toggle="expansion.toggle"
           :labels="labels"
           :has-context-menu-listener="hasContextMenuListener"
           @row-right-panel-click="row => emit('rowRightPanelClick', row)"

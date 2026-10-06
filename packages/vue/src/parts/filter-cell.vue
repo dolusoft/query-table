@@ -1,22 +1,26 @@
 <script setup lang="ts">
+import {
+  conditionLabel,
+  conditionOptions,
+  rulesOf
+} from '@dolusoft/query-protocol'
+
 import type {
   Column,
   ColumnType,
   FilterCondition,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
-  TableQuery
+  Query
 } from '../contract'
-import { conditionLabel, filterConditions } from './filter-conditions'
-import { useFilterTrigger } from './use-filter-trigger'
 import { columnName } from '../core/labels'
-import { rulesOf } from '../core/query'
 import { useTableContext } from '../core/table-context'
+import { useFilterTrigger } from '../filter/use-filter-trigger'
 
 const props = defineProps<{
   column: Column
   type: ColumnType
-  query: TableQuery
+  query: Query
 }>()
 
 defineSlots<{
@@ -24,7 +28,7 @@ defineSlots<{
   'filter-menu'?(props: FilterMenuSlotProps): unknown
 }>()
 
-const { drafts, sort, labels } = useTableContext()
+const { filters, sort, labels } = useTableContext()
 
 const inputName = () => labels().filterInput(columnName(props.column))
 
@@ -38,7 +42,7 @@ const trigger = useFilterTrigger({
 })
 
 const labelOf = () => {
-  const label = drafts.label(props.column)
+  const label = filters.labelOf(props.column.field)
   if (!label) {
     return ''
   }
@@ -48,13 +52,13 @@ const labelOf = () => {
 
 // A column with several rules shows their count where the value would be.
 const inputText = () => {
-  const count = drafts.multiOf(props.column.field)
-  return count > 0 ? `(${count})` : drafts.draftOf(props.column.field).text
+  const count = filters.multiOf(props.column.field)
+  return count > 0 ? `(${count})` : filters.draftOf(props.column.field).text
 }
 
 const currentCondition = (): FilterCondition | null =>
   rulesOf(props.query.filters, props.column.field)[0]?.condition ??
-  drafts.draftOf(props.column.field).condition
+  filters.draftOf(props.column.field).condition
 
 const menuProps = (): FilterMenuSlotProps => {
   const { column } = props
@@ -62,9 +66,9 @@ const menuProps = (): FilterMenuSlotProps => {
     column,
     rules: rulesOf(props.query.filters, column.field),
     condition: currentCondition(),
-    conditions: filterConditions[props.type],
-    setCondition: condition => drafts.setCondition(column.field, condition),
-    clear: () => drafts.clear(column.field),
+    conditions: conditionOptions[props.type],
+    setCondition: condition => filters.setCondition(column.field, condition),
+    clear: () => filters.clear(column.field),
     sortable: sort.isSortable(column),
     sortDirection: sort.sortOf(column),
     // `sortBy` does nothing where sorting is off, like a header click (C-07).
@@ -75,8 +79,8 @@ const menuProps = (): FilterMenuSlotProps => {
 
 const datetimeProps = (): FilterDatetimeSlotProps => ({
   column: props.column,
-  value: drafts.draftOf(props.column.field).text,
-  updateValue: value => drafts.onInput(props.column.field, value)
+  value: filters.draftOf(props.column.field).text,
+  updateValue: value => filters.setInput(props.column.field, value)
 })
 
 const inputValue = (event: Event) =>
@@ -84,8 +88,8 @@ const inputValue = (event: Event) =>
 
 // A select has no typing: a pick applies at once.
 const pick = (event: Event) => {
-  drafts.onInput(props.column.field, inputValue(event))
-  drafts.flushField(props.column.field)
+  filters.setInput(props.column.field, inputValue(event))
+  filters.apply(props.column.field)
 }
 </script>
 
@@ -96,26 +100,26 @@ const pick = (event: Event) => {
       type="text"
       class="qt-filter-input"
       :aria-label="inputName()"
-      :value="drafts.draftOf(column.field).text"
-      @input="drafts.onInput(column.field, inputValue($event))"
-      @keydown.enter="drafts.flushField(column.field)"
+      :value="filters.draftOf(column.field).text"
+      @input="filters.setInput(column.field, inputValue($event))"
+      @keydown.enter="filters.apply(column.field)"
     />
     <input
       v-else-if="type === 'number' || type === 'integer'"
-      :type="drafts.multiOf(column.field) ? 'text' : 'number'"
+      :type="filters.multiOf(column.field) ? 'text' : 'number'"
       class="qt-filter-input"
       :aria-label="inputName()"
       :value="inputText()"
-      :readonly="drafts.multiOf(column.field) > 0"
-      @input="drafts.onInput(column.field, inputValue($event))"
-      @keydown.enter="drafts.flushField(column.field)"
+      :readonly="filters.multiOf(column.field) > 0"
+      @input="filters.setInput(column.field, inputValue($event))"
+      @keydown.enter="filters.apply(column.field)"
     />
     <template v-else-if="type === 'bool'">
       <select
         class="qt-filter-input"
         :aria-label="inputName()"
-        :value="drafts.draftOf(column.field).text"
-        :disabled="drafts.multiOf(column.field) > 0"
+        :value="filters.draftOf(column.field).text"
+        :disabled="filters.multiOf(column.field) > 0"
         @change="pick($event)"
       >
         <option value="">{{ labels().boolAll }}</option>
@@ -131,13 +135,13 @@ const pick = (event: Event) => {
       />
       <input
         v-else
-        :type="drafts.multiOf(column.field) ? 'text' : 'date'"
+        :type="filters.multiOf(column.field) ? 'text' : 'date'"
         class="qt-filter-input"
         :aria-label="inputName()"
         :value="inputText()"
-        :readonly="drafts.multiOf(column.field) > 0"
-        @input="drafts.onInput(column.field, inputValue($event))"
-        @keydown.enter="drafts.flushField(column.field)"
+        :readonly="filters.multiOf(column.field) > 0"
+        @input="filters.setInput(column.field, inputValue($event))"
+        @keydown.enter="filters.apply(column.field)"
       />
     </template>
     <slot v-if="type !== 'bool'" name="filter-menu" v-bind="menuProps()" />

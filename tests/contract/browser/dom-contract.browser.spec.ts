@@ -124,6 +124,7 @@ test('C-40 the rendered DOM matches the DOM contract in every state', async () =
   await renderTable({
     hasSubtable: true,
     hasRightPanel: true,
+    selection: { '1': true },
     query: filtered,
     rowKey: 'id',
     resizable: true,

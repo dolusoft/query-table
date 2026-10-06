@@ -6,10 +6,8 @@ import { describe, expect, it } from 'vitest'
 import {
   caseName,
   filterInputCases,
-  filterInputColumn,
   rulesOf
 } from '../../../tests/support/filter-input-cases'
-import { parseFilterInput as parseFilterInput22 } from '../../vue/src/filter/parse-filter-input'
 import { parseFilterInput } from '../src'
 
 describe('C-53 Filter parser', () => {
@@ -25,16 +23,6 @@ describe('C-53 Filter parser', () => {
       ).toEqual(rulesOf(item.expected))
     }
   )
-
-  it('gives what the 2.2 parser gives for every case', () => {
-    for (const item of filterInputCases) {
-      const column = filterInputColumn(item.type)
-      expect(
-        parseFilterInput(item.text, column, item.condition),
-        caseName(item)
-      ).toEqual(parseFilterInput22(item.text, column, item.condition))
-    }
-  })
 
   it('does not write to the column', () => {
     const column = Object.freeze({ field: 'value', type: 'string' as const })

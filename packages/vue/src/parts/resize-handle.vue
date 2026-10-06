@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Column } from '../contract'
-import { minWidthOf } from './use-column-resize'
 import { columnName } from '../core/labels'
 import { useTableContext } from '../core/table-context'
+import { minWidthOf } from '../resize/use-column-resize'
 
 const props = defineProps<{ column: Column }>()
 

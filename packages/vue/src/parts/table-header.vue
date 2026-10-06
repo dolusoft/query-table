@@ -1,25 +1,25 @@
 <script setup lang="ts">
+import { rulesOf } from '@dolusoft/query-protocol'
+
 import type {
   Column,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
   HeaderSlotProps,
-  TableQuery
+  Query
 } from '../contract'
+import FilterCell from './filter-cell.vue'
+import ResizeHandle from './resize-handle.vue'
+import SortButton from './sort-button.vue'
 import { columnTypeOf } from '../core/column'
-import { rulesOf } from '../core/query'
 import { useTableContext } from '../core/table-context'
-import type { Utility } from '../core/use-columns'
-import FilterCell from '../filter/filter-cell.vue'
-import { pinAttrs, utilityKey } from '../pin/pin'
-import ResizeHandle from '../resize/resize-handle.vue'
+import { pinAttrs, utilityKey, type Utility } from '../pin/pin'
 import { ariaSort } from '../sort/sort'
-import SortButton from '../sort/sort-button.vue'
 
 const props = defineProps<{
   /** Columns to draw: hidden ones dropped, pinned ones first. */
   columns: Column[]
-  query: TableQuery
+  query: Query
   filterable: boolean
   /** Utility cells before the columns, in order. */
   utilities: Utility[]
@@ -44,7 +44,7 @@ defineSlots<{
 
 const given = (name: string) => props.slotNames.split(' ').includes(name)
 
-const { drafts, sort, resize, labels } = useTableContext()
+const { filters, sort, resize, selection, labels } = useTableContext()
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -52,9 +52,11 @@ const isFiltered = (column: Column) =>
 const hasFilter = (column: Column) =>
   props.filterable && column.filterable !== false
 
-// The first utility hosts the clear-all button (C-22).
+// The first utility hosts the clear-all button (C-22); the selection column
+// holds its select-all checkbox instead.
 const hostsClearAll = (utility: Utility) =>
-  props.filterable && utility === props.utilities[0]
+  props.filterable &&
+  utility === props.utilities.find(candidate => candidate !== 'select')
 
 const utilityAttrs = (utility: Utility) =>
   pinAttrs(props.hasPinned, props.offsets[utilityKey(utility)])
@@ -85,15 +87,31 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
     <!-- A utility header cell labels nothing; it is a `th` only when it holds
          the clear-all button, and an empty `td` otherwise (C-45). -->
     <template v-for="utility in utilities" :key="utility">
-      <td v-if="!hostsClearAll(utility)" v-bind="utilityAttrs(utility)" />
+      <th
+        v-if="utility === 'select'"
+        scope="col"
+        v-bind="utilityAttrs(utility)"
+      >
+        <input
+          type="checkbox"
+          class="qt-select-all"
+          :aria-label="labels().selectAllRows"
+          :checked="selection.allSelected.value"
+          :indeterminate="selection.someSelected.value"
+          @change="
+            selection.toggleAll(($event.target as HTMLInputElement).checked)
+          "
+        />
+      </th>
+      <td v-else-if="!hostsClearAll(utility)" v-bind="utilityAttrs(utility)" />
       <th v-else scope="col" v-bind="utilityAttrs(utility)">
         <button
           type="button"
           class="qt-clear-all-button"
           :title="labels().clearAllFilters"
           :aria-label="labels().clearAllFilters"
-          :disabled="!drafts.canClearAll()"
-          @click.stop="drafts.clearAll()"
+          :disabled="!filters.canClearAll()"
+          @click.stop="filters.clearAll()"
         >
           <svg
             width="14"

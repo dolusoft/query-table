@@ -1,19 +1,27 @@
 import { inject, provide, type InjectionKey } from 'vue'
 
 import type { TableLabels } from '../contract'
-import type { FilterDrafts } from '../filter/use-filter-drafts'
 import type { ColumnResize } from '../resize/use-column-resize'
-import type { SortActions } from '../sort/use-sort'
+import type {
+  QueryTableFilters,
+  QueryTableSelection,
+  QueryTableSort
+} from '../use-query-table'
 
 /**
- * What the header parts call: the filter drafts, the sort gate, the resize
- * actions and the labels. Only actions and getters travel here; data
- * (`columns`, `query`) comes down as props.
+ * What the header parts call: the filter inputs and the sort gate of the
+ * composable, the resize actions and the labels. Only actions and getters
+ * travel here; data (`columns`, `query`) comes down as props.
  */
 export interface TableContext {
-  drafts: FilterDrafts
-  sort: SortActions
+  filters: QueryTableFilters
+  sort: QueryTableSort
   resize: ColumnResize
+  /** The select-all checkbox of the selection column (C-59). */
+  selection: Pick<
+    QueryTableSelection<object>,
+    'allSelected' | 'someSelected' | 'toggleAll'
+  >
   labels: () => TableLabels
 }
 
