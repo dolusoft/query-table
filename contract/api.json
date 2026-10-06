@@ -827,6 +827,11 @@
       "id": "C-79",
       "title": "The conformance suite ships",
       "text": "`@dolusoft/query-protocol` publishes its conformance suite under `conformance/`: a manifest with `fixtureFormat`, `revision`, the profiles, the SHA-256 of the query schema it was written against, the SHA-256 of each data file, and for each case file its counts of active cases, withdrawn cases and runs and the SHA-256 of its bytes. A runner refuses an unknown `fixtureFormat`, a broken reference and a hash that does not match. The expected result of a case never changes while its profile lives: a wrong case is withdrawn, not edited, and every semantic change raises `revision`. Source: own"
+    },
+    {
+      "id": "C-80",
+      "title": "Filters and search",
+      "text": "Rules are grouped by field: a group whose rules are all negative (`NotEqual`, `NotContains`) combines with AND, any other group with OR, and groups combine with AND (C-17); the order of groups and rules, and a repeated rule, do not change the result. Each condition is allowed only on the types of `semantics.md#condition-by-type`; any other pair is `unsupported-operator`. A rule value is never converted: a value that does not fit the field type, an empty text or a malformed one is `invalid-value`. Text conditions compare the match fold of both sides ordinally and have no wildcards. A positive condition is false on null; a negative one is the exact complement of its positive pair and true on null. A day-only value on a `datetime` field means the half-open day in the field's `offset`. The search is one needle: trimmed of the listed units only, then composed and folded; a row matches when one of its `search` fields contains it, and the search combines with the rules by AND; a blank search is no search and no error; an active search without a search field is `search-not-supported`. Source: own"
     }
   ]
 }

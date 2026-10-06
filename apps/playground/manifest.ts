@@ -353,5 +353,6 @@ export const pendingRules: readonly string[] = [
   'C-76',
   'C-77',
   'C-78',
-  'C-79'
+  'C-79',
+  'C-80'
 ]

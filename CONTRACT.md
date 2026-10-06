@@ -1130,6 +1130,12 @@ Source: own
 
 Source: own
 
+#### C-80 Filters and search
+
+Rules are grouped by field: a group whose rules are all negative (`NotEqual`, `NotContains`) combines with AND, any other group with OR, and groups combine with AND (C-17); the order of groups and rules, and a repeated rule, do not change the result. Each condition is allowed only on the types of `semantics.md#condition-by-type`; any other pair is `unsupported-operator`. A rule value is never converted: a value that does not fit the field type, an empty text or a malformed one is `invalid-value`. Text conditions compare the match fold of both sides ordinally and have no wildcards. A positive condition is false on null; a negative one is the exact complement of its positive pair and true on null. A day-only value on a `datetime` field means the half-open day in the field's `offset`. The search is one needle: trimmed of the listed units only, then composed and folded; a row matches when one of its `search` fields contains it, and the search combines with the rules by AND; a blank search is no search and no error; an active search without a search field is `search-not-supported`.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.

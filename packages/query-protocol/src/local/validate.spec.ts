@@ -344,38 +344,3 @@ describe('C-77 Structural errors [own]', () => {
     })
   })
 })
-
-describe('PR-L1 only: rules and search are refused until PR-L2', () => {
-  it('refuses the first rule after its structure and field are checked', () => {
-    const rules = [
-      { field: 'age', condition: 'Equal', value: 30 },
-      { field: 'nope', condition: 'Bad', value: null }
-    ]
-    expect(errorOf(run(q({ filters: rules })))).toEqual({
-      code: 'unsupported-operator',
-      field: 'age',
-      rule: 0,
-      path: '/filters/0/condition'
-    })
-    const unknown = [{ field: 'nope', condition: 'Equal', value: 1 }]
-    expect(errorOf(run(q({ filters: unknown })))).toEqual({
-      code: 'unknown-field',
-      field: 'nope',
-      rule: 0,
-      path: '/filters/0/field'
-    })
-  })
-
-  it('refuses an active search, accepts an empty or blank one', () => {
-    expect(errorOf(run(q({ search: ' ali ' })))).toEqual({
-      code: 'search-not-supported',
-      path: '/search'
-    })
-    expect(run(q({ search: ' \t\u00a0' })).ok).toBe(true)
-    expect(run(q({ search: null })).ok).toBe(true)
-    expect(errorOf(run(q({ search: '\ud800' })))).toEqual({
-      code: 'invalid-value',
-      path: '/search'
-    })
-  })
-})

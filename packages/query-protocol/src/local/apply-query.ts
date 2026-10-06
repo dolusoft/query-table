@@ -1,5 +1,5 @@
-// applyQuery and slicePage: validate, read the used row values, count, sort,
-// slice (C-76, C-77). Inputs are never written; the rows returned are the
+// applyQuery and slicePage: validate, read the used row values, filter and
+// search, count, sort, slice (C-76, C-77, C-80). Inputs are never written; the rows returned are the
 // objects given, always in a new array.
 
 import type { Dataset, DatasetField } from './dataset'
@@ -9,8 +9,14 @@ import { fail } from './errors'
 import type { SemanticsProfile } from './profiles'
 import { parseDate, parseDateTime } from './temporal'
 import type { SortKey } from './text'
-import { compareOrdinal, compareSortKeys, isWellFormed, sortKey } from './text'
-import type { Plan } from './validate'
+import {
+  compareOrdinal,
+  compareSortKeys,
+  isWellFormed,
+  matchKey,
+  sortKey
+} from './text'
+import type { Plan, PlanRule } from './validate'
 import { checkPage, validate } from './validate'
 import type { PageQuery, Query } from '../protocol/types'
 
@@ -142,6 +148,121 @@ const readRows = <T>(
   return { ok: true, rows }
 }
 
+/**
+ * Whether the positive condition of `rule` holds on a value read from a row
+ * (semantics.md#conditions): never on null. A text value is its match fold,
+ * compared ordinally; a day is a half-open range; a number, a boolean and an
+ * instant compare as they are (`-0` equals `0`).
+ */
+const holds = (rule: PlanRule, value: unknown): boolean => {
+  if (value === null) {
+    return false
+  }
+  const operand = rule.operand
+  if (operand.kind === 'text') {
+    const text = value as string
+    switch (rule.positive) {
+      case 'Contains':
+        return text.includes(operand.text)
+      case 'StartsWith':
+        return text.startsWith(operand.text)
+      case 'EndsWith':
+        return text.endsWith(operand.text)
+      default:
+        // Equal: the matrix allows nothing else on text.
+        return text === operand.text
+    }
+  }
+  const t = value as number
+  if (operand.kind === 'range') {
+    switch (rule.positive) {
+      case 'Equal':
+        return t >= operand.start && t < operand.end
+      case 'GreaterThan':
+        return t >= operand.end
+      case 'GreaterThanOrEqual':
+        return t >= operand.start
+      case 'LessThan':
+        return t < operand.start
+      default:
+        // LessThanOrEqual: the matrix allows nothing else on a day.
+        return t < operand.end
+    }
+  }
+  const v = operand.value as number
+  switch (rule.positive) {
+    case 'GreaterThan':
+      return t > v
+    case 'GreaterThanOrEqual':
+      return t >= v
+    case 'LessThan':
+      return t < v
+    case 'LessThanOrEqual':
+      return t <= v
+    default:
+      // Equal, also on a boolean.
+      return value === operand.value
+  }
+}
+
+/**
+ * Filters and searches (C-17, C-80): every rule group holds (a group of
+ * negative rules with AND, any other with OR) and, with an active search,
+ * one search field contains the needle. The match fold of a text value is
+ * computed at most once per row and evaluation.
+ */
+const matchRows = <T>(rows: Read<T>[], plan: Plan): Read<T>[] => {
+  const groups = plan.groups
+  const search = plan.search
+  if (groups.length === 0 && search === null) {
+    return rows
+  }
+  // One slot per used field, reset per row: a packed array, not a holey one.
+  const folded = new Array<string | null | undefined>(plan.used.length).fill(
+    undefined
+  )
+  const fold = (values: readonly unknown[], at: number): string | null => {
+    let text = folded[at]
+    if (text === undefined) {
+      const value = values[at]
+      text = value === null ? null : matchKey(value as string)
+      folded[at] = text
+    }
+    return text
+  }
+  const out: Read<T>[] = []
+  for (let r = 0; r < rows.length; r++) {
+    const values = rows[r].values
+    folded.fill(undefined)
+    let ok = true
+    for (let g = 0; ok && g < groups.length; g++) {
+      const group = groups[g]
+      const value = group.text ? fold(values, group.at) : values[group.at]
+      // AND starts true and stops at a false rule; OR the other way round.
+      ok = group.every
+      for (let i = 0; i < group.rules.length; i++) {
+        const rule = group.rules[i]
+        const result = rule.negative !== holds(rule, value)
+        if (result !== group.every) {
+          ok = !group.every
+          break
+        }
+      }
+    }
+    if (ok && search !== null) {
+      ok = false
+      for (let i = 0; !ok && i < search.at.length; i++) {
+        const text = fold(values, search.at[i])
+        ok = text !== null && text.includes(search.needle)
+      }
+    }
+    if (ok) {
+      out.push(rows[r])
+    }
+  }
+  return out
+}
+
 const compareNumbers = (a: number, b: number): number =>
   a < b ? -1 : a > b ? 1 : 0
 
@@ -255,9 +376,7 @@ export function applyQuery<T>(
   if (!read.ok) {
     return read
   }
-  // PR-L1 only: PR-L2 filters and searches here; in PR-L1 a valid query has
-  // neither.
-  const matching = read.rows
+  const matching = matchRows(read.rows, plan)
   const totalRows = matching.length
   const ordered = sortRows(matching, dataset, plan)
   const page =

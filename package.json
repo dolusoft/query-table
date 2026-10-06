@@ -32,6 +32,7 @@
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run --project unit",
     "test:coverage": "vitest run --project unit --coverage",
+    "bench": "vitest bench --run --project \"unit (bench)\"",
     "test:browser": "node scripts/test-browser.mjs",
     "test:browser:headless": "node scripts/test-browser.mjs --browser.headless",
     "test:browser:inspect": "vitest --project browser --mode inspect --watch",
