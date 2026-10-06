@@ -142,8 +142,12 @@ const showPagination = computed(
       (props.pagination?.alwaysShow ?? false))
 )
 
+// A computed, so a pending filter draft re-renders the root only when the
+// answer changes, not with every key typed.
+const canClearFilters = computed(() => filters.canClearAll())
+
 const toolbarProps = (): ToolbarSlotProps => ({
-  canClearFilters: filters.canClearAll(),
+  canClearFilters: canClearFilters.value,
   clearFilters: () => {
     filters.clearAll()
   },

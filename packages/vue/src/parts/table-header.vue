@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { rulesOf } from '@dolusoft/query-protocol'
+import { computed } from 'vue'
 
 import type {
   Column,
@@ -45,6 +46,10 @@ defineSlots<{
 const given = (name: string) => props.slotNames.split(' ').includes(name)
 
 const { filters, sort, resize, selection, labels } = useTableContext()
+
+// A computed: the header re-renders when the answer changes, not with every
+// pending filter draft.
+const canClearAll = computed(() => filters.canClearAll())
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -110,7 +115,7 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           class="qt-clear-all-button"
           :title="labels().clearAllFilters"
           :aria-label="labels().clearAllFilters"
-          :disabled="!filters.canClearAll()"
+          :disabled="!canClearAll"
           @click.stop="filters.clearAll()"
         >
           <svg
