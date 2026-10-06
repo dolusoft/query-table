@@ -3,11 +3,11 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, h, ref } from 'vue'
 
-import '../../../playground/playground.css'
+import '../../../apps/playground/playground.css'
 import type { TableQuery } from '@dolusoft/query-table'
 
-import Overview from '../../../playground/examples/Overview.vue'
-import ColumnFilterSheet from '../../../playground/harness/ColumnFilterSheet.vue'
+import Overview from '../../../apps/playground/examples/Overview.vue'
+import ColumnFilterSheet from '../../../apps/playground/harness/ColumnFilterSheet.vue'
 
 // The compact filter UI of the Overview page at phone width: the header
 // filter row is off, each header has a funnel that opens a sheet for its

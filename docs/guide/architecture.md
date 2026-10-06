@@ -12,7 +12,7 @@ A plain arrow goes from the user to the dependency. The dashed arrow is the appl
 | ----------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `@dolusoft/query-protocol`    | nothing                                            | `Query` types (page and cursor mode, search), filter rules, reasons, the filter grammar and `parseFilterInput`, the generated JSON Schema |
 | `@dolusoft/query-table-core`  | `@dolusoft/query-protocol`, `@tanstack/table-core` | `serverQueryFeature`, `filterInputFeature` (entries `/server-query` and `/filter-input`) and `shared/`             |
-| `@dolusoft/query-table`       | core, `@tanstack/vue-table`, `vue` (peer)          | `QueryTable` and `useQueryTable()`; its public API and DOM contract stay those of 2.2.x                             |
+| `@dolusoft/query-table`       | core, `@tanstack/vue-table`, `vue` (peer)          | `QueryTable` and `useQueryTable()`; its public API and DOM contract are those of 2.2.x plus opt-in additions (C-60 is the one changed behavior)                             |
 
 The playground sits on top of all three and is never part of a package.
 
@@ -65,7 +65,7 @@ Row expansion is TanStack's (`rowExpandingFeature`), as a projection of the cons
 
 ## Rules, tests and the contract
 
-The behavior is written down as numbered rules in `contract/rules.md` (C-01 to C-62). Each rule has a `Source:` line, `tanstack` when TanStack does it through its options, `own` when our plugins or the Vue layer do. Every rule is covered by a test whose name contains its number, and a test that names an unknown rule fails the build (`tests/repo/contract-traceability.spec.ts`). The plugin-level tests in `packages/query-table-core/tests/` run without a DOM and are the most exact description of the plugins.
+The behavior is written down as numbered rules in `contract/rules.md` (C-01 to C-66). Each rule has a `Source:` line, `tanstack` when TanStack does it through its options, `own` when our plugins or the Vue layer do. Every rule is covered by a test whose name contains its number, and a test that names an unknown rule fails the build (`tests/repo/contract-traceability.spec.ts`). The plugin-level tests in `packages/query-table-core/tests/` run without a DOM and are the most exact description of the plugins.
 
 The principles that sit above the rules are in `PRINCIPLES.md` (P1 to P15); P14 is the layer rule and P15 the plugin contract.
 

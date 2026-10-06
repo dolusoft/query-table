@@ -9,6 +9,7 @@
 //     shared/                                      shared/ only (and the two packages)
 //     features/<a>/                                features/<a>/ and shared/, never features/<b>/
 //     the entry files (src/*.ts)                   anything in core
+//   vue       packages/vue/src                     the protocol, the core, @tanstack/vue-table and vue
 import { dirname, posix, relative, resolve, sep } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
@@ -16,7 +17,13 @@ const root = resolve(import.meta.dirname, '..')
 /** Bare specifiers each package may import. */
 const allowedPackages = {
   'query-protocol': [],
-  'query-table-core': ['@dolusoft/query-protocol', '@tanstack/table-core']
+  'query-table-core': ['@dolusoft/query-protocol', '@tanstack/table-core'],
+  vue: [
+    '@dolusoft/query-protocol',
+    '@dolusoft/query-table-core',
+    '@tanstack/vue-table',
+    'vue'
+  ]
 }
 
 const toPosix = path => path.split(sep).join(posix.sep)

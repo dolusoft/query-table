@@ -5,7 +5,7 @@ import { playwright } from '@vitest/browser-playwright'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { defineConfig, mergeConfig } from 'vitest/config'
 
-import viteConfig from './vite.config.ts'
+import viteConfig from './packages/vue/vite.config.ts'
 
 // `vitest --mode inspect` (see the `test:browser:inspect` script) keeps a
 // headed browser and the dev server up, with Vue DevTools and Vite DevTools
@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
   // contract specs against two builds.
   const packageEntry = process.env.QT_TARGET
     ? resolve(process.env.QT_TARGET)
-    : resolve(import.meta.dirname, 'src/index.ts')
+    : resolve(import.meta.dirname, 'packages/vue/src/index.ts')
   // The v3 workspace packages answer with their source too (the same map as
   // the `paths` of tsconfig.json).
   const packages = resolve(import.meta.dirname, 'packages')
@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
   ]
   const skinAlias = {
     find: '@',
-    replacement: resolve(import.meta.dirname, 'playground/skin')
+    replacement: resolve(import.meta.dirname, 'apps/playground/skin')
   }
 
   // The real-browser projects share everything but their name and files:
@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => {
   // `pnpm measure:renders` (not a test run, so `pnpm test:browser` skips it).
   const browserProject = (name: string, include: string[]) => ({
     extends: true as const,
-    // Tailwind builds the test skin (playground/skin/test-skin.css); the
+    // Tailwind builds the test skin (apps/playground/skin/test-skin.css); the
     // library build never loads it.
     plugins: [tailwindcss(), ...(inspect ? [vueDevTools()] : [])],
     resolve: {
@@ -123,8 +123,8 @@ export default defineConfig(({ mode }) => {
     test: {
       coverage: {
         provider: 'v8',
-        include: ['src/**'],
-        exclude: ['src/**/*.spec.ts'],
+        include: ['packages/vue/src/**'],
+        exclude: ['packages/vue/src/**/*.spec.ts'],
         reporter: ['text', 'json-summary', 'html'],
         reportsDirectory: 'coverage',
         // Measured 2026-10-05 (unit project): lines 98.3, statements 98.39, branches 96.48,
@@ -140,7 +140,7 @@ export default defineConfig(({ mode }) => {
       projects: [
         {
           extends: true,
-          // playground/skin/parity.spec.ts imports the shadcn-vue Button and
+          // apps/playground/skin/parity.spec.ts imports the shadcn-vue Button and
           // Badge variants; their components import `@/lib/utils`.
           resolve: {
             alias: [...packageAlias, skinAlias]
@@ -153,14 +153,12 @@ export default defineConfig(({ mode }) => {
             // the behavior specs that use only the public API sit in tests/contract/unit,
             // the repository checks in tests/repo, the playground ones in playground/.
             include: [
-              'src/**/*.spec.ts',
+              'packages/vue/src/**/*.spec.ts',
               'tests/**/*.spec.ts',
-              'playground/**/*.spec.ts',
+              'apps/playground/**/*.spec.ts',
               // The v3 packages: pure unit tests, no DOM needed.
               'packages/*/src/**/*.spec.ts',
               'packages/*/tests/**/*.spec.ts',
-              // The TanStack feasibility spike of v3 (deleted at the end of PR-C).
-              'spike/**/*.spec.ts',
               // The guides: their code samples are compiled by `pnpm
               // typecheck` and run here (docs/guide/guide.spec.ts).
               'docs/guide/**/*.spec.ts'

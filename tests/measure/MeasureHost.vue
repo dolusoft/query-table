@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 
-import type { Column, TableQuery } from '../../src/contract'
-import QueryTable from '../../src/index'
+import type { Column, TableQuery } from '../../packages/vue/src/contract'
+import QueryTable from '../../packages/vue/src/index'
 
 // A consumer that behaves like a server-backed page: it owns the query, and
 // every `update:query` answers with the rows a server would send (filtered,

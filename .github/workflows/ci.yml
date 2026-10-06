@@ -1,10 +1,11 @@
 name: CI
 
+# `v3/**`: the v3 pull requests are stacked, each based on the one before.
 on:
   push:
-    branches: [main, next]
+    branches: [main, next, 'v3/**']
   pull_request:
-    branches: [main, next]
+    branches: [main, next, 'v3/**']
 
 permissions:
   contents: read
@@ -58,19 +59,22 @@ jobs:
       # Render counts against scripts/render-budget.json (PRINCIPLES.md P8).
       - run: pnpm check:renders
         timeout-minutes: 5
-      # One build of dist/ serves the three checks below.
+      # One build of the dist/ of the three packages serves every check below.
       - run: pnpm build
+      # Linted as packages (publint, attw); sources and dist/ against the
+      # dependency allow-list.
       - run: pnpm check:package
-      # Fails when the package cost passes the budget.
-      - run: pnpm check:size
-      - run: pnpm api:check
-      # The v3 packages: built, linted as packages (publint, attw), their
-      # sources and dist/ checked against the dependency allow-list, then
-      # each consumer fixture against scripts/package-size-budget.json (P8).
-      - run: pnpm build:packages
-      - run: pnpm check:packages
       - run: pnpm check:deps
+      # Size (P8): the Vue fixtures against scripts/consumer-size-budget.json,
+      # the protocol and core fixtures against scripts/package-size-budget.json.
+      - run: pnpm check:size
       - run: pnpm check:package-size
+      # One API report per package (etc/*.api.md).
+      - run: pnpm api:check
+      # The three tarballs installed into an app outside the workspace, as the
+      # README says, then typechecked and built.
+      - run: pnpm pack-install
+        timeout-minutes: 5
 
       # The .NET sample of docs/guide/protocol.md: built and run against the
       # JSON Schema (the TypeScript samples are checked by typecheck and vitest).

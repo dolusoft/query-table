@@ -82,14 +82,11 @@ describe('Markdown snippets are the compiled example code', () => {
 })
 
 describe('relative links resolve', () => {
-  // Written for the playground of PR-C; it does not exist before it lands.
-  const later = ['../../apps/playground/public/architecture.svg']
-
   it.each(pages)('%s', page => {
     const text = read(join(guide, page))
-    const links = [...text.matchAll(/\]\((?!https?:|#|mailto:)([^)#\s]+)/g)]
-      .map(match => match[1])
-      .filter(link => !later.includes(link))
+    const links = [
+      ...text.matchAll(/\]\((?!https?:|#|mailto:)([^)#\s]+)/g)
+    ].map(match => match[1])
     for (const link of links) {
       expect(existsSync(join(guide, link)), link).toBe(true)
     }

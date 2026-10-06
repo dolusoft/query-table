@@ -14,13 +14,13 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["./playground/skin/*"],
-      "@dolusoft/query-table": ["./src/index.ts"],
+      "@/*": ["./apps/playground/skin/*"],
+      "@dolusoft/query-table": ["./packages/vue/src/index.ts"],
       "@dolusoft/query-protocol": ["./packages/query-protocol/src/index.ts"],
       "@dolusoft/query-protocol/query.schema.json": ["./packages/query-protocol/query.schema.json"],
       "@dolusoft/query-table-core": ["./packages/query-table-core/src/index.ts"],
       "@dolusoft/query-table-core/*": ["./packages/query-table-core/src/features/*/index.ts"]
     }
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/tests/**/*.ts", "packages/*/*.config.ts", "fixtures/packages/*.ts", "contract/**/*.ts", "docs/guide/**/*.ts", "src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "tests/**/*.vue", "playground/**/*.ts", "playground/**/*.vue", "spike/**/*.ts", "*.config.ts"]
+  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.vue", "packages/*/tests/**/*.ts", "packages/*/*.config.ts", "fixtures/**/*.ts", "contract/**/*.ts", "docs/guide/**/*.ts", "tests/**/*.ts", "tests/**/*.vue", "apps/playground/**/*.ts", "apps/playground/**/*.vue", "*.config.ts"]
 }
