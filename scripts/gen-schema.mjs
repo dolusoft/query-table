@@ -66,9 +66,15 @@ export const buildSchema = () => ({
     },
     CursorRequest: {
       type: 'object',
+      description:
+        "The cursor to follow and the side it leads to. `prev` means: the consumer asks for the page before the one shown with this cursor; mapping the direction to what the server expects is the consumer's.",
       required: ['token', 'direction'],
       properties: {
-        token: { type: 'string' },
+        token: {
+          type: 'string',
+          description:
+            'Opaque: it may hold JSON or base64 and has no length limit. The table and the consumer never read inside it; only the server does.'
+        },
         direction: { enum: [...cursorDirections] }
       },
       additionalProperties: false
@@ -99,7 +105,7 @@ export const buildSchema = () => ({
     },
     CursorQuery: {
       description:
-        'Cursor mode: the cursor to follow, `null` for the first page. The total may be unknown.',
+        'Cursor mode: the cursor to follow, `null` for the first page. The total may be unknown, and the server may ignore `sort` (a cursor fixes the order): a consumer whose server does so marks its columns `sortable: false`.',
       allOf: [{ $ref: '#/$defs/QueryBase' }],
       required: ['cursor'],
       properties: {
