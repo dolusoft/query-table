@@ -22,25 +22,25 @@ describe('documentation search index', () => {
   it.each(Object.keys(memberKinds) as Array<keyof typeof memberKinds>)(
     'contains every %s member of the contract',
     kind => {
-      const indexed = new Set(
-        documents
-          .filter(doc => doc.kind === memberKinds[kind])
-          .map(doc => doc.title)
+      const indexed = documents
+        .filter(doc => doc.kind === memberKinds[kind])
+        .map(doc => doc.title)
+      expect([...indexed].sort()).toEqual(
+        api[kind].map(member => member.name).sort()
       )
-      const missing = api[kind]
-        .map(member => member.name)
-        .filter(name => !indexed.has(name))
-      expect(missing).toEqual([])
     }
   )
 
   it('contains every rule with its text', () => {
     const rules = documents.filter(doc => doc.kind === 'rule')
     for (const rule of api.rules) {
-      const doc = rules.find(candidate => candidate.title.startsWith(rule.id))
-      expect(doc, rule.id).toBeDefined()
-      expect(doc!.body).toBe(rule.text.replaceAll('`', ''))
+      const docs = rules.filter(
+        candidate => candidate.title.split(' ')[0] === rule.id
+      )
+      expect(docs, rule.id).toHaveLength(1)
+      expect(docs[0]?.body).toBe(rule.text.replaceAll('`', ''))
     }
+    expect(rules).toHaveLength(api.rules.length)
   })
 
   it('contains every page with its title', () => {
@@ -50,12 +50,27 @@ describe('documentation search index', () => {
     expect(titles).toEqual(pages.map(page => page.title))
   })
 
-  it('maps each entry to the page that lists it', () => {
-    for (const doc of documents) {
-      const page = pages.find(candidate => candidate.id === doc.pageId)!
-      if (doc.kind === 'rule') {
-        expect(page.rules).toContain(doc.title.split(' ')[0])
-      }
+  it('maps each entry to the first page that lists it', () => {
+    const kinds = Object.keys(memberKinds) as Array<keyof typeof memberKinds>
+    for (const doc of documents.filter(entry => entry.kind !== 'page')) {
+      const kind = kinds.find(candidate => memberKinds[candidate] === doc.kind)
+      const first = pages.find(page =>
+        kind
+          ? (page.api[kind] ?? []).includes(doc.title)
+          : page.rules.includes(doc.title.split(' ')[0] ?? '')
+      )
+      expect(doc.pageId, doc.id).toBe(first?.id)
+    }
+  })
+
+  it('shows a member or rule listed on several pages once', () => {
+    const titles = searchDocs(index, 'collapse').map(hit => hit.title)
+    expect(titles.filter(title => title === 'collapseAll')).toHaveLength(1)
+    for (const id of ['C-26', 'C-33']) {
+      const hits = searchDocs(index, id).filter(
+        hit => hit.kind === 'rule' && hit.title.startsWith(`${id} `)
+      )
+      expect(hits, id).toHaveLength(1)
     }
   })
 
