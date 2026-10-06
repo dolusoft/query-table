@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { FunnelIcon } from '@lucide/vue'
 import { computed } from 'vue'
+
+import { Button } from '@/ui/button'
 
 import { titleOf } from './column-filter'
 import type { HeaderSlotProps } from '../../src/contract'
@@ -51,28 +54,18 @@ const title = computed(() => titleOf(props.header.column))
       </svg>
     </button>
     <span v-else class="qt-title">{{ title }}</span>
-    <button
+    <Button
       v-if="props.filterable"
       type="button"
-      class="column-filter-trigger inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none data-active:text-primary"
+      variant="ghost"
+      size="icon"
+      class="column-filter-trigger size-11 shrink-0 text-muted-foreground data-active:text-primary"
       :data-active="props.active ? '' : undefined"
       :aria-label="`Filter ${title}${props.active ? ', active' : ''}`"
       aria-haspopup="dialog"
       @click="emit('filter', $event.currentTarget as HTMLElement)"
     >
-      <svg
-        viewBox="0 0 24 24"
-        width="16"
-        height="16"
-        stroke="currentColor"
-        stroke-width="1.5"
-        :fill="props.active ? 'currentColor' : 'none'"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-      </svg>
-    </button>
+      <FunnelIcon :fill="props.active ? 'currentColor' : 'none'" />
+    </Button>
   </span>
 </template>

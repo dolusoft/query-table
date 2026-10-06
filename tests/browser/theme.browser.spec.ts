@@ -57,11 +57,13 @@ describe('C-41 the test skin has a light and a dark theme', () => {
           getComputedStyle(document.documentElement)
             .getPropertyValue(name)
             .trim()
-        expect(getComputedStyle(el('.page-size')).colorScheme).toBe(active)
+        expect(getComputedStyle(el('.page-size select')).colorScheme).toBe(
+          active
+        )
         // An inherited dark scheme alone is insufficient on Windows Chromium:
         // the select surface must be opaque or its native popup can stay white.
         await expect
-          .poll(() => background('.page-size'))
+          .poll(() => background('.page-size select'))
           .toBe(token('--background'))
         expect(background('body')).toBe(token('--background'))
         expect(background('.qt-datatable')).toBe(token('--background'))

@@ -2,6 +2,9 @@
 import { computed, ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 
 import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
@@ -28,24 +31,21 @@ const loading = computed(() => hold.value || server.loading.value)
 <template>
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-3 text-sm">
-      <label class="flex items-center gap-2">
+      <Label class="font-normal">
         Server delay
-        <select
-          v-model.number="delay"
-          class="h-7 rounded-lg border border-input bg-background px-2"
-        >
-          <option :value="300">300 ms</option>
-          <option :value="1500">1500 ms</option>
-          <option :value="4000">4000 ms</option>
-        </select>
-      </label>
+        <NativeSelect v-model="delay" size="sm">
+          <NativeSelectOption :value="300">300 ms</NativeSelectOption>
+          <NativeSelectOption :value="1500">1500 ms</NativeSelectOption>
+          <NativeSelectOption :value="4000">4000 ms</NativeSelectOption>
+        </NativeSelect>
+      </Label>
       <Button variant="outline" size="sm" @click="server.reload()">
         Reload
       </Button>
-      <label class="flex items-center gap-2">
-        <input v-model="hold" type="checkbox" />
+      <Label class="font-normal">
+        <Checkbox v-model="hold" />
         Keep loading on
-      </label>
+      </Label>
       <span class="text-muted-foreground" aria-live="polite">
         {{ loading ? 'Loading…' : `${totalRows ?? 0} people` }}
       </span>

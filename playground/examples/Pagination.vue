@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
+
 import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
@@ -18,10 +21,10 @@ const totalRows = computed(() =>
 
 <template>
   <div class="flex flex-col gap-3">
-    <label class="flex items-center gap-2 text-sm">
-      <input v-model="totalKnown" type="checkbox" />
+    <Label class="font-normal">
+      <Checkbox v-model="totalKnown" />
       The server reports the total
-    </label>
+    </Label>
     <QueryTable
       v-model:query="query"
       :columns="columns"

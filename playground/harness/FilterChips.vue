@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { XIcon } from '@lucide/vue'
+import { computed, nextTick, ref, useId } from 'vue'
 
 import { Button } from '@/ui/button'
+import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 
 import { describeRules, titleOf } from './column-filter'
 import type { Column, TableQuery } from '../../src/contract'
@@ -14,7 +16,9 @@ const props = defineProps<{ columns: Column[] }>()
 const query = defineModel<TableQuery>('query', { required: true })
 const emit = defineEmits<{ edit: [field: string, trigger: HTMLElement] }>()
 
-const picker = ref<HTMLSelectElement | null>(null)
+const pickerId = useId()
+const picker = () =>
+  document.getElementById(pickerId) as HTMLSelectElement | null
 
 const chips = computed(() => {
   const fields = [...new Set(query.value.filters.map(rule => rule.field))]
@@ -42,25 +46,30 @@ const setFilters = (filters: TableQuery['filters']) => {
 const remove = async (field: string) => {
   setFilters(query.value.filters.filter(rule => rule.field !== field))
   await nextTick()
-  picker.value?.focus()
+  picker()?.focus()
 }
 
 const clearAll = async () => {
   setFilters([])
   await nextTick()
-  picker.value?.focus()
+  picker()?.focus()
 }
 
-const pick = (event: Event) => {
+// The picker is a menu, not a value: it goes back to "+ Add filter" once a
+// column is picked.
+const picked = ref('')
+const pick = async (event: Event) => {
   const select = event.target as HTMLSelectElement
   const field = select.value
-  select.value = ''
   if (field) {
     emit('edit', field, select)
   }
+  // The select reports its value after this handler; reset it after that.
+  await nextTick()
+  picked.value = ''
 }
 
-defineExpose({ focus: () => picker.value })
+defineExpose({ focus: picker })
 </script>
 
 <template>
@@ -70,58 +79,53 @@ defineExpose({ focus: () => picker.value })
       class="flex flex-wrap gap-2"
       aria-label="Active filters"
     >
+      <!-- A chip is a shadcn-vue button pair: edit, then remove. -->
       <li
         v-for="chip in chips"
         :key="chip.field"
-        class="inline-flex max-w-full items-center rounded-lg border border-border bg-secondary text-sm text-secondary-foreground"
+        class="inline-flex max-w-full items-center"
         data-testid="filter-chip"
       >
-        <button
+        <Button
           type="button"
-          class="min-h-11 truncate rounded-l-lg px-3 text-left hover:bg-muted"
+          variant="secondary"
+          class="h-11 min-w-0 shrink justify-start rounded-r-none"
           :aria-label="`Edit filter: ${chip.text}`"
           aria-haspopup="dialog"
           @click="emit('edit', chip.field, $event.currentTarget as HTMLElement)"
         >
-          {{ chip.text }}
-        </button>
-        <button
+          <span class="truncate">{{ chip.text }}</span>
+        </Button>
+        <Button
           type="button"
-          class="inline-flex size-11 shrink-0 items-center justify-center rounded-r-lg border-l border-border hover:bg-muted"
+          variant="secondary"
+          size="icon"
+          class="size-11 rounded-l-none border-l border-background"
           :aria-label="`Remove filter: ${chip.text}`"
           data-testid="filter-chip-remove"
           @click="remove(chip.field)"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
+          <XIcon />
+        </Button>
       </li>
     </ul>
-    <select
-      ref="picker"
-      class="h-11 rounded-lg border border-input bg-background px-2 text-sm"
+    <NativeSelect
+      :id="pickerId"
+      v-model="picked"
+      class="[&_select]:h-11 [&_select]:bg-background"
       aria-label="Add filter"
       data-testid="add-filter"
       @change="pick"
     >
-      <option value="">+ Add filter</option>
-      <option
+      <NativeSelectOption value="">+ Add filter</NativeSelectOption>
+      <NativeSelectOption
         v-for="column in filterable"
         :key="column.field"
         :value="column.field"
       >
         {{ titleOf(column) }}
-      </option>
-    </select>
+      </NativeSelectOption>
+    </NativeSelect>
     <Button
       v-if="chips.length > 0"
       type="button"

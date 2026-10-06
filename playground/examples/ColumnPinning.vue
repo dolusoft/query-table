@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
+
 import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
@@ -31,10 +34,10 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
 
 <template>
   <div class="flex flex-col gap-3">
-    <label class="flex items-center gap-2 text-sm text-muted-foreground">
-      <input v-model="pinCity" type="checkbox" class="accent-primary" />
+    <Label class="font-normal text-muted-foreground">
+      <Checkbox v-model="pinCity" />
       Pin City too (it moves next to Name)
-    </label>
+    </Label>
     <!-- Consumer CSS of this page: the table takes its columns' widths and
          scrolls sideways instead of squeezing them. -->
     <div class="[&_.qt-table]:w-max [&_.qt-table]:min-w-full">
