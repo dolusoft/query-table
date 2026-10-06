@@ -3,8 +3,8 @@ import { XIcon } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, ref, useId } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/ui/field'
 import { Input } from '@/ui/input'
-import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 import { ScrollArea } from '@/ui/scroll-area'
 import {
@@ -236,8 +236,8 @@ defineExpose({ open })
             Now: {{ draft.summary }}. A value below replaces it; leave it empty
             to keep it.
           </p>
-          <div v-if="conditions.length > 1" class="flex flex-col gap-2">
-            <Label :for="conditionId">Condition</Label>
+          <Field v-if="conditions.length > 1">
+            <FieldLabel :for="conditionId">Condition</FieldLabel>
             <NativeSelect
               :id="conditionId"
               v-model="draft.condition"
@@ -251,9 +251,9 @@ defineExpose({ open })
                 {{ option.label }}
               </NativeSelectOption>
             </NativeSelect>
-          </div>
-          <div class="flex flex-col gap-2">
-            <Label :for="valueId">Value</Label>
+          </Field>
+          <Field :data-invalid="error ? 'true' : undefined">
+            <FieldLabel :for="valueId">Value</FieldLabel>
             <NativeSelect
               v-if="type === 'bool'"
               :id="valueId"
@@ -281,24 +281,17 @@ defineExpose({ open })
               :aria-describedby="describedBy"
               @keydown.enter="onEnter"
             />
-          </div>
-          <p
-            v-if="error"
-            :id="errorId"
-            role="alert"
-            class="text-sm text-destructive"
-          >
-            {{ error }}
-          </p>
-          <p
-            v-else-if="type === 'string'"
-            :id="hintId"
-            class="text-xs text-muted-foreground"
-          >
-            Shortcuts in the value win over the condition:
-            <code>ank*</code> starts with, <code>!ank</code> is not,
-            <code>a,b</code> either one.
-          </p>
+            <FieldError v-if="error" :id="errorId">{{ error }}</FieldError>
+            <FieldDescription
+              v-else-if="type === 'string'"
+              :id="hintId"
+              class="text-xs"
+            >
+              Shortcuts in the value win over the condition:
+              <code>ank*</code> starts with, <code>!ank</code> is not,
+              <code>a,b</code> either one.
+            </FieldDescription>
+          </Field>
         </div>
       </ScrollArea>
       <SheetFooter

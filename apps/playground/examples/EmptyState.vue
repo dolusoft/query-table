@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import { UsersIcon } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+} from '@/ui/empty'
 import { Spinner } from '@/ui/spinner'
 import { QueryTable } from '@dolusoft/query-table'
 
@@ -39,8 +47,19 @@ const rows: Array<Record<string, unknown>> = []
       :total-rows="totalRows"
       :loading="loading"
     >
+      <!-- shadcn-vue Empty: the consumer draws the empty state. -->
       <template #empty>
-        <span>No people yet.</span>
+        <Empty class="p-6 md:p-6">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UsersIcon />
+            </EmptyMedia>
+            <EmptyTitle>No people yet</EmptyTitle>
+            <EmptyDescription>
+              Rows that the server sends show up here.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </template>
       <template #loading>
         <span class="inline-flex items-center gap-2 text-muted-foreground">

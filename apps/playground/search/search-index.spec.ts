@@ -5,11 +5,13 @@ import {
   createSearchIndex,
   groupByPage,
   highlight,
+  homePageId,
   memberKinds,
   searchDocs,
   snippet
 } from './search-index'
 import api from '../../../contract/api.json'
+import { homeSections } from '../home/home-content'
 import { coreOnlyRules, pages } from '../manifest'
 
 // The search index is built from contract/api.json and the manifest: every
@@ -44,16 +46,35 @@ describe('documentation search index', () => {
     expect(rules).toHaveLength(shown.length)
   })
 
-  it('contains every page with its title', () => {
+  it('contains the home page and every page with its title', () => {
     const titles = documents
       .filter(doc => doc.kind === 'page')
       .map(doc => doc.title)
-    expect(titles).toEqual(pages.map(page => page.title))
+    expect(titles).toEqual(['Home', ...pages.map(page => page.title)])
+  })
+
+  it('contains every home page section, on the home page', () => {
+    const sections = documents.filter(doc => doc.kind === 'section')
+    expect(sections.map(doc => doc.anchor)).toEqual(
+      homeSections.map(section => section.id)
+    )
+    for (const doc of sections) {
+      expect(doc.pageId, doc.id).toBe(homePageId)
+    }
+    expect(sections.map(doc => doc.anchor)).toContain('architecture')
+  })
+
+  it('finds the home page and its sections', () => {
+    expect(searchDocs(index, 'install')[0]?.id).toBe('page:home')
+    expect(searchDocs(index, 'headless')[0]?.anchor).toBe('principle-headless')
+    expect(searchDocs(index, 'architecture')[0]?.anchor).toBe('architecture')
   })
 
   it('maps each entry to the first page that lists it', () => {
     const kinds = Object.keys(memberKinds) as Array<keyof typeof memberKinds>
-    for (const doc of documents.filter(entry => entry.kind !== 'page')) {
+    for (const doc of documents.filter(
+      entry => entry.kind !== 'page' && entry.kind !== 'section'
+    )) {
       const kind = kinds.find(candidate => memberKinds[candidate] === doc.kind)
       const first = pages.find(page =>
         kind

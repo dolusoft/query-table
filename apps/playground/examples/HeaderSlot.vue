@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ArrowDown, ArrowUp, ArrowUpDown } from '@lucide/vue'
+
 import { Button } from '@/ui/button'
 import { QueryTable } from '@dolusoft/query-table'
 
@@ -16,8 +18,9 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // filter row would sit higher than its neighbours'.
 const columns = peopleColumns()
 const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
+// The sort icon of shadcn-vue's data-table example, from lucide.
 const arrow = (direction: 'asc' | 'desc' | null) =>
-  direction === 'asc' ? '↑' : direction === 'desc' ? '↓' : '↕'
+  direction === 'asc' ? ArrowUp : direction === 'desc' ? ArrowDown : ArrowUpDown
 </script>
 
 <template>
@@ -40,9 +43,11 @@ const arrow = (direction: 'asc' | 'desc' | null) =>
         @click="toggleSort"
       >
         {{ column.title }}
-        <span aria-hidden="true" class="text-muted-foreground">{{
-          arrow(sortDirection)
-        }}</span>
+        <component
+          :is="arrow(sortDirection)"
+          aria-hidden="true"
+          class="text-muted-foreground"
+        />
       </Button>
     </template>
     <template #header-salary="{ column }">

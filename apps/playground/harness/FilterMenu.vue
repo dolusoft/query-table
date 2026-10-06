@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover'
+import { Separator } from '@/ui/separator'
 import type { FilterMenuSlotProps } from '@dolusoft/query-table'
 
 // What a consumer writes in the `filter-menu` slot: the table's own trigger
@@ -36,7 +37,7 @@ const pick = (run: () => void) => {
         {{ option.label }}
       </Button>
       <template v-if="props.menu.sortable">
-        <hr class="border-border" />
+        <Separator />
         <Button
           variant="ghost"
           size="sm"
@@ -54,7 +55,7 @@ const pick = (run: () => void) => {
           Sort Descending
         </Button>
       </template>
-      <hr class="border-border" />
+      <Separator />
       <Button
         variant="ghost"
         size="sm"

@@ -85,7 +85,7 @@ describe('C-63 Typed search is debounced [own]', () => {
     expect(m.events).toHaveLength(1)
   })
 
-  it('a pending search goes first and drops the page action', async () => {
+  it('a pending search goes first and drops the page action', () => {
     const { m, box } = mountK6({ totalRows: 50 })
     box.toolbar!.setSearch('x')
     box.pagination!.nextPage()
@@ -199,7 +199,7 @@ describe('C-65 Cursor paging controls [tanstack] [own]', () => {
     expect(m.events).toHaveLength(2)
   })
 
-  it('a page size goes back to the first page', async () => {
+  it('a page size goes back to the first page', () => {
     const { m, box } = mountK6({
       query: cursorQuery({ cursor: { token: 'n1', direction: 'next' } }),
       totalRows: null,
