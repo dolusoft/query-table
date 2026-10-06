@@ -41,9 +41,13 @@ const themeSelectors = new Set([':root', '*', 'body'])
 const classNames = new Set(domClasses.map(entry => entry.name))
 // `data-theme` is the page's switch for the skin's light and dark theme, set
 // by whoever renders the table, never by the table.
+// `type` is the one native attribute the skin reads: a date column's filter is
+// an `input[type='date']` (C-16), and its text needs more room than the
+// others, which no listed hook tells apart.
 const attributeNames = new Set([
   ...domAttributes.map(entry => entry.name),
-  'data-theme'
+  'data-theme',
+  'type'
 ])
 
 describe('C-41 the test skin selects only the DOM contract', () => {
