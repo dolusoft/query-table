@@ -50,7 +50,7 @@ watch(
     <section :id="sectionAnchors.source" aria-label="Source">
       <h2 class="pb-2 text-lg font-semibold">Source</h2>
       <p class="pb-2 text-xs text-muted-foreground">
-        playground/examples/{{ page.example }}.vue
+        apps/playground/examples/{{ page.example }}.vue
       </p>
       <!-- shadcn-vue ScrollArea scrolls the source both ways. -->
       <ScrollArea
