@@ -11,6 +11,9 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // sort button with `toggleSort`; Salary shows a unit under its title and
 // keeps no sort control (the slot replaced the table's button), while its
 // filter menu can still sort. Nothing in a slot sits inside another button.
+// On a phone the sort buttons are 2.5rem tall (playground.css), so Salary's
+// two-line title takes the same minimum height (`max-lg:min-h-10`), or its
+// filter row would sit higher than its neighbours'.
 const columns = peopleColumns()
 const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
 const arrow = (direction: 'asc' | 'desc' | null) =>
@@ -43,7 +46,7 @@ const arrow = (direction: 'asc' | 'desc' | null) =>
       </Button>
     </template>
     <template #header-salary="{ column }">
-      <span class="flex flex-col leading-tight">
+      <span class="flex flex-col justify-center leading-tight max-lg:min-h-10">
         {{ column.title }}
         <small class="font-normal text-muted-foreground">TRY, yearly</small>
       </span>
