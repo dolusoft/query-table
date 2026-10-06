@@ -2,7 +2,11 @@ import MiniSearch from 'minisearch'
 
 import { memberAnchor, ruleAnchor, type MemberKind } from './anchors'
 import api from '../../contract/api.json'
+import { homeSections, installCommand, pitch } from '../home/home-content'
 import { pages as manifestPages, type PlaygroundPage } from '../manifest'
+
+/** The page id of the home page: its route is `/`. */
+export const homePageId = ''
 
 // The documentation search index. Every document is derived from
 // contract/api.json (generated from the component and src/contract.ts) and
@@ -10,7 +14,15 @@ import { pages as manifestPages, type PlaygroundPage } from '../manifest'
 // written here by hand.
 
 export type DocKind =
-  'page' | 'prop' | 'event' | 'slot' | 'method' | 'function' | 'type' | 'rule'
+  | 'page'
+  | 'section'
+  | 'prop'
+  | 'event'
+  | 'slot'
+  | 'method'
+  | 'function'
+  | 'type'
+  | 'rule'
 
 export interface SearchDoc {
   /** Unique per page and entry. */
@@ -67,14 +79,37 @@ const memberSignature = (kind: MemberKind, name: string): string => {
 const memberDescription = (kind: MemberKind, name: string): string =>
   api[kind].find(member => member.name === name)?.description ?? ''
 
-/**
- * All documents of the playground: one per page, one per API member and one
- * per rule. A member or rule listed on several pages is indexed once, on the
- * first page in manifest order that lists it, so a search shows it once.
- */
-export const buildDocuments = (
-  pages: PlaygroundPage[] = manifestPages
-): SearchDoc[] => {
+/** The home page (route `/`, page id `''`) and each of its sections. */
+const homeDocuments = (): SearchDoc[] => {
+  const base = { pageId: homePageId, pageTitle: 'Home' }
+  return [
+    {
+      ...base,
+      id: 'page:home',
+      kind: 'page',
+      title: 'Home',
+      heading: ['Install', ...homeSections.map(section => section.title)].join(
+        ' · '
+      ),
+      body: `${pitch} ${installCommand}`,
+      anchor: ''
+    },
+    ...homeSections.map<SearchDoc>(section => ({
+      ...base,
+      id: `home:${section.id}`,
+      kind: 'section',
+      title: section.title,
+      heading: 'Home',
+      body: section.text,
+      anchor: section.id
+    }))
+  ]
+}
+
+// One document per page, one per API member and one per rule. A member or
+// rule listed on several pages is indexed once, on the first page in
+// manifest order that lists it, so a search shows it once.
+const pageDocuments = (pages: PlaygroundPage[]): SearchDoc[] => {
   const seen = new Set<string>()
   const firstListing = (key: string) => {
     if (seen.has(key)) {
@@ -136,6 +171,11 @@ export const buildDocuments = (
     return [pageDoc, ...members, ...rules]
   })
 }
+
+/** All documents of the playground: the home page first, then the pages. */
+export const buildDocuments = (
+  pages: PlaygroundPage[] = manifestPages
+): SearchDoc[] => [...homeDocuments(), ...pageDocuments(pages)]
 
 // Words split on anything but letters and digits; camelCase parts are added
 // too, so `rows` finds `totalRows` and `C-01` finds rule C-01.
