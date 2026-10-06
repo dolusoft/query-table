@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch, type Component } from 'vue'
 
+import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
+
 import ApiPanel from './ApiPanel.vue'
+import InlineCode from './InlineCode.vue'
 import RuleList from './RuleList.vue'
 import type { PlaygroundPage } from '../manifest'
 import { sectionAnchors } from '../search/anchors'
@@ -38,7 +41,7 @@ watch(
     <header>
       <h1 class="text-2xl font-semibold tracking-tight">{{ page.title }}</h1>
       <p class="pt-1 text-sm text-muted-foreground">
-        {{ page.summary.replaceAll('`', '') }}
+        <InlineCode :text="page.summary" />
       </p>
     </header>
     <section :id="sectionAnchors.example" aria-label="Example">
@@ -49,9 +52,15 @@ watch(
       <p class="pb-2 text-xs text-muted-foreground">
         playground/examples/{{ page.example }}.vue
       </p>
-      <pre
-        class="max-h-[32rem] overflow-auto rounded-md border bg-muted/50 p-4 text-xs leading-relaxed"
-      ><code>{{ source }}</code></pre>
+      <!-- shadcn-vue ScrollArea scrolls the source both ways. -->
+      <ScrollArea
+        class="rounded-md border bg-muted/50 *:data-[slot=scroll-area-viewport]:max-h-[32rem]"
+      >
+        <pre
+          class="w-max p-4 text-xs leading-relaxed"
+        ><code>{{ source }}</code></pre>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </section>
     <ApiPanel :members="page.api" />
     <RuleList :ids="page.rules" />
