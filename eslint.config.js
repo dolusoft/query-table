@@ -45,7 +45,8 @@ export default defineConfig([
     // to fit our style (knip skips it for the same reason).
     'playground/skin/ui',
     'playground/skin/lib/utils.ts',
-    'playground/dist'
+    'playground/dist',
+    '.equivalence'
   ]),
   {
     files: ['**/*.{js,mjs,ts,vue}'],

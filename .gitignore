@@ -16,3 +16,6 @@ tests/contract/browser/__screenshots__/
 
 # API Extractor scratch output
 temp/
+
+# scripts/equivalence.mjs: packed baselines, raw reports, report.json
+.equivalence/

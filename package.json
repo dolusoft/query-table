@@ -63,6 +63,7 @@
     "analyze:build:json": "node scripts/analyze-build.mjs",
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
     "check:size": "node scripts/consumer-size.mjs --check",
+    "equivalence": "node scripts/equivalence.mjs",
     "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint && attw --pack . --profile esm-only",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
