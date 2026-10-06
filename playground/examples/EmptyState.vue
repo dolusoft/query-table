@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Spinner } from '@/ui/spinner'
 
 import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
@@ -42,7 +43,10 @@ const rows: Array<Record<string, unknown>> = []
         <span>No people yet.</span>
       </template>
       <template #loading>
-        <span class="text-muted-foreground">Loading…</span>
+        <span class="inline-flex items-center gap-2 text-muted-foreground">
+          <Spinner />
+          Loading…
+        </span>
       </template>
       <template #pagination="page">
         <TablePager :page="page" />
