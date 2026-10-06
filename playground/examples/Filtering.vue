@@ -7,6 +7,7 @@ import { Label } from '@/ui/label'
 
 import type { FilterRule } from '../../src/contract'
 import { QueryTable } from '../../src/index'
+import FilterDatePicker from '../harness/FilterDatePicker.vue'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, typedColumns, useFakeServer } from '../scenarios'
@@ -19,7 +20,7 @@ import { createDemoRows, typedColumns, useFakeServer } from '../scenarios'
 // the right panel column (`has-right-panel`) is turned on to hold it.
 const columns = typedColumns()
 const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
-const nativeDatePicker = ref(false)
+const datePicker = ref(false)
 
 const setFilters = (filters: FilterRule[]) => {
   query.value = { ...query.value, page: 1, filters }
@@ -67,8 +68,8 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
         Remove all from outside
       </Button>
       <Label class="font-normal">
-        <Checkbox v-model="nativeDatePicker" />
-        Native date picker (<code>filter-datetime</code> slot)
+        <Checkbox v-model="datePicker" />
+        Date picker (<code>filter-datetime</code> slot)
       </Label>
     </div>
     <QueryTable
@@ -85,13 +86,8 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
       <template #filter-menu="menu">
         <FilterMenu :menu="menu" />
       </template>
-      <template v-if="nativeDatePicker" #filter-datetime="date">
-        <input
-          type="date"
-          class="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm"
-          :value="date.value ?? ''"
-          @input="date.updateValue(($event.target as HTMLInputElement).value)"
-        />
+      <template v-if="datePicker" #filter-datetime="date">
+        <FilterDatePicker :date="date" />
       </template>
       <template #empty>No results.</template>
       <template #pagination="page">

@@ -5,6 +5,7 @@ import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
+import { Spinner } from '@/ui/spinner'
 
 import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
@@ -65,16 +66,7 @@ const loading = computed(() => hold.value || server.loading.value)
       </template>
       <template #loading>
         <span class="inline-flex items-center gap-2 text-muted-foreground">
-          <svg
-            class="size-4 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path d="M21 12a9 9 0 1 1-6.2-8.56" stroke-linecap="round" />
-          </svg>
+          <Spinner />
           Loading…
         </span>
       </template>
