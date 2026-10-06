@@ -76,6 +76,8 @@ const ADDED_AFTER_BASELINE = [
   `${K6_PAGES} > typed search is applied once, after the debounce, from the first page`,
   `${K6_PAGES} > the checkbox column selects rows into the page selection`,
   `${K6_PAGES} > the TanStack path sorts, filters and pages through the query`,
+  // Server-flow search and cursor tests use the v3-only toolbar and paging API.
+  'tests/contract/browser/flow-search-cursor.browser.spec.ts > F2 F7 server search and cursor flows',
   // C-66: the selection column's DOM hooks.
   'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract',
   // 3.1 additions (C-67 to C-74, ADR 0007): not in a 3.0.0 baseline.
