@@ -84,9 +84,18 @@ describe('C-41 the test skin selects only the DOM contract', () => {
     expect(mapping).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|hsl|oklch)a?\(/i)
   })
 
-  it('draws with the theme tokens, not with pasted utility class strings', () => {
+  // Utility classes reach the skin only through a parity block: an `@apply`
+  // under a `shadcn:` comment, whose classes parity.spec.ts compares with the
+  // shadcn-vue component it names. A class string pasted anywhere else is
+  // still refused; everything outside the blocks draws with the theme tokens.
+  it('draws with the theme tokens; utility classes come only from a shadcn-vue source', () => {
     const mapping = read(join(here, 'mapping.css'))
-    expect(mapping).not.toContain('@apply')
+    const applies = mapping.match(/^\s*@apply\s/gm) ?? []
+    const blocks =
+      mapping.match(
+        /\/\*\s*shadcn:\s+[\w/-]+\.vue[^*]*(?:\*(?!\/)[^*]*)*\*\/\s*[^{}]+\{\s*@apply\b/g
+      ) ?? []
+    expect(applies.length).toBe(blocks.length)
     expect(mapping).toContain('var(--border)')
   })
 

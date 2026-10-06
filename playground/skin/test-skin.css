@@ -194,14 +194,25 @@
   line-height: 1.25rem;
 }
 
-/* The `rounded-md border` box of shadcn's data-table example. It is the
-   table's own scroll container, so it cannot be a ScrollArea (that would
-   need markup the table does not render, and sticky pinned cells stick to
-   this element); its native scrollbar takes the ScrollArea's look instead. */
+/*
+ * Table parts derived from shadcn-vue (class parity). Each block below opens
+ * with a `shadcn:` comment naming the component under playground/skin/ui/ and
+ * `@apply`s exactly the classes of its `cn('...')` call (or, for the table
+ * container, its static `class="..."`), minus the classes listed under
+ * `excluded:`, each with its reason. playground/skin/parity.spec.ts fails when
+ * the two drift apart, e.g. after `shadcn-vue add table --overwrite`. What the
+ * table needs beyond shadcn stays plain CSS in a separate rule after a block.
+ */
+
+/* shadcn: table/Table.vue [data-slot=table-container] */
 .qt-table-responsive {
-  position: relative;
-  width: 100%;
-  overflow-x: auto;
+  @apply relative w-full overflow-x-auto;
+}
+/* Beyond shadcn: the `rounded-md border` box of shadcn's data-table example.
+   It is the table's own scroll container, so it cannot be a ScrollArea (that
+   would need markup the table does not render, and sticky pinned cells stick
+   to this element); its native scrollbar takes the ScrollArea's look. */
+.qt-table-responsive {
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) - 2px);
   scrollbar-width: thin;
@@ -211,39 +222,51 @@
   container-type: inline-size;
 }
 
-/* Table, TableHeader, TableBody, TableRow, TableHead, TableCell */
+/* shadcn: table/Table.vue */
 .qt-table {
-  width: 100%;
-  caption-side: bottom;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  @apply w-full caption-bottom text-sm;
 }
+
+/* shadcn: table/TableHeader.vue */
+.qt-table > thead {
+  @apply [&_tr]:border-b;
+}
+
+/* shadcn: table/TableBody.vue */
+.qt-table > tbody {
+  @apply [&_tr:last-child]:border-0;
+}
+
+/* shadcn: table/TableRow.vue
+   excluded:
+     data-[state=selected]:bg-muted  no row selection; `data-state` is not in contract/dom.ts
+     has-aria-expanded:bg-muted/50   `aria-expanded` is not a skin hook (P6); `tr[data-expanded]` below draws the same */
 .qt-table tr {
-  border-bottom: 1px solid var(--border);
-  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  @apply hover:bg-muted/50 border-b transition-colors;
 }
-.qt-table tbody tr:last-child {
-  border-bottom-width: 0;
-}
-@media (hover: hover) {
-  .qt-table tr:hover {
-    background-color: color-mix(in oklab, var(--muted) 50%, transparent);
-  }
-}
+
+/* shadcn: table/TableHead.vue
+   excluded:
+     [&:has([role=checkbox])]:pr-0  the table renders no checkbox column */
 .qt-table th,
 .qt-table thead td {
-  height: 2.5rem;
-  padding: 0.5rem;
-  color: var(--foreground);
-  font-weight: 500;
-  text-align: left;
-  vertical-align: middle;
-  white-space: nowrap;
+  @apply text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap;
 }
+/* Beyond shadcn: a header cell holds the filter row under its title, so it
+   keeps the block padding a one-line TableHead goes without. */
+.qt-table th,
+.qt-table thead td {
+  padding-block: 0.5rem;
+}
+
+/* shadcn: table/TableCell.vue
+   excluded:
+     [&:has([role=checkbox])]:pr-0  the table renders no checkbox column */
 .qt-table td {
-  padding: 0.5rem;
-  vertical-align: middle;
-  white-space: nowrap;
+  @apply p-2 align-middle whitespace-nowrap;
+}
+/* Beyond shadcn: numbers line up in a column. */
+.qt-table td {
   font-variant-numeric: tabular-nums;
 }
 /* Vertical column borders: the same border token as the row lines. */
