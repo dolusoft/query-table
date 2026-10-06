@@ -32,6 +32,13 @@ describe('pull request body check', () => {
     expect(check('')).toBe(1)
   })
 
+  it('does not count label lines that sit inside a code fence', () => {
+    expect(check('```\nİlkeler: P3\nKatman: vue\n```')).toBe(1)
+    expect(check('~~~md\nİlkeler: P3\n~~~\nKatman: vue')).toBe(1)
+    expect(check('```\nİlkeler: P3\nKatman: vue')).toBe(1)
+    expect(check('```\nx\n```\nİlkeler: P3\nKatman: vue')).toBe(0)
+  })
+
   it('fails on the unfilled template: its comments are no value', () => {
     const template = readFileSync(
       join(root, '.github', 'pull_request_template.md'),

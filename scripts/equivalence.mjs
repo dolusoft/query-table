@@ -43,6 +43,9 @@ const option = (name, fallback) => {
   const at = args.indexOf(`--${name}`)
   return at >= 0 ? args[at + 1] : fallback
 }
+// A run with fewer tests than this is not an equivalence run (the specs did
+// not load, a filter matched nothing); it fails instead of passing on zero.
+const MIN_TESTS = 300
 const baseline = option('baseline', 'git:origin/main')
 const candidate = option('candidate', 'src')
 const runUnit = !args.includes('--browser-only')
@@ -141,7 +144,11 @@ const download = async (url, file) => {
 /** `{ entry, label }` for a target; `entry` is null for the source. */
 const prepare = async target => {
   if (target === 'src') {
-    return { entry: null, label: 'src (working tree)' }
+    return {
+      entry: null,
+      resolved: resolve(root, 'src/index.ts'),
+      label: 'src (working tree)'
+    }
   }
   const [kind, value] = [
     target.slice(0, target.indexOf(':')),
@@ -167,7 +174,7 @@ const prepare = async target => {
     tarball,
     join(work, `pkg-${safeName(target)}`)
   )
-  return { entry, label: `${label}, version ${version}` }
+  return { entry, resolved: entry, label: `${label}, version ${version}` }
 }
 
 /** Runs the contract specs against one target; returns the report files. */
@@ -250,10 +257,18 @@ const main = async () => {
   const targets = { baseline, candidate }
   const results = {}
   const labels = {}
+  const resolvedEntries = {}
   for (const [role, target] of Object.entries(targets)) {
     console.log(`\n[equivalence] ${role}: preparing ${target}`)
     const prepared = await prepare(target)
     labels[role] = prepared.label
+    // Canary: the entry the package name resolves to for this run. If both
+    // roles resolved to the same file, the comparison would be a build against
+    // itself and "0 differences" would mean nothing.
+    resolvedEntries[role] = prepared.resolved
+    console.log(
+      `[equivalence] ${role}: @dolusoft/query-table -> ${prepared.resolved}`
+    )
     console.log(
       `[equivalence] ${role}: running the contract specs on ${prepared.label}`
     )
@@ -327,7 +342,34 @@ const main = async () => {
   console.log(
     `[equivalence] ${differences.length} difference(s); report: ${relative(root, join(work, 'report.json'))}`
   )
-  process.exit(differences.length === 0 ? 0 : 1)
+
+  // Zero differences only counts when the runs were real: nothing failed on
+  // either side, enough tests ran, and the two roles used different builds.
+  const problems = []
+  if (differences.length > 0) {
+    problems.push(`${differences.length} difference(s) between the builds`)
+  }
+  for (const role of ['baseline', 'candidate']) {
+    if (report.failing[role].length > 0) {
+      problems.push(
+        `${report.failing[role].length} test(s) not passing in ${role}`
+      )
+    }
+    if (results[role].size < MIN_TESTS) {
+      problems.push(
+        `${role} ran ${results[role].size} tests, below the floor of ${MIN_TESTS} (specs missing or filtered out?)`
+      )
+    }
+  }
+  if (resolvedEntries.baseline === resolvedEntries.candidate) {
+    problems.push(
+      `baseline and candidate resolve to the same entry (${resolvedEntries.baseline}): the comparison is a build against itself`
+    )
+  }
+  for (const problem of problems) {
+    console.error(`[equivalence] FAIL: ${problem}`)
+  }
+  process.exit(problems.length === 0 ? 0 : 1)
 }
 
 await main()
