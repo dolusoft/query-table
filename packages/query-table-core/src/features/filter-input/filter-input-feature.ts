@@ -115,6 +115,22 @@ const parsedRules = (column: AnyColumn, draft: FilterDraft): FilterRule[] =>
     value: rule.value
   }))
 
+/**
+ * Whether two rule lists say the same by `field`, `condition` and `value`
+ * alone. The rules a draft parses to carry no extra properties, so they are
+ * compared with this: typing the text a rule already holds is no change and
+ * must not drop the extra properties the consumer put on that rule (C-60).
+ * Rules that come from the consumer on both sides use `sameRules`.
+ */
+const sameMeaning = (a: readonly FilterRule[], b: readonly FilterRule[]) =>
+  a.length === b.length &&
+  a.every(
+    (rule, i) =>
+      rule.field === b[i].field &&
+      rule.condition === b[i].condition &&
+      rule.value === b[i].value
+  )
+
 /** Remembers `rules` as emitted for `id`; returns how to undo it. */
 const remember = (instance: Instance, id: string, rules: FilterRule[]) => {
   const before = instance.emitted.get(id)
@@ -168,7 +184,7 @@ const commit = (table: AnyTable, ids: readonly string[]): boolean => {
         let next = old
         for (const column of columns) {
           const rules = parsedRules(column, draftOf(table, column.id))
-          if (sameRules(rulesIn(next, column.id), rules)) {
+          if (sameMeaning(rulesIn(next, column.id), rules)) {
             continue
           }
           changed = true
@@ -366,7 +382,7 @@ const reconcile = (table: AnyTable) => {
     }
     instance.seen.set(id, rules)
     const pending = instance.emitted.get(id) ?? []
-    const echo = pending.findIndex(sent => sameRules(sent, rules))
+    const echo = pending.findIndex(sent => sameMeaning(sent, rules))
     if (echo >= 0) {
       // Our own emit came back (possibly late): older ones are answered
       // too, newer ones are still on their way. The draft stays as typed.
@@ -384,7 +400,7 @@ const reconcile = (table: AnyTable) => {
     // A different set of rules: the consumer has moved on from what we sent.
     instance.emitted.delete(id)
     const draft = draftsOf(table)[id]
-    if (draft && sameRules(parsedRules(column, draft), rules)) {
+    if (draft && sameMeaning(parsedRules(column, draft), rules)) {
       continue
     }
     if (!draft && rules.length === 0) {
