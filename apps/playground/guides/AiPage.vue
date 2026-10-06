@@ -33,7 +33,7 @@ const base = import.meta.env.BASE_URL
       v-for="id in ['ai-skill', 'ai-install']"
       :id="id"
       :key="id"
-      class="flex flex-col gap-2"
+      class="flex scroll-mt-4 flex-col gap-2"
     >
       <h2 class="text-lg font-semibold">{{ section(id).title }}</h2>
       <p class="text-sm text-muted-foreground">
@@ -56,7 +56,7 @@ const base = import.meta.env.BASE_URL
         </Button>
       </div>
     </section>
-    <section id="ai-files" class="flex flex-col gap-2">
+    <section id="ai-files" class="flex scroll-mt-4 flex-col gap-2">
       <h2 class="text-lg font-semibold">{{ section('ai-files').title }}</h2>
       <p class="text-sm text-muted-foreground">
         {{ section('ai-files').text }}
@@ -73,7 +73,7 @@ const base = import.meta.env.BASE_URL
         </li>
       </ul>
     </section>
-    <section id="ai-llms" class="flex flex-col gap-2">
+    <section id="ai-llms" class="flex scroll-mt-4 flex-col gap-2">
       <h2 class="text-lg font-semibold">{{ section('ai-llms').title }}</h2>
       <p class="text-sm text-muted-foreground">
         <InlineCode :text="section('ai-llms').text" />

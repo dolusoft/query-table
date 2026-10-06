@@ -119,11 +119,18 @@ export const onTopOfTanstack: HomeSection = {
   text: 'TanStack Table gives the state and the headless core; Query Table adds the part a server-driven table needs: a filter text grammar and a condition menu, one JSON query with a JSON Schema for your backend, one update with a reason for every user action, a cursor protocol, measured sticky offsets, accessible resizing and a phone mode. The feature matrix shows what is open today and what is coming.'
 }
 
+export const aiHome: HomeSection = {
+  id: 'use-with-ai',
+  title: 'Use it with a coding agent',
+  text: 'A Claude Code skill teaches an agent the real API: when to use QueryTable or the TanStack path, how v-model:query works, the server-side Query protocol and the usual mistakes. llms.txt and llms-full.txt hold the documentation as plain text for any agent that fetches a URL.'
+}
+
 /** Sections of the home page in the order they render, for the search. */
 export const homeSections: HomeSection[] = [
   showcase,
   ...moreFeatures,
   onTopOfTanstack,
+  aiHome,
   ...principles,
   architecture
 ]
