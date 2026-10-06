@@ -120,20 +120,26 @@ test.each([
   30_000
 )
 
-// The sorting page mixes sortable columns (title in a 2.5rem sort button on a
-// phone) with an unsortable one (title as plain text): every filter row of
-// the header must still start at the same height.
-test.each([375, 390])(
-  'filter rows share one top on the sorting page at %ipx',
-  async width => {
+// Headers that differ in height must still line up their filter rows. The
+// sorting page mixes sortable columns (title in a 2.5rem sort button on a
+// phone) with an unsortable one (title as plain text); the header-slot page
+// puts a two-line title of the page's own in the Salary column.
+test.each(
+  ['sorting', 'header-slot'].flatMap(route =>
+    [375, 390].map(width => [route, width] as const)
+  )
+)(
+  'filter rows share one top on the %s page at %ipx',
+  async (route, width) => {
     await page.viewport(width, 844)
     await render(App, { global: { plugins: [router] } })
-    await router.push('/sorting')
+    await router.push(`/${route}`)
     await expect
-      .poll(() => document.querySelectorAll('thead .qt-title').length, {
-        timeout: 5000
-      })
-      .toBeGreaterThan(0)
+      .poll(
+        () => document.querySelectorAll('.qt-table thead .qt-filter').length,
+        { timeout: 5000 }
+      )
+      .toBeGreaterThan(1)
     await frame()
     const tops = [
       ...document.querySelectorAll<HTMLElement>(
