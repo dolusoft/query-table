@@ -12,7 +12,8 @@ export interface ClassEntry {
   description: string
   /**
    * The rule that adds the hook on top of the 2.2.x table, when 2.2.x does
-   * not render it. C-40 checks the entries without it; C-66 the ones with it.
+   * not render it. C-40 checks the entries without it; C-66 the ones the
+   * selection adds (`C-64`) and C-72 the ones of the 3.1 features.
    */
   addedBy?: string
 }
@@ -185,7 +186,14 @@ export const domAttributes: AttributeEntry[] = [
     name: 'data-pinned',
     on: 'th, td',
     description:
-      'Present on every cell of a pinned column (header, body, footer) and, when some column is pinned, on the utility cells. The cell also carries `--qt-pin-left`.'
+      'Empty on every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, on the utility cells; the cell also carries `--qt-pin-left`. `right` on a column pinned to the right (C-71).'
+  },
+  {
+    name: 'data-pinned',
+    on: 'th[data-pinned="right"], td[data-pinned="right"]',
+    description:
+      'Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71).',
+    addedBy: 'C-71'
   },
   {
     name: 'aria-sort',
@@ -199,6 +207,8 @@ export interface InlineStyleEntry {
   /** CSS selector an element carrying the property must match. */
   on: string
   description: string
+  /** As on `ClassEntry`. */
+  addedBy?: string
 }
 
 /** The only inline styles the table writes (C-31). */
@@ -211,8 +221,15 @@ export const domInlineStyles: InlineStyleEntry[] = [
   },
   {
     property: '--qt-pin-left',
-    on: '[data-pinned]',
+    on: '[data-pinned=""]',
     description:
       'Left offset of a pinned cell in pixels: the measured widths of the pinned header cells before it. Use it as `left: var(--qt-pin-left)` next to your own `position: sticky`.'
+  },
+  {
+    property: '--qt-pin-right',
+    on: '[data-pinned="right"]',
+    description:
+      'Right offset of a right-pinned cell in pixels: the measured widths of the right-pinned header cells after it. Use it as `right: var(--qt-pin-right)` next to your own `position: sticky`.',
+    addedBy: 'C-71'
   }
 ]

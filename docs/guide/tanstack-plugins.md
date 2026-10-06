@@ -336,10 +336,11 @@ The rule behind the split: a behavior is first a TanStack option, then a thin pl
 | C-59 row selection        | the table keeps the selection                                          | the slice is controlled by the consumer                                                                                      |
 | C-67 column visibility    | TanStack keeps `columnVisibility`                                      | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns`                            |
 | C-69 column order         | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
+| C-71 right pinning        | `columnPinningFeature` computes offsets from `getSize()`               | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3)                      |
 
 What stays **own**, outside TanStack (ADR 0004, decisions D3 and D10):
 
-- **Pin geometry.** Where a pinned column sticks (`--qt-pin-left`) comes from measuring the rendered cells, not from TanStack's `columnSizingFeature`; widths stay CSS strings. This is part of the Vue package.
+- **Pin geometry.** Where a pinned column sticks (`--qt-pin-left`, `--qt-pin-right`) comes from measuring the rendered cells, not from TanStack's `columnSizingFeature`; widths stay CSS strings. This is part of the Vue package.
 - **Column resizing.** `columnSizingFeature` and `columnResizingFeature` are not registered in v3. Resize is our own code and widths are controlled by the consumer, as in 2.2.
 - **Filter drafts, the echo history, drag previews, measured geometry**: short-lived UI state the plugins and the Vue layer keep.
 

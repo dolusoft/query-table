@@ -107,9 +107,14 @@ export const createCollector = () => {
 
   /**
    * C-31: only the listed inline styles, each on its element, and each one
-   * written by some state.
+   * that `include` accepts written by some state. By default those are the
+   * entries without `addedBy`; hooks that only v3 adds carry `addedBy` and are
+   * checked by C-66 (selection) and C-72 (3.1).
    */
-  const expectInlineStyles = () => {
+  const expectInlineStyles = (
+    include: (entry: { addedBy?: string }) => boolean = entry =>
+      entry.addedBy === undefined
+  ) => {
     expect(styled.length).toBeGreaterThan(0)
     const written = new Set<string>()
     for (const element of styled) {
@@ -124,9 +129,8 @@ export const createCollector = () => {
         written.add(property)
       }
     }
-    expect([...written].sort()).toEqual(
-      domInlineStyles.map(entry => entry.property).sort()
-    )
+    const wanted = domInlineStyles.filter(include).map(entry => entry.property)
+    expect(wanted.filter(property => !written.has(property))).toEqual([])
   }
 
   return {

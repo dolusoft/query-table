@@ -5,7 +5,7 @@
 >
 import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
 
-import { applyWidth } from './columns/column-layout'
+import { applyWidth, sideOf, type PinSide } from './columns/column-layout'
 import type {
   CellSlotProps,
   HeaderSlotProps,
@@ -103,21 +103,23 @@ const utilities = computed(() =>
 const utilityCount = computed(() => utilities.value.length)
 const columnCount = computed(() => entries.value.length + utilityCount.value)
 
+/** Utilities are pinned only with a left-pinned column (C-46, C-71). */
+const utilitySide = (): PinSide => (hasPinned.value ? 'left' : false)
 const tableEl = shallowRef<HTMLTableElement | null>(null)
 const { widths, tableWidth, offsets } = useHeaderGeometry({
   table: tableEl,
   cells: () => [
     ...utilities.value.map(utility => ({
       key: utilityKey(utility),
-      pinned: hasPinned.value
+      side: utilitySide()
     })),
     ...entries.value.map(({ column }) => ({
       key: column.field,
-      pinned: column.pinned === 'left'
+      side: sideOf(column)
     }))
   ],
   active: () =>
-    hasPinned.value ||
+    entries.value.some(entry => sideOf(entry.column) !== false) ||
     (props.resizable &&
       entries.value.some(entry => entry.column.resizable !== false))
 })

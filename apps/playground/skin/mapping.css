@@ -125,12 +125,15 @@ td:has(> .qt-right-panel-button) {
   width: 2rem;
 }
 
-/* own: pinned columns. The table writes `data-pinned` and the measured offset
-   `--qt-pin-left`; sticky positioning, the layer and an opaque background are
-   the skin's. The header and footer sit above the body cells. */
+/* own: pinned columns. The table writes `data-pinned` (empty on the left,
+   `right` on the right) and the measured offset `--qt-pin-left` or
+   `--qt-pin-right`; sticky positioning, the layer and an opaque background are
+   the skin's. One rule serves both sides: the unset property leaves the other
+   side `auto`. The header and footer sit above the body cells. */
 .qt-table [data-pinned] {
   position: sticky;
   left: var(--qt-pin-left);
+  right: var(--qt-pin-right);
   z-index: 10;
   background-color: var(--background);
 }
@@ -167,11 +170,20 @@ td:has(> .qt-right-panel-button) {
 .qt-table:has([data-pinned]) .qt-footer > tr:last-child > td {
   border-bottom-width: 0;
 }
-/* own: a shadow on the last pinned cell shows where the scrolled part starts. */
-.qt-table [data-pinned]:not(:has(+ [data-pinned])) {
+/* own: a shadow on the last left-pinned cell shows where the scrolled part
+   starts. */
+.qt-table [data-pinned='']:not(:has(+ [data-pinned=''])) {
   box-shadow:
     1px 0 0 var(--border),
     4px 0 6px -4px var(--border);
+}
+/* own: a shadow on the first right-pinned cell shows where the scrolled part
+   ends. */
+.qt-table
+  [data-pinned='right']:not([data-pinned='right'] + [data-pinned='right']) {
+  box-shadow:
+    -1px 0 0 var(--border),
+    -4px 0 6px -4px var(--border);
 }
 
 /* own: resize handle, a 24px hit area (WCAG 2.5.8) over the right edge of the

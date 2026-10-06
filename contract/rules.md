@@ -16,6 +16,7 @@ A `Source:` line under a rule says where its behavior comes from in v3 (ADR 0004
 | C-59 row selection | the table keeps the selection | the slice is controlled: `state.rowSelection` is the consumer's, `onRowSelectionChange` tells the consumer |
 | C-67 column visibility | TanStack keeps `columnVisibility` | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns` |
 | C-69 column order | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
+| C-71 right pinning | `columnPinningFeature` computes offsets from `getSize()` | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3) |
 
 ### C-01 The table is controlled
 
@@ -185,11 +186,11 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 ### C-31 No styling
 
-The table ships no CSS and takes no styling props. It writes two inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), and the custom property `--qt-pin-left` on a pinned cell (C-47). The custom property carries a measured number; `position: sticky`, `z-index` and backgrounds are the consumer's CSS.
+The table ships no CSS and takes no styling props. It writes three inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47) and `--qt-pin-right` on a cell pinned to the right (C-71). The custom property carries a measured number; `position: sticky`, `z-index` and backgrounds are the consumer's CSS.
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column and on the utility cells while some column is pinned; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -221,7 +222,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 ### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop and are checked by C-66. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66) or a 3.1 feature (checked by C-72). Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 ### C-41 Skin selectors
 
@@ -245,11 +246,11 @@ Every header cell of a column is a `th` with `scope="col"`, and so is the utilit
 
 ### C-46 Pinned columns come first
 
-A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned they are pinned too. Columns with `pinned: 'right'` are drawn after every other column (C-69).
+A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned to the left they are pinned too. Columns with `pinned: 'right'` are drawn after every other column (C-69).
 
 ### C-47 Pin offsets
 
-Every cell of a pinned column (header, body, footer) and, while some column is pinned, every utility cell (the footer's cell that spans them included) carries `data-pinned` and the inline custom property `--qt-pin-left`: the sum, in pixels, of the rendered widths of the pinned header cells before it, so the first is `0px`. The widths are measured, not read from `Column.width`. They are measured again, in one batch after layout, whenever a header cell changes size (a resize, a font that loads, a container that narrows) and after the drawn columns change (order, visibility, pinning, utilities). The table measures nothing while no column is pinned or resizable, and stops on unmount. It writes no `position`, `left`, `z-index` or background: with `position: sticky; left: var(--qt-pin-left)` in the consumer's CSS the pinned cells of header, body and footer stay in line while the table scrolls sideways.
+Every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, every utility cell (the footer's cell that spans them included) carries `data-pinned` and the inline custom property `--qt-pin-left`: the sum, in pixels, of the rendered widths of the pinned header cells before it, so the first is `0px`. The widths are measured, not read from `Column.width`. They are measured again, in one batch after layout, whenever a header cell changes size (a resize, a font that loads, a container that narrows) and after the drawn columns change (order, visibility, pinning on either side, utilities). The table measures nothing while no column is pinned (either side) or resizable, and stops on unmount. It writes no `position`, `left`, `z-index` or background: with `position: sticky; left: var(--qt-pin-left)` in the consumer's CSS the pinned cells of header, body and footer stay in line while the table scrolls sideways.
 
 ### C-48 Resize handle
 
@@ -374,3 +375,15 @@ Source: tanstack, own
 The `header-<field>` and `filter-menu` slots receive `control`: `pinned` (`'left'`, `'right'` or `false`), `pin(side)`, `hide()`, `canMoveLeft`, `canMoveRight` and `move(direction)`. `pin(side)` emits one `update:columns` with reason `pin` (`false` unpins); pinning to the side the column already has emits nothing. The slots never receive a TanStack object.
 
 Source: tanstack, own
+
+### C-71 Right pinning
+
+A visible column with `pinned: 'right'` is drawn after every other column, in the header, the body and the footer, in the order of `columns` (C-69). Every cell of it carries `data-pinned="right"` and the inline custom property `--qt-pin-right`: the sum, in pixels, of the rendered widths of the right-pinned header cells after it, so the last is `0px`. The widths are measured as in C-47, by the same observer. The utility cells are pinned only while some visible column is pinned to the left; with only right-pinned columns they stay in the flow. `control.pin('right')` pins a column (C-70). With `position: sticky; right: var(--qt-pin-right)` in the consumer's CSS the right-pinned cells stay at the right edge while the table scrolls sideways; one rule `[data-pinned] { left: var(--qt-pin-left); right: var(--qt-pin-right) }` serves both sides, since an unset custom property leaves the other side `auto`. An LTR layout is assumed.
+
+Source: tanstack, own
+
+### C-72 DOM contract of 3.1
+
+With the 3.1 features on, the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entries the contract marks `addedBy: 'C-71'`, `'C-73'` and `'C-74'` are rendered, each on its element, by the state that adds it. With every 3.1 feature off the DOM is the one C-40 checks.
+
+Source: own

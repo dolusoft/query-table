@@ -152,10 +152,10 @@ export const pages: PlaygroundPage[] = [
     id: 'column-pinning',
     title: 'Column pinning',
     summary:
-      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; the skin makes them sticky while the table scrolls sideways.",
+      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; columns with `pinned: 'right'` are drawn last and carry `data-pinned=\"right\"` and `--qt-pin-right`. The skin makes both sticky while the table scrolls sideways.",
     example: 'ColumnPinning',
     api: { props: ['columns', 'hasSubtable'], types: ['Column'] },
-    rules: ['C-31', 'C-32', 'C-46', 'C-47']
+    rules: ['C-31', 'C-32', 'C-46', 'C-47', 'C-71', 'C-72']
   },
   {
     id: 'column-layout',

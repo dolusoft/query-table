@@ -1,5 +1,6 @@
 import type { Slots } from 'vue'
 
+import { sideOf } from '../columns/column-layout'
 import type { CellContextMenuPayload, CellSlotProps, Column } from '../contract'
 import { valueAt } from '../core/column'
 import { pinAttrs } from '../pin/pin'
@@ -12,7 +13,7 @@ export interface CellViewOptions<T extends object> {
   rows: () => T[]
   /** The drawn columns, to find the one a context menu event belongs to. */
   entries: () => ColumnEntry[]
-  /** `--qt-pin-left` of each pinned cell, by key (C-47). */
+  /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: () => Readonly<Record<string, number>>
   /** Someone listens to `cellContextMenu`; without one the menu is left alone. */
   listening: () => boolean
@@ -32,10 +33,7 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
 
   const cellAttrs = (entry: ColumnEntry) => ({
     'data-field': entry.column.field,
-    ...pinAttrs(
-      entry.column.pinned === 'left',
-      options.offsets()[entry.column.field]
-    )
+    ...pinAttrs(sideOf(entry.column), options.offsets()[entry.column.field])
   })
 
   /**

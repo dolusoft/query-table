@@ -165,6 +165,18 @@ export const features: Feature[] = [
     example: 'column-pinning'
   },
   {
+    id: 'column-pinning-right',
+    group: 'open',
+    title: 'Pinning columns to the right',
+    summary:
+      "`pinned: 'right'`: drawn last, with the measured `--qt-pin-right` offset.",
+    tanstack: 'column-pinning',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-pinning'
+  },
+  {
     id: 'column-visibility',
     group: 'open',
     title: 'Column visibility',
@@ -201,16 +213,6 @@ export const features: Feature[] = [
     example: 'column-resizing'
   },
   // B: planned
-  {
-    id: 'column-pinning-right',
-    group: 'planned',
-    title: 'Pinning columns to the right',
-    summary: 'The `end` side of column pinning.',
-    tanstack: 'column-pinning',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
   {
     id: 'row-pinning',
     group: 'planned',
@@ -332,7 +334,7 @@ export const features: Feature[] = [
     group: 'own',
     title: 'Measured sticky offsets for pinned columns',
     summary:
-      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths.',
+      'A column width in CSS units (`12rem`, `20%`) is fine: the table measures the rendered widths, for `--qt-pin-left` and `--qt-pin-right` alike.',
     tanstack: null,
     component: 'yes',
     tanstackPath: 'no',

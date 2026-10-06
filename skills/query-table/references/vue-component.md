@@ -124,7 +124,7 @@ Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `
 
 ## Styling
 
-No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Two inline styles exist: `width` on a header cell and `--qt-pin-left` on pinned cells; sticky positioning is your CSS. For large tables set `table-layout: fixed` and give every column a `width`.
+No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Three inline styles exist: `width` on a header cell, `--qt-pin-left` on cells pinned to the left and `--qt-pin-right` on cells pinned to the right (`data-pinned="right"`); sticky positioning is your CSS. One rule serves both sides, since the unset property leaves the other side `auto` (LTR layout): `.qt-table [data-pinned] { position: sticky; left: var(--qt-pin-left); right: var(--qt-pin-right) }`. The utility cells are pinned only with a column pinned to the left. For large tables set `table-layout: fixed` and give every column a `width`.
 
 ## Rules to remember
 

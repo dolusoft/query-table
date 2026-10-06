@@ -93,12 +93,13 @@ Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout aft
 
 ## Pinned columns
 
-Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their declared order, and when any column is pinned the utility cells (expand, select) are pinned too. The table marks every pinned `th` and `td` with `data-pinned` and writes its left offset, measured from the rendered widths, as the inline custom property `--qt-pin-left`. Making the cells stick is your CSS:
+Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their declared order, and when any column is pinned to the left the utility cells (expand, select) are pinned too. The table marks every pinned `th` and `td` with `data-pinned` and writes its left offset, measured from the rendered widths, as the inline custom property `--qt-pin-left`. `pinned: 'right'` draws a column last instead, marks its cells `data-pinned="right"` and writes `--qt-pin-right`, the measured widths of the right-pinned cells after it. Making the cells stick is your CSS; one rule serves both sides, since the unset property leaves the other side `auto` (an LTR layout is assumed):
 
 ```css
 .qt-table [data-pinned] {
   position: sticky;
   left: var(--qt-pin-left);
+  right: var(--qt-pin-right);
   z-index: 1;
   background: white; /* opaque, so scrolled cells pass underneath */
 }

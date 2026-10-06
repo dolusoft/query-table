@@ -12,6 +12,7 @@ import type {
 import FilterCell from './filter-cell.vue'
 import ResizeHandle from './resize-handle.vue'
 import SortButton from './sort-button.vue'
+import { sideOf } from '../columns/column-layout'
 import { columnTypeOf } from '../core/column'
 import { useTableContext } from '../core/table-context'
 import { pinAttrs, utilityKey, type Utility } from '../pin/pin'
@@ -24,9 +25,9 @@ const props = defineProps<{
   filterable: boolean
   /** Utility cells before the columns, in order. */
   utilities: Utility[]
-  /** Pinned cells, utilities included, get `data-pinned` (C-47). */
+  /** Some column is pinned to the left: the utilities get `data-pinned` (C-46). */
   hasPinned: boolean
-  /** `--qt-pin-left` of each pinned cell, by key. */
+  /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: Readonly<Record<string, number>>
   /**
    * The header slots the consumer gave (`header-<field>`, `filter-datetime`,
@@ -64,14 +65,14 @@ const hostsClearAll = (utility: Utility) =>
   utility === props.utilities.find(candidate => candidate !== 'select')
 
 const utilityAttrs = (utility: Utility) =>
-  pinAttrs(props.hasPinned, props.offsets[utilityKey(utility)])
+  pinAttrs(props.hasPinned ? 'left' : false, props.offsets[utilityKey(utility)])
 
 // The only inline styles of a header cell: the column width (or the drag
-// preview, C-49) and the pin offset (C-47), with `data-pinned`.
+// preview, C-49) and the pin offset (C-47, C-71), with `data-pinned`.
 const cellAttrs = (column: Column) => {
   const preview = resize.preview.value
   return pinAttrs(
-    column.pinned === 'left',
+    sideOf(column),
     props.offsets[column.field],
     preview?.field === column.field ? `${preview.width}px` : column.width
   )

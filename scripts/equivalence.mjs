@@ -83,7 +83,11 @@ const ADDED_AFTER_BASELINE = [
   `${COLUMNS_UNIT} > C-68 Columns are controlled [tanstack] [own]`,
   `${COLUMNS_UNIT} > C-69 Column order [tanstack] [own]`,
   `${COLUMNS_UNIT} > C-70 Column controls in slots [tanstack] [own]`,
-  `${COLUMNS_UNIT} > C-68 composable: TanStack calls go to the consumer [tanstack]`
+  `${COLUMNS_UNIT} > C-68 composable: TanStack calls go to the consumer [tanstack]`,
+  `tests/contract/unit/pin.spec.ts > C-71 Right pinning [tanstack] [own]`,
+  `tests/contract/browser/pin-right.browser.spec.ts > C-71 Right pinning [tanstack] [own]`,
+  'tests/contract/browser/accessibility.browser.spec.ts > C-71 accessibility scan',
+  'tests/contract/browser/dom-contract-3-1.browser.spec.ts > C-72 the DOM with 3.1 features matches the DOM contract'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

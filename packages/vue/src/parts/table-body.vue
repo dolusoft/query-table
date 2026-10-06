@@ -24,9 +24,9 @@ const props = defineProps<{
   hasSelection: boolean
   isSelected: (row: T, index: number) => boolean
   toggleSelected: (row: T, index: number) => void
-  /** Pinned cells, utilities included, get `data-pinned` (C-47). */
+  /** Some column is pinned to the left: the utilities get `data-pinned` (C-46). */
   hasPinned: boolean
-  /** `--qt-pin-left` of each pinned cell, by key. */
+  /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: Readonly<Record<string, number>>
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
@@ -54,12 +54,12 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
     onContextMenu: payload => emit('cellContextMenu', payload)
   })
 
-const rightPanelAttrs = () =>
-  pinAttrs(props.hasPinned, props.offsets[utilityKey('right-panel')])
-const expandAttrs = () =>
-  pinAttrs(props.hasPinned, props.offsets[utilityKey('subtable')])
-const selectAttrs = () =>
-  pinAttrs(props.hasPinned, props.offsets[utilityKey('select')])
+// Utilities are pinned only with a left-pinned column (C-46, C-71).
+const utilityAttrs = (utility: string) =>
+  pinAttrs(props.hasPinned ? 'left' : false, props.offsets[utilityKey(utility)])
+const rightPanelAttrs = () => utilityAttrs('right-panel')
+const expandAttrs = () => utilityAttrs('subtable')
+const selectAttrs = () => utilityAttrs('select')
 </script>
 
 <template>
