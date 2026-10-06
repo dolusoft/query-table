@@ -103,6 +103,11 @@ export default defineConfig(({ mode }) => {
       projects: [
         {
           extends: true,
+          // playground/skin/parity.spec.ts imports the shadcn-vue Button and
+          // Badge variants; their components import `@/lib/utils`.
+          resolve: {
+            alias: { '@': resolve(import.meta.dirname, 'playground/skin') }
+          },
           test: {
             name: 'unit',
             environment: 'happy-dom',
