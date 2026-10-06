@@ -187,13 +187,14 @@ describe('C-13 flushPendingFilters', () => {
     ;(
       m.wrapper.vm as unknown as { flushPendingFilters: () => void }
     ).flushPendingFilters()
-    expect(reasons(m.events)).toEqual(['filter', 'filter'])
-    expect(m.events[1][0].filters).toEqual([
+    // One update for every pending input: one call is one action (C-04).
+    expect(reasons(m.events)).toEqual(['filter'])
+    expect(m.events[0][0].filters).toEqual([
       rule('name', 'Contains', 'ali'),
       rule('age', 'Equal', 25)
     ])
     vi.advanceTimersByTime(5000)
-    expect(m.events).toHaveLength(2)
+    expect(m.events).toHaveLength(1)
   })
 
   it('does nothing when nothing is pending', () => {
@@ -272,6 +273,31 @@ describe('C-14 Pending filters go first', () => {
     slot.next!()
     expect(reasons(withSlot.events)).toEqual(['page'])
     expect(withSlot.events[0][0].page).toBe(4)
+  })
+
+  it('applies several pending inputs as one filter update before a sort', async () => {
+    const { m } = withPagination()
+    await type(m, 'name', 'ali')
+    await type(m, 'age', '25')
+    await m.wrapper.find('th[data-field="id"] .qt-sort').trigger('click')
+    expect(reasons(m.events)).toEqual(['filter', 'sort'])
+    const both = [rule('name', 'Contains', 'ali'), rule('age', 'Equal', 25)]
+    expect(m.events[0][0].filters).toEqual(both)
+    expect(m.events[1][0].filters).toEqual(both)
+    expect(m.events[1][0].sort).toEqual({ field: 'id', direction: 'asc' })
+  })
+
+  it('drops a page action after several pending inputs: one filter update, page 1', async () => {
+    const { m, box } = withPagination()
+    await type(m, 'name', 'ali')
+    await type(m, 'age', '25')
+    box.slot!.nextPage()
+    expect(reasons(m.events)).toEqual(['filter'])
+    expect(m.events[0][0].page).toBe(1)
+    expect(m.events[0][0].filters).toEqual([
+      rule('name', 'Contains', 'ali'),
+      rule('age', 'Equal', 25)
+    ])
   })
 
   it('applies a pending filter before a sort', async () => {

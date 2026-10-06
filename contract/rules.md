@@ -16,7 +16,7 @@ The table never writes to `query`, `columns` or `rows`. The query it emits is a 
 
 ### C-04 One action, one update
 
-A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
+A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. Text pending in several inputs is applied together, in that one `filter` update. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
 
 ### C-05 Paging
 
@@ -52,7 +52,7 @@ Enter in a filter input applies that input now. With `filterDebounce: 0` every k
 
 ### C-13 flushPendingFilters
 
-`flushPendingFilters()` applies every typed-but-pending filter. The updates are emitted before the call returns.
+`flushPendingFilters()` applies every typed-but-pending filter in one `filter` update, on page 1; an input whose text changes no rule is left out of it. The update is emitted before the call returns.
 
 ### C-14 Pending filters go first
 

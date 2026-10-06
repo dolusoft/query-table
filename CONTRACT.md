@@ -56,7 +56,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `collapseAll` | `() => void` | Close every expanded row. |
 | `expandAll` | `() => void` | Open every row in `rows` (needs `hasSubtable`). Rows that arrive later are not opened, and nothing is fetched. |
 | `focusFilter` | `(field: string) => boolean` | Move focus to the filter of a column: its filter input, or the first focusable element the `filter-datetime` slot draws. Returns `false` when nothing took focus (no filter drawn for the field, a disabled select). |
-| `flushPendingFilters` | `() => void` | Apply typed-but-not-yet-applied filter text now. Every `update:query` it causes has been emitted when the call returns. |
+| `flushPendingFilters` | `() => void` | Apply typed-but-not-yet-applied filter text now, in one `update:query` that has been emitted when the call returns. |
 
 ### Functions
 
@@ -488,8 +488,8 @@ export interface QueryTableExpose {
    */
   focusFilter(field: string): boolean
   /**
-   * Apply typed-but-not-yet-applied filter text now. Every `update:query` it
-   * causes has been emitted when the call returns.
+   * Apply typed-but-not-yet-applied filter text now, in one `update:query`
+   * that has been emitted when the call returns.
    */
   flushPendingFilters(): void
 }
@@ -515,7 +515,7 @@ The table never writes to `query`, `columns` or `rows`. The query it emits is a 
 
 #### C-04 One action, one update
 
-A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
+A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. Text pending in several inputs is applied together, in that one `filter` update. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing.
 
 #### C-05 Paging
 
@@ -551,7 +551,7 @@ Enter in a filter input applies that input now. With `filterDebounce: 0` every k
 
 #### C-13 flushPendingFilters
 
-`flushPendingFilters()` applies every typed-but-pending filter. The updates are emitted before the call returns.
+`flushPendingFilters()` applies every typed-but-pending filter in one `filter` update, on page 1; an input whose text changes no rule is left out of it. The update is emitted before the call returns.
 
 #### C-14 Pending filters go first
 
