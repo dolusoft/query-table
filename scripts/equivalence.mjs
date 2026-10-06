@@ -146,7 +146,7 @@ const prepare = async target => {
   if (target === 'src') {
     return {
       entry: null,
-      resolved: resolve(root, 'src/index.ts'),
+      resolved: resolve(root, 'packages/vue/src/index.ts'),
       label: 'src (working tree)'
     }
   }

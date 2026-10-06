@@ -3,13 +3,13 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { parseFilterInput as parseFilterInput22 } from '../../../src/filter/parse-filter-input'
 import {
   caseName,
   filterInputCases,
   filterInputColumn,
   rulesOf
 } from '../../../tests/support/filter-input-cases'
+import { parseFilterInput as parseFilterInput22 } from '../../vue/src/filter/parse-filter-input'
 import { parseFilterInput } from '../src'
 
 describe('C-53 Filter parser', () => {

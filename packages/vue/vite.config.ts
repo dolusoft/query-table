@@ -5,9 +5,13 @@ import { defineConfig } from 'vite'
 
 import pkg from './package.json' with { type: 'json' }
 
-// Vue is the only dependency, and a peer one: the consumer resolves (and
-// deduplicates) it, the library bundle only carries its own code.
-const externalPackages = Object.keys(pkg.peerDependencies)
+// Vue (a peer), the protocol, the core and TanStack are resolved and
+// deduplicated by the consumer's bundler; the library bundle only carries its
+// own code.
+const externalPackages = [
+  ...Object.keys(pkg.peerDependencies),
+  ...Object.keys(pkg.dependencies)
+]
 const external = (id: string) =>
   externalPackages.some(name => id === name || id.startsWith(`${name}/`))
 
@@ -18,6 +22,7 @@ export default defineConfig({
     // and readable output keeps stack traces into the library usable.
     minify: false,
     sourcemap: true,
+    emptyOutDir: true,
     lib: {
       entry: {
         'query-table': resolve(import.meta.dirname, 'src/index.ts')

@@ -13,7 +13,8 @@ import { build } from 'vite'
 
 const root = join(import.meta.dirname, '..')
 const outDir = join(root, 'node_modules', '.cache', 'measure')
-if (!existsSync(join(root, 'dist', 'query-table.js'))) {
+const vuePackage = join(root, 'packages', 'vue')
+if (!existsSync(join(vuePackage, 'dist', 'query-table.js'))) {
   console.error(
     '[measure:consumer-size] dist/ is missing: run `pnpm build` first'
   )
@@ -27,7 +28,7 @@ const buildApp = async name => {
     configFile: false,
     logLevel: 'warn',
     // Self-reference by package name resolves through `exports` to dist/.
-    resolve: { alias: { '@dolusoft/query-table': root } },
+    resolve: { alias: { '@dolusoft/query-table': vuePackage } },
     build: {
       write: false,
       minify: true,
@@ -74,7 +75,7 @@ const version = name =>
 const result = {
   generatedAt: new Date().toISOString(),
   versions: {
-    package: JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    package: JSON.parse(readFileSync(join(vuePackage, 'package.json'), 'utf8'))
       .version,
     vue: version('vue'),
     vite: version('vite')

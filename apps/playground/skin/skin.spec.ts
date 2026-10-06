@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { buildSkin, skinPath } from './gen-skin'
-import { domAttributes, domClasses } from '../../contract/dom'
+import { domAttributes, domClasses } from '../../../contract/dom'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n')

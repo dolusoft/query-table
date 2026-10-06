@@ -37,7 +37,7 @@ const { domAttributes, domClasses, domInlineStyles } = await import(
 // contract.ts: JSDoc and type text of the members of a few declarations
 // ---------------------------------------------------------------------------
 
-const contractPath = at('src', 'contract.ts')
+const contractPath = at('packages', 'vue', 'src', 'contract.ts')
 const contractText = read(contractPath)
 const contractFile = ts.createSourceFile(
   contractPath,
@@ -108,7 +108,9 @@ const checker = createChecker(at('tsconfig.json'), {
   forceUseTs: true,
   schema: { ignore: [] }
 })
-const meta = checker.getComponentMeta(at('src', 'query-table.vue'))
+const meta = checker.getComponentMeta(
+  at('packages', 'vue', 'src', 'query-table.vue')
+)
 
 const props = meta.props
   .filter(prop => !prop.global)
@@ -212,7 +214,7 @@ const exposedKeysOf = path => {
 }
 sameSet(
   'Exposed keys',
-  exposedKeysOf(at('src', 'query-table.vue')),
+  exposedKeysOf(at('packages', 'vue', 'src', 'query-table.vue')),
   exposed.map(item => item.name)
 )
 
@@ -222,7 +224,7 @@ sameSet(
 // function declaration in the module they come from.
 // ---------------------------------------------------------------------------
 
-const indexPath = at('src', 'index.ts')
+const indexPath = at('packages', 'vue', 'src', 'index.ts')
 const indexFile = ts.createSourceFile(
   indexPath,
   read(indexPath),
@@ -256,7 +258,7 @@ const functions = indexFile.statements
       )
       if (!found) {
         throw new Error(
-          `src/index.ts exports ${name}, but ${modulePath} declares no function of that name`
+          `packages/vue/src/index.ts exports ${name}, but ${modulePath} declares no function of that name`
         )
       }
       const parameters = found.parameters
@@ -343,7 +345,7 @@ const sections = [
     functions.map(item => [code(item.name), code(item.type), item.description])
   ),
   '## Types',
-  'Exported from the package entry point (`src/contract.ts`).',
+  'Exported from the package entry point (`packages/vue/src/contract.ts`).',
   '```ts\n' + contractText.trim() + '\n```',
   '## Behavior rules',
   rules.replace(/^### /gm, '#### '),
@@ -379,9 +381,9 @@ const sections = [
   ),
   '## How the contract is kept',
   [
-    '- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.',
+    '- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `packages/vue/src/contract.ts`, the rules and the DOM list cannot change without it.',
     '- `pnpm api:check` compares the built declarations with `etc/query-table.api.md`.',
-    '- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `src/contract.ts`.',
+    '- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `packages/vue/src/contract.ts`.',
     '- `tests/repo/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.',
     '- The browser tests compare the rendered DOM with the DOM contract and check that the test skin selects only what it lists.'
   ].join('\n')
@@ -389,7 +391,7 @@ const sections = [
 
 // ---------------------------------------------------------------------------
 // contract/api.json: the same surface as data, for the playground's API
-// panels and its coverage manifest (playground/manifest.ts)
+// panels and its coverage manifest (apps/playground/manifest.ts)
 // ---------------------------------------------------------------------------
 
 // Each `### C-nn Title` heading starts a rule; its text runs to the next one.

@@ -10,7 +10,7 @@ import {
   TableRow
 } from '@/ui/table'
 
-import contractApi from '../../contract/api.json'
+import contractApi from '../../../contract/api.json'
 import type { PageApi } from '../manifest'
 import { memberAnchor, sectionAnchors } from '../search/anchors'
 

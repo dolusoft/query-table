@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { replaceRules, sameQuery } from './query'
-import { makeQuery } from '../../tests/support/mount-table'
+import { makeQuery } from '../../../../tests/support/mount-table'
 
 describe('query helpers', () => {
   it('replaces the rules of one field in place', () => {

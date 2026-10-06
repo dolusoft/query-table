@@ -322,6 +322,22 @@ importers:
         specifier: 9.2.6
         version: 9.2.6
 
+  packages/vue:
+    dependencies:
+      '@dolusoft/query-protocol':
+        specifier: workspace:*
+        version: link:../query-protocol
+      '@dolusoft/query-table-core':
+        specifier: workspace:*
+        version: link:../query-table-core
+      '@tanstack/vue-table':
+        specifier: 9.2.6
+        version: 9.2.6(vue@3.5.43(typescript@6.0.3))
+    devDependencies:
+      vue:
+        specifier: ^3.5.43
+        version: 3.5.43(typescript@6.0.3)
+
 packages:
 
   '@andrewbranch/untar.js@1.0.4':

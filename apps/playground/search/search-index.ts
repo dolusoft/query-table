@@ -1,7 +1,7 @@
 import MiniSearch from 'minisearch'
 
 import { memberAnchor, ruleAnchor, type MemberKind } from './anchors'
-import api from '../../contract/api.json'
+import api from '../../../contract/api.json'
 import { pages as manifestPages, type PlaygroundPage } from '../manifest'
 
 // The documentation search index. Every document is derived from
