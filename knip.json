@@ -9,9 +9,11 @@
         "playground/examples/*.vue",
         "playground/skin/gen-skin.ts",
         "spike/size/*.{ts,mjs}",
-        "fixtures/packages/*.ts"
+        "fixtures/packages/*.ts",
+        "docs/guide/examples/*.ts"
       ],
       "project": [
+        "docs/guide/**/*.ts",
         "src/**/*.{ts,vue}",
         "contract/**/*.ts",
         "scripts/*.mjs",

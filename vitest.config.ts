@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
       replacement: resolve(packages, 'query-protocol/src/index.ts')
     },
     {
+      find: /^@dolusoft\/query-protocol\/query\.schema\.json$/,
+      replacement: resolve(packages, 'query-protocol/query.schema.json')
+    },
+    {
       find: /^@dolusoft\/query-table-core$/,
       replacement: resolve(packages, 'query-table-core/src/index.ts')
     },
@@ -156,7 +160,10 @@ export default defineConfig(({ mode }) => {
               'packages/*/src/**/*.spec.ts',
               'packages/*/tests/**/*.spec.ts',
               // The TanStack feasibility spike of v3 (deleted at the end of PR-C).
-              'spike/**/*.spec.ts'
+              'spike/**/*.spec.ts',
+              // The guides: their code samples are compiled by `pnpm
+              // typecheck` and run here (docs/guide/guide.spec.ts).
+              'docs/guide/**/*.spec.ts'
             ],
             exclude: ['tests/contract/browser/**'],
             css: false

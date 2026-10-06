@@ -71,3 +71,10 @@ jobs:
       - run: pnpm check:packages
       - run: pnpm check:deps
       - run: pnpm check:package-size
+
+      # The .NET sample of docs/guide/protocol.md: built and run against the
+      # JSON Schema (the TypeScript samples are checked by typecheck and vitest).
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+      - run: dotnet run --project docs/guide/examples/dotnet -- "$GITHUB_WORKSPACE"
