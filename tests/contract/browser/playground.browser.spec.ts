@@ -3,6 +3,7 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
 import Overview from '../../../apps/playground/examples/Overview.vue'
+import RowPinning from '../../../apps/playground/examples/RowPinning.vue'
 import { el } from '../../support/helpers'
 
 const rowIds = () =>
@@ -85,4 +86,27 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
     .toHaveTextContent('Page 1 of 14')
   expect(rowIds()).toHaveLength(15)
   expect(geometry()).toEqual(initialGeometry)
+})
+
+test('C-74 playground pin buttons stay enabled and focused after keyboard pinning', async () => {
+  await render(RowPinning)
+  for (const [label, position] of [
+    ['Pin to top', 'top'],
+    ['Pin to bottom', 'bottom']
+  ]) {
+    const button = document.querySelector<HTMLButtonElement>(
+      `tr[data-row-index="1"] button[aria-label="${label}"]`
+    )!
+    button.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.element(button).toHaveAttribute('aria-pressed', 'true')
+    await expect.element(button).toBeEnabled()
+    await expect.element(button).toHaveFocus()
+    expect(button.closest('tr')?.getAttribute('data-pinned-row')).toBe(position)
+    await userEvent.keyboard('{Enter}')
+    await expect.element(button).toHaveFocus()
+    expect(
+      document.querySelectorAll(`tr[data-pinned-row="${position}"]`)
+    ).toHaveLength(1)
+  }
 })
