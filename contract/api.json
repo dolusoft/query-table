@@ -195,7 +195,7 @@
     {
       "name": "flushPendingFilters",
       "type": "() => void",
-      "description": "Apply typed-but-not-yet-applied filter text now. Every `update:query` it\ncauses has been emitted when the call returns."
+      "description": "Apply typed-but-not-yet-applied filter text now, in one `update:query`\nthat has been emitted when the call returns."
     }
   ],
   "functions": [
@@ -356,7 +356,7 @@
     {
       "id": "C-04",
       "title": "One action, one update",
-      "text": "A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing."
+      "text": "A user action produces at most one `update:query` of its own. A pending filter applied first is a separate update that the action causes (C-14), so an action can be preceded by one `filter` update; that is the only case of two. Text pending in several inputs is applied together, in that one `filter` update. An action that would produce a query deeply equal to the current one (the same sort chosen again, the same page size, `foo` retyped as `foo,`) emits nothing."
     },
     {
       "id": "C-05",
@@ -401,7 +401,7 @@
     {
       "id": "C-13",
       "title": "flushPendingFilters",
-      "text": "`flushPendingFilters()` applies every typed-but-pending filter. The updates are emitted before the call returns."
+      "text": "`flushPendingFilters()` applies every typed-but-pending filter in one `filter` update, on page 1; an input whose text changes no rule is left out of it. The update is emitted before the call returns."
     },
     {
       "id": "C-14",

@@ -133,15 +133,63 @@ describe('C-12 Enter and zero debounce', () => {
 })
 
 describe('C-13 flushPendingFilters', () => {
-  it('flushAll applies every pending draft and says whether filters changed', () => {
+  it('flushAll applies every pending draft in one update and says whether filters changed', () => {
     vi.useFakeTimers()
     const { drafts, updates } = setup()
     drafts.onInput('name', 'bob')
     drafts.onInput('age', '25')
     expect(drafts.flushAll()).toBe(true)
-    expect(updates).toHaveLength(2)
+    expect(updates).toHaveLength(1)
+    expect(updates[0].reason).toBe('filter')
+    expect(updates[0].query.page).toBe(1)
+    expect(updates[0].query.filters).toEqual([
+      { field: 'name', condition: 'Contains', value: 'bob' },
+      { field: 'age', condition: 'Equal', value: 25 }
+    ])
     vi.advanceTimersByTime(500)
-    expect(updates).toHaveLength(2)
+    expect(updates).toHaveLength(1)
+  })
+
+  it('flushAll leaves out a pending draft that changes nothing', () => {
+    vi.useFakeTimers()
+    const { drafts, updates } = setup({
+      query: makeQuery({
+        filters: [{ field: 'name', condition: 'Contains', value: 'bob' }]
+      })
+    })
+    drafts.onInput('name', 'bob,')
+    drafts.onInput('age', '25')
+    expect(drafts.flushAll()).toBe(true)
+    expect(updates).toHaveLength(1)
+    expect(updates[0].query.filters).toEqual([
+      { field: 'name', condition: 'Contains', value: 'bob' },
+      { field: 'age', condition: 'Equal', value: 25 }
+    ])
+  })
+
+  it('keeps the typed text of every flushed input when the one update comes back', async () => {
+    vi.useFakeTimers()
+    const { drafts } = setup()
+    drafts.onInput('name', '*bob*')
+    drafts.onInput('age', '25')
+    drafts.flushAll()
+    await nextTick()
+    expect(drafts.draftOf('name').text).toBe('*bob*')
+    expect(drafts.draftOf('age').text).toBe('25')
+  })
+
+  it('remembers each flushed field: a late answer of the one update is an echo for both', async () => {
+    vi.useFakeTimers()
+    const { drafts, query, updates } = setup({ apply: false })
+    drafts.onInput('name', '*bob*')
+    drafts.onInput('age', '25')
+    drafts.flushAll()
+    drafts.onInput('name', '*bobby*')
+    vi.advanceTimersByTime(100)
+    query.value = updates[0].query
+    await nextTick()
+    expect(drafts.draftOf('name').text).toBe('*bobby*')
+    expect(drafts.draftOf('age').text).toBe('25')
   })
 
   it('flushAll reports false when nothing is pending or nothing changes', () => {

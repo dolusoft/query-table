@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 
 import { renderTable, rows, rule, shot, sleep } from '../support/helpers'
 
@@ -121,4 +121,25 @@ test('Tab moves focus from one header filter input to the next', async () => {
   await userEvent.tab()
   await userEvent.tab()
   expect(document.activeElement).toBe(filterInput('name').element())
+})
+
+describe('C-14 pending text in several inputs before a sort', () => {
+  test('one filter update for both inputs, then the sort built on it', async () => {
+    // Long enough that neither input applies on its own before the click.
+    const { filterInput, updates } = await renderTable({ filterDebounce: 3000 })
+    await userEvent.click(filterInput('name'))
+    await userEvent.keyboard('ali')
+    await userEvent.click(filterInput('age'))
+    await userEvent.keyboard('25')
+    expect(updates).toHaveLength(0)
+    await userEvent.click(page.getByCSS('th[data-field="id"] .qt-sort'))
+    await expect.poll(() => updates.length).toBe(2)
+    const both = [rule('name', 'Contains', 'ali'), rule('age', 'Equal', 25)]
+    expect(updates.map(update => update.reason)).toEqual(['filter', 'sort'])
+    expect(updates[0].query.filters).toEqual(both)
+    expect(updates[1].query.filters).toEqual(both)
+    expect(updates[1].query.sort).toEqual({ field: 'id', direction: 'asc' })
+    await sleep(200)
+    expect(updates).toHaveLength(2)
+  })
 })
