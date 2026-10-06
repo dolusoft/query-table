@@ -14,7 +14,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `cursors` | `PageCursors \| null` |  | `null` | Cursor mode: the cursors of the page shown (C-56). The next and previous page controls step to them; without the one on a side there is no page on that side. |
 | `selection` | `RowSelection` |  | `undefined` | Rows the user selected, used with `v-model:selection`. Given, a column of checkboxes is drawn after the other utility columns; absent, there is no selection. Keys are the row identity (`rowKey`) as a string. |
 | `searchDebounce` | `number` |  | `300` | Milliseconds between the last key of a search typed through the `toolbar` slot and the search being applied (C-58). `0` applies every call at once, for a consumer that debounces on its own. Defaults to `300`. |
-| `columns` | `Column[]` | yes |  | Column definitions. Never mutated. |
+| `columns` | `Column[]` | yes |  | Column definitions, used with `v-model:columns` when the user may change the layout. Never mutated. |
 | `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. With `hasSubtable` a row may carry an optional `isExpanded` boolean to seed its expansion state (for example a print or report view that opens every row). Whenever `rows` changes, `isExpanded: true` opens the row, `isExpanded: false` closes it, and a row without the field (or with any other value) keeps what the state is. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again. The field is not part of `T`; it is read from the row object as given. |
 | `totalRows` | `number \| null` |  | `null` | Total number of rows on the server, `null` when unknown. It only feeds the `pagination` slot; it never decides whether rows are drawn. |
 | `footerRows` | `FooterRow[]` |  | `[]` | Rows of totals drawn in a `tfoot`. |
@@ -38,6 +38,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `rowRightPanelClick` | `[row: T]` | The right-panel button of a row was clicked. |
 | `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
 | `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
+| `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
 
 ### Slots
 
@@ -144,11 +145,12 @@ export interface Column {
    */
   width?: string
   /**
-   * `'left'` keeps the column at the start of the table: pinned columns are
-   * drawn first, in their order, and their cells get `data-pinned` and the
-   * `--qt-pin-left` offset. Sticky positioning is the consumer's CSS.
+   * `'left'` draws the column before the others, `'right'` after them;
+   * inside a side the order of `columns` holds. Their cells get
+   * `data-pinned` and the measured offset. Sticky positioning is the
+   * consumer's CSS.
    */
-  pinned?: 'left'
+  pinned?: 'left' | 'right'
   /** Show a resize handle for this column (needs table `resizable`). Defaults to `true`. */
   resizable?: boolean
   /**
@@ -161,7 +163,11 @@ export interface Column {
    * is not a finite number above `0` counts as unset; a `minWidth` above it wins.
    */
   maxWidth?: number
-  /** Not rendered in the header or the body; its rules in `query` still apply. */
+  /**
+   * Not rendered in the header or the body; its rules in `query` still
+   * apply. The table emits `update:columns` with `hide: true` when the user
+   * hides it (`control.hide()`).
+   */
   hide?: boolean
   /** Show a filter input for this column (needs table `filterable`). Defaults to `true`. */
   filterable?: boolean
@@ -208,7 +214,10 @@ export interface TableProps<
    * call at once, for a consumer that debounces on its own. Defaults to `300`.
    */
   searchDebounce?: number
-  /** Column definitions. Never mutated. */
+  /**
+   * Column definitions, used with `v-model:columns` when the user may
+   * change the layout. Never mutated.
+   */
   columns: Column[]
   /**
    * Rows of the current page, drawn exactly as given.
@@ -326,6 +335,32 @@ export interface ColumnResizePayload {
   width: number
 }
 
+/** What changed the layout in an `update:columns` event (C-68). */
+export type ColumnChangeReason = 'visibility' | 'order' | 'pin' | 'resize'
+
+/**
+ * Column actions handed to the `header-<field>` and `filter-menu` slots
+ * (C-70). Each action emits `update:columns`; the table changes nothing
+ * until the consumer writes the new `columns` back.
+ */
+export interface ColumnControl {
+  /** Side the column is pinned to, `false` when it is not pinned. */
+  pinned: 'left' | 'right' | false
+  /** Pin to a side or unpin: one `update:columns` with reason `pin`. */
+  pin: (side: 'left' | 'right' | false) => void
+  /** Hide the column: one `update:columns` with reason `visibility`. */
+  hide: () => void
+  /** There is a visible column on the left within the column's region. */
+  canMoveLeft: boolean
+  /** There is a visible column on the right within the column's region. */
+  canMoveRight: boolean
+  /**
+   * Move one visible position within the region (C-69): one
+   * `update:columns` with reason `order`; nothing at the region's edge.
+   */
+  move: (direction: 'left' | 'right') => void
+}
+
 /** Events of the table. */
 export type TableEmits<T, Q extends Query = TableQuery> = {
   /**
@@ -351,6 +386,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * keeps its old width.
    */
   columnResize: [payload: ColumnResizePayload]
+  /**
+   * The user changed the layout: visibility, order, pinning or a width
+   * (C-68). A new array; changed columns are new objects, the others are
+   * yours. Apply it with `v-model:columns`, or the table draws the old one.
+   */
+  'update:columns': [columns: Column[], reason: ColumnChangeReason]
 }
 
 export interface CellSlotProps<T> {
@@ -368,6 +409,8 @@ export interface HeaderSlotProps {
   sortable: boolean
   /** Sort by this column as a header click does (C-07); does nothing when not `sortable`. */
   toggleSort: () => void
+  /** Layout actions of this column (C-70). */
+  control: ColumnControl
 }
 
 export interface SubtableSlotProps<T> {
@@ -417,6 +460,8 @@ export interface FilterMenuSlotProps {
    * single `button.qt-filter-button` and merges the attributes it receives.
    */
   trigger: Component
+  /** Layout actions of this column (C-70). */
+  control: ColumnControl
 }
 
 export interface ToolbarSlotProps {
@@ -627,6 +672,8 @@ A `Source:` line under a rule says where its behavior comes from in v3 (ADR 0004
 | C-56 cursor paging | `pageIndex` and `pageCount` count pages | the position is always "here": `pageIndex` 1 or 0 by the previous cursor, `pageCount` one more by the next one; a ±1 step becomes a cursor request |
 | C-58 global search | the global filter filters rows on the client | `globalFilteringFeature` in manual mode; its slice is projected from `query.search` and a change emits the query |
 | C-59 row selection | the table keeps the selection | the slice is controlled: `state.rowSelection` is the consumer's, `onRowSelectionChange` tells the consumer |
+| C-67 column visibility | TanStack keeps `columnVisibility` | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns` |
+| C-69 column order | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
 
 #### C-01 The table is controlled
 
@@ -788,7 +835,7 @@ When the consumer listens to `cellContextMenu` (with or without the `.once` modi
 
 #### C-29 Hidden columns
 
-A column with `hide` is neither in the header nor in the body or footer. Its rules in `query` still apply.
+A column with `hide` is neither in the header nor in the body or footer. Its rules in `query` still apply. In v3 the hiding is TanStack's column visibility, projected from `hide` (C-67).
 
 #### C-30 Cell text
 
@@ -856,7 +903,7 @@ Every header cell of a column is a `th` with `scope="col"`, and so is the utilit
 
 #### C-46 Pinned columns come first
 
-A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned they are pinned too.
+A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned they are pinned too. Columns with `pinned: 'right'` are drawn after every other column (C-69).
 
 #### C-47 Pin offsets
 
@@ -961,6 +1008,30 @@ Source: tanstack, own
 With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list.
 
 Source: own
+
+#### C-67 Column visibility
+
+A column with `hide` is drawn nowhere (C-29); its rules in `query` still apply. `control.hide()` from the `header-<field>` or `filter-menu` slot emits one `update:columns` with reason `visibility`: a new array in which that column is a new object with `hide: true` and every other column is the consumer's object. Showing a column again is the consumer's: it writes `columns` without `hide`. Text typed into the filter of a column that is hidden stays and shows again in its input when the column comes back; text of a column that leaves `columns` goes with it (C-22). Hiding never emits `update:query`.
+
+Source: tanstack, own
+
+#### C-68 Columns are controlled
+
+The table never writes to `columns`. A change of visibility, order, pinning or width made in the table emits one `update:columns(columns, reason)` per user action, `reason` being `visibility`, `order`, `pin` or `resize`: the array is new, a changed column is a new object that keeps the consumer's other fields, unchanged columns are the consumer's objects, and a field set back to its default is removed (`hide`, `pinned`), never written as `false`. Nothing is emitted on mount or when `columns` changes from outside, and an action whose result equals the current columns emits nothing. A resize emits `columnResize` (C-49) and then `update:columns` with reason `resize` and the width as `${width}px`. A consumer that does not write the array back sees the old layout. None of these emits `update:query`.
+
+Source: tanstack, own
+
+#### C-69 Column order
+
+Columns are drawn in three regions: pinned left, not pinned, pinned right; inside each region in the order of `columns`. `control.move('left' | 'right')` moves the column one visible position inside its region and emits `update:columns` with reason `order`; at the edge of the region it does nothing, and `canMoveLeft` / `canMoveRight` say whether there is a visible column on that side in the region. A moved column is placed right before (left) or right after (right) its visible neighbour, so hidden columns keep their place among the others: `[a, h (hidden), b]` with `b` moved left gives `[b, a, h]`. Moving never changes the region; that is pinning (C-70).
+
+Source: tanstack, own
+
+#### C-70 Column controls in slots
+
+The `header-<field>` and `filter-menu` slots receive `control`: `pinned` (`'left'`, `'right'` or `false`), `pin(side)`, `hide()`, `canMoveLeft`, `canMoveRight` and `move(direction)`. `pin(side)` emits one `update:columns` with reason `pin` (`false` unpins); pinning to the side the column already has emits nothing. The slots never receive a TanStack object.
+
+Source: tanstack, own
 
 ## DOM contract
 

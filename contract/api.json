@@ -34,7 +34,7 @@
       "type": "Column[]",
       "required": true,
       "default": null,
-      "description": "Column definitions. Never mutated."
+      "description": "Column definitions, used with `v-model:columns` when the user may\nchange the layout. Never mutated."
     },
     {
       "name": "rows",
@@ -153,6 +153,11 @@
       "name": "columnResize",
       "type": "[payload: ColumnResizePayload]",
       "description": "The user resized a column: on release of a drag, on an arrow key or on\nautofit. Write `width` back to the column (`Column.width`), or the column\nkeeps its old width."
+    },
+    {
+      "name": "update:columns",
+      "type": "[columns: Column[], reason: ColumnChangeReason]",
+      "description": "The user changed the layout: visibility, order, pinning or a width\n(C-68). A new array; changed columns are new objects, the others are\nyours. Apply it with `v-model:columns`, or the table draws the old one."
     }
   ],
   "slots": [
@@ -336,6 +341,16 @@
       "name": "ColumnResizePayload",
       "kind": "interface",
       "description": "Payload of the `columnResize` event."
+    },
+    {
+      "name": "ColumnChangeReason",
+      "kind": "type",
+      "description": "What changed the layout in an `update:columns` event (C-68)."
+    },
+    {
+      "name": "ColumnControl",
+      "kind": "interface",
+      "description": "Column actions handed to the `header-<field>` and `filter-menu` slots\n(C-70). Each action emits `update:columns`; the table changes nothing\nuntil the consumer writes the new `columns` back."
     },
     {
       "name": "TableEmits",
@@ -537,7 +552,7 @@
     {
       "id": "C-29",
       "title": "Hidden columns",
-      "text": "A column with `hide` is neither in the header nor in the body or footer. Its rules in `query` still apply."
+      "text": "A column with `hide` is neither in the header nor in the body or footer. Its rules in `query` still apply. In v3 the hiding is TanStack's column visibility, projected from `hide` (C-67)."
     },
     {
       "id": "C-30",
@@ -622,7 +637,7 @@
     {
       "id": "C-46",
       "title": "Pinned columns come first",
-      "text": "A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned they are pinned too."
+      "text": "A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned they are pinned too. Columns with `pinned: 'right'` are drawn after every other column (C-69)."
     },
     {
       "id": "C-47",
@@ -723,6 +738,26 @@
       "id": "C-66",
       "title": "DOM contract of the selection column",
       "text": "With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list. Source: own"
+    },
+    {
+      "id": "C-67",
+      "title": "Column visibility",
+      "text": "A column with `hide` is drawn nowhere (C-29); its rules in `query` still apply. `control.hide()` from the `header-<field>` or `filter-menu` slot emits one `update:columns` with reason `visibility`: a new array in which that column is a new object with `hide: true` and every other column is the consumer's object. Showing a column again is the consumer's: it writes `columns` without `hide`. Text typed into the filter of a column that is hidden stays and shows again in its input when the column comes back; text of a column that leaves `columns` goes with it (C-22). Hiding never emits `update:query`. Source: tanstack, own"
+    },
+    {
+      "id": "C-68",
+      "title": "Columns are controlled",
+      "text": "The table never writes to `columns`. A change of visibility, order, pinning or width made in the table emits one `update:columns(columns, reason)` per user action, `reason` being `visibility`, `order`, `pin` or `resize`: the array is new, a changed column is a new object that keeps the consumer's other fields, unchanged columns are the consumer's objects, and a field set back to its default is removed (`hide`, `pinned`), never written as `false`. Nothing is emitted on mount or when `columns` changes from outside, and an action whose result equals the current columns emits nothing. A resize emits `columnResize` (C-49) and then `update:columns` with reason `resize` and the width as `${width}px`. A consumer that does not write the array back sees the old layout. None of these emits `update:query`. Source: tanstack, own"
+    },
+    {
+      "id": "C-69",
+      "title": "Column order",
+      "text": "Columns are drawn in three regions: pinned left, not pinned, pinned right; inside each region in the order of `columns`. `control.move('left' | 'right')` moves the column one visible position inside its region and emits `update:columns` with reason `order`; at the edge of the region it does nothing, and `canMoveLeft` / `canMoveRight` say whether there is a visible column on that side in the region. A moved column is placed right before (left) or right after (right) its visible neighbour, so hidden columns keep their place among the others: `[a, h (hidden), b]` with `b` moved left gives `[b, a, h]`. Moving never changes the region; that is pinning (C-70). Source: tanstack, own"
+    },
+    {
+      "id": "C-70",
+      "title": "Column controls in slots",
+      "text": "The `header-<field>` and `filter-menu` slots receive `control`: `pinned` (`'left'`, `'right'` or `false`), `pin(side)`, `hide()`, `canMoveLeft`, `canMoveRight` and `move(direction)`. `pin(side)` emits one `update:columns` with reason `pin` (`false` unpins); pinning to the side the column already has emits nothing. The slots never receive a TanStack object. Source: tanstack, own"
     }
   ]
 }

@@ -18,7 +18,7 @@ import { pinAttrs, utilityKey, type Utility } from '../pin/pin'
 import { ariaSort } from '../sort/sort'
 
 const props = defineProps<{
-  /** Columns to draw: hidden ones dropped, pinned ones first. */
+  /** Columns to draw: hidden ones dropped, pinned left first, pinned right last. */
   columns: Column[]
   query: Query
   filterable: boolean
@@ -45,7 +45,7 @@ defineSlots<{
 
 const given = (name: string) => props.slotNames.split(' ').includes(name)
 
-const { filters, sort, resize, selection, labels } = useTableContext()
+const { filters, sort, layout, resize, selection, labels } = useTableContext()
 
 // A computed: the header re-renders when the answer changes, not with every
 // pending filter draft.
@@ -83,7 +83,8 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
   sortable: sort.isSortable(column),
   toggleSort: () => {
     sort.sortBy(column)
-  }
+  },
+  control: layout.controlOf(column.field)
 })
 </script>
 

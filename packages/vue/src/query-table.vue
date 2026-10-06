@@ -5,6 +5,7 @@
 >
 import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
 
+import { applyWidth } from './columns/column-layout'
 import type {
   CellSlotProps,
   HeaderSlotProps,
@@ -69,7 +70,8 @@ const state = useQueryTable<T, Q>({
   hasSubtable: () => props.hasSubtable,
   pageSizeOptions: () => props.pagination?.pageSizeOptions,
   onQueryChange: (query, reason) => emit('update:query', query, reason),
-  onSelectionChange: selection => emit('update:selection', selection)
+  onSelectionChange: selection => emit('update:selection', selection),
+  onColumnsChange: (columns, reason) => emit('update:columns', columns, reason)
 })
 const { filters, sort, search, expansion } = state
 const rowSelection = state.selection
@@ -123,12 +125,20 @@ const resize = useColumnResize({
   resizable: () => props.resizable,
   measuredWidth: field => widths.value[field],
   tableWidth: () => tableWidth.value,
-  emit: payload => emit('columnResize', payload)
+  // C-68: the width goes back as `columnResize`, then as the new `columns`.
+  emit: payload => {
+    emit('columnResize', payload)
+    const next = applyWidth(props.columns, payload.field, `${payload.width}px`)
+    if (next) {
+      emit('update:columns', next, 'resize')
+    }
+  }
 })
 
 provideTableContext({
   filters,
   sort,
+  layout: state.layout,
   resize,
   selection: rowSelection,
   labels: () => labels.value

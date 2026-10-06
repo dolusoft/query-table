@@ -322,7 +322,7 @@ export function replaceTheHandler(): string {
 
 ## What TanStack does, and what stays our own
 
-The rule behind the split: a behavior is first a TanStack option, then a thin plugin of ours, and only then framework code. TanStack holds the table state it models (sorting, pagination, column filters, expansion), as a projection of your props, never a second copy ([ADR 0004](../decisions/0004-state-ownership.md)). Where TanStack's default differs from a Query Table rule, the plugin overrides it:
+The rule behind the split: a behavior is first a TanStack option, then a thin plugin of ours, and only then framework code. TanStack holds the table state it models (sorting, pagination, column filters, column visibility, column order, column pinning, expansion), as a projection of your props, never a second copy ([ADR 0004](../decisions/0004-state-ownership.md)). Where TanStack's default differs from a Query Table rule, the plugin overrides it:
 
 | Rule                      | TanStack default                                                       | What the plugin does                                                                                                         |
 | ------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -334,6 +334,8 @@ The rule behind the split: a behavior is first a TanStack option, then a thin pl
 | C-56 cursor paging        | `pageIndex` and `pageCount` count pages                                | the position is always "here": `pageIndex` is 1 or 0 by the previous cursor, `pageCount` one more by the next one; a step of ±1 becomes a cursor request |
 | C-58 global search        | the global filter filters rows on the client                           | manual mode; the slice is projected from `query.search` and a change emits the query                                         |
 | C-59 row selection        | the table keeps the selection                                          | the slice is controlled by the consumer                                                                                      |
+| C-67 column visibility    | TanStack keeps `columnVisibility`                                      | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns`                            |
+| C-69 column order         | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
 
 What stays **own**, outside TanStack (ADR 0004, decisions D3 and D10):
 

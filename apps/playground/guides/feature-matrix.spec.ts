@@ -49,14 +49,11 @@ describe('feature matrix data', () => {
       'row-selection',
       'row-expanding',
       'column-pinning-left',
-      'column-sizing'
-    ])
-    expect(inGroup('planned')).toEqual([
       'column-visibility',
       'column-ordering',
-      'column-pinning-right',
-      'row-pinning'
+      'column-sizing'
     ])
+    expect(inGroup('planned')).toEqual(['column-pinning-right', 'row-pinning'])
     expect(inGroup('backend')).toEqual(['grouping', 'faceting'])
     expect(inGroup('client')).toEqual([
       'fuzzy-search',

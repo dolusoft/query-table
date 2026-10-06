@@ -4,8 +4,9 @@
 // call. `QueryTable` is built on it and holds no state logic of its own.
 //
 // The consumer owns every lasting value (P2): the query, the selection and
-// the column widths arrive as options and changes leave as callbacks. The
-// TanStack slices are projections of the query (ADR 0004); what the table
+// the column layout (visibility, order, pinning, widths) arrive as options
+// and changes leave as callbacks. The TanStack slices are projections of the
+// query (ADR 0004) and of the columns (ADR 0007); what the table
 // keeps is short-lived: typed filter and search text, and which rows are
 // expanded (TanStack's `expanded` slice, P15).
 import {
@@ -24,7 +25,9 @@ import {
 } from '@dolusoft/query-table-core'
 import {
   columnFilteringFeature,
+  columnOrderingFeature,
   columnPinningFeature,
+  columnVisibilityFeature,
   functionalUpdate,
   globalFilteringFeature,
   rowExpandingFeature,
@@ -46,8 +49,17 @@ import {
   watch
 } from 'vue'
 
+import {
+  applyOrder,
+  applyPinning,
+  applyVisibility,
+  moveField,
+  sideOf
+} from './columns/column-layout'
 import type {
   Column,
+  ColumnChangeReason,
+  ColumnControl,
   FilterCondition,
   PageCursors,
   PaginationSlotProps,
@@ -67,8 +79,11 @@ const features = tableFeatures({
   globalFilteringFeature,
   rowSelectionFeature,
   rowExpandingFeature,
-  // D3: pinning gives the order only (pinned columns first, as `start`);
-  // the offsets are measured by the table, not computed from sizes.
+  // K31-5: registered always; projections of `columns` (ADR 0007).
+  columnVisibilityFeature,
+  columnOrderingFeature,
+  // D3: start = left, end = right; order and region only, offsets are
+  // measured by the table, not computed from sizes.
   columnPinningFeature,
   serverQueryFeature,
   filterInputFeature
@@ -111,6 +126,11 @@ export interface UseQueryTableOptions<
   onQueryChange: (query: Q, reason: QueryChangeReason) => void
   /** Called with the new selection (its `true` entries) when the user changes it. */
   onSelectionChange?: (selection: RowSelection) => void
+  /**
+   * Called once per user action that changes the layout, with a new array
+   * (C-68).
+   */
+  onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void
 }
 
 /** A column the table draws and its position in `columns`, hidden ones included. */
@@ -191,13 +211,31 @@ export interface QueryTableSelection<T extends object> {
   toggleAll: (value: boolean) => void
 }
 
+/** The column layout actions (C-67 to C-70). */
+export interface QueryTableLayout {
+  /** What the `header-<field>` and `filter-menu` slots receive as `control`. */
+  controlOf: (field: string) => ColumnControl
+  /** The drawn columns of the field's region (left, center or right), in order. */
+  regionOf: (field: string) => string[]
+  /**
+   * Puts `field` right before or after `target` in `columns` and emits the
+   * order; nothing when `target` is not in the same region.
+   */
+  moveColumn: (field: string, target: string, place: 'before' | 'after') => void
+}
+
 export interface QueryTable<T extends object, Q extends Query = TableQuery> {
   /** The TanStack table, for the advanced path (headless markup). */
   table: VueTable<QueryTableFeatures, T>
-  /** The columns to draw: hidden ones dropped, pinned ones first. */
+  /**
+   * The columns to draw: hidden ones dropped; pinned left first, pinned
+   * right last (C-69).
+   */
   columns: ComputedRef<ColumnEntry[]>
-  /** Some drawn column is pinned. */
+  /** Some drawn column is pinned to the left: the utility cells are pinned with it. */
   hasPinned: ComputedRef<boolean>
+  /** Visibility, order and pinning actions (C-67 to C-70). */
+  layout: QueryTableLayout
   sort: QueryTableSort
   filters: QueryTableFilters
   search: QueryTableSearch
@@ -268,13 +306,27 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     }))
   )
 
-  // D3: TanStack's `start` region is the left one; the order only.
+  // The layout as TanStack slices (ADR 0007): visibility from `hide`, order
+  // from the array, pinning from `pinned` (start = left, end = right).
+  const columnVisibility = computed(() =>
+    Object.fromEntries(columns().map(column => [column.field, !column.hide]))
+  )
+  const columnOrder = computed(() => columns().map(column => column.field))
   const columnPinning = computed(() => ({
     start: columns()
-      .filter(column => column.pinned === 'left')
+      .filter(column => sideOf(column) === 'left')
       .map(column => column.field),
-    end: []
+    end: columns()
+      .filter(column => sideOf(column) === 'right')
+      .map(column => column.field)
   }))
+
+  /** A layout change goes to the consumer; an equal result is no change (C-68). */
+  const tell = (next: Column[] | null, reason: ColumnChangeReason) => {
+    if (next) {
+      options.onColumnsChange?.(next, reason)
+    }
+  }
 
   /** Updates emitted so far: tells whether an action emitted one. */
   let emits = 0
@@ -318,6 +370,27 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
         selectedOnly(functionalUpdate(updater, current))
       )
     },
+    // C-68: the layout slices are controlled; a change becomes `columns`.
+    onColumnVisibilityChange: (updater: Updater<Record<string, boolean>>) =>
+      tell(
+        applyVisibility(
+          columns(),
+          functionalUpdate(updater, columnVisibility.value)
+        ),
+        'visibility'
+      ),
+    onColumnOrderChange: (updater: Updater<string[]>) =>
+      tell(
+        applyOrder(columns(), functionalUpdate(updater, columnOrder.value)),
+        'order'
+      ),
+    onColumnPinningChange: (
+      updater: Updater<{ start?: string[]; end?: string[] }>
+    ) =>
+      tell(
+        applyPinning(columns(), functionalUpdate(updater, columnPinning.value)),
+        'pin'
+      ),
     state: {
       get sorting() {
         return projection.value.state.sorting
@@ -333,6 +406,12 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       },
       get rowSelection() {
         return toValue(options.selection) ?? {}
+      },
+      get columnVisibility() {
+        return columnVisibility.value
+      },
+      get columnOrder() {
+        return columnOrder.value
       },
       get columnPinning() {
         return columnPinning.value
@@ -351,13 +430,68 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     const byField = new Map(
       columns().map((column, index) => [column.field, { column, index }])
     )
-    return [...table.getStartLeafColumns(), ...table.getCenterLeafColumns()]
+    return [
+      ...table.getStartVisibleLeafColumns(),
+      ...table.getCenterVisibleLeafColumns(),
+      ...table.getEndVisibleLeafColumns()
+    ]
       .map(column => byField.get(column.id))
-      .filter((entry): entry is ColumnEntry => !!entry && !entry.column.hide)
+      .filter((entry): entry is ColumnEntry => !!entry)
   })
   const hasPinned = computed(() =>
-    entries.value.some(entry => entry.column.pinned === 'left')
+    entries.value.some(entry => sideOf(entry.column) === 'left')
   )
+
+  // ---- layout (C-67 to C-70) -------------------------------------------------
+
+  const regionOf = (field: string): string[] => {
+    const own = entries.value.find(entry => entry.column.field === field)
+    if (!own) {
+      return []
+    }
+    const side = sideOf(own.column)
+    return entries.value
+      .filter(entry => sideOf(entry.column) === side)
+      .map(entry => entry.column.field)
+  }
+
+  const moveColumn = (
+    field: string,
+    target: string,
+    place: 'before' | 'after'
+  ) => {
+    if (field !== target && regionOf(field).includes(target)) {
+      table.setColumnOrder(moveField(columnOrder.value, field, target, place))
+    }
+  }
+
+  const controlOf = (field: string): ColumnControl => {
+    const region = regionOf(field)
+    const at = region.indexOf(field)
+    const column = columns().find(candidate => candidate.field === field)
+    return {
+      pinned: column ? sideOf(column) : false,
+      pin: side =>
+        columnById(field)?.pin(
+          side === 'left' ? 'start' : side === 'right' ? 'end' : false
+        ),
+      hide: () => columnById(field)?.toggleVisibility(false),
+      canMoveLeft: at > 0,
+      canMoveRight: at >= 0 && at < region.length - 1,
+      // Read at call time: a control kept past a re-render still moves
+      // within the current region.
+      move: direction => {
+        const current = regionOf(field)
+        const from = current.indexOf(field)
+        const target = current[from + (direction === 'left' ? -1 : 1)]
+        if (from >= 0 && target !== undefined) {
+          moveColumn(field, target, direction === 'left' ? 'before' : 'after')
+        }
+      }
+    }
+  }
+
+  const layout: QueryTableLayout = { controlOf, regionOf, moveColumn }
 
   // ---- search (C-58) --------------------------------------------------------
 
@@ -661,6 +795,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     table,
     columns: entries,
     hasPinned,
+    layout,
     sort,
     filters,
     search,

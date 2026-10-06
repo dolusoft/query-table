@@ -165,6 +165,30 @@ export const features: Feature[] = [
     example: 'column-pinning'
   },
   {
+    id: 'column-visibility',
+    group: 'open',
+    title: 'Column visibility',
+    summary:
+      'Hide a column from its header or filter menu (`control.hide()`); your own column picker shows it again by writing `columns`. The table emits `update:columns`.',
+    tanstack: 'column-visibility',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-layout'
+  },
+  {
+    id: 'column-ordering',
+    group: 'open',
+    title: 'Column order',
+    summary:
+      'Move a column within its region from a menu (`control.move`); drag and keyboard come with `reorderable`.',
+    tanstack: 'column-ordering',
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'server',
+    example: 'column-layout'
+  },
+  {
     id: 'column-sizing',
     group: 'open',
     title: 'Column sizing and resizing',
@@ -177,27 +201,6 @@ export const features: Feature[] = [
     example: 'column-resizing'
   },
   // B: planned
-  {
-    id: 'column-visibility',
-    group: 'planned',
-    title: 'Column visibility',
-    summary:
-      'Show and hide columns from the table. Today `Column.hide` hides one from your own code.',
-    tanstack: 'column-visibility',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
-  {
-    id: 'column-ordering',
-    group: 'planned',
-    title: 'Column order',
-    summary: 'Let the user reorder columns.',
-    tanstack: 'column-ordering',
-    component: 'planned',
-    tanstackPath: 'yes',
-    mode: 'server'
-  },
   {
     id: 'column-pinning-right',
     group: 'planned',

@@ -59,12 +59,25 @@ export interface Column {
     hide?: boolean;
     maxWidth?: number;
     minWidth?: number;
-    pinned?: 'left';
+    pinned?: 'left' | 'right';
     resizable?: boolean;
     sortable?: boolean;
     title?: string;
     type?: ColumnType;
     width?: string;
+}
+
+// @public
+export type ColumnChangeReason = 'visibility' | 'order' | 'pin' | 'resize';
+
+// @public
+export interface ColumnControl {
+    canMoveLeft: boolean;
+    canMoveRight: boolean;
+    hide: () => void;
+    move: (direction: 'left' | 'right') => void;
+    pin: (side: 'left' | 'right' | false) => void;
+    pinned: 'left' | 'right' | false;
 }
 
 // @public
@@ -118,6 +131,7 @@ export interface FilterMenuSlotProps {
     column: Column;
     condition: FilterCondition | null;
     conditions: FilterConditionOption[];
+    control: ColumnControl;
     rules: FilterRule[];
     setCondition: (condition: FilterCondition | null) => void;
     setSort: (direction: SortDirection) => void;
@@ -143,6 +157,7 @@ export interface FooterRow {
 export interface HeaderSlotProps {
     // (undocumented)
     column: Column;
+    control: ColumnControl;
     sortable: boolean;
     sortDirection: SortDirection | null;
     toggleSort: () => void;
@@ -226,6 +241,13 @@ export interface QueryTableFilters {
 }
 
 // @public
+export interface QueryTableLayout {
+    controlOf: (field: string) => ColumnControl;
+    moveColumn: (field: string, target: string, place: 'before' | 'after') => void;
+    regionOf: (field: string) => string[];
+}
+
+// @public
 export interface QueryTableSearch {
     apply: () => boolean;
     set: (text: string) => void;
@@ -260,6 +282,7 @@ export interface QueryTableState<T extends object, Q extends Query = TableQuery>
     // (undocumented)
     filters: QueryTableFilters;
     hasPinned: ComputedRef<boolean>;
+    layout: QueryTableLayout;
     pagination: ComputedRef<PaginationSlotProps>;
     // (undocumented)
     search: QueryTableSearch;
@@ -295,6 +318,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     rowRightPanelClick: [row: T];
     cellContextMenu: [payload: CellContextMenuPayload<T>];
     columnResize: [payload: ColumnResizePayload];
+    'update:columns': [columns: Column[], reason: ColumnChangeReason];
 };
 
 // @public
@@ -367,6 +391,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     cursors?: MaybeRefOrGetter<PageCursors | null | undefined>;
     filterDebounce?: MaybeRefOrGetter<number | undefined>;
     hasSubtable?: MaybeRefOrGetter<boolean | undefined>;
+    onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void;
     onQueryChange: (query: Q, reason: QueryChangeReason) => void;
     onSelectionChange?: (selection: RowSelection) => void;
     pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>;

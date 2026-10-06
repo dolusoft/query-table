@@ -158,6 +158,25 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-31', 'C-32', 'C-46', 'C-47']
   },
   {
+    id: 'column-layout',
+    title: 'Column layout',
+    summary:
+      'Hide, show, move and pin columns. The table emits a new `columns` array with `update:columns`; the page writes it back with `v-model:columns`.',
+    example: 'ColumnLayout',
+    api: {
+      props: ['columns'],
+      emits: ['update:columns'],
+      slots: ['header-<field>', 'filter-menu'],
+      types: [
+        'ColumnControl',
+        'ColumnChangeReason',
+        'HeaderSlotProps',
+        'FilterMenuSlotProps'
+      ]
+    },
+    rules: ['C-67', 'C-68', 'C-69', 'C-70']
+  },
+  {
     id: 'column-resizing',
     title: 'Column resizing',
     summary:
