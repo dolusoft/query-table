@@ -1,26 +1,44 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "src/index.ts",
-    "contract/dom.ts",
-    "scripts/*.mjs",
-    "playground/examples/*.vue",
-    "playground/skin/gen-skin.ts",
-    "spike/size/*.{ts,mjs}"
-  ],
-  "project": [
-    "src/**/*.{ts,vue}",
-    "contract/**/*.ts",
-    "scripts/*.mjs",
-    "tests/**/*.ts",
-    "playground/**/*.{ts,vue,css}",
-    "spike/**/*.{ts,mjs}"
-  ],
-  "ignore": [
-    "playground/skin/ui/table/TableFooter.vue",
-    "playground/skin/mapping.css",
-    "playground/skin/theme.css"
-  ],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/index.ts",
+        "contract/dom.ts",
+        "scripts/*.mjs",
+        "playground/examples/*.vue",
+        "playground/skin/gen-skin.ts",
+        "spike/size/*.{ts,mjs}",
+        "fixtures/packages/*.ts"
+      ],
+      "project": [
+        "src/**/*.{ts,vue}",
+        "contract/**/*.ts",
+        "scripts/*.mjs",
+        "tests/**/*.ts",
+        "playground/**/*.{ts,vue,css}",
+        "spike/**/*.{ts,mjs}",
+        "fixtures/packages/*.ts"
+      ],
+      "ignore": [
+        "playground/skin/ui/table/TableFooter.vue",
+        "playground/skin/mapping.css",
+        "playground/skin/theme.css"
+      ],
+      "ignoreDependencies": [
+        "@dolusoft/query-protocol",
+        "@dolusoft/query-table-core"
+      ]
+    },
+    "packages/query-protocol": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    },
+    "packages/query-table-core": {
+      "entry": ["src/index.ts", "src/features/*/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    }
+  },
   "ignoreIssues": {
     "src/**/*.vue": ["types"]
   }

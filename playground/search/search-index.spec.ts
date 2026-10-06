@@ -10,7 +10,7 @@ import {
   snippet
 } from './search-index'
 import api from '../../contract/api.json'
-import { pages } from '../manifest'
+import { coreOnlyRules, pages } from '../manifest'
 
 // The search index is built from contract/api.json and the manifest: every
 // API member and rule must be findable, on the page that documents it.
@@ -33,14 +33,15 @@ describe('documentation search index', () => {
 
   it('contains every rule with its text', () => {
     const rules = documents.filter(doc => doc.kind === 'rule')
-    for (const rule of api.rules) {
+    const shown = api.rules.filter(rule => !coreOnlyRules.includes(rule.id))
+    for (const rule of shown) {
       const docs = rules.filter(
         candidate => candidate.title.split(' ')[0] === rule.id
       )
       expect(docs, rule.id).toHaveLength(1)
       expect(docs[0]?.body).toBe(rule.text.replaceAll('`', ''))
     }
-    expect(rules).toHaveLength(api.rules.length)
+    expect(rules).toHaveLength(shown.length)
   })
 
   it('contains every page with its title', () => {

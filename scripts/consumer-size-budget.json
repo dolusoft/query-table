@@ -3,8 +3,9 @@
   "history": [
     "2.2.6: 7934 B.",
     "2.2.8: 10224 B (2.2.7 was 8279 B). +1945 B for column pinning (measured offsets, one ResizeObserver), column resizing (pointer, keyboard and autofit on an accessible separator) and the header slot.",
-    "2.2.11: 10792 B (+568 B since 2.2.8). The 2.2.9 to 2.2.11 fixes plus the echo memory of the filter drafts: a bounded memory (last 8 emits per column) that counts the older unanswered ones, so a late answer neither rewinds the input nor drops the emits still in flight (C-18)."
+    "2.2.11: 10792 B (+568 B since 2.2.8). The 2.2.9 to 2.2.11 fixes plus the echo memory of the filter drafts: a bounded memory (last 8 emits per column) that counts the older unanswered ones, so a late answer neither rewinds the input nor drops the emits still in flight (C-18).",
+    "2.2.12: 10815 B (+23 B). C-04, C-13, C-14: pending filter drafts are applied in one `filter` update (#31). The budget follows the measure plus 5%."
   ],
-  "measuredGzipBytes": 10792,
-  "maxGzipBytes": 11331
+  "measuredGzipBytes": 10815,
+  "maxGzipBytes": 11356
 }

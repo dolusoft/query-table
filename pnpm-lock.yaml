@@ -311,6 +311,17 @@ importers:
         specifier: ^3.3.12
         version: 3.3.12(typescript@6.0.3)
 
+  packages/query-protocol: {}
+
+  packages/query-table-core:
+    dependencies:
+      '@dolusoft/query-protocol':
+        specifier: workspace:*
+        version: link:../query-protocol
+      '@tanstack/table-core':
+        specifier: 9.2.6
+        version: 9.2.6
+
 packages:
 
   '@andrewbranch/untar.js@1.0.4':

@@ -43,4 +43,4 @@ Use the template. The body must carry an `İlkeler:` line (the principles touche
 
 ## Before you push
 
-`pnpm lint && pnpm typecheck && pnpm test && pnpm test:browser:headless && pnpm contract:check && pnpm check:renders`. With a build: `pnpm build && pnpm check:package && pnpm check:size && pnpm api:check`.
+`pnpm lint && pnpm typecheck && pnpm test && pnpm test:browser:headless && pnpm contract:check && pnpm schema:check && pnpm check:renders`. With a build: `pnpm build && pnpm check:package && pnpm check:size && pnpm api:check`, and for the v3 packages `pnpm build:packages && pnpm check:packages && pnpm check:deps && pnpm check:package-size`.

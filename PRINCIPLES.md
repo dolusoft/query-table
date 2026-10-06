@@ -66,9 +66,11 @@ Check: C-44 (a test fails on a literal `aria-label="` in any `src/**/*.vue`) and
 
 Every package has a size budget, measured the way a consumer pays for it: a built application that imports the package by name, minus the same application without it, minified and gzipped, transitive code (TanStack included) counted. The fixtures are: protocol only, each core entry (`/server-query`, `/filter-input`), the composable, and the component. A complete application is measured on its own; budgets are not summed. The render budget stays: component updates per fixed scenario. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows.
 
+Size is not a goal in itself: a useful library may grow. A budget is the last measure plus 5%; a fixture can also have a ceiling. Both guard against silent drift. A deliberate growth raises the budget, and the ceiling when needed, in the same change, with a one-line reason in the budget's history; it needs no separate approval.
+
 Why: tables with thousands of rows on a page are a real use, and TanStack moves the size of the package (ADR 0001). A regression that nobody measures ships; a budget measured on a different thing than the consumer pays is not a budget.
 
-Check: `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per fixture _(v3, PR-C)_; the numbers come from `spike/REPORT.md`); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
+Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture _(v3, PR-C)_); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
 
 ## P9 One small, typed surface per package
 
@@ -92,7 +94,7 @@ Check: review, backed by the playground manifest: `playground/manifest.spec.ts` 
 
 Why: every dependency lands in the consumer's bundle and is a supply-chain risk. TanStack is accepted for one reason (ADR 0001) and only where it is used.
 
-Check: `tests/repo/package-manifest.spec.ts` (today: `dependencies` empty, `vue` the only peer, only `dist` published; per package _(v3, PR-B)_); `scripts/check-deps.mjs` allow-list in CI _(v3, PR-B)_; `pnpm knip`.
+Check: `tests/repo/package-manifest.spec.ts` (the 2.2 package: `dependencies` empty, `vue` the only peer, only `dist` published; the protocol and core packages: their allow-listed dependencies, TanStack at an exact version); `scripts/check-deps.mjs` allow-list in CI (`pnpm check:deps`); `pnpm knip`.
 
 ## P12 Rule, test, code and generated docs move together
 
@@ -116,7 +118,7 @@ protocol → core → vue → playground. A package imports only from the layers
 
 Why: a layer that imports upward cannot be used without the one above it, and two features that import each other are one feature.
 
-Check: ESLint layer rule over resolved imports, re-exports, dynamic imports and package sub-paths _(v3, PR-B)_; `scripts/check-deps.mjs` _(v3, PR-B)_.
+Check: the ESLint layer rule `layers/boundaries` (`scripts/eslint-layers.mjs`, tested in `tests/repo/eslint-layers.spec.ts`) over imports, re-exports, dynamic imports, type imports and package sub-paths; `scripts/check-deps.mjs`.
 
 ## P15 TanStack holds the table; we add only what it lacks
 
@@ -124,4 +126,4 @@ Table state that TanStack models (sorting, pagination, column filters, pinning o
 
 Why: two copies of one state drift apart. A plugin keeps our behavior usable by any TanStack table, not only ours.
 
-Check: the plugin-level unit tests, one per C-rule, tagged `tanstack` or `own` _(v3, PR-B)_; the same-tick double update and consumer rejection tests _(v3, PR-B/PR-C)_; review against ADR 0003 and ADR 0004.
+Check: the plugin-level unit tests, one per C-rule, tagged `tanstack` or `own` (`packages/query-table-core/tests/`); the same-tick double update and consumer rejection tests (core; the Vue layer's _(v3, PR-C)_); review against ADR 0003 and ADR 0004.
