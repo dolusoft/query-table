@@ -103,11 +103,6 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
             <RouterLink to="/overview">Docs</RouterLink>
           </Button>
         </nav>
-        <ExternalLinks
-          label="Elsewhere"
-          :only="['tanstack', 'github']"
-          icon-only-on-phone
-        />
         <Button
           type="button"
           variant="outline"

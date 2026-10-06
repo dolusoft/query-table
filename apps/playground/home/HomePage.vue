@@ -32,7 +32,6 @@ import {
 } from './home-content'
 import ShowcaseTable from './ShowcaseTable.vue'
 import BrandIcon from '../shell/BrandIcon.vue'
-import { tanstackDocsUrl } from '../shell/external-links'
 import InlineCode from '../shell/InlineCode.vue'
 
 // The home page: what the library is, how to install it, one table that
@@ -123,17 +122,6 @@ const base = import.meta.env.BASE_URL
           >
             <BrandIcon name="github" />
             GitHub
-          </a>
-        </Button>
-        <Button as-child size="lg" variant="outline">
-          <a
-            :href="tanstackDocsUrl"
-            target="_blank"
-            rel="noopener"
-            aria-label="TanStack Table docs (opens in a new tab)"
-          >
-            <BrandIcon name="tanstack" />
-            TanStack Table
           </a>
         </Button>
       </div>
