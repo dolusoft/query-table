@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
       replacement: resolve(packages, 'query-protocol/src/index.ts')
     },
     {
+      find: /^@dolusoft\/query-protocol\/query\.schema\.json$/,
+      replacement: resolve(packages, 'query-protocol/query.schema.json')
+    },
+    {
       find: /^@dolusoft\/query-table-core$/,
       replacement: resolve(packages, 'query-table-core/src/index.ts')
     },
@@ -154,7 +158,10 @@ export default defineConfig(({ mode }) => {
               'apps/playground/**/*.spec.ts',
               // The v3 packages: pure unit tests, no DOM needed.
               'packages/*/src/**/*.spec.ts',
-              'packages/*/tests/**/*.spec.ts'
+              'packages/*/tests/**/*.spec.ts',
+              // The guides: their code samples are compiled by `pnpm
+              // typecheck` and run here (docs/guide/guide.spec.ts).
+              'docs/guide/**/*.spec.ts'
             ],
             exclude: ['tests/contract/browser/**'],
             css: false

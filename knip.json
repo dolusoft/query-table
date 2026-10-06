@@ -7,9 +7,11 @@
         "scripts/*.mjs",
         "apps/playground/examples/*.vue",
         "apps/playground/skin/gen-skin.ts",
-        "fixtures/packages/*.ts"
+        "fixtures/packages/*.ts",
+        "docs/guide/examples/*.ts"
       ],
       "project": [
+        "docs/guide/**/*.ts",
         "contract/**/*.ts",
         "scripts/*.mjs",
         "tests/**/*.ts",
