@@ -21,7 +21,7 @@ Two TanStack plugins in `@dolusoft/query-table-core`:
 They never import each other. Their only shared code is `core/src/shared/`:
 
 - a `beforeAction` hook registry: `filterInputFeature` registers its flush there; `serverQueryFeature` runs the hooks before every action and drops a page action when the flush changed the filters (C-14);
-- an action dispatcher, `dispatch(action, reason)`, the single place that emits;
+- an action dispatcher, `dispatch(action, reason)`: it carries the `reason` of the running action to the emitter and reports whether the action produced an update. `shared/` never emits; `serverQueryFeature` does, and tells `shared/` after each update (`markEmitted`), so another plugin can ask whether its action emitted without knowing how updates are emitted;
 - an explicit `dispose` lifecycle: `TableFeature` has init and reset hooks but no dispose hook, and debounce timers must not outlive the table.
 
 Lint allows a feature to import only `shared/` and the protocol.

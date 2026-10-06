@@ -592,7 +592,7 @@
     {
       "id": "C-40",
       "title": "DOM contract",
-      "text": "Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them."
+      "text": "Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop and are checked by C-66. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them."
     },
     {
       "id": "C-41",
@@ -718,6 +718,11 @@
       "id": "C-65",
       "title": "Cursor paging controls",
       "text": "With a `CursorQuery` the `pagination` slot receives `cursorMode: true`, `page: 1` and `pageCount: null`; `canPrevious` and `canNext` say whether `cursors` hold a cursor on that side. `nextPage` and `previousPage` emit a `page` update with the cursor of that side (C-56) and do nothing without one; `setPage` does nothing. `setPageSize` goes back to the first page (C-57). Source: tanstack, own"
+    },
+    {
+      "id": "C-66",
+      "title": "DOM contract of the selection column",
+      "text": "With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list. Source: own"
     }
   ]
 }
