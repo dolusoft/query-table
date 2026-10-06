@@ -14,7 +14,7 @@ import { el, makeQuery, rows, rule, sleep } from '../../support/fixtures'
 import { traceUpdate } from '../../support/trace'
 
 test.each(['date', 'datetime'] as const)(
-  'F12 C-35 a %s slot replaces the native input, applies an exact rule and clears it',
+  'C-35 a %s slot replaces the native input, applies an exact rule and clears it',
   async type => {
     const other = rule('name', 'Contains', 'Name')
     const sort = { field: 'name', direction: 'desc' as const }
