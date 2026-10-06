@@ -1,6 +1,6 @@
 {
   "name": "@dolusoft/query-protocol",
-  "version": "3.0.0-next.0",
+  "version": "3.0.0",
   "description": "The query a server-side table emits and a backend answers: types, rules and the filter grammar. No dependencies.",
   "private": false,
   "type": "module",

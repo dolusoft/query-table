@@ -1,6 +1,6 @@
 # Principles
 
-> **TASLAK — Zahid onayı bekliyor.** v3 draft on the `next` branch. P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package. This follows the v3 decisions ([docs/decisions/](docs/decisions/README.md)). Until approved, `main` keeps the 2.2.x text and this draft does not ship. Checks marked _(v3, PR-B/PR-C)_ do not exist yet; they land with the packages.
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)).
 
 These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
 
@@ -12,7 +12,7 @@ The table draws the rows it is given and reports, through `update:query`, what t
 
 Why: server-side data is the premise of the package. Any data logic inside the table becomes a second source of truth next to the server's.
 
-Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in `src/` (`no-restricted-globals`, `no-restricted-properties` in `eslint.config.js`).
+Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in the source of every package, `packages/*/src/**` (`no-restricted-globals`, `no-restricted-properties` in `eslint.config.js`).
 
 ## P2 Lasting state is controlled; internal state is short-lived
 
@@ -60,7 +60,7 @@ The table uses real `table`, `th scope="col"` and `button` elements before ARIA.
 
 Why: products are localised, and accessibility that only works in English is not accessibility.
 
-Check: C-44 (a test fails on a literal `aria-label="` in any `src/**/*.vue`) and C-45; an axe-core scan of the table in light and dark themes (`tests/contract/browser/accessibility.browser.spec.ts`).
+Check: C-44 (a test fails on a literal `aria-label="` in any `packages/vue/src/**/*.vue`, `packages/vue/src/core/labels.spec.ts`) and C-45; an axe-core scan of the table in light and dark themes (`tests/contract/browser/accessibility.browser.spec.ts`).
 
 ## P8 Performance is a budget, per consumer fixture
 
@@ -86,7 +86,7 @@ For the public API of `QueryTable`: a slot when the consumer draws something, an
 
 Why: slots and events keep the table thin; props and methods grow it. A behavior that lives in a plugin is usable without our component.
 
-Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. Each C-rule names its source (`tanstack` or `own`) in `contract/rules.md`.
+Check: review, backed by the playground manifest: `apps/playground/manifest.spec.ts` fails when an API member has no page, and a page lists the rules it covers. A C-rule names its source (`tanstack` or `own`) in `contract/rules.md`: C-01 to C-23, C-53 and C-56 to C-66 do; `tests/repo/contract-traceability.spec.ts` checks every source named but does not yet require one (`requireSource`).
 
 ## P11 Dependencies are few, pinned and layered
 
@@ -94,7 +94,7 @@ Check: review, backed by the playground manifest: `apps/playground/manifest.spec
 
 Why: every dependency lands in the consumer's bundle and is a supply-chain risk. TanStack is accepted for one reason (ADR 0001) and only where it is used.
 
-Check: `tests/repo/package-manifest.spec.ts` (the 2.2 package: `dependencies` empty, `vue` the only peer, only `dist` published; the protocol and core packages: their allow-listed dependencies, TanStack at an exact version); `scripts/check-deps.mjs` allow-list in CI (`pnpm check:deps`); `pnpm knip`.
+Check: `tests/repo/package-manifest.spec.ts` (each of the three packages: its allow-listed dependencies, TanStack at an exact version, only `dist` published, `vue` the only peer of the Vue package; the workspace root: private, no dependencies); `scripts/check-deps.mjs` allow-list in CI (`pnpm check:deps`); `pnpm knip`.
 
 ## P12 Rule, test, code and generated docs move together
 
@@ -126,4 +126,4 @@ Table state that TanStack models (sorting, pagination, column filters, pinning o
 
 Why: two copies of one state drift apart. A plugin keeps our behavior usable by any TanStack table, not only ours.
 
-Check: the plugin-level unit tests, one per C-rule, tagged `tanstack` or `own` (`packages/query-table-core/tests/`); the same-tick double update and consumer rejection tests (core; the Vue layer's _(v3, PR-C)_); review against ADR 0003 and ADR 0004.
+Check: the plugin-level unit tests, one per C-rule, tagged `tanstack` or `own` (`packages/query-table-core/tests/`); the same-tick double update and consumer rejection tests, C-14 and C-19, in the core (`packages/query-table-core/tests/server-query.spec.ts`) and in the Vue layer (`tests/contract/unit/filter.spec.ts`, `tests/contract/unit/query-model.spec.ts`); review against ADR 0003 and ADR 0004.

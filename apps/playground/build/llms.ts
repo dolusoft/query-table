@@ -12,7 +12,9 @@ import { join, relative } from 'node:path'
 // output cannot. llms.spec.ts tests this function against the real
 // repository.
 
-const rawBase = 'https://raw.githubusercontent.com/dolusoft/query-table/next'
+// `main` holds the latest release; the site that serves these files is built
+// from it.
+const rawBase = 'https://raw.githubusercontent.com/dolusoft/query-table/main'
 
 interface LlmsSource {
   /** Path from the repository root, with forward slashes. */
