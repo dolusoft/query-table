@@ -147,8 +147,15 @@ export const useSlowServer = <R extends object>(
     }, delay())
   }
 
+  /** Forget the last answer and ask again: the table is in its first load. */
+  const reset = () => {
+    rows.value = []
+    totalRows.value = null
+    request()
+  }
+
   watch(query, request, { immediate: true })
   onScopeDispose(() => clearTimeout(timer))
 
-  return { query, rows, totalRows, loading, reload: request }
+  return { query, rows, totalRows, loading, reload: request, reset }
 }

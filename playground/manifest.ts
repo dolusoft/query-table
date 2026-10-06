@@ -212,6 +212,18 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-38', 'C-52']
   },
   {
+    id: 'loading-skeleton',
+    title: 'Loading & skeleton',
+    summary:
+      'Skeleton rows for a first load, dimmed rows for a refetch, and a switch that keeps `loading` on to look at them.',
+    example: 'LoadingSkeleton',
+    api: {
+      props: ['loading', 'rows', 'rowKey'],
+      slots: ['loading', 'empty']
+    },
+    rules: ['C-38', 'C-52']
+  },
+  {
     id: 'programmatic-control',
     title: 'Programmatic control',
     summary:

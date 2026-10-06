@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 
 import { Badge } from '@/ui/badge'
-import { Spinner } from '@/ui/spinner'
 
 import type { Column, ColumnResizePayload } from '../../src/contract'
 import { QueryTable } from '../../src/index'
@@ -11,6 +10,8 @@ import ColumnFilterSheet from '../harness/ColumnFilterSheet.vue'
 import CompactHeader from '../harness/CompactHeader.vue'
 import FilterChips from '../harness/FilterChips.vue'
 import FilterMenu from '../harness/FilterMenu.vue'
+import { dimWhileLoading, useSkeletonRows } from '../harness/skeleton'
+import SkeletonCell from '../harness/SkeletonCell.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
   createDemoRows,
@@ -27,7 +28,15 @@ import {
 // the query, the rows and the column widths, the table draws them.
 const allRows = createDemoRows()
 const server = useSlowServer(allRows, { pageSize: 10 }, () => 350)
-const { query, rows, totalRows, loading } = server
+const { query, totalRows, loading } = server
+// The first load has no rows yet: placeholder rows with the page size of the
+// query fill the body, so it has its final height and column layout. Later
+// requests keep the rows of the last answer and dim them (`dimWhileLoading`).
+const rows = useSkeletonRows({
+  rows: () => server.rows.value,
+  loading: () => loading.value,
+  pageSize: () => query.value.pageSize
+})
 
 const root = ref<HTMLElement | null>(null)
 // Under 640px of its own width: compact headers, filter chips and a sheet.
@@ -74,13 +83,19 @@ const columns = computed<Column[]>(() => {
 
 const money = new Intl.NumberFormat('en-US')
 // The server sends the totals over every matching row, not just this page.
+// Before the first answer there are no totals: the footer keeps its rows
+// (so the table does not grow later) with blank cells. A footer cell takes
+// text only, so there is no skeleton bar to draw in it.
 const footerRows = computed(() =>
   peopleFooter(allRows, query.value).map(row => ({
-    cells: row.cells.map(cell =>
-      typeof cell.text === 'number'
+    cells: row.cells.map(cell => {
+      if (totalRows.value === null) {
+        return { ...cell, text: ' ' }
+      }
+      return typeof cell.text === 'number'
         ? { ...cell, text: money.format(cell.text) }
         : cell
-    )
+    })
   }))
 )
 
@@ -101,6 +116,7 @@ const edit = (field: string, trigger: HTMLElement) =>
        columns' widths and scrolls sideways instead of squeezing them. -->
   <div
     ref="root"
+    :class="dimWhileLoading"
     class="[&>.qt-datatable>.qt-table-responsive>.qt-table]:w-max [&>.qt-datatable>.qt-table-responsive>.qt-table]:min-w-full [&>.qt-datatable>.qt-table-responsive>.qt-table]:table-fixed"
     :data-compact="compact ? '' : undefined"
     data-testid="showcase"
@@ -153,16 +169,28 @@ const edit = (field: string, trigger: HTMLElement) =>
       <template #filter-menu="menu">
         <FilterMenu :menu="menu" />
       </template>
-      <template #cell-name="{ cellValue }">
-        <span class="font-medium">{{ cellValue }}</span>
-      </template>
-      <template #cell-salary="{ cellValue }">
-        {{ money.format(cellValue as number) }}
-      </template>
-      <template #cell-active="{ cellValue }">
-        <Badge :variant="cellValue ? 'secondary' : 'outline'">
-          {{ cellValue ? 'Active' : 'Inactive' }}
-        </Badge>
+      <!-- Every column draws through SkeletonCell: a bar on placeholder
+           rows, the real content (or the plain value) on the others. -->
+      <template
+        v-for="column in columns"
+        :key="column.field"
+        #[`cell-${column.field}`]="cell"
+      >
+        <SkeletonCell :cell="cell">
+          <span v-if="column.field === 'name'" class="font-medium">
+            {{ cell.cellValue }}
+          </span>
+          <template v-else-if="column.field === 'salary'">
+            {{ money.format(cell.cellValue as number) }}
+          </template>
+          <Badge
+            v-else-if="column.field === 'active'"
+            :variant="cell.cellValue ? 'secondary' : 'outline'"
+          >
+            {{ cell.cellValue ? 'Active' : 'Inactive' }}
+          </Badge>
+          <template v-else>{{ cell.cellValue ?? '' }}</template>
+        </SkeletonCell>
       </template>
       <!-- The subtable row is one cell over every column: this wrapper
            sticks to the visible edge while the table scrolls sideways. -->
@@ -180,12 +208,6 @@ const edit = (field: string, trigger: HTMLElement) =>
             row-key="orderId"
           />
         </div>
-      </template>
-      <template #loading>
-        <span class="inline-flex items-center gap-2 text-muted-foreground">
-          <Spinner />
-          Loading…
-        </span>
       </template>
       <template #empty>No people match these filters.</template>
       <template #pagination="page">

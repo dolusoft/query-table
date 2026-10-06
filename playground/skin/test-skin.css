@@ -614,8 +614,10 @@ th[data-filtered] .qt-filter-input {
     0 1px 3px 0 color-mix(in oklab, black 10%, transparent),
     0 1px 2px -1px color-mix(in oklab, black 10%, transparent);
 }
-/* own: the last data row keeps the borderless end it has without the overlay. */
-.qt-datatable[data-loading] tbody > tr:nth-last-child(2) {
+/* own: the last data row keeps the borderless end it has without the overlay.
+   Only when the loading row is there: a page that gives no `loading` slot
+   (its own skeleton rows) has no row after the last one. */
+.qt-datatable[data-loading] tbody > tr:has(+ .qt-loading-row) {
   border-width: 0;
 }
 /* own: without rows the loading row stays in the flow. */
