@@ -17,6 +17,7 @@ import {
   SidebarProvider
 } from '@/ui/sidebar'
 
+import { guidePages } from './guides/guides'
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
 import { repositoryUrl } from './home/home-content'
 import { pages } from './manifest'
@@ -31,6 +32,9 @@ import ThemeToggle from './shell/ThemeToggle.vue'
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
+// The API examples first, then the guide pages (features, TanStack, AI).
+const navigation = [...pages, ...guidePages]
+
 const theme = ref<Theme | 'system'>(themeFromUrl() ?? 'system')
 watch(theme, value => setTheme(value === 'system' ? null : value), {
   immediate: true
@@ -161,7 +165,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
               <SidebarMenu
                 class="w-max flex-row gap-1 pb-2 lg:w-full lg:flex-col lg:pb-0"
               >
-                <SidebarMenuItem v-for="page in pages" :key="page.id">
+                <SidebarMenuItem v-for="page in navigation" :key="page.id">
                   <RouterLink
                     v-slot="{ href, navigate, isActive }"
                     :to="`/${page.id}`"

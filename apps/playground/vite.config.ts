@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
+import { llmsPlugin } from './build/llms-plugin'
+
 // The playground: `pnpm dev` serves it, `pnpm playground:build` writes
 // apps/playground/dist. PLAYGROUND_BASE sets the public path (`/query-table/`
 // on GitHub Pages); routing uses the URL hash, so any base works. No package
@@ -13,7 +15,13 @@ const packages = resolve(import.meta.dirname, '../../packages')
 export default defineConfig({
   root: import.meta.dirname,
   base: process.env.PLAYGROUND_BASE ?? '/',
-  plugins: [vue(), tailwindcss()],
+  // llms.txt and llms-full.txt are generated into the build output on every
+  // build (build/llms.ts), never committed, so they cannot go stale.
+  plugins: [
+    vue(),
+    tailwindcss(),
+    llmsPlugin(resolve(import.meta.dirname, '../..'))
+  ],
   resolve: {
     // The examples import the packages by name, as a consumer does; here the
     // names answer with the sources (the same map as tsconfig.json).
