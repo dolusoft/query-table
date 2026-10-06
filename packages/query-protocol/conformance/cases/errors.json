@@ -236,6 +236,21 @@
             "filters": [{ "field": "age", "condition": "Equal" }]
           },
           "expect": { "error": { "code": "invalid-query", "rule": 0, "path": "/filters/0/value" } }
+        },
+        {
+          "id": "C54.9",
+          "query": [],
+          "expect": { "error": { "code": "invalid-query", "path": "" } }
+        },
+        {
+          "id": "C54.10",
+          "query": { "page": 1, "pageSize": 50, "sort": [], "filters": [] },
+          "expect": { "error": { "code": "invalid-query", "path": "/sort" } }
+        },
+        {
+          "id": "C54.11",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [[]] },
+          "expect": { "error": { "code": "invalid-query", "rule": 0, "path": "/filters/0" } }
         }
       ]
     },

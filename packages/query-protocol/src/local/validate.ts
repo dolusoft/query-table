@@ -3,7 +3,7 @@
 // empty data set never hides a malformed query.
 
 import type { Dataset } from './dataset'
-import { fieldOf } from './dataset'
+import { fieldOf, isPlainObject } from './dataset'
 import type { Failure } from './errors'
 import { fail } from './errors'
 import { profiles, reservedQueryKeys } from './profiles'
@@ -28,9 +28,6 @@ type Checked = { ok: true; plan: Plan } | Failure
 const hasOwn = (target: object, name: string): boolean =>
   Object.prototype.hasOwnProperty.call(target, name)
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
 const isPage = (value: unknown): boolean =>
   Number.isSafeInteger(value) && (value as number) >= 1
 
@@ -39,8 +36,12 @@ const isName = (value: unknown): value is string =>
 
 /** Steps 3 to 5: the query is an object, has no cursor, names a valid page. */
 export const checkPage = (query: unknown): Failure | null => {
-  if (!isRecord(query)) {
-    return fail('invalid-query', { path: '' }, 'The query is not an object.')
+  if (!isPlainObject(query)) {
+    return fail(
+      'invalid-query',
+      { path: '' },
+      'The query is not a plain object.'
+    )
   }
   if (hasOwn(query, 'cursor')) {
     return fail(
@@ -107,11 +108,11 @@ export const validate = (
   }
   let sort: Plan['sort'] = null
   if (q.sort !== null) {
-    if (!isRecord(q.sort)) {
+    if (!isPlainObject(q.sort)) {
       return fail(
         'invalid-query',
         { path: '/sort' },
-        'sort is not an object or null.'
+        'sort is not a plain object or null.'
       )
     }
     const { field, direction } = q.sort
@@ -158,8 +159,12 @@ export const validate = (
   for (let rule = 0; rule < filters.length; rule++) {
     const path = '/filters/' + String(rule)
     const item = filters[rule]
-    if (!isRecord(item)) {
-      return fail('invalid-query', { rule, path }, 'The rule is not an object.')
+    if (!isPlainObject(item)) {
+      return fail(
+        'invalid-query',
+        { rule, path },
+        'The rule is not a plain object.'
+      )
     }
     if (!isName(item.field)) {
       return fail(

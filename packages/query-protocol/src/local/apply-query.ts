@@ -98,18 +98,18 @@ const readRows = <T>(
       const field = plan.used[j]
       const definition = fields[j]
       let raw: unknown
-      if (definition.get) {
-        try {
-          raw = definition.get(item) ?? null
-        } catch {
-          return fail(
-            'invalid-data',
-            { field, row },
-            `get of ${field} threw on row ${String(row)}.`
-          )
-        }
-      } else {
-        raw = readPath(item, field)
+      // A read error is a data error (step 10): a throwing `get`, and a
+      // throwing getter or proxy trap met by a path read.
+      try {
+        raw = definition.get
+          ? (definition.get(item) ?? null)
+          : readPath(item, field)
+      } catch {
+        return fail(
+          'invalid-data',
+          { field, row },
+          `Reading ${field} threw on row ${String(row)}.`
+        )
       }
       const value = checkValue(definition, raw, offsets[j])
       if (value === invalidValue) {
@@ -255,7 +255,8 @@ export function applyQuery<T>(
   if (!read.ok) {
     return read
   }
-  // PR-L2 filters and searches here; in PR-L1 a valid query has neither.
+  // PR-L1 only: PR-L2 filters and searches here; in PR-L1 a valid query has
+  // neither.
   const matching = read.rows
   const totalRows = matching.length
   const ordered = sortRows(matching, dataset, plan)

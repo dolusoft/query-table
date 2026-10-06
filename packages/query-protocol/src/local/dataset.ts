@@ -50,7 +50,14 @@ const offsets = new WeakMap<object, ReadonlyMap<string, number>>()
 const hasOwn = (target: object, name: string): boolean =>
   Object.prototype.hasOwnProperty.call(target, name)
 
-const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+/**
+ * An object literal or an object without a prototype; an array, a `Map`, a
+ * `Date` or a class instance is not. A Vue `reactive()` proxy of a plain
+ * object is plain too (its prototype is read through the proxy).
+ */
+export const isPlainObject = (
+  value: unknown
+): value is Record<string, unknown> => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false
   }

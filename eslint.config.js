@@ -90,7 +90,37 @@ const localProperties = [
     object: 'Date',
     property,
     message: 'tr-1 checks and counts the calendar by hand (semantics.md#time).'
-  }))
+  })),
+  ...['window', 'globalThis', 'self'].map(object => ({
+    object,
+    property: 'Intl',
+    message: 'tr-1 uses its own tables, not a locale (semantics.md#text).'
+  })),
+  {
+    object: 'Array',
+    property: 'from',
+    message: `Array.from splits a string by code point. ${localUnits}`
+  }
+]
+// What no-restricted-properties cannot see (it already sees the banned names
+// in a destructuring pattern): a method taken off a prototype, a Date built
+// from a string, a string spread into code points.
+const localSyntax = [
+  { selector: 'ForOfStatement', message: localUnits },
+  {
+    selector:
+      "VariableDeclarator[id.type='ObjectPattern'][init.type='MemberExpression'][init.property.name='prototype']",
+    message: 'Do not take methods off a prototype (semantics.md#text).'
+  },
+  {
+    selector:
+      "NewExpression[callee.name='Date'], CallExpression[callee.name='Date']",
+    message: 'tr-1 checks and counts the calendar by hand (semantics.md#time).'
+  },
+  {
+    selector: 'ArrayExpression > SpreadElement, CallExpression > SpreadElement',
+    message: `A spread splits a string by code point. ${localUnits}`
+  }
 ]
 
 export default defineConfig([
@@ -288,10 +318,7 @@ export default defineConfig([
         ...p1Properties,
         ...localProperties
       ],
-      'no-restricted-syntax': [
-        'error',
-        { selector: 'ForOfStatement', message: localUnits }
-      ]
+      'no-restricted-syntax': ['error', ...localSyntax]
     }
   }
 ])

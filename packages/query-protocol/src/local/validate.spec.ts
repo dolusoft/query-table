@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { reactive } from 'vue'
 
 import { applyQuery } from './apply-query'
 import type { Dataset } from './dataset'
@@ -126,6 +127,83 @@ describe('C-77 Structural errors [own]', () => {
       field: 'v',
       row: 1
     })
+  })
+
+  it('reports a path read that throws as invalid data', () => {
+    // A throwing property getter, and a proxy whose trap throws: neither
+    // escapes applyQuery. A fixture cannot hold either, so only here.
+    const getter = Object.defineProperty({ id: 1 }, 'name', {
+      enumerable: true,
+      get() {
+        throw new Error('boom')
+      }
+    })
+    const sortByName = q({ sort: { field: 'name', direction: 'asc' } })
+    expect(errorOf(run(sortByName, [getter]))).toEqual({
+      code: 'invalid-data',
+      field: 'name',
+      row: 0
+    })
+    const trap = new Proxy<Row>(
+      { id: 2 },
+      {
+        get() {
+          throw new Error('boom')
+        }
+      }
+    )
+    expect(errorOf(run(q(), [rows[0], trap]))).toEqual({
+      code: 'invalid-data',
+      field: 'id',
+      row: 1
+    })
+    const nested = { id: 3, meta: getter }
+    const dataset = defineDataset<Row>({
+      key: 'id',
+      fields: { id: { type: 'integer' }, 'meta.name': { type: 'string' } }
+    })
+    expect(
+      errorOf(
+        run(
+          q({ sort: { field: 'meta.name', direction: 'desc' } }),
+          [nested],
+          dataset
+        )
+      )
+    ).toEqual({ code: 'invalid-data', field: 'meta.name', row: 0 })
+  })
+
+  it('takes only a plain object as the query, the sort and a rule', () => {
+    expect(errorOf(run(new Map()))).toEqual({ code: 'invalid-query', path: '' })
+    expect(errorOf(run(new Date(0)))).toEqual({
+      code: 'invalid-query',
+      path: ''
+    })
+    class Query {
+      page = 1
+      pageSize = 10
+      sort = null
+      filters = []
+    }
+    expect(errorOf(run(new Query()))).toEqual({
+      code: 'invalid-query',
+      path: ''
+    })
+    expect(errorOf(run(q({ sort: new Map() })))).toEqual({
+      code: 'invalid-query',
+      path: '/sort'
+    })
+    expect(errorOf(run(q({ filters: [new Date(0)] })))).toEqual({
+      code: 'invalid-query',
+      rule: 0,
+      path: '/filters/0'
+    })
+    // An object without a prototype and a reactive() proxy are plain.
+    const bare = Object.assign(Object.create(null) as object, q())
+    expect(run(bare).ok).toBe(true)
+    const sorted = reactive(q({ sort: { field: 'id', direction: 'desc' } }))
+    const result = run(sorted)
+    expect(result.ok && result.rows.map(row => row.id)).toEqual([2, 1])
   })
 
   it('reports a getter that returns a Promise as invalid data', () => {
@@ -267,7 +345,7 @@ describe('C-77 Structural errors [own]', () => {
   })
 })
 
-describe('PR-L1 refuses rules and search until PR-L2', () => {
+describe('PR-L1 only: rules and search are refused until PR-L2', () => {
   it('refuses the first rule after its structure and field are checked', () => {
     const rules = [
       { field: 'age', condition: 'Equal', value: 30 },
