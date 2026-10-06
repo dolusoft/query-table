@@ -17,7 +17,11 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // turns the table's `filterable` off and draws, in `header-<field>` slots, a
 // sort button (`toggleSort`) and a funnel that opens a sheet for that column.
 // Chips above the table show the filters in `query.filters`.
-const columns = peopleColumns()
+// Joined gets a width: a date input needs more room than an even share of
+// the fixed layout, which clipped its placeholder at 768px.
+const columns = peopleColumns().map(column =>
+  column.field === 'joined' ? { ...column, width: '260px' } : column
+)
 const { query, result } = useFakeServer(createDemoRows(), {
   sort: { field: 'age', direction: 'asc' }
 })
@@ -57,7 +61,8 @@ const edit = (field: string, trigger: HTMLElement) =>
       <template #toolbar>
         <div class="flex flex-col gap-2 pb-2">
           <p class="text-sm text-muted-foreground">
-            {{ result.totalRows }} people match.
+            {{ result.totalRows }}
+            {{ result.totalRows === 1 ? 'person matches' : 'people match' }}.
           </p>
           <FilterChips
             v-if="compact"
