@@ -7,7 +7,7 @@ There is no framework in this package and no DOM. The examples on this page use 
 - `serverQueryFeature`: TanStack's sort, page, column filter and global filter state ↔ one `Query` ([the protocol](protocol.md)).
 - `filterInputFeature`: the text typed into each column's filter, parsed with the protocol's grammar, debounced and applied as filter rules.
 
-Both are optional and independent ([architecture](architecture.md)). The package is `3.0.0-next.0` until 3.0 is released, and it depends on `@tanstack/table-core` at an exact version (9.2.6): install that one next to it.
+Both are optional and independent ([architecture](architecture.md)). The package is released with the other two, from 3.0.0, and it depends on `@tanstack/table-core` at an exact version (9.2.6): install that one next to it.
 
 ## Setup
 
