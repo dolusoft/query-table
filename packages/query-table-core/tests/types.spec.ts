@@ -1,5 +1,5 @@
 // The plugins' options and APIs are typed through TanStack's declaration
-// merging (spike REPORT, finding 4): `pnpm typecheck` checks this file, the
+// merging (spike/REPORT.md at fb3485b, finding 4): `pnpm typecheck` checks this file, the
 // `@ts-expect-error` lines fail it when a wrong option stops being an error.
 import type { Query } from '@dolusoft/query-protocol'
 import {

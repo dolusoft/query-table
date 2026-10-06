@@ -167,7 +167,7 @@ export const useSlowServer = <R extends object>(
   return { query, rows, totalRows, loading, reload: request, reset }
 }
 
-export const makeCursorQuery = (
+const makeCursorQuery = (
   overrides: Partial<CursorQuery> = {}
 ): CursorQuery => ({
   cursor: null,
