@@ -45,7 +45,8 @@ export default defineConfig([
     // to fit our style (knip skips it for the same reason).
     'playground/skin/ui',
     'playground/skin/lib/utils.ts',
-    'playground/dist'
+    'playground/dist',
+    '.equivalence'
   ]),
   {
     files: ['**/*.{js,mjs,ts,vue}'],
@@ -83,6 +84,14 @@ export default defineConfig([
           pathGroups: [
             {
               pattern: '@/**',
+              group: 'internal'
+            },
+            // The package itself, imported by name in tests and the
+            // playground. Without this the group depends on whether dist/
+            // exists (self-reference through `exports`): internal after a
+            // build, external on a fresh checkout.
+            {
+              pattern: '@dolusoft/query-table',
               group: 'internal'
             }
           ],

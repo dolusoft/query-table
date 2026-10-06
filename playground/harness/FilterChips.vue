@@ -4,9 +4,9 @@ import { computed, nextTick, ref, useId } from 'vue'
 
 import { Button } from '@/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
+import type { Column, TableQuery } from '@dolusoft/query-table'
 
 import { describeRules, titleOf } from './column-filter'
-import type { Column, TableQuery } from '../../src/contract'
 
 // The committed filters of a compact table, one chip per filtered field
 // (hidden columns included): "City contains ank" edits it, × removes it.

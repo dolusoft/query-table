@@ -3,9 +3,9 @@ import { ref } from 'vue'
 
 import { Badge } from '@/ui/badge'
 import { Checkbox } from '@/ui/checkbox'
+import type { CellContextMenuPayload, Column } from '@dolusoft/query-table'
+import { QueryTable } from '@dolusoft/query-table'
 
-import type { CellContextMenuPayload, Column } from '../../src/contract'
-import { QueryTable } from '../../src/index'
 import TablePager from '../harness/TablePager.vue'
 import {
   createDemoRows,
