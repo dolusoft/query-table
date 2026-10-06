@@ -244,6 +244,19 @@ export const features: Feature[] = [
   },
   // C: client data only
   {
+    id: 'local-query',
+    group: 'client',
+    title: 'Local evaluation of the query (opt-in /local entries)',
+    summary:
+      'A separate tr-1 data source evaluates all loaded rows; the table still only renders the supplied page.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'yes',
+    mode: 'client',
+    example: 'local-query',
+    repoPath: 'skills/query-table/references/local-query.md'
+  },
+  {
     id: 'fuzzy-search',
     group: 'client',
     title: 'Fuzzy search',

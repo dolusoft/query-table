@@ -75,6 +75,14 @@ Exported from the package entry point next to the component.
 | `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
 | `useQueryTable` | `(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>` | The state and actions of a server-side table: TanStack Table with `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed with the scope (C-62). |
 
+### Local evaluation (`@dolusoft/query-table/local`)
+
+Opt-in data-source helpers, separate from the component and the default entry.
+
+| Name | Signature | Description |
+| --- | --- | --- |
+| `useLocalQuery` | `(options: UseLocalQueryOptions<T>) => LocalQuery<T>` | Evaluates locally without rerunning filtering, search or sorting for a page-only change. |
+
 ## Types
 
 Exported from the package entry point (`packages/vue/src/contract.ts`).
@@ -1133,6 +1141,12 @@ Source: own
 #### C-80 Filters and search
 
 Rules are grouped by field: a group whose rules are all negative (`NotEqual`, `NotContains`) combines with AND, any other group with OR, and groups combine with AND (C-17); the order of groups and rules, and a repeated rule, do not change the result. Each condition is allowed only on the types of `semantics.md#condition-by-type`; any other pair is `unsupported-operator`. A rule value is never converted: a value that does not fit the field type, an empty text or a malformed one is `invalid-value`. Text conditions compare the match fold of both sides ordinally and have no wildcards. A positive condition is false on null; a negative one is the exact complement of its positive pair and true on null. A day-only value on a `datetime` field means the half-open day in the field's `offset`. The search is one needle: trimmed of the listed units only, then composed and folded; a row matches when one of its `search` fields contains it, and the search combines with the rules by AND; a blank search is no search and no error; an active search without a search field is `search-not-supported`.
+
+Source: own
+
+#### C-81 useLocalQuery
+
+`useLocalQuery` from `@dolusoft/query-table/local` gives `rows`, `totalRows` and `error` equal at every moment to `applyQuery(allRows, query, dataset, { profile, paginate })` (`[]` and `0` while there is an error; an invalid page or a cursor comes before a data error found earlier). A change of only `page`, `pageSize` or `paginate` does not evaluate again: with the same `allRows` and `dataset` objects, the same profile, equal rules (`sameRules`), an equal sort field and direction and an equal search, filtering, search and sorting do not run again, even for a new query object. It reads the rows as the consumer gives them (no `toRaw`), so a change inside a deeply reactive array evaluates again; it returns the given row objects; it never writes the query, emits nothing and does not correct the page. In a development build (`process.env.NODE_ENV !== 'production'`) each new error (`code`, `path`, `field`) is logged once with `console.error`; in production it is only returned. An error that clears and returns is logged again.
 
 Source: own
 

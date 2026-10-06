@@ -23,6 +23,7 @@ The packages are GitHub Release tarballs, not on npm. Install steps and the exac
 | The same behavior with your own markup, still in Vue | `useQueryTable()` |
 | TanStack Table directly (any framework, or your own `useTable`) | `useTable` + `serverQueryFeature` + `filterInputFeature` from `@dolusoft/query-table-core` |
 | Only the query types, the grammar or the schema (a backend, a URL codec) | `@dolusoft/query-protocol` |
+| Evaluate a query over all rows already loaded in the browser | `defineDataset` + `useLocalQuery` from the opt-in `/local` entries; [local query reference](references/local-query.md) |
 
 Start with `QueryTable`. Move to `useQueryTable()` when the markup must be yours; move to the TanStack path when there is no Vue component layer at all. Details: [references/vue-component.md](references/vue-component.md), [references/tanstack-path.md](references/tanstack-path.md).
 
@@ -32,7 +33,7 @@ Start with `QueryTable`. Move to `useQueryTable()` when the markup must be yours
 2. **One user action, one `update:query`.** The handler gets `(query, reason)`; `reason` is `'page' | 'pageSize' | 'sort' | 'filter' | 'reset' | 'search'`. The only case of two updates: typed-but-pending filter text is applied first, as its own `filter` update, then the action's update.
 3. **Apply the emitted query in the same tick, fetch afterwards.** `v-model:query` does this. Do not `await` before assigning it: the next click would build on the old query and lose the change.
 4. **Nothing is emitted on mount**, and changing `rows`, `totalRows`, `columns` or `query` from outside emits nothing.
-5. **The table never evaluates the query.** Filtering, sorting and paging are the server's job. Rules of one `field` combine with OR (AND when all are negative), rules of different fields with AND.
+5. **The table never evaluates the query.** Filtering, sorting and paging belong to the consumer's data source: a server or the opt-in local evaluator when all rows are loaded. Rules of one `field` combine with OR (AND when all are negative), rules of different fields with AND.
 6. **Never mutate** `query`, `columns` or `rows`; the emitted query is a new object.
 7. **Unknown keys survive.** Extra keys of the query and extra properties of a rule are copied into every emitted query (C-60).
 
@@ -100,7 +101,7 @@ The query is plain JSON with `pageSize`, `sort`, `filters`, optional `search`, a
 
 | Mistake | Instead |
 | --- | --- |
-| Filtering or sorting `rows` in the browser | Send the query to the server; pass back the rows of that page |
+| Filtering or sorting only a server page in the browser | Send the query to the server, or evaluate the full source with the opt-in `/local` entries |
 | `await fetch(...)` before assigning the emitted query | Assign first (`v-model:query`), then fetch with it |
 | Mutating `query.value.page++` or `filters.push(...)` | Replace the object; or let the table emit it |
 | `totalRows` used to decide whether rows show | Rows are drawn as given; `totalRows` only feeds the pager |

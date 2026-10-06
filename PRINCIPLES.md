@@ -72,7 +72,7 @@ Size is not a goal in itself: a useful library may grow. A budget is the last me
 
 Why: tables with thousands of rows on a page are a real use, and TanStack moves the size of the package (ADR 0001). A regression that nobody measures ships; a budget measured on a different thing than the consumer pays is not a budget.
 
-Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages, `protocol-local` for the local evaluator included); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture: the composable and the component); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
+Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry per fixture of the protocol and core packages, `protocol-local` for the local evaluator included); `pnpm check:size` (`scripts/consumer-size-budget.json`, one entry per Vue fixture: the composable, the component and `local-composable` for the local binding); `pnpm check:renders` (`scripts/render-budget.json`, re-baselined for v3); C-26 for the pruning and C-28 for the single `tbody` listener.
 
 ## P9 One small, typed surface per package
 

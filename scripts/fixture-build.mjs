@@ -10,12 +10,12 @@ import { join } from 'node:path'
 import { build } from 'vite'
 
 const root = join(import.meta.dirname, '..')
-const fixtures = join(root, 'fixtures', 'packages')
 
 /** The packages the fixtures import, by name. */
 export const fixturePackages = {
   '@dolusoft/query-protocol': join(root, 'packages', 'query-protocol'),
-  '@dolusoft/query-table-core': join(root, 'packages', 'query-table-core')
+  '@dolusoft/query-table-core': join(root, 'packages', 'query-table-core'),
+  '@dolusoft/query-table': join(root, 'packages', 'vue')
 }
 
 // Each import specifier the fixtures may use, resolved through the `default`
@@ -44,7 +44,7 @@ for (const [name, dir] of Object.entries(fixturePackages)) {
 }
 
 /** The output chunks of the minified app built from fixtures/packages/<name>.ts. */
-export const buildFixture = async name => {
+export const buildFixture = async (name, directory = 'packages') => {
   const result = await build({
     root,
     configFile: false,
@@ -53,7 +53,9 @@ export const buildFixture = async name => {
     build: {
       write: false,
       minify: true,
-      rolldownOptions: { input: join(fixtures, `${name}.ts`) }
+      rolldownOptions: {
+        input: join(root, 'fixtures', directory, `${name}.ts`)
+      }
     }
   })
   return (Array.isArray(result) ? result : [result])

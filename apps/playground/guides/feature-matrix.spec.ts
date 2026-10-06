@@ -57,6 +57,7 @@ describe('feature matrix data', () => {
     ])
     expect(inGroup('backend')).toEqual(['grouping', 'faceting'])
     expect(inGroup('client')).toEqual([
+      'local-query',
       'fuzzy-search',
       'client-functions',
       'virtualization'
@@ -83,7 +84,7 @@ describe('feature matrix data', () => {
   it('ties every TanStack feature to a known guide', () => {
     const guides = tanstackFeatureGuides.map(guide => guide.id)
     for (const feature of features) {
-      if (feature.group === 'own') {
+      if (feature.group === 'own' || feature.id === 'local-query') {
         expect(feature.tanstack, feature.id).toBeNull()
       } else {
         expect(guides, feature.id).toContain(feature.tanstack)
