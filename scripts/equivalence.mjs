@@ -46,6 +46,41 @@ const option = (name, fallback) => {
 // A run with fewer tests than this is not an equivalence run (the specs did
 // not load, a filter matched nothing); it fails instead of passing on zero.
 const MIN_TESTS = 300
+// Tests of behavior a 2.2.x baseline does not have: the v3 additions (C-56
+// to C-66: cursor paging, search, selection, `useQueryTable`, the TanStack
+// path). They cannot pass on 2.2.x, so they are not compared and may fail on
+// the baseline; the candidate must still pass them. Every other test is
+// compared, the v3 spec files' own tests of old behavior included.
+//
+// An entry is `file > name`, where the name is the full title of a test or
+// the title of a `describe` (every test under it). An entry that matches no
+// test fails the run, so the list cannot go stale.
+const K6_UNIT = 'tests/contract/unit/k6.spec.ts'
+const K6_PAGES = 'tests/contract/browser/k6-pages.browser.spec.ts'
+const ADDED_AFTER_BASELINE = [
+  // C-63 search, C-65 cursor paging controls, C-62 `useQueryTable`: no such
+  // surface in 2.2.x. (C-64's "draws no column without `selection`" is
+  // compared: 2.2.x draws none either.)
+  `${K6_UNIT} > C-63 Typed search is debounced [own]`,
+  `${K6_UNIT} > C-64 Selection column [tanstack] [own] toggles a row and emits the new map, keyed by rowKey`,
+  `${K6_UNIT} > C-64 Selection column [tanstack] [own] the header checkbox selects the page and keeps other keys`,
+  `${K6_UNIT} > C-64 Selection column [tanstack] [own] keys rows by index without rowKey`,
+  `${K6_UNIT} > C-65 Cursor paging controls [tanstack] [own]`,
+  `${K6_UNIT} > C-62 Dispose and isolation [own]`,
+  // Pages of the playground that use the v3 surface. The TanStack path page
+  // never loads the package under test (it builds on the core plugins), so
+  // it passes on both builds and a comparison would say nothing.
+  `${K6_PAGES} > cursor paging walks forward and back with the cursors of the server`,
+  `${K6_PAGES} > typed search is applied once, after the debounce, from the first page`,
+  `${K6_PAGES} > the checkbox column selects rows into the page selection`,
+  `${K6_PAGES} > the TanStack path sorts, filters and pages through the query`,
+  // C-66: the selection column's DOM hooks.
+  'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract'
+]
+const isAdded = name =>
+  ADDED_AFTER_BASELINE.some(
+    entry => name === entry || name.startsWith(`${entry} `)
+  )
 const baseline = option('baseline', 'git:origin/main')
 const candidate = option('candidate', 'src')
 const runUnit = !args.includes('--browser-only')
@@ -146,7 +181,7 @@ const prepare = async target => {
   if (target === 'src') {
     return {
       entry: null,
-      resolved: resolve(root, 'src/index.ts'),
+      resolved: resolve(root, 'packages/vue/src/index.ts'),
       label: 'src (working tree)'
     }
   }
@@ -179,7 +214,14 @@ const prepare = async target => {
 
 /** Runs the contract specs against one target; returns the report files. */
 const runSuites = (target, prepared) => {
-  const env = { ...process.env, HEADLESS: '1' }
+  // A built baseline starts cold (Vite optimizes its dependencies) and its
+  // failing added tests wait out their timeouts: the default 120 s per
+  // attempt of test-browser.mjs can be too short for that run.
+  const env = {
+    BROWSER_TEST_TIMEOUT_MS: '240000',
+    ...process.env,
+    HEADLESS: '1'
+  }
   if (prepared.entry) {
     env.QT_TARGET = prepared.entry
   } else {
@@ -279,11 +321,27 @@ const main = async () => {
     ...results.baseline.keys(),
     ...results.candidate.keys()
   ])
+  // A run narrowed to one suite cannot tell which entries are stale.
+  const stale = (runUnit && runBrowser ? ADDED_AFTER_BASELINE : []).filter(
+    entry =>
+      ![...results.candidate.keys()].some(
+        name => name === entry || name.startsWith(`${entry} `)
+      )
+  )
   const differences = []
+  const added = []
   let traced = 0
   for (const name of [...names].sort()) {
     const a = results.baseline.get(name)
     const b = results.candidate.get(name)
+    if (isAdded(name)) {
+      added.push({
+        test: name,
+        baseline: a?.status ?? 'missing',
+        candidate: b?.status ?? 'missing'
+      })
+      continue
+    }
     if (!a || !b) {
       differences.push({
         test: name,
@@ -311,17 +369,21 @@ const main = async () => {
       })
     }
   }
+  // An added test counts as failing only in the candidate.
   const failing = role =>
     [...results[role]]
       .filter(([, r]) => r.status !== 'passed')
       .map(([name]) => name)
+      .filter(name => role === 'candidate' || !isAdded(name))
 
   const report = {
     baseline: labels.baseline,
     candidate: labels.candidate,
     tests: names.size,
+    compared: names.size - added.length,
     testsWithUpdates: traced,
     differences: differences.length,
+    addedAfterBaseline: added,
     failing: { baseline: failing('baseline'), candidate: failing('candidate') },
     details: differences
   }
@@ -333,7 +395,8 @@ const main = async () => {
   console.log(`\n[equivalence] baseline:  ${labels.baseline}`)
   console.log(`[equivalence] candidate: ${labels.candidate}`)
   console.log(
-    `[equivalence] ${names.size} tests, ${traced} with an update trace; ` +
+    `[equivalence] ${names.size} tests, ${names.size - added.length} compared, ` +
+      `${added.length} added after the baseline (not compared), ${traced} with an update trace; ` +
       `failing: baseline ${report.failing.baseline.length}, candidate ${report.failing.candidate.length}`
   )
   for (const difference of differences.slice(0, 20)) {
@@ -365,6 +428,9 @@ const main = async () => {
     problems.push(
       `baseline and candidate resolve to the same entry (${resolvedEntries.baseline}): the comparison is a build against itself`
     )
+  }
+  for (const entry of stale) {
+    problems.push(`ADDED_AFTER_BASELINE entry matches no test: ${entry}`)
   }
   for (const problem of problems) {
     console.error(`[equivalence] FAIL: ${problem}`)

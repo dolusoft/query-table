@@ -40,7 +40,7 @@ const sessionsBefore = new Set(
 
 await build({
   root,
-  configFile: join(root, 'vite.config.ts'),
+  configFile: join(root, 'packages', 'vue', 'vite.config.ts'),
   logLevel: 'warn',
   build: {
     outDir: distDir,

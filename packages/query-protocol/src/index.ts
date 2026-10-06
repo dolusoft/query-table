@@ -13,6 +13,7 @@ export type {
   PageCursors,
   PageQuery,
   Query,
+  QueryBase,
   QueryChangeReason,
   SortDirection,
   SortState,
@@ -44,6 +45,7 @@ export {
 } from './grammar/conditions'
 export {
   type Draft as FilterDraft,
+  type Parsed,
   draftFromRules,
   hasContent as draftHasContent,
   parseDraft

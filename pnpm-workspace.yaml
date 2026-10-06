@@ -1,5 +1,5 @@
-# The root is the 2.2 package (@dolusoft/query-table) and stays where it is
-# until PR-C; the v3 layers live in packages/ (ADR 0003).
+# The packages are published (ADR 0003); apps/ holds the playground, which is
+# never part of a package.
 packages:
   - packages/*
 

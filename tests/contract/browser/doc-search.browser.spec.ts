@@ -2,11 +2,14 @@ import { afterEach, beforeEach, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
-import '../../../playground/playground.css'
-import App from '../../../playground/App.vue'
-import { router } from '../../../playground/router'
-import { sectionAnchors } from '../../../playground/search/anchors'
-import { revealAnchor } from '../../../playground/search/reveal'
+import '../../../apps/playground/playground.css'
+import App from '../../../apps/playground/App.vue'
+import { router } from '../../../apps/playground/router'
+import {
+  ruleAnchor,
+  sectionAnchors
+} from '../../../apps/playground/search/anchors'
+import { revealAnchor } from '../../../apps/playground/search/reveal'
 
 // The playground's documentation search: shortcuts, MiniSearch hits, the
 // jump to a page anchor, and focus handling of the dialog.
@@ -96,3 +99,32 @@ test('a jump to another page marks the new page element, not the outgoing one wi
   expect(found!.hasAttribute('data-search-target')).toBe(true)
   expect(outgoing!.hasAttribute('data-search-target')).toBe(false)
 })
+
+test.each(['C-01', 'C-41'])(
+  'a jump to rule %s opens it and shows the opened item',
+  async id => {
+    await page.viewport(1280, 700)
+    const found = await revealAnchor(ruleAnchor(id))
+    expect(found).not.toBeNull()
+    expect(
+      found!
+        .querySelector('[data-slot="accordion-trigger"]')
+        ?.getAttribute('aria-expanded')
+    ).toBe('true')
+    // Measured once the item has settled: the scroll used the open height,
+    // so the whole open item is in view, centred unless the page ends first.
+    // (A scroll before the opening centres the closed item, and the item
+    // then grows downward.)
+    await new Promise(resolve => setTimeout(resolve, 600))
+    const box = found!.getBoundingClientRect()
+    expect(box.top).toBeGreaterThanOrEqual(0)
+    expect(box.bottom).toBeLessThanOrEqual(window.innerHeight)
+    const atEnd =
+      Math.ceil(window.scrollY) >=
+      document.documentElement.scrollHeight - window.innerHeight - 1
+    if (!atEnd) {
+      const middle = box.top + box.height / 2
+      expect(Math.abs(middle - window.innerHeight / 2)).toBeLessThan(4)
+    }
+  }
+)

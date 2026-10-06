@@ -17,7 +17,7 @@
 //   node scripts/gen-contract.mjs           write CONTRACT.md and contract/api.json
 //   node scripts/gen-contract.mjs --check   fail when either file is stale
 import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import ts from 'typescript'
@@ -37,7 +37,7 @@ const { domAttributes, domClasses, domInlineStyles } = await import(
 // contract.ts: JSDoc and type text of the members of a few declarations
 // ---------------------------------------------------------------------------
 
-const contractPath = at('src', 'contract.ts')
+const contractPath = at('packages', 'vue', 'src', 'contract.ts')
 const contractText = read(contractPath)
 const contractFile = ts.createSourceFile(
   contractPath,
@@ -62,6 +62,53 @@ const nameOf = member => {
   return key
     ? key.getText().replace(/^`|`$/g, '').replace('${string}', '<field>')
     : '?'
+}
+
+const isDeclaredType = statement =>
+  ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)
+
+const typeEntry = statement => ({
+  name: statement.name.text,
+  kind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type',
+  description: docOf(statement)
+})
+
+// The query types are the protocol's: contract.ts re-exports them and the
+// protocol declares them. They stay in the contract's type list.
+const protocolTypesPath = at(
+  'packages',
+  'query-protocol',
+  'src',
+  'protocol',
+  'types.ts'
+)
+const protocolTypesFile = ts.createSourceFile(
+  protocolTypesPath,
+  read(protocolTypesPath),
+  ts.ScriptTarget.ES2022,
+  true
+)
+const reexportedNames = contractFile.statements
+  .filter(
+    statement =>
+      ts.isExportDeclaration(statement) &&
+      statement.moduleSpecifier?.text === '@dolusoft/query-protocol' &&
+      statement.exportClause &&
+      ts.isNamedExports(statement.exportClause)
+  )
+  .flatMap(statement =>
+    statement.exportClause.elements.map(element => element.name.text)
+  )
+const reexported = protocolTypesFile.statements.filter(
+  statement =>
+    isDeclaredType(statement) && reexportedNames.includes(statement.name.text)
+)
+for (const name of reexportedNames) {
+  if (!reexported.some(statement => statement.name.text === name)) {
+    throw new Error(
+      `contract.ts re-exports ${name}, which ${relative(root, protocolTypesPath)} does not declare`
+    )
+  }
 }
 
 const declaration = name => {
@@ -108,7 +155,9 @@ const checker = createChecker(at('tsconfig.json'), {
   forceUseTs: true,
   schema: { ignore: [] }
 })
-const meta = checker.getComponentMeta(at('src', 'query-table.vue'))
+const meta = checker.getComponentMeta(
+  at('packages', 'vue', 'src', 'query-table.vue')
+)
 
 const props = meta.props
   .filter(prop => !prop.global)
@@ -212,7 +261,7 @@ const exposedKeysOf = path => {
 }
 sameSet(
   'Exposed keys',
-  exposedKeysOf(at('src', 'query-table.vue')),
+  exposedKeysOf(at('packages', 'vue', 'src', 'query-table.vue')),
   exposed.map(item => item.name)
 )
 
@@ -222,7 +271,7 @@ sameSet(
 // function declaration in the module they come from.
 // ---------------------------------------------------------------------------
 
-const indexPath = at('src', 'index.ts')
+const indexPath = at('packages', 'vue', 'src', 'index.ts')
 const indexFile = ts.createSourceFile(
   indexPath,
   read(indexPath),
@@ -249,14 +298,18 @@ const functions = indexFile.statements
       ts.ScriptTarget.ES2022,
       true
     )
-    return statement.exportClause.elements.map(element => {
+    // Inline type specifiers (`type X`) are types, not functions.
+    const values = statement.exportClause.elements.filter(
+      element => !element.isTypeOnly
+    )
+    return values.map(element => {
       const name = (element.propertyName ?? element.name).text
       const found = file.statements.find(
         node => ts.isFunctionDeclaration(node) && node.name?.text === name
       )
       if (!found) {
         throw new Error(
-          `src/index.ts exports ${name}, but ${modulePath} declares no function of that name`
+          `packages/vue/src/index.ts exports ${name}, but ${modulePath} declares no function of that name`
         )
       }
       const parameters = found.parameters
@@ -343,8 +396,12 @@ const sections = [
     functions.map(item => [code(item.name), code(item.type), item.description])
   ),
   '## Types',
-  'Exported from the package entry point (`src/contract.ts`).',
+  'Exported from the package entry point (`packages/vue/src/contract.ts`).',
   '```ts\n' + contractText.trim() + '\n```',
+  'The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.',
+  '```ts\n' +
+    reexported.map(statement => statement.getFullText().trim()).join('\n\n') +
+    '\n```',
   '## Behavior rules',
   rules.replace(/^### /gm, '#### '),
   '## DOM contract',
@@ -379,9 +436,9 @@ const sections = [
   ),
   '## How the contract is kept',
   [
-    '- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `src/contract.ts`, the rules and the DOM list cannot change without it.',
+    '- `pnpm contract:check` regenerates this file and fails if it differs, so the component, `packages/vue/src/contract.ts`, the rules and the DOM list cannot change without it.',
     '- `pnpm api:check` compares the built declarations with `etc/query-table.api.md`.',
-    '- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `src/contract.ts`.',
+    '- `pnpm contract:gen` also checks that the keys the component exposes equal the exposed list of `packages/vue/src/contract.ts`.',
     '- `tests/repo/contract-traceability.spec.ts` fails when a rule has no test named after it, or a test names an unknown rule. That is traceability, not coverage: it does not say the test proves the rule.',
     '- The browser tests compare the rendered DOM with the DOM contract and check that the test skin selects only what it lists.'
   ].join('\n')
@@ -389,7 +446,7 @@ const sections = [
 
 // ---------------------------------------------------------------------------
 // contract/api.json: the same surface as data, for the playground's API
-// panels and its coverage manifest (playground/manifest.ts)
+// panels and its coverage manifest (apps/playground/manifest.ts)
 // ---------------------------------------------------------------------------
 
 // Each `### C-nn Title` heading starts a rule; its text runs to the next one.
@@ -419,20 +476,18 @@ if (headingCount !== ruleEntries.length) {
 }
 
 // The exported types of src/contract.ts, with their JSDoc summary.
-const types = contractFile.statements
-  .filter(
-    statement =>
-      (ts.isInterfaceDeclaration(statement) ||
-        ts.isTypeAliasDeclaration(statement)) &&
-      statement.modifiers?.some(
-        modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
-      )
-  )
-  .map(statement => ({
-    name: statement.name.text,
-    kind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type',
-    description: docOf(statement)
-  }))
+const types = [
+  ...reexported.map(typeEntry),
+  ...contractFile.statements
+    .filter(
+      statement =>
+        isDeclaredType(statement) &&
+        statement.modifiers?.some(
+          modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
+        )
+    )
+    .map(typeEntry)
+]
 
 const api = {
   $comment:
