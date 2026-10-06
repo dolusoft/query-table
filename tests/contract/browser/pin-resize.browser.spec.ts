@@ -84,6 +84,50 @@ describe('C-47 Pin offsets', () => {
     }
   })
 
+  test.each([
+    ['at its natural width', true],
+    ['squeezed by the container', false]
+  ])(
+    'a pinned column with a CSS width (12rem, 20%%) gets the offset of its measured width, %s',
+    async (_name, natural) => {
+      await renderTable({
+        columns: [
+          {
+            field: 'id',
+            title: 'ID',
+            type: 'number',
+            width: '12rem',
+            pinned: 'left'
+          },
+          { field: 'name', title: 'Name', width: '20%', pinned: 'left' },
+          { field: 'age', title: 'Age', type: 'number', pinned: 'left' },
+          { field: 'joined', title: 'Joined', type: 'date', width: '900px' }
+        ],
+        rows: rows(3)
+      })
+      if (natural) {
+        growTable()
+      }
+      await frames(3)
+      const header = [...el('thead tr').querySelectorAll('[data-pinned]')]
+      expect(header).toHaveLength(3)
+      // Measured, not the CSS text: the browser resolves `12rem` and `20%`
+      // against the table, and a narrow container squeezes them further.
+      const widths = header.map(cell => cell.getBoundingClientRect().width)
+      expect(widths[0]).toBeGreaterThan(0)
+      expect(widths[1]).toBeGreaterThan(0)
+      const offsets = header.map(offsetOf)
+      expect(offsets[0]).toBe(0)
+      expect(offsets[1]).toBeCloseTo(widths[0], 0)
+      expect(offsets[2]).toBeCloseTo(widths[0] + widths[1], 0)
+      // Every row's pinned cells sit where the offsets say.
+      for (const row of pinnedLefts()) {
+        expect(row[1] - row[0]).toBeCloseTo(widths[0], 0)
+        expect(row[2] - row[0]).toBeCloseTo(widths[0] + widths[1], 0)
+      }
+    }
+  )
+
   test('pinned cells stay at their offset while the table scrolls sideways', async () => {
     await renderPinned()
     const before = pinnedLefts()
