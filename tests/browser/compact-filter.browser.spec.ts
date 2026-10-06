@@ -180,3 +180,85 @@ test('the sheet writes the query once per Apply, replacing only its column', asy
     }
   ])
 })
+
+const mountSheet = async (query: TableQuery) => {
+  const writes: TableQuery[] = []
+  const sheetRef = ref<{ open: (field: string) => Promise<void> } | null>(null)
+  const Host = defineComponent(
+    () => () =>
+      h(ColumnFilterSheet, {
+        ref: sheetRef,
+        columns: [
+          { field: 'name', title: 'Name' },
+          { field: 'age', title: 'Age', type: 'number' },
+          { field: 'active', title: 'Active', type: 'bool' }
+        ],
+        query,
+        'onUpdate:query': (next: TableQuery) => writes.push(next)
+      })
+  )
+  await render(Host)
+  return { writes, open: (field: string) => sheetRef.value!.open(field) }
+}
+
+const baseQuery = (filters: TableQuery['filters']): TableQuery => ({
+  page: 3,
+  pageSize: 15,
+  sort: null,
+  filters
+})
+
+test('Apply with the rules unchanged writes nothing', async () => {
+  const { writes, open } = await mountSheet(
+    baseQuery([
+      { field: 'name', condition: 'Equal', value: 'Bob' },
+      { field: 'age', condition: 'GreaterThan', value: 30 }
+    ])
+  )
+  // A rule that types back to itself: the input shows it, Apply keeps it.
+  await open('name')
+  await expect
+    .element(page.getByRole('textbox', { name: 'Value' }))
+    .toHaveValue('Bob')
+  await userEvent.click(page.getByRole('button', { name: 'Apply' }))
+  await expect.poll(() => sheetOpen()).toBe(false)
+
+  // No rule and an empty input: nothing to clear.
+  await open('active')
+  await userEvent.click(page.getByRole('button', { name: 'Apply' }))
+  await expect.poll(() => sheetOpen()).toBe(false)
+
+  expect(writes).toEqual([])
+})
+
+test('Enter on the boolean select applies', async () => {
+  const { writes, open } = await mountSheet(baseQuery([]))
+  await open('active')
+  const value = page.getByRole('combobox', { name: 'Value' })
+  await expect.element(value).toHaveFocus()
+  await userEvent.selectOptions(value, 'true')
+  await userEvent.keyboard('{Enter}')
+  expect(writes).toEqual([
+    {
+      ...baseQuery([{ field: 'active', condition: 'Equal', value: true }]),
+      page: 1
+    }
+  ])
+})
+
+test('the value input is described only by an element that is rendered', async () => {
+  const { open } = await mountSheet(baseQuery([]))
+  for (const field of ['name', 'age']) {
+    await open(field)
+    const control = sheet()!.querySelector<HTMLElement>('input')!
+    const ids = (control.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .filter(Boolean)
+    for (const id of ids) {
+      expect(document.getElementById(id), `${field}: #${id}`).not.toBeNull()
+    }
+    expect(ids.length).toBe(field === 'name' ? 1 : 0)
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => sheetOpen()).toBe(false)
+  }
+})

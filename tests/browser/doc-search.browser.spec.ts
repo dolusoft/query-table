@@ -5,6 +5,8 @@ import { render } from 'vitest-browser-vue'
 import '../../playground/playground.css'
 import App from '../../playground/App.vue'
 import { router } from '../../playground/router'
+import { sectionAnchors } from '../../playground/search/anchors'
+import { revealAnchor } from '../../playground/search/reveal'
 
 // The playground's documentation search: shortcuts, MiniSearch hits, the
 // jump to a page anchor, and focus handling of the dialog.
@@ -80,4 +82,17 @@ test('a search with no hits shows the empty state', async () => {
   await userEvent.type(searchInput(), 'zzqqxx')
   await expect.element(page.getByTestId('doc-search-empty')).toBeVisible()
   await userEvent.keyboard('{Escape}')
+})
+
+test('a jump to another page marks the new page element, not the outgoing one with the same id', async () => {
+  const outgoing = document.getElementById(sectionAnchors.api)
+  expect(outgoing).not.toBeNull()
+  await router.push('/filtering')
+  const found = await revealAnchor(sectionAnchors.api, outgoing)
+  expect(found).not.toBeNull()
+  expect(found).not.toBe(outgoing)
+  expect(outgoing!.isConnected).toBe(false)
+  expect(found!.isConnected).toBe(true)
+  expect(found!.hasAttribute('data-search-target')).toBe(true)
+  expect(outgoing!.hasAttribute('data-search-target')).toBe(false)
 })

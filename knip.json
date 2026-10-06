@@ -15,7 +15,7 @@
     "playground/**/*.{ts,vue,css}"
   ],
   "ignore": [
-    "playground/skin/ui/**",
+    "playground/skin/ui/table/TableFooter.vue",
     "playground/skin/mapping.css",
     "playground/skin/theme.css"
   ],

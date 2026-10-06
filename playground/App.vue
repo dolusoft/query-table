@@ -86,7 +86,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
             type="button"
             variant="outline"
             data-testid="doc-search-button"
-            class="min-h-10 w-full justify-start gap-2 bg-background px-2 font-normal text-muted-foreground lg:min-h-8"
+            class="min-h-11 w-full justify-start gap-2 bg-background px-2 font-normal text-muted-foreground lg:min-h-8"
             @click="searchOpen = true"
           >
             <SearchIcon class="opacity-60" />
@@ -112,7 +112,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
                       :href="href"
                       :is-active="isActive"
                       :aria-current="isActive ? 'page' : undefined"
-                      class="min-h-10 whitespace-nowrap text-muted-foreground data-active:text-sidebar-accent-foreground lg:min-h-8"
+                      class="min-h-11 whitespace-nowrap text-muted-foreground data-active:text-sidebar-accent-foreground lg:min-h-8"
                       @click="navigate"
                     >
                       {{ page.title }}
@@ -129,19 +129,16 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
             type="single"
             variant="outline"
             size="sm"
-            role="radiogroup"
             aria-label="Theme"
             :model-value="theme"
             @update:model-value="pickTheme"
           >
-            <!-- A single-choice toggle group is announced as radios. -->
+            <!-- Each item is a toggle button (`aria-pressed`); the group has a name. -->
             <ToggleGroupItem
               v-for="option in themes"
               :key="option"
               :value="option"
-              role="radio"
-              :aria-checked="theme === option"
-              class="min-h-10 px-3 capitalize lg:min-h-0"
+              class="min-h-11 px-3 capitalize lg:min-h-0"
             >
               {{ option }}
             </ToggleGroupItem>

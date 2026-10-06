@@ -136,7 +136,8 @@ export interface FilterDraft {
   summary: string | null
 }
 
-const same = (a: FilterRule[], b: FilterRule[]) =>
+/** Whether two rule lists for one column are the same rules, in order. */
+export const same = (a: FilterRule[], b: FilterRule[]) =>
   a.length === b.length &&
   a.every(
     (rule, index) =>
@@ -196,3 +197,11 @@ export function commitDraft(column: Column, draft: FilterDraft): DraftResult {
   }
   return { kind: 'rules', rules }
 }
+
+/**
+ * Whether a key event belongs to an input method composing a word: its Enter
+ * picks a candidate and must not apply the filter. Some browsers report the
+ * Enter that ends a composition only through `keyCode` 229.
+ */
+export const isComposing = (event: KeyboardEvent) =>
+  event.isComposing || event.keyCode === 229
