@@ -10,20 +10,6 @@ import type {
 export const isCursorQuery = (query: Query): query is CursorQuery =>
   'cursor' in query
 
-const sameRule = (a: FilterRule, b: FilterRule): boolean =>
-  a.field === b.field && a.condition === b.condition && a.value === b.value
-
-/**
- * Whether two rule lists say the same, in the same order. Only `field`,
- * `condition` and `value` are compared; other properties of a rule are
- * carried, not meant.
- */
-export const sameRules = (
-  a: readonly FilterRule[],
-  b: readonly FilterRule[]
-): boolean =>
-  a.length === b.length && a.every((rule, i) => sameRule(rule, b[i]))
-
 const sameSort = (a: SortState | null, b: SortState | null): boolean =>
   a === b ||
   (a !== null &&
@@ -66,6 +52,29 @@ const sameJson = (a: unknown, b: unknown): boolean => {
     )
   )
 }
+
+const ruleKeys = new Set(['field', 'condition', 'value'])
+
+/** The own enumerable properties of a rule besides the three it is made of. */
+const extraPart = (rule: FilterRule): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(rule).filter(([key]) => !ruleKeys.has(key)))
+
+const sameRule = (a: FilterRule, b: FilterRule): boolean =>
+  a.field === b.field &&
+  a.condition === b.condition &&
+  a.value === b.value &&
+  sameJson(extraPart(a), extraPart(b))
+
+/**
+ * Whether two rule lists say the same, in the same order. `field`,
+ * `condition` and `value` are compared, and so are the extra properties of a
+ * rule, by value and whatever their key order (C-60).
+ */
+export const sameRules = (
+  a: readonly FilterRule[],
+  b: readonly FilterRule[]
+): boolean =>
+  a.length === b.length && a.every((rule, i) => sameRule(rule, b[i]))
 
 const unknownPart = (query: Query): Record<string, unknown> =>
   Object.fromEntries(Object.entries(query).filter(([key]) => !known.has(key)))
