@@ -78,6 +78,29 @@ import type { Table } from '@tanstack/table-core'`
     ).toEqual([message])
   })
 
+  it('checks require() and import = require() like imports', () => {
+    const file = `${core}/features/server-query/index.ts`
+    expect(lint(file, `const x = require('../filter-input')`)).toEqual([
+      expect.stringContaining('the server-query feature may not import')
+    ])
+    expect(lint(file, `import x = require('vue')`)).toEqual([
+      expect.stringContaining('query-table-core may import')
+    ])
+    expect(lint(file, `const x = require(name)`)).toEqual([
+      expect.stringContaining('must name a literal module')
+    ])
+    expect(lint(file, `const x = require('@tanstack/table-core')`)).toEqual([])
+  })
+
+  it('refuses import.meta.glob', () => {
+    expect(
+      lint(
+        `${core}/features/filter-input/index.ts`,
+        `const all = import.meta.glob('../*/index.ts')`
+      )
+    ).toEqual([expect.stringContaining('import.meta.glob')])
+  })
+
   it('rejects a dynamic import that is not a literal', () => {
     expect(
       lint(`${core}/features/filter-input/index.ts`, `void import(name)`)
