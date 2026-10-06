@@ -648,6 +648,17 @@ th[data-filtered] .qt-filter-input {
 .qt-table tr[data-expanded] {
   background-color: color-mix(in oklab, var(--muted) 50%, transparent);
 }
+/* own: a pinned row and its subtable row (`data-pinned-row`, C-74), tinted
+   and opaque, so a pinned column's cell matches the rest of the row. */
+.qt-table tbody tr[data-pinned-row] > td {
+  background-color: color-mix(in oklab, var(--muted) 35%, var(--background));
+}
+/* own: the row hover of TableRow, opaque on a pinned row. */
+@media (hover: hover) {
+  .qt-table tbody tr[data-pinned-row]:hover > td {
+    background-color: color-mix(in oklab, var(--muted) 50%, var(--background));
+  }
+}
 /* own: the subtable slot wraps its text. */
 .qt-subtable-row td {
   white-space: normal;

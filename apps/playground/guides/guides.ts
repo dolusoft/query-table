@@ -16,7 +16,7 @@ export const guidePages: GuidePage[] = [
     id: 'features',
     title: 'Features',
     summary:
-      'What TanStack Table has, where Query Table offers it today, what comes in 3.1 and what a server must do.'
+      'What TanStack Table has, where Query Table offers it and what a server must do.'
   },
   {
     id: 'tanstack',

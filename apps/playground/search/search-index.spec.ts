@@ -76,9 +76,12 @@ describe('documentation search index', () => {
 
   it('finds the guide pages by what they say', () => {
     const first = (query: string) => searchDocs(index, query)[0]
+    // The playground page of row pinning comes first; the feature row is
+    // still found.
+    expect(first('row pinning')?.pageId).toBe('row-pinning')
     expect(
       searchDocs(index, 'row pinning')
-        .slice(0, 3)
+        .slice(0, 10)
         .map(hit => hit.id)
     ).toContain('features:row-pinning')
     expect(

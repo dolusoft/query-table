@@ -140,6 +140,20 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-26']
   },
   {
+    id: 'row-pinning',
+    title: 'Row pinning',
+    summary:
+      'Pin rows to the top or the bottom of the page from a cell slot (`pinRow`). The page owns the map of pinned keys with `v-model:rowPinning`; keys of other pages stay in it, and showing a pinned row on every page is the page adding it to `rows`.',
+    example: 'RowPinning',
+    api: {
+      props: ['rowPinning', 'rowKey'],
+      emits: ['update:rowPinning'],
+      slots: ['cell-<field>'],
+      types: ['RowPinning', 'CellSlotProps']
+    },
+    rules: ['C-72', 'C-74']
+  },
+  {
     id: 'footer-rows',
     title: 'Footer rows',
     summary:

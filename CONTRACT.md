@@ -13,6 +13,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `query` | `Q` | yes |  | The table state, used with `v-model:query`. Required: the table is always controlled. A `CursorQuery` (a `cursor` key) pages by cursor. |
 | `cursors` | `PageCursors \| null` |  | `null` | Cursor mode: the cursors of the page shown (C-56). The next and previous page controls step to them; without the one on a side there is no page on that side. |
 | `selection` | `RowSelection` |  | `undefined` | Rows the user selected, used with `v-model:selection`. Given, a column of checkboxes is drawn after the other utility columns; absent, there is no selection. Keys are the row identity (`rowKey`) as a string. |
+| `rowPinning` | `RowPinning` |  | `undefined` | Rows pinned to the top or the bottom of the page, used with `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs `rowKey`. Keys of rows not in `rows` stay and are not drawn. |
 | `searchDebounce` | `number` |  | `300` | Milliseconds between the last key of a search typed through the `toolbar` slot and the search being applied (C-58). `0` applies every call at once, for a consumer that debounces on its own. Defaults to `300`. |
 | `columns` | `Column[]` | yes |  | Column definitions, used with `v-model:columns` when the user may change the layout. Never mutated. |
 | `rows` | `T[]` |  | `[]` | Rows of the current page, drawn exactly as given. With `hasSubtable` a row may carry an optional `isExpanded` boolean to seed its expansion state (for example a print or report view that opens every row). Whenever `rows` changes, `isExpanded: true` opens the row, `isExpanded: false` closes it, and a row without the field (or with any other value) keeps what the state is. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again. The field is not part of `T`; it is read from the row object as given. |
@@ -40,6 +41,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
 | `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
 | `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
+| `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
 
 ### Slots
 
@@ -123,6 +125,15 @@ export type {
  * (`rowKey`, as a string). Only `true` entries count.
  */
 export type RowSelection = Record<string, boolean>
+
+/**
+ * Rows pinned to the top or the bottom of the page (`v-model:rowPinning`,
+ * C-74): row keys (`rowKey` as a string) in the order they were pinned.
+ */
+export interface RowPinning {
+  top: string[]
+  bottom: string[]
+}
 
 /**
  * Column definition. Pure data: the table never writes to these objects.
@@ -211,6 +222,12 @@ export interface TableProps<
    * no selection. Keys are the row identity (`rowKey`) as a string.
    */
   selection?: RowSelection
+  /**
+   * Rows pinned to the top or the bottom of the page, used with
+   * `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs
+   * `rowKey`. Keys of rows not in `rows` stay and are not drawn.
+   */
+  rowPinning?: RowPinning
   /**
    * Milliseconds between the last key of a search typed through the
    * `toolbar` slot and the search being applied (C-58). `0` applies every
@@ -403,6 +420,11 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * yours. Apply it with `v-model:columns`, or the table draws the old one.
    */
   'update:columns': [columns: Column[], reason: ColumnChangeReason]
+  /**
+   * The user pinned or unpinned a row (C-74): a new map. Apply it with
+   * `v-model:rowPinning`, or the table draws the old order.
+   */
+  'update:rowPinning': [rowPinning: RowPinning]
 }
 
 export interface CellSlotProps<T> {
@@ -410,6 +432,14 @@ export interface CellSlotProps<T> {
   rowIndex: number
   column: Column
   cellValue: unknown
+  /** Where the row is pinned (C-74): `'top'`, `'bottom'` or `false`. */
+  rowPinned: 'top' | 'bottom' | false
+  /**
+   * Pin the row to the top or the bottom, or unpin it with `false`: one
+   * `update:rowPinning`; nothing for the position the row has, and nothing
+   * without `rowKey` and `rowPinning` (C-74).
+   */
+  pinRow: (position: 'top' | 'bottom' | false) => void
 }
 
 export interface HeaderSlotProps {
@@ -686,6 +716,7 @@ A `Source:` line under a rule says where its behavior comes from in v3 (ADR 0004
 | C-67 column visibility | TanStack keeps `columnVisibility` | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns` |
 | C-69 column order | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
 | C-71 right pinning | `columnPinningFeature` computes offsets from `getSize()` | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3) |
+| C-74 row pinning | TanStack keeps `rowPinning`; `keepPinnedRows` shows pinned rows of other pages; `row.pin` moves a row already at that position to the end | the slice is controlled (`state.rowPinning` is the consumer's, `onRowPinningChange` tells it); in server mode the row models hold only `rows`, so a key outside `rows` is not drawn; pinning a row to the position it has emits nothing |
 
 #### C-01 The table is controlled
 
@@ -839,7 +870,7 @@ With `hasSubtable` a button per row shows the `subtable` slot under it. The stat
 
 #### C-27 Cell slots
 
-`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`. A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
+`cell-<field>` renders the cells of one column and receives `row`, `rowIndex`, `column` and `cellValue`, and `rowPinned` and `pinRow` (C-74). A column without that slot draws its value as text (C-30). The table cancels no click inside a row, so a checkbox or a link in a cell slot keeps its default action, and the click still bubbles to the consumer.
 
 #### C-28 Context menu
 
@@ -859,7 +890,7 @@ The table ships no CSS and takes no styling props. It writes three inline styles
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows. `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74). `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -1063,6 +1094,12 @@ With the table's `reorderable` and the column's `reorderable` not `false`, the h
 
 Source: tanstack, own
 
+#### C-74 Row pinning
+
+The pinned rows are the consumer's: `rowPinning` is `{ top, bottom }`, row keys (`rowKey` as a string) in the order they were pinned, used with `v-model:rowPinning`. With `rowPinning` and `rowKey` given, the rows of `rows` whose key is in `top` are drawn first and those in `bottom` last, in map order, the others between them in the order of `rows`; a pinned row carries `data-pinned-row` (`top` or `bottom`), and so does its `qt-subtable-row`, which follows it. `data-row-index` stays the row's index in `rows` (C-28). A key whose row is not in `rows` is not drawn and stays in the map: the table never asks for a row. The `cell-<field>` slot receives `rowPinned` (`'top'`, `'bottom'` or `false`) and `pinRow(position)`, which emits one `update:rowPinning` with the new map (`false` unpins) and changes nothing until the consumer passes it back; pinning to the position the row has emits nothing. Without `rowKey` the prop is ignored and `pinRow` does nothing: an index is not a row identity across pages. Row pinning never emits `update:query`. A consumer that wants a pinned row on every page adds it to `rows` itself, once (keys stay unique, C-26); with an unknown total such a row counts for `canNext` (C-23).
+
+Source: tanstack, own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1106,6 +1143,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-filtered` | `th, .qt-filter-button` | Present when the column has at least one rule. |
 | `data-row-index` | `tbody > tr` | Index of the row in `rows`. The table reads it to tell which row was right-clicked. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
+| `data-pinned-row` | `tbody > tr` | `top` or `bottom` on a pinned row and on its subtable row (C-74). |
 | `data-selected` | `tbody > tr` | Present on a selected row (C-64). |
 | `data-pinned` | `th, td` | Empty on every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, on the utility cells; the cell also carries `--qt-pin-left`. `right` on a column pinned to the right (C-71). |
 | `data-pinned` | `th[data-pinned="right"], td[data-pinned="right"]` | Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71). |

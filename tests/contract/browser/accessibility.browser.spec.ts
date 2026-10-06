@@ -91,6 +91,28 @@ describe.each<Theme>(['light', 'dark'])(
 )
 
 describe.each<Theme>(['light', 'dark'])(
+  'C-74 accessibility scan (axe) with pinned rows, %s theme',
+  theme => {
+    test('finds no violation with rows pinned to the top and the bottom, one expanded', async () => {
+      await renderTable({
+        ...everything,
+        theme,
+        rowKey: 'id',
+        rowPinning: { top: ['2'], bottom: ['4'] }
+      })
+      await userEvent.click(document.querySelector('.qt-expand')!)
+      expect(
+        document.querySelectorAll('tbody > tr[data-pinned-row="top"]')
+      ).toHaveLength(2)
+      expect(
+        document.querySelector('tbody > tr[data-pinned-row="bottom"]')
+      ).not.toBeNull()
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+    })
+  }
+)
+
+describe.each<Theme>(['light', 'dark'])(
   'C-73 accessibility scan (axe) with reorder handles, %s theme',
   theme => {
     test('finds no violation with reorder and resize handles and a pinned column', async () => {

@@ -14,12 +14,13 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `searchDebounce` | ms before typed search text applies (default 300). |
 | `selection` | `v-model:selection`; adds a checkbox column. |
 | `cursors` | `{ next, prev }` of the page shown, cursor mode only. |
-| `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages. |
+| `rowPinning` | `v-model:rowPinning`: `{ top, bottom }` row keys pinned to the top or the bottom of the page. Needs `rowKey`. |
+| `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages, and for row pinning. |
 | `hasSubtable`, `hasRightPanel` | Expand button with the `subtable` slot; a button that emits `rowRightPanelClick`. |
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. |
 
-Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
+Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
 Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
 
@@ -92,6 +93,24 @@ const cursors = ref<PageCursors>({ next: null, prev: null })
 
 `selected` is `Record<string, boolean>`; keys of rows on other pages stay in it.
 
+## Row pinning
+
+```vue
+<QueryTable v-model:query="query" v-model:rowPinning="pinning" row-key="id" ...>
+  <template #cell-name="{ row, rowPinned, pinRow }">
+    {{ row.name }}
+    <button type="button" @click="pinRow(rowPinned === 'top' ? false : 'top')">Pin</button>
+  </template>
+</QueryTable>
+```
+
+`pinning` is `{ top: string[]; bottom: string[] }`, row keys (`rowKey` as a string) in the order they were pinned. The rows of `rows` in `top` are drawn first and those in `bottom` last, with `data-pinned-row="top|bottom"` (on the subtable row too); `data-row-index` stays the index in `rows`. `pinRow(position)` from a `cell-<field>` slot emits `update:rowPinning` once (`false` unpins; the position the row has emits nothing). Limits (C-74):
+
+- Without `rowKey` the prop is ignored and `pinRow` does nothing.
+- Keys of rows on other pages stay in the map and are not drawn: the table never asks for a row. To show a pinned row on every page, add it to `rows` yourself, once per key.
+- With an unknown total (`totalRows: null`) such an added row counts for `canNext` (C-23): a page that is full only because of it shows a next page.
+- The rows stay in the flow; sticky top or bottom rows are your CSS.
+
 ## useQueryTable()
 
 `QueryTable` is a thin view over it. Options take refs or getters; `onQueryChange(query, reason)` is called once per user action.
@@ -121,7 +140,7 @@ qt.pagination.value.nextPage()
 qt.table // the TanStack table
 ```
 
-Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `clear`, `clearAll`, `canClearAll`, `labelOf`), `layout` (`controlOf`, `regionOf`, `moveColumn`; give `onColumnsChange(columns, reason)` to receive them), `expansion`, `selection`, `baseQuery()`. The scope disposal is automatic.
+Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `clear`, `clearAll`, `canClearAll`, `labelOf`), `layout` (`controlOf`, `regionOf`, `moveColumn`; give `onColumnsChange(columns, reason)` to receive them), `expansion`, `selection`, `rowPinning` (`enabled`, `rows` in drawing order, `pin(row, index, position)`; give `rowPinning` and `onRowPinningChange(map)`), `baseQuery()`. The scope disposal is automatic.
 
 ## Styling
 

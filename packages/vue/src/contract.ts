@@ -45,6 +45,15 @@ export type {
 export type RowSelection = Record<string, boolean>
 
 /**
+ * Rows pinned to the top or the bottom of the page (`v-model:rowPinning`,
+ * C-74): row keys (`rowKey` as a string) in the order they were pinned.
+ */
+export interface RowPinning {
+  top: string[]
+  bottom: string[]
+}
+
+/**
  * Column definition. Pure data: the table never writes to these objects.
  * Extend it with your own fields (`interface MyColumn extends Column {}`).
  */
@@ -131,6 +140,12 @@ export interface TableProps<
    * no selection. Keys are the row identity (`rowKey`) as a string.
    */
   selection?: RowSelection
+  /**
+   * Rows pinned to the top or the bottom of the page, used with
+   * `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs
+   * `rowKey`. Keys of rows not in `rows` stay and are not drawn.
+   */
+  rowPinning?: RowPinning
   /**
    * Milliseconds between the last key of a search typed through the
    * `toolbar` slot and the search being applied (C-58). `0` applies every
@@ -323,6 +338,11 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * yours. Apply it with `v-model:columns`, or the table draws the old one.
    */
   'update:columns': [columns: Column[], reason: ColumnChangeReason]
+  /**
+   * The user pinned or unpinned a row (C-74): a new map. Apply it with
+   * `v-model:rowPinning`, or the table draws the old order.
+   */
+  'update:rowPinning': [rowPinning: RowPinning]
 }
 
 export interface CellSlotProps<T> {
@@ -330,6 +350,14 @@ export interface CellSlotProps<T> {
   rowIndex: number
   column: Column
   cellValue: unknown
+  /** Where the row is pinned (C-74): `'top'`, `'bottom'` or `false`. */
+  rowPinned: 'top' | 'bottom' | false
+  /**
+   * Pin the row to the top or the bottom, or unpin it with `false`: one
+   * `update:rowPinning`; nothing for the position the row has, and nothing
+   * without `rowKey` and `rowPinning` (C-74).
+   */
+  pinRow: (position: 'top' | 'bottom' | false) => void
 }
 
 export interface HeaderSlotProps {
