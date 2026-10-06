@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { Button } from '@/ui/button'
+
 import type { Column, ColumnResizePayload } from '../../src/contract'
 import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
@@ -40,13 +42,9 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
     <p class="text-sm text-muted-foreground">
       Saved widths:
       <code>{{ JSON.stringify(saved) }}</code>
-      <button
-        type="button"
-        class="ml-2 rounded-md border px-2 py-0.5 text-xs hover:bg-muted"
-        @click="saved = {}"
-      >
+      <Button variant="outline" size="xs" class="ml-2" @click="saved = {}">
         Reset
-      </button>
+      </Button>
     </p>
     <!-- Consumer CSS of this page (C-50): with the fixed layout the header
          width is the column width, and the table grows with its columns. -->

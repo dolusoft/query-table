@@ -4,6 +4,7 @@ import { ListboxFilter } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { Badge } from '@/ui/badge'
 import {
   CommandDialog,
   CommandGroup,
@@ -11,6 +12,7 @@ import {
   CommandList
 } from '@/ui/command'
 import { InputGroup, InputGroupAddon } from '@/ui/input-group'
+import { ScrollArea } from '@/ui/scroll-area'
 
 import { readRecent, rememberSearch } from './recent'
 import { revealAnchor } from './reveal'
@@ -82,102 +84,109 @@ const choose = (hit: SearchHit) => {
         </InputGroupAddon>
       </InputGroup>
     </div>
-    <CommandList
-      class="max-h-[min(70vh,32rem)] max-sm:max-h-none max-sm:flex-1 **:data-[slot=command-group-heading]:px-2 **:data-[slot=command-group-heading]:py-1.5 **:data-[slot=command-group-heading]:text-xs **:data-[slot=command-group-heading]:font-medium **:data-[slot=command-group-heading]:text-muted-foreground"
-      data-testid="doc-search-results"
+    <!-- shadcn-vue ScrollArea scrolls the results; the list itself grows. -->
+    <ScrollArea
+      class="max-sm:min-h-0 max-sm:flex-1 *:data-[slot=scroll-area-viewport]:max-h-[min(70vh,32rem)] max-sm:*:data-[slot=scroll-area-viewport]:max-h-none"
     >
-      <template v-if="query.trim()">
-        <p
-          v-if="hits.length === 0"
-          class="py-6 text-center text-sm text-muted-foreground"
-          data-testid="doc-search-empty"
-        >
-          No results for “{{ query.trim() }}”.
-        </p>
-        <CommandGroup
-          v-for="group in groups"
-          :key="group.pageId"
-          :heading="group.pageTitle"
-        >
-          <CommandItem
-            v-for="hit in group.hits"
-            :key="hit.id"
-            :value="hit.id"
-            :data-doc-id="hit.id"
-            class="items-start"
-            @select="choose(hit)"
+      <CommandList
+        class="max-h-none overflow-visible **:data-[slot=command-group-heading]:px-2 **:data-[slot=command-group-heading]:py-1.5 **:data-[slot=command-group-heading]:text-xs **:data-[slot=command-group-heading]:font-medium **:data-[slot=command-group-heading]:text-muted-foreground"
+        data-testid="doc-search-results"
+      >
+        <template v-if="query.trim()">
+          <p
+            v-if="hits.length === 0"
+            class="py-6 text-center text-sm text-muted-foreground"
+            data-testid="doc-search-empty"
           >
-            <span
-              class="mt-0.5 w-16 shrink-0 rounded border px-1 py-px text-center font-mono text-[10px] text-muted-foreground uppercase"
-              >{{ hit.kind }}</span
+            No results for “{{ query.trim() }}”.
+          </p>
+          <CommandGroup
+            v-for="group in groups"
+            :key="group.pageId"
+            :heading="group.pageTitle"
+          >
+            <CommandItem
+              v-for="hit in group.hits"
+              :key="hit.id"
+              :value="hit.id"
+              :data-doc-id="hit.id"
+              class="items-start"
+              @select="choose(hit)"
             >
-            <span class="flex min-w-0 flex-col">
-              <span
-                class="truncate font-medium"
-                :class="
-                  hit.kind !== 'page' &&
-                  hit.kind !== 'rule' &&
-                  'font-mono text-xs'
-                "
+              <Badge
+                variant="outline"
+                class="mt-0.5 w-16 font-mono text-[10px] text-muted-foreground uppercase"
+                >{{ hit.kind }}</Badge
               >
-                <template
-                  v-for="(part, i) in highlight(hit.title, hit.terms)"
-                  :key="i"
-                  ><mark
-                    v-if="part.match"
-                    class="rounded-sm bg-yellow-200/70 text-inherit dark:bg-yellow-500/30"
-                    >{{ part.text }}</mark
-                  ><template v-else>{{ part.text }}</template></template
+              <span class="flex min-w-0 flex-col">
+                <span
+                  class="truncate font-medium"
+                  :class="
+                    hit.kind !== 'page' &&
+                    hit.kind !== 'rule' &&
+                    'font-mono text-xs'
+                  "
                 >
-              </span>
-              <span
-                v-if="hit.body"
-                class="line-clamp-2 text-xs text-muted-foreground"
-              >
-                <template
-                  v-for="(part, i) in highlight(
-                    snippet(hit.body, hit.terms),
-                    hit.terms
-                  )"
-                  :key="i"
-                  ><mark
-                    v-if="part.match"
-                    class="rounded-sm bg-yellow-200/70 text-inherit dark:bg-yellow-500/30"
-                    >{{ part.text }}</mark
-                  ><template v-else>{{ part.text }}</template></template
+                  <template
+                    v-for="(part, i) in highlight(hit.title, hit.terms)"
+                    :key="i"
+                    ><mark
+                      v-if="part.match"
+                      class="rounded-sm bg-yellow-200/70 text-inherit dark:bg-yellow-500/30"
+                      >{{ part.text }}</mark
+                    ><template v-else>{{ part.text }}</template></template
+                  >
+                </span>
+                <span
+                  v-if="hit.body"
+                  class="line-clamp-2 text-xs text-muted-foreground"
                 >
+                  <template
+                    v-for="(part, i) in highlight(
+                      snippet(hit.body, hit.terms),
+                      hit.terms
+                    )"
+                    :key="i"
+                    ><mark
+                      v-if="part.match"
+                      class="rounded-sm bg-yellow-200/70 text-inherit dark:bg-yellow-500/30"
+                      >{{ part.text }}</mark
+                    ><template v-else>{{ part.text }}</template></template
+                  >
+                </span>
               </span>
-            </span>
-          </CommandItem>
-        </CommandGroup>
-      </template>
-      <template v-else>
-        <CommandGroup v-if="recent.length > 0" heading="Recent searches">
-          <CommandItem
-            v-for="item in recent"
-            :key="item"
-            :value="`recent:${item}`"
-            @select.prevent="query = item"
-          >
-            <SearchIcon class="opacity-50" />
-            {{ item }}
-          </CommandItem>
-        </CommandGroup>
-        <CommandGroup heading="Pages">
-          <CommandItem
-            v-for="page in pages"
-            :key="page.id"
-            :value="`page:${page.id}`"
-            @select="go(page.id, '')"
-          >
-            <span
-              class="w-16 shrink-0 rounded border px-1 py-px text-center font-mono text-[10px] text-muted-foreground uppercase"
-              >page</span
+            </CommandItem>
+          </CommandGroup>
+        </template>
+        <template v-else>
+          <CommandGroup v-if="recent.length > 0" heading="Recent searches">
+            <CommandItem
+              v-for="item in recent"
+              :key="item"
+              :value="`recent:${item}`"
+              @select.prevent="query = item"
             >
-            {{ page.title }}
-          </CommandItem>
-        </CommandGroup>
-      </template>
-    </CommandList>
+              <SearchIcon class="opacity-50" />
+              {{ item }}
+            </CommandItem>
+          </CommandGroup>
+          <CommandGroup heading="Pages">
+            <CommandItem
+              v-for="page in pages"
+              :key="page.id"
+              :value="`page:${page.id}`"
+              @select="go(page.id, '')"
+            >
+              <Badge
+                variant="outline"
+                class="w-16 font-mono text-[10px] text-muted-foreground uppercase"
+                >page</Badge
+              >
+              {{ page.title }}
+            </CommandItem>
+          </CommandGroup>
+        </template>
+      </CommandList>
+    </ScrollArea>
   </CommandDialog>
 </template>

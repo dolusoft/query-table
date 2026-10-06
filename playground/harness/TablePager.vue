@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { useId } from 'vue'
+
 import { Button } from '@/ui/button'
+import { Label } from '@/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 
 import type { PaginationSlotProps } from '../../src/contract'
 
@@ -7,6 +11,7 @@ import type { PaginationSlotProps } from '../../src/contract'
 // example: muted page text on the left, page size and previous/next on the
 // right. Every value and action comes from the slot props.
 defineProps<{ page: PaginationSlotProps }>()
+const sizeId = useId()
 </script>
 
 <template>
@@ -15,28 +20,28 @@ defineProps<{ page: PaginationSlotProps }>()
       >Page {{ page.page }} of {{ page.pageCount ?? '?' }}</span
     >
     <div class="flex flex-wrap items-center gap-2">
-      <label class="flex items-center gap-2 text-sm font-medium">
-        Rows per page
-        <!-- Chromium's native popup needs an opaque select background:
-             a translucent input surface can leave its list white. -->
-        <select
-          aria-label="Rows per page"
-          class="page-size h-10 rounded-lg border border-input bg-background px-2 text-[0.8rem] text-foreground tabular-nums transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 lg:h-7"
-          :value="page.pageSize"
-          @change="
-            page.setPageSize(Number(($event.target as HTMLSelectElement).value))
-          "
+      <Label :for="sizeId">Rows per page</Label>
+      <!-- Chromium's native popup needs an opaque select background: a
+           translucent input surface can leave its list white. -->
+      <NativeSelect
+        :id="sizeId"
+        size="sm"
+        aria-label="Rows per page"
+        class="page-size [&_select]:h-10 [&_select]:bg-background [&_select]:tabular-nums lg:[&_select]:h-7"
+        :model-value="page.pageSize"
+        @change="
+          page.setPageSize(Number(($event.target as HTMLSelectElement).value))
+        "
+      >
+        <NativeSelectOption
+          v-for="n in page.pageSizeOptions"
+          :key="n"
+          :value="n"
+          class="bg-popover text-popover-foreground"
         >
-          <option
-            v-for="n in page.pageSizeOptions"
-            :key="n"
-            :value="n"
-            class="bg-popover text-popover-foreground"
-          >
-            {{ n }}
-          </option>
-        </select>
-      </label>
+          {{ n }}
+        </NativeSelectOption>
+      </NativeSelect>
       <Button
         variant="outline"
         size="sm"

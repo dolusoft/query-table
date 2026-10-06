@@ -49,7 +49,10 @@ test.each([
       '.qt-table-responsive',
       '.qt-pagination button'
     )
-    const nav = document.querySelector<HTMLElement>('aside nav')!
+    // The page list scrolls sideways inside its shadcn-vue ScrollArea.
+    const nav = document.querySelector<HTMLElement>(
+      'aside nav [data-slot="scroll-area-viewport"]'
+    )!
     expect(nav.scrollWidth).toBeGreaterThan(nav.clientWidth)
     expect(rect('aside nav a').height).toBeGreaterThanOrEqual(40)
     const scroller = document.querySelector<HTMLElement>(

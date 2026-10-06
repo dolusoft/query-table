@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { Badge } from '@/ui/badge'
+
 import api from '../../contract/api.json'
 import { ruleAnchor, sectionAnchors } from '../search/anchors'
 
@@ -24,7 +26,9 @@ const rules = computed(() =>
       >
         <details class="rounded-md border px-3 py-2">
           <summary class="cursor-pointer">
-            <span class="font-mono text-xs">{{ rule.id }}</span>
+            <Badge variant="outline" class="mr-1 font-mono">{{
+              rule.id
+            }}</Badge>
             {{ rule.title }}
           </summary>
           <p class="pt-2 text-muted-foreground">{{ rule.text }}</p>

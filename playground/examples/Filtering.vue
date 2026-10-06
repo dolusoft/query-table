@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
 
 import type { FilterRule } from '../../src/contract'
 import { QueryTable } from '../../src/index'
@@ -64,10 +66,10 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
       <Button variant="ghost" size="sm" @click="setFilters([])">
         Remove all from outside
       </Button>
-      <label class="flex items-center gap-2 text-sm">
-        <input v-model="nativeDatePicker" type="checkbox" />
+      <Label class="font-normal">
+        <Checkbox v-model="nativeDatePicker" />
         Native date picker (<code>filter-datetime</code> slot)
-      </label>
+      </Label>
     </div>
     <QueryTable
       v-model:query="query"
