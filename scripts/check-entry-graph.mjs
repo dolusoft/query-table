@@ -136,8 +136,8 @@ for (const dir of packages) {
 }
 
 /** The local-only dist files among the modules of a fixture's build. */
-const localModulesOf = async name => {
-  const chunks = await buildFixture(name)
+const localModulesOf = async (name, directory) => {
+  const chunks = await buildFixture(name, directory)
   const moduleIds = chunks.flatMap(chunk => chunk.moduleIds)
   if (moduleIds.length === 0) {
     problems.push(`fixture ${name} has no module ids`)
@@ -153,6 +153,11 @@ for (const name of fixtures) {
     problems.push(`fixture ${name} bundles ${rel(id)}`)
   }
 }
+for (const name of ['composable', 'component']) {
+  for (const id of await localModulesOf(name, 'consumer')) {
+    problems.push(`fixture ${name} bundles ${rel(id)}`)
+  }
+}
 // The control: a fixture that does use /local must show it, or the check
 // above could pass by not seeing the module ids at all.
 const control = await localModulesOf('protocol-local')
@@ -162,6 +167,16 @@ if (control.length === 0) {
   )
 }
 
+const bindingControl = await localModulesOf('local-composable', 'consumer')
+if (
+  !bindingControl.some(
+    file => file === join(root, 'packages', 'vue', 'dist', 'local.js')
+  )
+) {
+  problems.push(
+    'fixture local-composable bundles no Vue dist/local.js: the binding control is missing'
+  )
+}
 if (problems.length > 0) {
   for (const problem of problems) {
     console.error(`check-entry-graph: ${problem}`)
@@ -172,5 +187,5 @@ if (problems.length > 0) {
   process.exit(1)
 }
 console.log(
-  `check-entry-graph: ${packages.length} default entries (${visitedFiles} built files) and ${fixtures.length} fixtures reach no local evaluator (${localOnly.size} local-only file(s)).`
+  `check-entry-graph: ${packages.length} default entries (${visitedFiles} built files) and ${fixtures.length + 2} fixtures reach no local evaluator (${localOnly.size} local-only file(s)).`
 )

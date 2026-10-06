@@ -42,7 +42,18 @@ const buildApp = async name => {
     logLevel: 'warn',
     // The package name resolves through `exports` to dist/; its own
     // dependencies (core, protocol, TanStack) resolve from packages/vue.
-    resolve: { alias: { '@dolusoft/query-table': vuePackage } },
+    resolve: {
+      alias: [
+        {
+          find: /^@dolusoft\/query-table\/local$/,
+          replacement: join(vuePackage, 'dist', 'local.js')
+        },
+        {
+          find: /^@dolusoft\/query-table$/,
+          replacement: join(vuePackage, 'dist', 'query-table.js')
+        }
+      ]
+    },
     build: {
       write: false,
       minify: true,
@@ -80,7 +91,7 @@ const buildApp = async name => {
   }
 }
 
-const names = ['composable', 'component']
+const names = ['composable', 'component', 'local-composable']
 const baseline = await buildApp('vue-only')
 const apps = {}
 const costs = {}

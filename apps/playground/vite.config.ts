@@ -31,6 +31,10 @@ export default defineConfig({
         replacement: resolve(packages, 'vue/src/index.ts')
       },
       {
+        find: /^@dolusoft\/query-table\/local$/,
+        replacement: resolve(packages, 'vue/src/local/index.ts')
+      },
+      {
         find: /^@dolusoft\/query-protocol$/,
         replacement: resolve(packages, 'query-protocol/src/index.ts')
       },

@@ -66,7 +66,7 @@ const packages = [
       '@tanstack/vue-table': '9.2.6'
     },
     peers: { vue: '^3.5.0' },
-    subpaths: ['.']
+    subpaths: ['.', './local']
   }
 ]
 
