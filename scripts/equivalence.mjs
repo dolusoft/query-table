@@ -87,6 +87,8 @@ const ADDED_AFTER_BASELINE = [
   `tests/contract/unit/pin.spec.ts > C-71 Right pinning [tanstack] [own]`,
   `tests/contract/browser/pin-right.browser.spec.ts > C-71 Right pinning [tanstack] [own]`,
   'tests/contract/browser/accessibility.browser.spec.ts > C-71 accessibility scan',
+  'tests/contract/browser/pin-right.browser.spec.ts > C-71 Resizing a right-pinned column [own]',
+  'tests/contract/unit/resize.spec.ts > C-71 Resizing a right-pinned column (unit)',
   'tests/contract/browser/dom-contract-3-1.browser.spec.ts > C-72 the DOM with 3.1 features matches the DOM contract',
   'tests/contract/browser/reorder.browser.spec.ts > C-73 Reorder handle [tanstack] [own]',
   'tests/contract/unit/reorder.spec.ts > C-73 Reorder handle (unit) [own]',

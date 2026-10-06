@@ -303,6 +303,66 @@ describe('C-73 Reorder handle [tanstack] [own]', () => {
     expect(headerOrder()).toEqual(['id', 'name', 'age', 'joined'])
   })
 
+  test('inside the right-pinned region: drag and keys reorder, the offsets follow', async () => {
+    const { changes, columns } = await renderColumnsTable({
+      reorderable: true,
+      columns: [
+        { field: 'id', title: 'ID', type: 'number' },
+        { field: 'name', title: 'Name', width: '1400px' },
+        {
+          field: 'age',
+          title: 'Age',
+          type: 'number',
+          width: '120px',
+          pinned: 'right'
+        },
+        {
+          field: 'joined',
+          title: 'Joined',
+          type: 'date',
+          width: '200px',
+          pinned: 'right'
+        }
+      ]
+    })
+    // Consumer CSS: the table takes its columns' widths.
+    document.querySelector<HTMLElement>('table.qt-table')!.style.width =
+      'max-content'
+    await frames(3)
+    const scroller = document.querySelector('.qt-table-responsive')!
+    // The table overflows, so the right-pinned cells are sticky.
+    expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
+    const handle = handleOf('age')
+    await press(handle)
+    // Over the middle region (`id`, not under the sticky cells): no target.
+    await moveOver(handle, headerOf('id'), 'after')
+    expect(dragMarks().drop).toEqual([])
+    await moveOver(handle, headerOf('joined'), 'after')
+    expect(dragMarks()).toEqual({ dragging: ['age'], drop: ['joined:after'] })
+    await release(handle)
+    await frames(3)
+    expect(fieldsOf(columns())).toEqual(['id', 'name', 'joined', 'age'])
+    expect(columns().map(column => column.pinned)).toEqual([
+      undefined,
+      undefined,
+      'right',
+      'right'
+    ])
+    const offset = (field: string) =>
+      parseFloat(headerOf(field).style.getPropertyValue('--qt-pin-right'))
+    // `joined` is now first: its offset is the width of `age` after it.
+    expect(offset('age')).toBe(0)
+    expect(offset('joined')).toBeCloseTo(headerOf('age').offsetWidth, 0)
+    // Keys stay in the region: Home goes to its start, not before `id`.
+    handleOf('age').focus()
+    await userEvent.keyboard('{Home}')
+    await frames(3)
+    expect(fieldsOf(columns())).toEqual(['id', 'name', 'age', 'joined'])
+    expect(document.activeElement).toBe(handleOf('age'))
+    expect(offset('age')).toBeCloseTo(headerOf('joined').offsetWidth, 0)
+    expect(changes.map(([, reason]) => reason)).toEqual(['order', 'order'])
+  })
+
   test('columns changed from outside end the drag without an event', async () => {
     const { changes, setColumns, columns } = await renderColumnsTable({
       reorderable: true

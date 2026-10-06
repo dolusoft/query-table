@@ -141,7 +141,22 @@ With `resizable` the table draws a `qt-resize-handle` separator at the right edg
 <QueryTable :columns="columns" resizable @column-resize="({ field, width }) => (widths[field] = width)" />
 ```
 
-where `columns` turns each saved number into `Column.width` (for example `'180px'`). Use `table-layout: fixed` (see Large tables) so the header width is the column width; with the automatic layout the content can override it. Style the handle with your CSS: `position: absolute` over the right edge of a `position: relative` `th`, about 8px wide for the pointer, drawing nothing at rest and a 1px line on header hover and on `:focus-visible`. Together with the sizing above:
+where `columns` turns each saved number into `Column.width` (for example `'180px'`). Use `table-layout: fixed` (see Large tables) so the header width is the column width; with the automatic layout the content can override it. Style the handle with your CSS: `position: absolute` over the right edge of a `position: relative` `th`, about 8px wide for the pointer, drawing nothing at rest and a 1px line on header hover and on `:focus-visible`.
+
+A right-pinned column stays at the right edge and grows to the left, so its handle stands for its left edge: dragging it to the left and ArrowLeft widen the column. Put that handle over the cell's left edge, and keep the handle of the cell before the first right-pinned one inside its own cell, so the two do not overlap:
+
+```css
+.qt-table th[data-pinned='right'] > .qt-resize-handle {
+  right: auto;
+  left: -0.75rem;
+}
+.qt-table th:has(+ th[data-pinned='right']):not([data-pinned]) > .qt-resize-handle {
+  right: 0;
+  z-index: 0; /* below the pinned cells' z-index (1 above) */
+}
+```
+
+Together with the sizing above:
 
 ```css
 .qt-table {
@@ -154,6 +169,8 @@ where `columns` turns each saved number into `Column.width` (for example `'180px
 ## Reordering columns
 
 With `reorderable` every header cell starts with a `qt-reorder-handle` button (opt a column out with `reorderable: false`). Drag it onto another header of the same region (pinned left, not pinned, pinned right), or focus it and press ArrowLeft or ArrowRight to move one position, Home or End to go to the ends of the region; Escape cancels a drag. The table emits `update:columns` with reason `order` and draws the new order once you write it back (`v-model:columns`); the focus stays on the moved handle. While dragging, the dragged header carries `data-dragging` and the target `data-drop="before"` or `"after"`: draw the indicator with your CSS, and give the handle `touch-action: none` so a touch drag does not scroll the page. The table announces nothing: say the new position from your `update:columns` listener.
+
+Known limits: the drop targets are measured when the drag starts, so scrolling the table sideways during a drag is not followed (release, scroll, drag again); and the table does not scroll by itself when the pointer nears its edge. The keys have neither limit.
 
 ## Header slot
 

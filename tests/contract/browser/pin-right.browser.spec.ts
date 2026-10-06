@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, test } from 'vitest'
+import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 import { h } from 'vue'
 
-import type { Column, FilterMenuSlotProps } from '@dolusoft/query-table'
+import type {
+  Column,
+  ColumnResizePayload,
+  FilterMenuSlotProps
+} from '@dolusoft/query-table'
 
 import { renderColumnsTable } from '../../support/columns-host'
 import { el, renderTable, rows } from '../../support/helpers'
@@ -227,5 +232,126 @@ describe('C-71 Right pinning [tanstack] [own]', () => {
     expect(header.at(-1)?.getAttribute('data-field')).toBe('id')
     expect(header.at(-1)?.getAttribute('data-pinned')).toBe('right')
     expect(updates).toEqual([])
+  })
+})
+
+/** Presses a handle with the mouse pointer and moves it by `dx`, in steps. */
+const press = async (handle: Element, dx: number) => {
+  const box = rect(handle)
+  const x = box.left + box.width / 2
+  const fire = (type: string, clientX: number) =>
+    handle.dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        clientX,
+        clientY: box.top + box.height / 2,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1
+      })
+    )
+  fire('pointerdown', x)
+  for (let step = 1; step <= 4; step++) {
+    fire('pointermove', x + (dx * step) / 4)
+  }
+  await frames()
+  return {
+    x,
+    release: async () => {
+      fire('pointerup', x + dx)
+      await frames()
+    }
+  }
+}
+
+/** The element a pointer at `x` hits, on the header row. */
+const hitAt = (x: number) =>
+  document.elementFromPoint(x, rect(el('thead th[data-field]')).top + 12)
+
+const headerOf = (field: string) => el(`thead th[data-field="${field}"]`)
+const handleOf = (field: string) =>
+  el(`thead th[data-field="${field}"] > .qt-resize-handle`)
+
+const renderResizable = async () => {
+  const resized: ColumnResizePayload[] = []
+  const table = await renderBoth({
+    resizable: true,
+    onColumnResize: (payload: ColumnResizePayload) => resized.push(payload)
+  })
+  return { ...table, resized }
+}
+
+describe('C-71 Resizing a right-pinned column [own]', () => {
+  test('the handle sits on the free left edge; dragging it left widens the column', async () => {
+    const { resized, updates } = await renderResizable()
+    const joined = headerOf('joined')
+    const start = rect(joined).width
+    expect(near(rect(joined).right, scrollerRight())).toBe(true)
+    // The handle is on the left edge, where the column can grow; not on the
+    // right one, which stays at the container's edge.
+    expect(hitAt(rect(joined).left + 4)).toBe(handleOf('joined'))
+    expect(hitAt(rect(joined).right - 4)).not.toBe(handleOf('joined'))
+    const { x, release } = await press(handleOf('joined'), -60)
+    expect(rect(joined).width).toBeCloseTo(start + 60, 0)
+    // The free edge, and the handle on it, follow the pointer.
+    const handle = rect(handleOf('joined'))
+    expect(handle.left + handle.width / 2).toBeCloseTo(x - 60, 0)
+    expect(near(rect(joined).right, scrollerRight())).toBe(true)
+    await release()
+    expect(resized).toEqual([
+      { field: 'joined', width: Math.round(start + 60) }
+    ])
+    expect(updates).toEqual([])
+  })
+
+  test('next to the scrolled part, the neighbor keeps its handle inside its own cell', async () => {
+    await renderResizable()
+    scroller().scrollLeft = scroller().scrollWidth
+    await frames()
+    const age = headerOf('age')
+    const extra = headerOf('extra')
+    expect(near(rect(extra).right, rect(age).left)).toBe(true)
+    expect(hitAt(rect(age).left + 4)).toBe(handleOf('age'))
+    expect(hitAt(rect(age).left - 16)).toBe(handleOf('extra'))
+  })
+
+  test('a written-back width moves the offsets of the right-pinned cells before it', async () => {
+    const { resized, rerender } = await renderResizable()
+    const { release } = await press(handleOf('joined'), -60)
+    await release()
+    expect(resized).toHaveLength(1)
+    await rerender({
+      resizable: true,
+      columns: both().map(column =>
+        column.field === 'joined'
+          ? { ...column, width: `${resized[0].width}px` }
+          : column
+      )
+    })
+    growTable()
+    await frames(3)
+    const joined = headerOf('joined')
+    expect(rect(joined).width).toBeCloseTo(resized[0].width, 0)
+    expect(offsetOf(headerOf('age'))).toBeCloseTo(rect(joined).width, 0)
+    expect(near(rect(headerOf('age')).right, rect(joined).left)).toBe(true)
+    const rights = edgesOf('[data-pinned="right"]', 'right')
+    for (const row of rights) {
+      expect(row).toEqual(rights[0])
+      expect(near(row.at(-1)!, scrollerRight())).toBe(true)
+    }
+  })
+
+  test('ArrowLeft widens and ArrowRight narrows a right-pinned column', async () => {
+    const { resized } = await renderResizable()
+    const start = Math.round(rect(headerOf('joined')).width)
+    handleOf('joined').focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await userEvent.keyboard('{ArrowRight}')
+    expect(resized).toEqual([
+      { field: 'joined', width: start + 10 },
+      { field: 'joined', width: start - 10 }
+    ])
   })
 })

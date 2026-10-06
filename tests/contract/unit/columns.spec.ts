@@ -300,6 +300,32 @@ describe('C-70 Column controls in slots [tanstack] [own]', () => {
     ).toBe(true)
   })
 
+  it('reads pinned and the move flags when read, so a kept control reports the layout of now', async () => {
+    const { control } = mountLayout(makeColumns())
+    const id = control('id')
+    const name = control('name')
+    // Getters: drawing a slot reads none of them.
+    for (const key of ['pinned', 'canMoveLeft', 'canMoveRight']) {
+      expect(typeof Object.getOwnPropertyDescriptor(name, key)?.get).toBe(
+        'function'
+      )
+    }
+    expect([id.pinned, name.canMoveLeft, name.canMoveRight]).toEqual([
+      false,
+      true,
+      true
+    ])
+    id.pin('left')
+    await flush()
+    // The same objects, read after the write-back: `id` is pinned and `name`
+    // now starts the unpinned region.
+    expect([id.pinned, name.canMoveLeft, name.canMoveRight]).toEqual([
+      'left',
+      false,
+      true
+    ])
+  })
+
   it('pin(side) emits reason pin; the same side emits nothing', async () => {
     const { m, control, changes, headerFields } = mountLayout(makeColumns())
     control('age').pin('left')

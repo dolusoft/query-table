@@ -235,6 +235,28 @@ describe('C-73 Reorder handle (unit) [own]', () => {
     expect(changes).toHaveLength(1)
   })
 
+  it.each(['altKey', 'ctrlKey', 'metaKey'])(
+    'keys with %s keep their browser meaning',
+    async modifier => {
+      const { m, changes } = mountIt()
+      const h = handle(m, 'name')
+      h.focus()
+      for (const name of ['ArrowLeft', 'ArrowRight', 'Home', 'End']) {
+        const event = new KeyboardEvent('keydown', {
+          key: name,
+          bubbles: true,
+          cancelable: true,
+          [modifier]: true
+        })
+        h.dispatchEvent(event)
+        expect(event.defaultPrevented).toBe(false)
+      }
+      await tick(m)
+      expect(changes).toEqual([])
+      expect(order(m)).toEqual(['id', 'name', 'age', 'joined'])
+    }
+  )
+
   it('a click on the handle never sorts', async () => {
     const { m, changes } = mountIt()
     const h = m.wrapper.find('th[data-field="name"] .qt-reorder-handle')

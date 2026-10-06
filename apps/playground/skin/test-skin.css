@@ -401,6 +401,21 @@ td:has(> .qt-right-panel-button) {
 .qt-table th:last-child > .qt-resize-handle {
   right: 0;
 }
+/* own: a right-pinned column grows to the left, so its handle sits over its
+   left edge, the one that moves (C-71). */
+.qt-table th[data-pinned='right'] > .qt-resize-handle {
+  right: auto;
+  left: -0.75rem;
+}
+/* own: the cell before the first right-pinned one keeps its handle inside its
+   own cell and under the pinned cells, so the two handles on that edge do
+   not cover each other. */
+.qt-table
+  th:has(+ th[data-pinned='right']):not([data-pinned])
+  > .qt-resize-handle {
+  right: 0;
+  z-index: 10;
+}
 /* own: the handle's line on header hover. */
 .qt-table th:hover > .qt-resize-handle:not(:focus-visible)::after {
   background-color: var(--border);

@@ -123,6 +123,10 @@ export const useColumnReorder = (options: ColumnReorderOptions) => {
       }
       return
     }
+    // Alt+Arrow, Ctrl+Home and the like keep their browser meaning.
+    if (event.altKey || event.ctrlKey || event.metaKey) {
+      return
+    }
     const region = options.layout.regionOf(column.field)
     const at = region.indexOf(column.field)
     const target =

@@ -465,21 +465,35 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     }
   }
 
+  /**
+   * A column's control. Every slot of every column gets one, so making it
+   * does no work: `pinned`, `canMoveLeft` and `canMoveRight` read the layout
+   * when they are read (a region is O(n)), and a slot that never reads them
+   * costs nothing. A control kept past a re-render reads the current layout.
+   */
   const controlOf = (field: string): ColumnControl => {
-    const region = regionOf(field)
-    const at = region.indexOf(field)
-    const column = columns().find(candidate => candidate.field === field)
+    const place = () => {
+      const region = regionOf(field)
+      return { at: region.indexOf(field), size: region.length }
+    }
     return {
-      pinned: column ? sideOf(column) : false,
+      get pinned() {
+        const column = columns().find(candidate => candidate.field === field)
+        return column ? sideOf(column) : false
+      },
       pin: side =>
         columnById(field)?.pin(
           side === 'left' ? 'start' : side === 'right' ? 'end' : false
         ),
       hide: () => columnById(field)?.toggleVisibility(false),
-      canMoveLeft: at > 0,
-      canMoveRight: at >= 0 && at < region.length - 1,
-      // Read at call time: a control kept past a re-render still moves
-      // within the current region.
+      get canMoveLeft() {
+        return place().at > 0
+      },
+      get canMoveRight() {
+        const { at, size } = place()
+        return at >= 0 && at < size - 1
+      },
+      // Read at call time, like the flags above.
       move: direction => {
         const current = regionOf(field)
         const from = current.indexOf(field)
