@@ -16,16 +16,18 @@ import {
   SidebarMenuItem,
   SidebarProvider
 } from '@/ui/sidebar'
-import { ToggleGroup, ToggleGroupItem } from '@/ui/toggle-group'
 
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
+import { repositoryUrl, version } from './home/home-content'
 import { pages } from './manifest'
 import DocSearch from './search/DocSearch.vue'
+import ThemeToggle from './shell/ThemeToggle.vue'
 
-// The playground shell is shadcn-vue: a `Sidebar` (always expanded) with the
-// search button, the page list and the theme switch. On a desktop it is a
-// column on the left; below `lg` it is a bar above the page whose page list
-// scrolls sideways.
+// The playground shell is shadcn-vue. The home page (`meta.landing`) has a
+// top bar and the page below it. A documentation page sits next to a
+// `Sidebar` (always expanded) with the search button, the page list and the
+// theme switch: on a desktop a column on the left, below `lg` a bar above the
+// page whose page list scrolls sideways.
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
@@ -33,14 +35,6 @@ const theme = ref<Theme | 'system'>(themeFromUrl() ?? 'system')
 watch(theme, value => setTheme(value === 'system' ? null : value), {
   immediate: true
 })
-const themes = ['system', 'light', 'dark'] as const
-// A single toggle group can be emptied by pressing the active item; the
-// theme always has a value.
-const pickTheme = (value: unknown) => {
-  if (themes.includes(value as (typeof themes)[number])) {
-    theme.value = value as (typeof themes)[number]
-  }
-}
 
 // Documentation search: Ctrl+K / ⌘K anywhere, `/` when not typing.
 const searchOpen = ref(false)
@@ -72,16 +66,82 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
 </script>
 
 <template>
-  <SidebarProvider class="flex-col lg:flex-row">
+  <div v-if="$route.meta.landing" class="flex min-h-svh flex-col bg-background">
+    <header
+      class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
+    >
+      <div
+        class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6"
+      >
+        <RouterLink to="/" class="mr-auto text-sm font-semibold">
+          Query Table
+        </RouterLink>
+        <nav aria-label="Site" class="flex items-center gap-1">
+          <Button
+            as-child
+            variant="ghost"
+            size="sm"
+            class="min-h-11 sm:min-h-7"
+          >
+            <RouterLink to="/overview">Docs</RouterLink>
+          </Button>
+          <Button
+            as-child
+            variant="ghost"
+            size="sm"
+            class="min-h-11 sm:min-h-7"
+          >
+            <a :href="repositoryUrl" target="_blank" rel="noopener">GitHub</a>
+          </Button>
+        </nav>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-testid="doc-search-button"
+          class="min-h-11 min-w-11 gap-2 sm:min-h-7 sm:min-w-0 bg-background font-normal text-muted-foreground"
+          @click="searchOpen = true"
+        >
+          <SearchIcon class="opacity-60" />
+          <span class="sr-only sm:not-sr-only">Search docs</span>
+          <Kbd class="hidden sm:inline-flex">{{ shortcut }}</Kbd>
+        </Button>
+      </div>
+    </header>
+    <main class="flex-1">
+      <RouterView />
+    </main>
+    <footer class="border-t">
+      <div
+        class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-muted-foreground sm:px-6"
+      >
+        <p>
+          Query Table v{{ version }} ·
+          <a
+            :href="repositoryUrl"
+            target="_blank"
+            rel="noopener"
+            class="underline-offset-4 hover:underline"
+            >Source on GitHub</a
+          >
+        </p>
+        <ThemeToggle v-model="theme" />
+      </div>
+    </footer>
+  </div>
+  <SidebarProvider v-else class="flex-col lg:flex-row">
     <aside
       class="min-w-0 shrink-0 border-b lg:sticky lg:top-0 lg:h-svh lg:border-r lg:border-b-0"
     >
       <Sidebar collapsible="none" class="h-full w-full lg:w-(--sidebar-width)">
         <SidebarHeader class="gap-3 p-4 pb-2 lg:pb-3">
-          <div>
-            <p class="text-sm font-semibold">Query Table</p>
-            <p class="text-xs text-muted-foreground">Playground</p>
-          </div>
+          <RouterLink
+            to="/"
+            class="self-start rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <span class="block text-sm font-semibold">Query Table</span>
+            <span class="block text-xs text-muted-foreground">Playground</span>
+          </RouterLink>
           <Button
             type="button"
             variant="outline"
@@ -125,24 +185,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
           </nav>
         </SidebarContent>
         <SidebarFooter class="p-4 pt-2 lg:pt-3">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            aria-label="Theme"
-            :model-value="theme"
-            @update:model-value="pickTheme"
-          >
-            <!-- Each item is a toggle button (`aria-pressed`); the group has a name. -->
-            <ToggleGroupItem
-              v-for="option in themes"
-              :key="option"
-              :value="option"
-              class="min-h-11 px-3 capitalize lg:min-h-0"
-            >
-              {{ option }}
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <ThemeToggle v-model="theme" />
         </SidebarFooter>
       </Sidebar>
     </aside>
@@ -150,6 +193,6 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
       <!-- A new page instance per route: each page mounts its own example. -->
       <RouterView :key="$route.path" />
     </main>
-    <DocSearch v-model:open="searchOpen" />
   </SidebarProvider>
+  <DocSearch v-model:open="searchOpen" />
 </template>
