@@ -35,6 +35,10 @@ export default defineConfig({
         replacement: resolve(packages, 'query-protocol/src/index.ts')
       },
       {
+        find: /^@dolusoft\/query-protocol\/local$/,
+        replacement: resolve(packages, 'query-protocol/src/local/index.ts')
+      },
+      {
         find: /^@dolusoft\/query-table-core$/,
         replacement: resolve(packages, 'query-table-core/src/index.ts')
       },

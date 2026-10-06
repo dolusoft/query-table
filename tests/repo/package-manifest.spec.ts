@@ -45,7 +45,7 @@ const packages = [
     name: '@dolusoft/query-protocol',
     dependencies: {},
     peers: {},
-    subpaths: ['.', './query.schema.json']
+    subpaths: ['.', './local', './query.schema.json', './conformance/*']
   },
   {
     dir: 'query-table-core',

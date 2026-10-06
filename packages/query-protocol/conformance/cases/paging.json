@@ -1,0 +1,166 @@
+{
+  "fixtureFormat": 1,
+  "cases": [
+    {
+      "id": "C01",
+      "title": "An empty data set gives no rows and a zero total",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": {
+            "key": "id",
+            "fields": {
+              "id": { "type": "integer" },
+              "name": { "type": "string", "search": true },
+              "city": { "type": "string", "search": true },
+              "age": { "type": "integer" },
+              "score": { "type": "number" },
+              "active": { "type": "bool" },
+              "born": { "type": "date" },
+              "seen": { "type": "datetime", "offset": "+03:00" }
+            }
+          },
+          "rows": []
+        }
+      },
+      "runs": [
+        {
+          "id": "C01.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [] },
+          "expect": { "keys": [], "totalRows": 0 }
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "title": "The first page",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C02.1",
+          "query": { "page": 1, "pageSize": 3, "sort": null, "filters": [] },
+          "expect": { "keys": [1, 2, 3], "totalRows": 8 }
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "title": "The last, partial page",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C03.1",
+          "query": { "page": 3, "pageSize": 3, "sort": null, "filters": [] },
+          "expect": { "keys": [7, 8], "totalRows": 8 }
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "title": "A page past the end is empty with the same total",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C04.1",
+          "query": { "page": 5, "pageSize": 3, "sort": null, "filters": [] },
+          "expect": { "keys": [], "totalRows": 8 }
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "title": "An invalid page or page size is refused",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C05.1",
+          "query": { "page": 0, "pageSize": 50, "sort": null, "filters": [] },
+          "expect": { "error": { "code": "invalid-page", "path": "/page" } }
+        },
+        {
+          "id": "C05.2",
+          "query": { "page": 1, "pageSize": 2.5, "sort": null, "filters": [] },
+          "expect": { "error": { "code": "invalid-page", "path": "/pageSize" } }
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "title": "A cursor key is refused, even null",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C06.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "cursor": null },
+          "expect": { "error": { "code": "cursor-not-supported", "path": "/cursor" } }
+        }
+      ]
+    },
+    {
+      "id": "C31",
+      "title": "paginate false returns the whole ordered list",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C31.1",
+          "query": {
+            "page": 2,
+            "pageSize": 3,
+            "sort": { "field": "age", "direction": "asc" },
+            "filters": []
+          },
+          "options": { "paginate": false },
+          "expect": { "keys": [3, 8, 2, 5, 7, 1, 6, 4], "totalRows": 8 }
+        }
+      ]
+    },
+    {
+      "id": "C47",
+      "title": "Profile and page shape",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C47.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [] },
+          "options": { "profile": "tr-9" },
+          "expect": { "error": { "code": "unknown-profile" } }
+        },
+        {
+          "id": "C47.2",
+          "query": { "page": 1.5, "pageSize": 50, "sort": null, "filters": [] },
+          "expect": { "error": { "code": "invalid-page", "path": "/page" } }
+        },
+        {
+          "id": "C47.3",
+          "query": { "page": "1", "pageSize": 50, "sort": null, "filters": [] },
+          "expect": { "error": { "code": "invalid-page", "path": "/page" } }
+        },
+        {
+          "id": "C47.4",
+          "query": { "page": 1, "pageSize": 0, "sort": null, "filters": [] },
+          "expect": { "error": { "code": "invalid-page", "path": "/pageSize" } }
+        }
+      ]
+    },
+    {
+      "id": "C64",
+      "title": "Page arithmetic does not overflow",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C64.1",
+          "query": { "page": 9007199254740991, "pageSize": 9007199254740991, "sort": null, "filters": [] },
+          "expect": { "keys": [], "totalRows": 8 }
+        }
+      ]
+    }
+  ]
+}

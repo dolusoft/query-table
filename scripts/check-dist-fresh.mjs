@@ -1,6 +1,7 @@
 // `check:package` and `api:check` read the `dist/` of every package, they do
 // not build it. Fails when a package's main entry is missing or older than a
-// file in its `src/` (specs never reach `dist`, so they do not count).
+// file in its `src/` (specs never reach `dist`, so they do not count), and
+// when the copied conformance suite is older than a file of the suite.
 //
 //   node scripts/check-dist-fresh.mjs   (after `pnpm build`)
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -36,6 +37,30 @@ for (const dir of packages) {
   if (newer.length > 0) {
     problems.push(
       `${entry} is older than ${newer.length} file(s) in ${dir}/src (${newer
+        .slice(0, 3)
+        .map(file => file.slice(root.length + 1))
+        .join(', ')})`
+    )
+  }
+}
+
+// The protocol package ships its conformance suite (C-79); the build copies
+// it into dist/conformance last, after the manifest.
+const suite = join(root, 'packages', 'query-protocol', 'conformance')
+const copied = join(root, 'packages', 'query-protocol', 'dist', 'conformance')
+let copiedAt
+try {
+  copiedAt = statSync(join(copied, 'manifest.json')).mtimeMs
+} catch {
+  problems.push(
+    'packages/query-protocol/dist/conformance/manifest.json is missing'
+  )
+}
+if (copiedAt !== undefined) {
+  const stale = walk(suite).filter(file => statSync(file).mtimeMs > copiedAt)
+  if (stale.length > 0) {
+    problems.push(
+      `packages/query-protocol/dist/conformance is older than ${stale.length} file(s) of the suite (${stale
         .slice(0, 3)
         .map(file => file.slice(root.length + 1))
         .join(', ')})`

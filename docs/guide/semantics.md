@@ -263,6 +263,31 @@ Rules:
 - The table keeps carrying these keys, as it carries any unknown key (C-60). Do not use them for your own extensions.
 - **Future execution forms** (multi-column sort, OR, grouping, …) do not go into `Query`; they go into a **versioned execution envelope** that older evaluators refuse explicitly. That envelope is a decision record of its own. A general `version` key is not reserved.
 
+## Conformance suite
+
+The suite is the executable form of this document (C-79). It ships inside `@dolusoft/query-protocol` under `dist/conformance/` (the export `@dolusoft/query-protocol/conformance/*`, for example `@dolusoft/query-protocol/conformance/manifest.json`) and, for runners that do not install the package, as the asset `conformance-<revision>.tgz` of each GitHub release. The files are strict JSON (no comments), UTF-8 without a BOM, with LF line ends; every hash is the SHA-256 of a file's bytes. The JSON Schemas of the two formats are in the suite, under `schema/`.
+
+```
+conformance/
+  manifest.json                  the index (schema/manifest.schema.json)
+  schema/manifest.schema.json    schema/case-file.schema.json
+  data/people.json               shared data, referred to by cases
+  cases/*.json                   case files (schema/case-file.schema.json)
+query.schema.json                beside conformance/, as in the package
+```
+
+**The manifest** names the format (`fixtureFormat`, now `1`), the suite (`query-local-conformance`), its `revision`, the `profiles` its cases use and the query schema the cases were written against (`querySchema`: `path` relative to the manifest, `../query.schema.json`, and its `sha256`). `files` lists every case file with its `active` cases, its `withdrawn` cases, its `executions` (the runs of its active cases) and its `sha256`; `data` lists every data file with its `sha256`. A manifest cannot pin itself: the notes of the release write the SHA-256 of the manifest, and a runner that downloads the asset checks the manifest against them.
+
+**A case file** is `{ "fixtureFormat": 1, "cases": [...] }`. A case has an `id` (`C12`, unique in the suite), a `title`, a `profile`, its `data` and one or more `runs`; a run has an `id` (`C12.1`, unique in the suite), a `query` and an `expect`, and may have its own `data` and `options`.
+
+- **Data** is either a reference, `{ "ref": "../data/people.json" }`, relative to the case file and naming a data file listed in the manifest, or inline, `{ "inline": { "dataset": ..., "rows": [...] } }`. The `dataset` is the input of `defineDataset` without `get`; `get` is covered by the unit tests of each implementation. A run with its own `data` uses it instead of the data of its case.
+- **The query** is any JSON value, passed as it is: a malformed query is a case too.
+- **Options** default to `{ "profile": <the profile of the case>, "paginate": true }`. A run's `options` is merged over that **field by field**: `{ "paginate": false }` keeps the profile of the case, `{ "profile": "tr-9" }` keeps `paginate: true`.
+- **The expectation** is either `{ "keys": [...], "totalRows": n }` or `{ "error": {...} }`. `keys` are the keys of the returned rows, in order, compared with their JSON type (`2` and `"2"` differ). `error` is compared with the actual error without its `message`, as a whole: a missing or an extra location field is a failure ([Error locations](#error-locations)).
+- **Withdrawal:** the expected result of a case never changes while its profile lives. A wrong case is not edited or removed; it gets `"withdrawn": { "reason": "...", "replacedBy": "C71" }`, stays in its file, is counted and hashed, and is not run.
+
+**A runner** refuses, and counts as a failure, a `fixtureFormat` it does not know, a file that does not fit its schema, a hash or a count that does not match the manifest, a repeated id and a broken reference; it then runs every run of every active case. `revision` is raised on every change of meaning: a case added or withdrawn, a data or format change. Allowlists and reports name runs by their id.
+
 ## Implementing in .NET
 
 The profile is written so that a .NET evaluator can follow it line by line, including in containers that run with `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true`, where culture-aware operations do not behave as they do with ICU. Do not call `Normalize()`: the profile never normalizes.

@@ -98,6 +98,7 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/row-pinning.spec.ts > C-74 Row pinning [tanstack] [own]',
   'tests/contract/unit/row-pinning.spec.ts > C-74 composable: TanStack calls go to the consumer [tanstack]',
   'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
+  'tests/contract/browser/playground.browser.spec.ts > C-74 playground pin buttons stay enabled and focused after keyboard pinning',
   // `moveColumn` is its own test, so the other C-44 tests still compare.
   'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
 ]

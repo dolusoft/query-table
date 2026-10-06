@@ -5,10 +5,12 @@ name: Release
 # packages/*/package.json (see CONTRIBUTING.md, "Releasing").
 #
 #   verify   read-only token: runs every check of CI, builds, packs one
-#            tarball per package and uploads them as a workflow artifact.
+#            tarball per package and the conformance suite
+#            (conformance-<revision>.tgz and the release notes that pin it,
+#            C-79), and uploads them as a workflow artifact.
 #   publish  write token, no install and no repository code: downloads the
-#            tarballs, creates one GitHub Release with all three, checks that
-#            every asset URL answers, and optionally tells one consumer
+#            tarballs, creates one GitHub Release with all of them, checks
+#            that every asset URL answers, and optionally tells one consumer
 #            repository the URL of the Vue tarball:
 #
 #   secret   CONSUMER_DISPATCH_TOKEN  a token allowed to dispatch to that repo
@@ -75,6 +77,7 @@ jobs:
       - run: pnpm knip
       - run: pnpm contract:check
       - run: pnpm schema:check
+      - run: pnpm conformance:check
       - run: pnpm playground:build
       - run: pnpm test:coverage
 
@@ -119,11 +122,21 @@ jobs:
           fi
           echo "name=dolusoft-query-table-${{ steps.version.outputs.version }}.tgz" >> "$GITHUB_OUTPUT"
           test -f "release/dolusoft-query-table-${{ steps.version.outputs.version }}.tgz"
+          # The conformance suite as an asset of its own, pinned by the notes.
+          node scripts/pack-conformance.mjs release-extra
+          test -f release-extra/release-notes.md
+          count="$(find release-extra -maxdepth 1 -name 'conformance-*.tgz' | wc -l)"
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected one conformance tarball in release-extra/, found $count."
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
           name: tarballs
-          path: release/*.tgz
+          path: |
+            release/*.tgz
+            release-extra/*
           if-no-files-found: error
           retention-days: 7
 
@@ -138,12 +151,15 @@ jobs:
       NAME: ${{ needs.verify.outputs.tarball }}
       GH_REPO: ${{ github.repository }}
     steps:
+      # The artifact keeps the common root of its paths: release/ and
+      # release-extra/ land side by side in the workspace.
       - uses: actions/download-artifact@v4
         with:
           name: tarballs
-          path: release
+          path: .
 
-      # The three tarballs go up together, in one release.
+      # The three tarballs and the conformance suite go up together, in one
+      # release; the notes that pin the suite come before the generated ones.
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -156,16 +172,17 @@ jobs:
               echo "::error::Release $TAG exists for commit $tagged, this run is for $GITHUB_SHA."
               exit 1
             fi
-            gh release upload "$TAG" release/*.tgz --clobber
+            gh release upload "$TAG" release/*.tgz release-extra/*.tgz --clobber
           else
-            gh release create "$TAG" release/*.tgz --title "$TAG" --generate-notes --verify-tag
+            gh release create "$TAG" release/*.tgz release-extra/*.tgz --title "$TAG" \
+              --notes-file release-extra/release-notes.md --generate-notes --verify-tag
           fi
 
       # Every asset answers; the output is the URL of the Vue tarball.
       - name: Check the asset URLs
         id: asset
         run: |
-          for file in release/*.tgz; do
+          for file in release/*.tgz release-extra/*.tgz; do
             url="https://github.com/${GH_REPO}/releases/download/${TAG}/$(basename "$file")"
             ok=""
             for attempt in 1 2 3 4 5 6; do

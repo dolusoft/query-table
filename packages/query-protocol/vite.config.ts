@@ -10,7 +10,12 @@ export default defineConfig({
     sourcemap: true,
     emptyOutDir: true,
     lib: {
-      entry: { 'query-protocol': resolve(import.meta.dirname, 'src/index.ts') },
+      entry: {
+        'query-protocol': resolve(import.meta.dirname, 'src/index.ts'),
+        // The local evaluator: its own entry, never reached from the
+        // default one (C-75).
+        local: resolve(import.meta.dirname, 'src/local/index.ts')
+      },
       formats: ['es']
     }
   }
