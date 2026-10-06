@@ -1,11 +1,20 @@
 // The cost of applyQuery on generated rows. Not a CI gate: run with
 // `pnpm bench`; the numbers go into the pull request that changes the
 // evaluator. Target: scenario 1 on 10k rows, median <= 50 ms.
+//
+// It measures the built entry (`pnpm build` first), the code that ships:
+// through the test module runner every call into another module of src
+// passes an export getter, which adds overhead and a warning.
 
 import { describe, expect, test } from 'vitest'
 
-import { applyQuery, defineDataset } from '../src/local'
+import type * as Local from '../src/local'
 import type { Query } from '../src/protocol/types'
+
+const entry = '../dist/local.js'
+const { applyQuery, defineDataset } = (await import(
+  /* @vite-ignore */ entry
+)) as typeof Local
 
 interface Person {
   id: number

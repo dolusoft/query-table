@@ -657,6 +657,398 @@
           "expect": { "keys": [2, 5], "totalRows": 2 }
         }
       ]
+    },
+    {
+      "id": "C67",
+      "title": "Matrix: every allowed condition and type pair selects alone",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C67.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Equal", "value": 25 }]
+          },
+          "expect": { "keys": [2, 5, 7], "totalRows": 3 }
+        },
+        {
+          "id": "C67.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "NotEqual", "value": 25 }]
+          },
+          "expect": { "keys": [1, 3, 4, 6, 8], "totalRows": 5 }
+        },
+        {
+          "id": "C67.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "score", "condition": "GreaterThan", "value": 9 }]
+          },
+          "expect": { "keys": [2, 5], "totalRows": 2 }
+        },
+        {
+          "id": "C67.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "GreaterThan", "value": 30 }]
+          },
+          "expect": { "keys": [4, 6], "totalRows": 2 }
+        },
+        {
+          "id": "C67.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "LessThan", "value": 25 }]
+          },
+          "expect": { "keys": [8], "totalRows": 1 }
+        },
+        {
+          "id": "C67.6",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "score", "condition": "LessThanOrEqual", "value": 2.5 }]
+          },
+          "expect": { "keys": [1, 6, 7], "totalRows": 3 }
+        },
+        {
+          "id": "C67.7",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "born", "condition": "LessThanOrEqual", "value": "1990-05-01" }]
+          },
+          "expect": { "keys": [1, 4, 6], "totalRows": 3 }
+        }
+      ]
+    },
+    {
+      "id": "C68",
+      "title": "Matrix: every refused condition and type pair is refused",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C68.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "seen", "condition": "Contains", "value": "2026" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "seen",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "NotContains", "value": 2 }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "age",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "born", "condition": "NotContains", "value": "1990" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "born",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "seen", "condition": "NotContains", "value": "2026" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "seen",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "NotContains", "value": true }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.6",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "score", "condition": "StartsWith", "value": 1 }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "score",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.7",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "born", "condition": "StartsWith", "value": "1990" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "born",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.8",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "seen", "condition": "StartsWith", "value": "2026" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "seen",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.9",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "StartsWith", "value": true }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.10",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "score", "condition": "EndsWith", "value": 5 }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "score",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.11",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "born", "condition": "EndsWith", "value": "01" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "born",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.12",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "EndsWith", "value": false }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.13",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "GreaterThan", "value": false }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.14",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "GreaterThanOrEqual", "value": "a" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "name",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.15",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "GreaterThanOrEqual", "value": false }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.16",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "LessThan", "value": "z" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "name",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.17",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "LessThanOrEqual", "value": "z" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "name",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C68.18",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "LessThanOrEqual", "value": true }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        }
+      ]
     }
   ]
 }

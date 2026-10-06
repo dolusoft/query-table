@@ -238,9 +238,10 @@ for (const { path, doc } of suite.files) {
 }
 
 describe('the cases', () => {
-  // The cells of the table in semantics.md#condition-by-type: a row of
-  // conditions by a column of types. The unit tests of C-80 try every
-  // single condition on every single type; the suite pins every cell.
+  // The table in semantics.md#condition-by-type: a row of conditions by a
+  // column of types. Every single condition is tried on every single type:
+  // an allowed pair by a run with that one rule that keeps some rows and
+  // drops others, a refused pair by a run that expects unsupported-operator.
   const rows: readonly (readonly string[])[] = [
     ['Contains', 'NotContains', 'StartsWith', 'EndsWith'],
     ['Equal', 'NotEqual'],
@@ -263,46 +264,55 @@ describe('the cases', () => {
     expect(columns.flat().sort()).toEqual([...columnTypes].sort())
   })
 
-  it('cover every cell of the condition x type matrix', () => {
-    // [row][column]: a run that accepts the pair, a run that refuses it.
-    const accepted = rows.map(() => columns.map(() => false))
-    const refused = rows.map(() => columns.map(() => false))
-    const cellOf = (condition: string, type: string): [number, number] => [
-      rows.findIndex(row => row.includes(condition)),
-      columns.findIndex(column => column.includes(type))
-    ]
+  it('cover every condition x type pair of the matrix', () => {
+    const accepted = new Set<string>()
+    const refused = new Set<string>()
+    const pair = (condition: string, type: string) => `${condition} ${type}`
     for (const { path, doc } of suite.files) {
       for (const kase of doc.cases) {
         if (kase.withdrawn) {
           continue
         }
         for (const run of kase.runs) {
-          const filters = (run.query as { filters?: unknown } | null)?.filters
+          const query = run.query as {
+            filters?: unknown
+            search?: unknown
+          } | null
+          const filters = query?.filters
           if (!Array.isArray(filters)) {
             continue
           }
-          const { dataset } = suite.data(path, run.data ?? kase.data)
+          const data = suite.data(path, run.data ?? kase.data)
           type Rule = { field: string; condition: string }
-          const cellOfRule = (rule: Rule) =>
-            cellOf(rule.condition, dataset.fields[rule.field].type)
+          const pairOf = (rule: Rule) =>
+            pair(rule.condition, data.dataset.fields[rule.field].type)
           if ('keys' in run.expect) {
-            for (const rule of filters as Rule[]) {
-              const [r, c] = cellOfRule(rule)
-              accepted[r][c] = true
+            const alone =
+              filters.length === 1 &&
+              (query?.search ?? null) === null &&
+              run.options?.paginate !== false
+            const { totalRows } = run.expect
+            if (alone && totalRows > 0 && totalRows < data.rows.length) {
+              accepted.add(pairOf((filters as Rule[])[0]))
             }
           } else if (run.expect.error.code === 'unsupported-operator') {
-            const [r, c] = cellOfRule(
-              (filters as Rule[])[run.expect.error.rule!]
-            )
-            if (r >= 0) {
-              refused[r][c] = true
-            }
+            refused.add(pairOf((filters as Rule[])[run.expect.error.rule!]))
           }
         }
       }
     }
-    expect(accepted).toEqual(allowed)
-    expect(refused).toEqual(allowed.map(row => row.map(cell => !cell)))
+    const want = (keep: boolean) =>
+      rows.flatMap((row, r) =>
+        row.flatMap(condition =>
+          columns.flatMap((column, c) =>
+            allowed[r][c] === keep
+              ? column.map(type => pair(condition, type))
+              : []
+          )
+        )
+      )
+    expect([...accepted].sort()).toEqual(want(true).sort())
+    expect([...refused].sort()).toEqual(want(false).sort())
   })
 })
 

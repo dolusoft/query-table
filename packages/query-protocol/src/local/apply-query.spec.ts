@@ -350,6 +350,37 @@ describe('C-80 Filters and search [own]', () => {
     expect(keys(where([rule(field, condition, value)]))).toEqual(expected)
   })
 
+  // A day value is [start, end) in the field's offset: midnight belongs to
+  // the day it starts, never to the day it ends. Rows 2 and 4 sit exactly on
+  // a border, rows 1 and 3 one millisecond before one.
+  const borders: Typed[] = [
+    { id: 1, t: '2026-10-05T23:59:59.999+03:00' },
+    { id: 2, t: '2026-10-06T00:00:00+03:00' },
+    { id: 3, t: '2026-10-06T23:59:59.999+03:00' },
+    { id: 4, t: '2026-10-07T00:00:00+03:00' }
+  ]
+  it.each([
+    ['2026-10-05', 'Equal', [1]],
+    ['2026-10-05', 'NotEqual', [2, 3, 4]],
+    ['2026-10-05', 'GreaterThan', [2, 3, 4]],
+    ['2026-10-05', 'GreaterThanOrEqual', [1, 2, 3, 4]],
+    ['2026-10-05', 'LessThan', []],
+    ['2026-10-05', 'LessThanOrEqual', [1]],
+    ['2026-10-06', 'Equal', [2, 3]],
+    ['2026-10-06', 'NotEqual', [1, 4]],
+    ['2026-10-06', 'GreaterThan', [4]],
+    ['2026-10-06', 'GreaterThanOrEqual', [2, 3, 4]],
+    ['2026-10-06', 'LessThan', [1]],
+    ['2026-10-06', 'LessThanOrEqual', [1, 2, 3]]
+  ])(
+    'puts midnight in the day it starts: t %s %s',
+    (day, condition, expected) => {
+      expect(keys(where([rule('t', condition, day)], {}, borders))).toEqual(
+        expected
+      )
+    }
+  )
+
   // Every refused pair of the matrix, and conditions it does not know.
   it.each([
     ...['Contains', 'NotContains', 'StartsWith', 'EndsWith'].flatMap(

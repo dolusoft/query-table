@@ -19,10 +19,10 @@
     },
     {
       "path": "cases/filters.json",
-      "active": 15,
+      "active": 17,
       "withdrawn": 0,
-      "executions": 43,
-      "sha256": "f8a3f522e3c6f1d231e5dea9669eef3060e53637f802d2f162cf33a50fa1e658"
+      "executions": 68,
+      "sha256": "d0102220cb93d90cf6c0a2cf757739ab6588b98f301b3768d4f2ce65651c0f3e"
     },
     {
       "path": "cases/paging.json",
@@ -47,10 +47,10 @@
     },
     {
       "path": "cases/temporal.json",
-      "active": 7,
+      "active": 8,
       "withdrawn": 0,
-      "executions": 37,
-      "sha256": "7a0a6e1978924ac8befcb76d705e585dcf7a5c4aa1fb5e009fdefd099dda1bbf"
+      "executions": 49,
+      "sha256": "7465150a57740c24ab00035a84cfd2f9cee2152089e03548eef63b10480835e8"
     },
     {
       "path": "cases/text.json",

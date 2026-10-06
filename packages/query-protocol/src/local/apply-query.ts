@@ -217,7 +217,10 @@ const matchRows = <T>(rows: Read<T>[], plan: Plan): Read<T>[] => {
   if (groups.length === 0 && search === null) {
     return rows
   }
-  const folded: (string | null | undefined)[] = []
+  // One slot per used field, reset per row: a packed array, not a holey one.
+  const folded = new Array<string | null | undefined>(plan.used.length).fill(
+    undefined
+  )
   const fold = (values: readonly unknown[], at: number): string | null => {
     let text = folded[at]
     if (text === undefined) {
@@ -230,7 +233,7 @@ const matchRows = <T>(rows: Read<T>[], plan: Plan): Read<T>[] => {
   const out: Read<T>[] = []
   for (let r = 0; r < rows.length; r++) {
     const values = rows[r].values
-    folded.length = 0
+    folded.fill(undefined)
     let ok = true
     for (let g = 0; ok && g < groups.length; g++) {
       const group = groups[g]
