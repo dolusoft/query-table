@@ -1,0 +1,1363 @@
+{
+  "fixtureFormat": 1,
+  "cases": [
+    {
+      "id": "C28",
+      "title": "An unknown field",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C28.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "salary", "condition": "Equal", "value": 1 }]
+          },
+          "expect": {
+            "error": { "code": "unknown-field", "field": "salary", "rule": 0, "path": "/filters/0/field" }
+          }
+        },
+        {
+          "id": "C28.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "salary", "direction": "asc" },
+            "filters": []
+          },
+          "expect": { "error": { "code": "unknown-field", "field": "salary", "path": "/sort/field" } }
+        }
+      ]
+    },
+    {
+      "id": "C29",
+      "title": "Extensions",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C29.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "sorts": [] },
+          "expect": { "error": { "code": "unsupported-extension", "name": "sorts", "path": "/sorts" } }
+        },
+        {
+          "id": "C29.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [],
+            "timeRange": { "from": "2026-10-01", "to": "2026-10-07" }
+          },
+          "expect": { "keys": [1, 2, 3, 4, 5, 6, 7, 8], "totalRows": 8 }
+        },
+        {
+          "id": "C29.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "Equal", "value": "istanbul", "type": "string" }]
+          },
+          "expect": { "keys": [2, 5], "totalRows": 2 }
+        }
+      ]
+    },
+    {
+      "id": "C32",
+      "title": "A repeated key",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+          "rows": [{ "id": 1, "v": "a" }, { "id": 1, "v": "b" }]
+        }
+      },
+      "runs": [
+        {
+          "id": "C32.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [] },
+          "expect": { "error": { "code": "duplicate-key", "field": "id", "row": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "C35",
+      "title": "Validation order: the cursor comes first",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C35.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "salary", "condition": "Equal", "value": 1 }],
+            "cursor": null
+          },
+          "expect": { "error": { "code": "cursor-not-supported", "path": "/cursor" } }
+        }
+      ]
+    },
+    {
+      "id": "C45",
+      "title": "unsupported-field",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": {
+            "key": "id",
+            "fields": {
+              "id": { "type": "integer" },
+              "tag": { "type": "string", "sortable": false, "filterable": false }
+            }
+          },
+          "rows": [{ "id": 1, "tag": "x" }]
+        }
+      },
+      "runs": [
+        {
+          "id": "C45.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "tag", "direction": "asc" },
+            "filters": []
+          },
+          "expect": { "error": { "code": "unsupported-field", "field": "tag", "path": "/sort/field" } }
+        },
+        {
+          "id": "C45.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "tag", "condition": "Equal", "value": "x" }]
+          },
+          "expect": {
+            "error": { "code": "unsupported-field", "field": "tag", "rule": 0, "path": "/filters/0/field" }
+          }
+        }
+      ]
+    },
+    {
+      "id": "C50",
+      "title": "Ill-formed UTF-16",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": {
+            "key": "id",
+            "fields": { "id": { "type": "integer" }, "v": { "type": "string", "search": true } }
+          },
+          "rows": [{ "id": 1, "v": "a" }, { "id": 2, "v": "a\ud800" }]
+        }
+      },
+      "runs": [
+        {
+          "id": "C50.1",
+          "query": { "page": 1, "pageSize": 50, "sort": { "field": "v", "direction": "asc" }, "filters": [] },
+          "expect": { "error": { "code": "invalid-data", "field": "v", "row": 1 } }
+        },
+        {
+          "id": "C50.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "v", "condition": "Contains", "value": "\udc00" }]
+          },
+          "expect": {
+            "error": { "code": "invalid-value", "field": "v", "rule": 0, "path": "/filters/0/value" }
+          }
+        },
+        {
+          "id": "C50.3",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "\ud800" },
+          "expect": { "error": { "code": "invalid-value", "path": "/search" } }
+        }
+      ]
+    },
+    {
+      "id": "C54",
+      "title": "Structural invalid-query",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C54.1",
+          "query": null,
+          "expect": { "error": { "code": "invalid-query", "path": "" } }
+        },
+        {
+          "id": "C54.2",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": null },
+          "expect": { "error": { "code": "invalid-query", "path": "/filters" } }
+        },
+        {
+          "id": "C54.3",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [null] },
+          "expect": { "error": { "code": "invalid-query", "rule": 0, "path": "/filters/0" } }
+        },
+        {
+          "id": "C54.4",
+          "query": { "page": 1, "pageSize": 50, "sort": {}, "filters": [] },
+          "expect": { "error": { "code": "invalid-query", "path": "/sort/field" } }
+        },
+        {
+          "id": "C54.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "age", "direction": "sideways" },
+            "filters": []
+          },
+          "expect": { "error": { "code": "invalid-query", "path": "/sort/direction" } }
+        },
+        {
+          "id": "C54.6",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": 12 },
+          "expect": { "error": { "code": "invalid-query", "path": "/search" } }
+        },
+        {
+          "id": "C54.7",
+          "query": { "page": 1, "pageSize": 50, "filters": [] },
+          "expect": { "error": { "code": "invalid-query", "path": "/sort" } }
+        },
+        {
+          "id": "C54.8",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Equal" }]
+          },
+          "expect": { "error": { "code": "invalid-query", "rule": 0, "path": "/filters/0/value" } }
+        }
+      ]
+    },
+    {
+      "id": "C55",
+      "title": "Precedence",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C55.1",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": 4,
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": 40,
+                  "score": null,
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": "x",
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 2,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Equal", "value": 25 }]
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "age", "row": 7 } }
+        },
+        {
+          "id": "C55.2",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": 4,
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": 40,
+                  "score": null,
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": "x",
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 0,
+            "pageSize": 2,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Equal", "value": 25 }]
+          },
+          "expect": { "error": { "code": "invalid-page", "path": "/page" } }
+        },
+        {
+          "id": "C55.3",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": []
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "salary", "direction": "asc" },
+            "filters": [{ "field": "age", "condition": "Contains", "value": 2 }]
+          },
+          "expect": { "error": { "code": "unknown-field", "field": "salary", "path": "/sort/field" } }
+        },
+        {
+          "id": "C55.4",
+          "query": { "page": 0, "pageSize": 50, "sort": null, "filters": [] },
+          "options": { "paginate": false },
+          "expect": { "error": { "code": "invalid-page", "path": "/page" } }
+        },
+        {
+          "id": "C55.5",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "cursor": null },
+          "options": { "paginate": false },
+          "expect": { "error": { "code": "cursor-not-supported", "path": "/cursor" } }
+        },
+        {
+          "id": "C55.6",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": 4,
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": 40,
+                  "score": null,
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": 22,
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                },
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "Equal", "value": "Paris" }]
+          },
+          "expect": { "error": { "code": "duplicate-key", "field": "id", "row": 8 } }
+        }
+      ]
+    },
+    {
+      "id": "C58",
+      "title": "Reserved names",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C58.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "sorts": [] },
+          "expect": { "error": { "code": "unsupported-extension", "name": "sorts", "path": "/sorts" } }
+        },
+        {
+          "id": "C58.2",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "any": [] },
+          "expect": { "error": { "code": "unsupported-extension", "name": "any", "path": "/any" } }
+        },
+        {
+          "id": "C58.3",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "group": [] },
+          "expect": { "error": { "code": "unsupported-extension", "name": "group", "path": "/group" } }
+        },
+        {
+          "id": "C58.4",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "aggregates": [] },
+          "expect": {
+            "error": { "code": "unsupported-extension", "name": "aggregates", "path": "/aggregates" }
+          }
+        },
+        {
+          "id": "C58.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [],
+            "columns": ["id"],
+            "range": { "from": 0, "to": 10 }
+          },
+          "expect": { "keys": [1, 2, 3, 4, 5, 6, 7, 8], "totalRows": 8 }
+        },
+        {
+          "id": "C58.6",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "IsNull", "value": "x" }]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-extension",
+              "name": "IsNull",
+              "field": "age",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "C66",
+      "title": "A row with several bad values names the first used field",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": {
+            "key": "id",
+            "fields": {
+              "id": { "type": "integer" },
+              "name": { "type": "string", "search": true },
+              "city": { "type": "string", "search": true },
+              "age": { "type": "integer" },
+              "score": { "type": "number" },
+              "active": { "type": "bool" },
+              "born": { "type": "date" },
+              "seen": { "type": "datetime", "offset": "+03:00" }
+            }
+          },
+          "rows": [
+            {
+              "id": 1,
+              "name": "Ali",
+              "city": "\u0130zmir",
+              "age": 30,
+              "score": 2.5,
+              "active": true,
+              "born": "1990-05-01",
+              "seen": "2026-10-06T00:30:00+03:00"
+            },
+            {
+              "id": 2,
+              "name": "ali",
+              "city": "Istanbul",
+              "age": 25,
+              "score": 10,
+              "active": false,
+              "born": "1995-12-31",
+              "seen": "2026-10-05T23:59:59+03:00"
+            },
+            {
+              "id": 3,
+              "name": "\u00c7a\u011fr\u0131",
+              "city": "\u0131rmak",
+              "age": null,
+              "score": 9,
+              "active": true,
+              "born": null,
+              "seen": "2026-10-05T21:30:00Z"
+            },
+            {
+              "id": 4,
+              "name": 6,
+              "city": 5,
+              "age": 40,
+              "score": null,
+              "active": null,
+              "born": "1985-01-01",
+              "seen": null
+            },
+            {
+              "id": 5,
+              "name": "\u00d6mer",
+              "city": "istanbul",
+              "age": 25,
+              "score": 100,
+              "active": true,
+              "born": "2000-02-29",
+              "seen": "2026-10-06T23:59:59.999+03:00"
+            },
+            {
+              "id": 6,
+              "name": "Zeynep",
+              "city": "Ankara",
+              "age": 35,
+              "score": -1,
+              "active": false,
+              "born": "1990-05-01",
+              "seen": "2026-10-07T00:00:00+03:00"
+            },
+            {
+              "id": 7,
+              "city": "50%_off",
+              "age": 25,
+              "score": 0,
+              "active": true,
+              "born": "2001-01-01",
+              "seen": "2026-10-01T12:00:00+03:00"
+            },
+            {
+              "id": 8,
+              "name": "\u0130pek",
+              "city": "I\u011fd\u0131r",
+              "age": 22,
+              "score": 9,
+              "active": false,
+              "born": "1999-09-09",
+              "seen": "2026-09-30T12:00:00+03:00"
+            }
+          ]
+        }
+      },
+      "runs": [
+        {
+          "id": "C66.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "city", "direction": "asc" },
+            "filters": [],
+            "search": "a"
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "city", "row": 3 } }
+        },
+        {
+          "id": "C66.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "name", "direction": "asc" },
+            "filters": [],
+            "search": "a"
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "name", "row": 3 } }
+        },
+        {
+          "id": "C66.3",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "a" },
+          "expect": { "error": { "code": "invalid-data", "field": "city", "row": 3 } }
+        },
+        {
+          "id": "C66.4",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": "x",
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": "x",
+                  "score": null,
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": 22,
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "age", "direction": "asc" },
+            "filters": []
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "age", "row": 3 } }
+        },
+        {
+          "id": "C66.5",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": "x",
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": "x",
+                  "score": null,
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": 22,
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Equal", "value": 25 }]
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "age", "row": 3 } }
+        },
+        {
+          "id": "C66.6",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": 4,
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": "x",
+                  "score": "x",
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": 22,
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": { "field": "score", "direction": "asc" },
+            "filters": [{ "field": "age", "condition": "Equal", "value": 25 }]
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "score", "row": 3 } }
+        },
+        {
+          "id": "C66.7",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": 4,
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": "x",
+                  "score": "x",
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": 22,
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "score", "condition": "GreaterThan", "value": 0 },
+              { "field": "age", "condition": "Equal", "value": 25 }
+            ]
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "score", "row": 3 } }
+        },
+        {
+          "id": "C66.8",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string", "search": true },
+                  "city": { "type": "string", "search": true },
+                  "age": { "type": "integer" },
+                  "score": { "type": "number" },
+                  "active": { "type": "bool" },
+                  "born": { "type": "date" },
+                  "seen": { "type": "datetime", "offset": "+03:00" }
+                }
+              },
+              "rows": [
+                {
+                  "id": 1,
+                  "name": "Ali",
+                  "city": "\u0130zmir",
+                  "age": 30,
+                  "score": 2.5,
+                  "active": true,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-06T00:30:00+03:00"
+                },
+                {
+                  "id": 2,
+                  "name": "ali",
+                  "city": "Istanbul",
+                  "age": 25,
+                  "score": 10,
+                  "active": false,
+                  "born": "1995-12-31",
+                  "seen": "2026-10-05T23:59:59+03:00"
+                },
+                {
+                  "id": 3,
+                  "name": "\u00c7a\u011fr\u0131",
+                  "city": "\u0131rmak",
+                  "age": null,
+                  "score": 9,
+                  "active": true,
+                  "born": null,
+                  "seen": "2026-10-05T21:30:00Z"
+                },
+                {
+                  "id": 4,
+                  "name": "Cem",
+                  "city": "I\u011eDIR",
+                  "age": "x",
+                  "score": "x",
+                  "active": null,
+                  "born": "1985-01-01",
+                  "seen": null
+                },
+                {
+                  "id": 5,
+                  "name": "\u00d6mer",
+                  "city": "istanbul",
+                  "age": 25,
+                  "score": 100,
+                  "active": true,
+                  "born": "2000-02-29",
+                  "seen": "2026-10-06T23:59:59.999+03:00"
+                },
+                {
+                  "id": 6,
+                  "name": "Zeynep",
+                  "city": "Ankara",
+                  "age": 35,
+                  "score": -1,
+                  "active": false,
+                  "born": "1990-05-01",
+                  "seen": "2026-10-07T00:00:00+03:00"
+                },
+                {
+                  "id": 7,
+                  "city": "50%_off",
+                  "age": 25,
+                  "score": 0,
+                  "active": true,
+                  "born": "2001-01-01",
+                  "seen": "2026-10-01T12:00:00+03:00"
+                },
+                {
+                  "id": 8,
+                  "name": "\u0130pek",
+                  "city": "I\u011fd\u0131r",
+                  "age": 22,
+                  "score": 9,
+                  "active": false,
+                  "born": "1999-09-09",
+                  "seen": "2026-09-30T12:00:00+03:00"
+                }
+              ]
+            }
+          },
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "age", "condition": "Equal", "value": 25 },
+              { "field": "score", "condition": "GreaterThan", "value": 0 }
+            ]
+          },
+          "expect": { "error": { "code": "invalid-data", "field": "age", "row": 3 } }
+        }
+      ]
+    }
+  ]
+}

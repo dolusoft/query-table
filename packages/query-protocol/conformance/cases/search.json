@@ -1,0 +1,132 @@
+{
+  "fixtureFormat": 1,
+  "cases": [
+    {
+      "id": "C21",
+      "title": "Search scope and trimming",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C21.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "  IST " },
+          "expect": { "keys": [2, 5], "totalRows": 2 }
+        }
+      ]
+    },
+    {
+      "id": "C22",
+      "title": "Search without search fields",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+          "rows": [{ "id": 1, "v": "x" }]
+        }
+      },
+      "runs": [
+        {
+          "id": "C22.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "x" },
+          "expect": { "error": { "code": "search-not-supported", "path": "/search" } }
+        }
+      ]
+    },
+    {
+      "id": "C51",
+      "title": "Search with a rule, a second field, and null",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C51.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Equal", "value": 30 }],
+            "search": "zmi"
+          },
+          "expect": { "keys": [1], "totalRows": 1 }
+        },
+        {
+          "id": "C51.2",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "ankara" },
+          "expect": { "keys": [6], "totalRows": 1 }
+        },
+        {
+          "id": "C51.3",
+          "data": {
+            "inline": {
+              "dataset": {
+                "key": "id",
+                "fields": { "id": { "type": "integer" }, "v": { "type": "string", "search": true } }
+              },
+              "rows": [{ "id": 1, "v": null }, { "id": 2 }]
+            }
+          },
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "a" },
+          "expect": { "keys": [], "totalRows": 0 }
+        }
+      ]
+    },
+    {
+      "id": "C53",
+      "title": "Whitespace-only search; spaces that are not trimmed",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C53.1",
+          "data": {
+            "inline": {
+              "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+              "rows": [{ "id": 1, "v": "x" }]
+            }
+          },
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "   " },
+          "expect": { "keys": [1], "totalRows": 1 }
+        },
+        {
+          "id": "C53.2",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "\u2003ist" },
+          "expect": { "keys": [], "totalRows": 0 }
+        },
+        {
+          "id": "C53.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [],
+            "search": "\u0009\u00a0stan\u000a"
+          },
+          "expect": { "keys": [2, 5], "totalRows": 2 }
+        },
+        {
+          "id": "C53.4",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": "50% off" },
+          "expect": { "keys": [], "totalRows": 0 }
+        }
+      ]
+    },
+    {
+      "id": "C65",
+      "title": "A null search is no search, even without search fields",
+      "profile": "tr-1",
+      "data": {
+        "inline": {
+          "dataset": { "key": "id", "fields": { "id": { "type": "integer" }, "v": { "type": "string" } } },
+          "rows": [{ "id": 1, "v": "x" }]
+        }
+      },
+      "runs": [
+        {
+          "id": "C65.1",
+          "query": { "page": 1, "pageSize": 50, "sort": null, "filters": [], "search": null },
+          "expect": { "keys": [1], "totalRows": 1 }
+        }
+      ]
+    }
+  ]
+}

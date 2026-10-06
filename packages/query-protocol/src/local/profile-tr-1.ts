@@ -2,7 +2,9 @@
 // profile never changes meaning: these tables are frozen with 3.1.0. Tables
 // only, no logic; text.ts reads them. Every unit is a UTF-16 code unit.
 
-const pair = (base: number, mark: number) => base * 0x10000 + mark
+// No side effects: a bundle that does not use the tables drops them.
+const pair = /* @__NO_SIDE_EFFECTS__ */ (base: number, mark: number) =>
+  base * 0x10000 + mark
 
 /**
  * Composition table C: a base letter followed by a combining mark becomes one

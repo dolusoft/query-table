@@ -79,10 +79,14 @@ export const matchFoldText = (s: string): string => mapUnits(s, matchFoldUnit)
 /** The text a match condition and the search compare: M(C(s)). */
 export const matchKey = (s: string): string => matchFoldText(compose(s))
 
-const rank = new Map<number, number>()
-for (let i = 0; i < letterOrder.length; i++) {
-  rank.set(letterOrder.charCodeAt(i), i)
-}
+// Built in a pure call, so a bundle that never compares text drops it.
+const rank = /* @__PURE__ */ (() => {
+  const map = new Map<number, number>()
+  for (let i = 0; i < letterOrder.length; i++) {
+    map.set(letterOrder.charCodeAt(i), i)
+  }
+  return map
+})()
 
 /**
  * Class << 16 | order inside the class (§4.4) of a folded unit. ASCII

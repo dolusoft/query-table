@@ -4,11 +4,74 @@
 
 ```ts
 
+// Warning: (ae-forgotten-export) The symbol "Query" needs to be exported by the entry point index.d.ts
+//
+// @public
+export function applyQuery<T>(allRows: readonly T[], query: Query, dataset: Dataset<T>, options: ApplyQueryOptions): LocalQueryResult<T>;
+
+// @public
+export interface ApplyQueryOptions {
+    paginate?: boolean;
+    profile: SemanticsProfile;
+}
+
+// @public
+export interface Dataset<T = unknown> {
+    readonly fields: Readonly<Record<string, DatasetField<T>>>;
+    readonly key: string;
+}
+
+// @public
+export interface DatasetField<T = unknown> {
+    filterable?: boolean;
+    get?: (row: T) => unknown;
+    offset?: string;
+    search?: boolean;
+    sortable?: boolean;
+    // Warning: (ae-forgotten-export) The symbol "ColumnType" needs to be exported by the entry point index.d.ts
+    type: ColumnType;
+}
+
+// @public
+export function defineDataset<T>(definition: Dataset<T>): Dataset<T>;
+
+// @public
+export interface LocalQueryError {
+    code: LocalQueryErrorCode;
+    field?: string;
+    message: string;
+    name?: string;
+    path?: string;
+    row?: number;
+    rule?: number;
+}
+
+// @public
+export type LocalQueryErrorCode = 'unknown-profile' | 'invalid-query' | 'cursor-not-supported' | 'invalid-page' | 'unsupported-extension' | 'unknown-field' | 'unsupported-field' | 'unsupported-operator' | 'invalid-value' | 'search-not-supported' | 'invalid-data' | 'duplicate-key';
+
+// @public
+export type LocalQueryResult<T> = {
+    ok: true;
+    rows: T[];
+    totalRows: number;
+} | {
+    ok: false;
+    error: LocalQueryError;
+};
+
 // @public
 export const profiles: readonly ["tr-1"];
 
 // @public
+export const reservedQueryKeys: readonly ["sorts", "any", "group", "aggregates"];
+
+// @public
 export type SemanticsProfile = (typeof profiles)[number];
+
+// Warning: (ae-forgotten-export) The symbol "PageQuery" needs to be exported by the entry point index.d.ts
+//
+// @public
+export function slicePage<T>(rows: readonly T[], query: Pick<PageQuery, 'page' | 'pageSize'> | Query): LocalQueryResult<T>;
 
 // (No @packageDocumentation comment for this package)
 
