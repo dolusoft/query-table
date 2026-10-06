@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Button } from '@/ui/button'
+
 import { QueryTable } from '../../src/index'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
@@ -26,9 +28,11 @@ const arrow = (direction: 'asc' | 'desc' | null) =>
     filterable
   >
     <template #header-name="{ column, sortDirection, sortable, toggleSort }">
-      <button
+      <Button
         type="button"
-        class="inline-flex items-center gap-1 rounded-sm font-semibold hover:underline disabled:no-underline"
+        variant="ghost"
+        size="sm"
+        class="-ml-2 h-7 gap-1 px-2 font-semibold"
         :disabled="!sortable"
         @click="toggleSort"
       >
@@ -36,7 +40,7 @@ const arrow = (direction: 'asc' | 'desc' | null) =>
         <span aria-hidden="true" class="text-muted-foreground">{{
           arrow(sortDirection)
         }}</span>
-      </button>
+      </Button>
     </template>
     <template #header-salary="{ column }">
       <span class="flex flex-col leading-tight">
