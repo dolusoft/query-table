@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { SearchIcon } from '@lucide/vue'
+import { SearchIcon, SparklesIcon } from '@lucide/vue'
 import { useEventListener } from '@vueuse/core'
 import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { Button } from '@/ui/button'
 import { Kbd } from '@/ui/kbd'
@@ -17,11 +18,12 @@ import {
   SidebarProvider
 } from '@/ui/sidebar'
 
-import { guidePages } from './guides/guides'
+import { aiNav, guidePages } from './guides/guides'
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
 import { repositoryUrl } from './home/home-content'
 import { pages } from './manifest'
 import DocSearch from './search/DocSearch.vue'
+import ExternalLinks from './shell/ExternalLinks.vue'
 import ThemeToggle from './shell/ThemeToggle.vue'
 
 // The playground shell is shadcn-vue. The home page (`meta.landing`) has a
@@ -32,8 +34,19 @@ import ThemeToggle from './shell/ThemeToggle.vue'
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
-// The API examples first, then the guide pages (features, TanStack, AI).
-const navigation = [...pages, ...guidePages]
+// The API examples first, then the guide pages (features, TanStack); the AI
+// page and its two parts are a group of their own below them.
+const navigation = [
+  ...pages,
+  ...guidePages.filter(page => !aiNav.some(entry => entry.id === page.id))
+]
+
+// The AI entries share a route; the hash tells them apart.
+const route = useRoute()
+const isAiActive = (to: string) => {
+  const [path, hash = ''] = to.split('#')
+  return route.path === path && route.hash.replace('#', '') === hash
+}
 
 const theme = ref<Theme | 'system'>(themeFromUrl() ?? 'system')
 watch(theme, value => setTheme(value === 'system' ? null : value), {
@@ -89,15 +102,12 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
           >
             <RouterLink to="/overview">Docs</RouterLink>
           </Button>
-          <Button
-            as-child
-            variant="ghost"
-            size="sm"
-            class="min-h-11 sm:min-h-7"
-          >
-            <a :href="repositoryUrl" target="_blank" rel="noopener">GitHub</a>
-          </Button>
         </nav>
+        <ExternalLinks
+          label="Elsewhere"
+          :only="['tanstack', 'github']"
+          icon-only-on-phone
+        />
         <Button
           type="button"
           variant="outline"
@@ -129,6 +139,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
             >Source on GitHub</a
           >
         </p>
+        <ExternalLinks label="Elsewhere" />
         <ThemeToggle v-model="theme" />
       </div>
     </footer>
@@ -187,8 +198,44 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
               <ScrollBar orientation="horizontal" class="lg:hidden" />
             </ScrollArea>
           </nav>
+          <!-- The AI group stays outside the scrolling page list, so it is
+               always on screen: a tinted block with a label and three
+               entries. The AI page's own sections are the hash targets. -->
+          <nav
+            aria-label="AI"
+            class="mt-1 mb-2 shrink-0 overflow-x-auto rounded-lg [scrollbar-width:none] border border-primary/25 bg-primary/5 p-1 lg:mb-0 lg:overflow-visible"
+            data-testid="nav-ai"
+          >
+            <SidebarMenu
+              class="w-max flex-row items-center gap-1 lg:w-full lg:flex-col lg:items-stretch"
+            >
+              <li
+                role="presentation"
+                class="flex items-center gap-1.5 px-2 text-xs font-semibold tracking-wide text-primary uppercase lg:py-1"
+              >
+                <SparklesIcon aria-hidden="true" class="size-3.5" />
+                AI
+              </li>
+              <SidebarMenuItem v-for="entry in aiNav" :key="entry.id">
+                <RouterLink v-slot="{ href, navigate }" :to="entry.to" custom>
+                  <SidebarMenuButton
+                    as="a"
+                    :href="href"
+                    :is-active="isAiActive(entry.to)"
+                    :aria-current="isAiActive(entry.to) ? 'page' : undefined"
+                    :data-testid="`nav-${entry.id}`"
+                    class="min-h-11 whitespace-nowrap text-foreground data-active:text-sidebar-accent-foreground lg:min-h-8"
+                    @click="navigate"
+                  >
+                    {{ entry.title }}
+                  </SidebarMenuButton>
+                </RouterLink>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </nav>
         </SidebarContent>
         <SidebarFooter class="p-4 pt-2 lg:pt-3">
+          <ExternalLinks label="Elsewhere" class="-ml-2.5" />
           <ThemeToggle v-model="theme" />
         </SidebarFooter>
       </Sidebar>
