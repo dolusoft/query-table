@@ -3,7 +3,9 @@ import { XIcon } from '@lucide/vue'
 import { computed, nextTick, ref, useId } from 'vue'
 
 import { Button } from '@/ui/button'
+import { ButtonGroup, ButtonGroupSeparator } from '@/ui/button-group'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
+import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 import type { Column, TableQuery } from '@dolusoft/query-table'
 
 import { describeRules, titleOf } from './column-filter'
@@ -73,67 +75,70 @@ defineExpose({ focus: picker })
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2" data-testid="filter-chips">
-    <ul
-      v-if="chips.length > 0"
-      class="flex flex-wrap gap-2"
-      aria-label="Active filters"
-    >
-      <!-- A chip is a shadcn-vue button pair: edit, then remove. -->
-      <li
-        v-for="chip in chips"
-        :key="chip.field"
-        class="inline-flex max-w-full items-center"
-        data-testid="filter-chip"
+  <div class="flex min-w-0 flex-col gap-2" data-testid="filter-chips">
+    <!-- One row of chips that scrolls sideways (shadcn-vue ScrollArea), so
+         a phone shows every filter on one line instead of a stack. -->
+    <ScrollArea v-if="chips.length > 0" class="w-full whitespace-nowrap">
+      <ul class="flex w-max gap-2 pb-3" aria-label="Active filters">
+        <!-- A chip is a shadcn-vue ButtonGroup: edit, then remove. -->
+        <li v-for="chip in chips" :key="chip.field" data-testid="filter-chip">
+          <ButtonGroup>
+            <Button
+              type="button"
+              variant="secondary"
+              class="h-11 max-w-64"
+              :aria-label="`Edit filter: ${chip.text}`"
+              aria-haspopup="dialog"
+              @click="
+                emit('edit', chip.field, $event.currentTarget as HTMLElement)
+              "
+            >
+              <span class="truncate">{{ chip.text }}</span>
+            </Button>
+            <ButtonGroupSeparator />
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              class="size-11"
+              :aria-label="`Remove filter: ${chip.text}`"
+              data-testid="filter-chip-remove"
+              @click="remove(chip.field)"
+            >
+              <XIcon />
+            </Button>
+          </ButtonGroup>
+        </li>
+      </ul>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
+    <div class="flex items-center gap-2">
+      <NativeSelect
+        :id="pickerId"
+        v-model="picked"
+        class="[&_select]:h-11 [&_select]:bg-background"
+        aria-label="Add filter"
+        data-testid="add-filter"
+        @change="pick"
       >
-        <Button
-          type="button"
-          variant="secondary"
-          class="h-11 min-w-0 shrink justify-start rounded-r-none"
-          :aria-label="`Edit filter: ${chip.text}`"
-          aria-haspopup="dialog"
-          @click="emit('edit', chip.field, $event.currentTarget as HTMLElement)"
+        <NativeSelectOption value="">+ Add filter</NativeSelectOption>
+        <NativeSelectOption
+          v-for="column in filterable"
+          :key="column.field"
+          :value="column.field"
         >
-          <span class="truncate">{{ chip.text }}</span>
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          class="size-11 rounded-l-none border-l border-background"
-          :aria-label="`Remove filter: ${chip.text}`"
-          data-testid="filter-chip-remove"
-          @click="remove(chip.field)"
-        >
-          <XIcon />
-        </Button>
-      </li>
-    </ul>
-    <NativeSelect
-      :id="pickerId"
-      v-model="picked"
-      class="[&_select]:h-11 [&_select]:bg-background"
-      aria-label="Add filter"
-      data-testid="add-filter"
-      @change="pick"
-    >
-      <NativeSelectOption value="">+ Add filter</NativeSelectOption>
-      <NativeSelectOption
-        v-for="column in filterable"
-        :key="column.field"
-        :value="column.field"
+          {{ titleOf(column) }}
+        </NativeSelectOption>
+      </NativeSelect>
+      <Button
+        v-if="chips.length > 0"
+        type="button"
+        variant="ghost"
+        class="h-11"
+        @click="clearAll"
       >
-        {{ titleOf(column) }}
-      </NativeSelectOption>
-    </NativeSelect>
-    <Button
-      v-if="chips.length > 0"
-      type="button"
-      variant="ghost"
-      class="h-11"
-      @click="clearAll"
-    >
-      Clear all
-    </Button>
+        Clear all
+      </Button>
+    </div>
   </div>
 </template>

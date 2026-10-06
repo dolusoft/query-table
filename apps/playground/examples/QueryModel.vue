@@ -5,6 +5,7 @@ import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
+import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 import type { QueryChangeReason, TableQuery } from '@dolusoft/query-table'
 import { QueryTable, type QueryTableExpose } from '@dolusoft/query-table'
 
@@ -95,9 +96,12 @@ const resetFromOutside = () => {
     <div class="grid gap-3 md:grid-cols-2">
       <section>
         <h3 class="pb-1 text-sm font-medium">query (what the page holds)</h3>
-        <pre
-          class="overflow-x-auto rounded-md border bg-muted/50 p-3 text-xs"
-          >{{ JSON.stringify(query, null, 2) }}</pre>
+        <ScrollArea class="rounded-md border bg-muted/50">
+          <pre class="w-max p-3 text-xs">{{
+            JSON.stringify(query, null, 2)
+          }}</pre>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </section>
       <section>
         <h3 class="pb-1 text-sm font-medium">

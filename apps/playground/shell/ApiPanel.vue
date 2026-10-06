@@ -10,6 +10,7 @@ import {
   TableRow
 } from '@/ui/table'
 
+import InlineCode from './InlineCode.vue'
 import contractApi from '../../../contract/api.json'
 import type { PageApi } from '../manifest'
 import { memberAnchor, sectionAnchors } from '../search/anchors'
@@ -99,7 +100,9 @@ const groups = computed(() => {
                 <TableHead v-if="group.title === 'Props'" class="px-3">
                   Default
                 </TableHead>
-                <TableHead class="px-3">Description</TableHead>
+                <!-- The prose column takes half the width, not what the
+                     auto layout leaves after the code columns. -->
+                <TableHead class="w-1/2 min-w-64 px-3">Description</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,7 +124,7 @@ const groups = computed(() => {
                   {{ (row as Row).default ?? '' }}
                 </TableCell>
                 <TableCell class="px-3 text-muted-foreground">
-                  {{ row.description }}
+                  <InlineCode :text="row.description" />
                 </TableCell>
               </TableRow>
             </TableBody>
