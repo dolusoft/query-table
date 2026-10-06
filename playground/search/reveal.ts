@@ -36,11 +36,12 @@ export const revealAnchor = async (
   if (!element) {
     return null
   }
-  // A rule sits in a closed <details>: open it so its text shows.
-  const details = element.closest('details') ?? element.querySelector('details')
-  if (details) {
-    details.open = true
-  }
+  // A rule is a closed Accordion item: press its trigger so its text shows.
+  element
+    .querySelector<HTMLElement>(
+      '[data-slot="accordion-trigger"][aria-expanded="false"]'
+    )
+    ?.click()
   element.scrollIntoView({ block: 'center' })
   element.setAttribute('data-search-target', '')
   window.setTimeout(

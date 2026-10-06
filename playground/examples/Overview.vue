@@ -57,7 +57,8 @@ const edit = (field: string, trigger: HTMLElement) =>
       <template #toolbar>
         <div class="flex flex-col gap-2 pb-2">
           <p class="text-sm text-muted-foreground">
-            {{ result.totalRows }} people match.
+            {{ result.totalRows }}
+            {{ result.totalRows === 1 ? 'person matches' : 'people match' }}.
           </p>
           <FilterChips
             v-if="compact"

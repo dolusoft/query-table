@@ -7,6 +7,9 @@ import PageView from './shell/PageView.vue'
 // server-side fallback, and the hash keeps working under any base path.
 export const router = createRouter({
   history: createWebHashHistory(),
+  // A new page opens at its top (back and forward restore the position);
+  // the documentation search scrolls to its anchor after this.
+  scrollBehavior: (_to, _from, saved) => saved ?? { top: 0 },
   routes: [
     { path: '/', redirect: `/${pages[0].id}` },
     ...pages.map(page => ({
