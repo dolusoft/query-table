@@ -20,11 +20,13 @@ import {
   architecture,
   installCommand,
   moreFeatures,
+  onTopOfTanstack,
   pitch,
   principles,
   repositoryUrl,
   showcase,
-  showcaseFeatures
+  showcaseFeatures,
+  tanstackLine
 } from './home-content'
 import ShowcaseTable from './ShowcaseTable.vue'
 import InlineCode from '../shell/InlineCode.vue'
@@ -66,6 +68,11 @@ const diagramLoaded = ref(false)
       </h1>
       <p class="max-w-2xl text-lg text-balance text-muted-foreground">
         {{ pitch }}
+      </p>
+      <p class="text-sm text-muted-foreground" data-testid="tanstack-line">
+        <RouterLink to="/tanstack" class="underline underline-offset-4">{{
+          tanstackLine
+        }}</RouterLink>
       </p>
       <!-- The command scrolls sideways in its own box; the copy button sits
            next to it, never over the text. -->
@@ -170,6 +177,31 @@ const diagramLoaded = ref(false)
           </RouterLink>
         </li>
       </ul>
+    </section>
+
+    <section
+      :id="onTopOfTanstack.id"
+      aria-labelledby="on-top-of-tanstack-title"
+      class="flex scroll-mt-20 flex-col gap-4"
+    >
+      <h2
+        id="on-top-of-tanstack-title"
+        class="text-2xl font-semibold tracking-tight"
+      >
+        {{ onTopOfTanstack.title }}
+      </h2>
+      <p class="max-w-3xl text-muted-foreground">{{ onTopOfTanstack.text }}</p>
+      <div class="flex flex-wrap gap-3">
+        <Button as-child variant="outline">
+          <RouterLink to="/features">
+            Feature matrix
+            <ArrowRightIcon data-icon="inline-end" />
+          </RouterLink>
+        </Button>
+        <Button as-child variant="ghost">
+          <RouterLink to="/tanstack">TanStack Table</RouterLink>
+        </Button>
+      </div>
     </section>
 
     <section
