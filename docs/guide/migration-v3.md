@@ -1,8 +1,6 @@
 # Migrating from 2.2.x to 3.0
 
-> **Draft.** 3.0.0 is not released; this page is written against `3.0.0-next.0` and changes until 3.0.0 is approved. See [Known open items](#known-open-items).
-
-3.0 splits the implementation into three packages and adds cursor paging, row selection and global search. If you use the `QueryTable` component, a bump of the package version is the whole change **unless your backend relies on the table dropping query keys it does not know**: that behavior changed ([changed behavior](#changed-behavior-unknown-query-keys-are-kept-c-60)). Everything else is additive: the props, events and DOM contract of 2.2.x stay, and the new ones are opt-in. 3.0.0 ships only when a gate that runs the same behavior tests against 2.2.x and 3.0 finds no difference other than the ones this page lists ([ADR 0006](../decisions/0006-release-3.md)).
+3.0 splits the implementation into three packages and adds cursor paging, row selection and global search. If you use the `QueryTable` component, a bump of the package version is the whole change **unless your backend relies on the table dropping query keys it does not know**: that behavior changed ([changed behavior](#changed-behavior-unknown-query-keys-are-kept-c-60)). Everything else is additive: the props, events and DOM contract of 2.2.x stay, and the new ones are opt-in. 3.0.0 was released after a gate that runs the same behavior tests against 2.2.x and 3.0 found no difference in the tests it compares ([ADR 0006](../decisions/0006-release-3.md)).
 
 ## Install
 
@@ -95,4 +93,3 @@ Applies to the TanStack plugins only, not to the component. `serverQueryFeature`
 
 - The tarball `overrides` of [Install](#install) go away when 3.0.0 is published to npm; the version and the release location are then updated here and in the README.
 - Render counts are reported by the gate, not compared; v3 re-baselines them, so a performance test that counts renders can need new numbers.
-- The page is a draft until Zahid approves the principle text and 3.0.0 ([ADR 0006](../decisions/0006-release-3.md)).

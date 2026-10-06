@@ -199,9 +199,15 @@ export default defineConfig([
             }
           ]
         }
-      ],
-      // PRINCIPLES.md P1: the table renders, the consumer fetches and
-      // persists. No network or storage access in the library.
+      ]
+    }
+  },
+  {
+    // PRINCIPLES.md P1: the table renders, the consumer fetches and
+    // persists. No network or storage access in any of the three packages.
+    files: ['packages/*/src/**', 'contract/**'],
+    ignores: ['packages/*/src/**/*.spec.ts'],
+    rules: {
       'no-restricted-globals': [
         'error',
         ...['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource'].map(

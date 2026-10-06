@@ -37,7 +37,7 @@ describe('llms.txt generation', () => {
     }
     for (const path of listed) {
       expect(existsSync(join(root, path)), path).toBe(true)
-      expect(llms, path).toContain(`/next/${path})`)
+      expect(llms, path).toContain(`/main/${path})`)
     }
   })
 

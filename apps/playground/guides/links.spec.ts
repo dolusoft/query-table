@@ -8,7 +8,7 @@ import { repositoryUrl } from '../home/home-content'
 // `pnpm check:links`: asks the network whether every external link of the
 // guide pages answers 200. It is opt-in (CHECK_LINKS=1) because a unit run
 // must not need a network. LINK_BRANCH checks the skill files on a branch
-// that is not merged yet (the page links `next`).
+// that is not merged yet (the page links `main`).
 const enabled = Boolean(process.env.CHECK_LINKS)
 const branch = process.env.LINK_BRANCH
 
@@ -17,7 +17,7 @@ const urls = [
   ...tanstackFeatureGuides.map(link => link.url),
   repositoryUrl,
   ...skillFiles.map(path =>
-    branch ? rawUrl(path).replace('/next/', `/${branch}/`) : rawUrl(path)
+    branch ? rawUrl(path).replace('/main/', `/${branch}/`) : rawUrl(path)
   )
 ]
 
