@@ -20,10 +20,6 @@
         "apps/playground/skin/ui/table/TableFooter.vue",
         "apps/playground/skin/mapping.css",
         "apps/playground/skin/theme.css"
-      ],
-      "ignoreDependencies": [
-        "@dolusoft/query-protocol",
-        "@dolusoft/query-table-core"
       ]
     },
     "packages/query-protocol": {

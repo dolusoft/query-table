@@ -5,7 +5,7 @@ name: PR body
 
 on:
   pull_request:
-    branches: [main, next]
+    branches: [main, next, 'v3/**']
     types: [opened, edited, reopened, synchronize]
 
 permissions:

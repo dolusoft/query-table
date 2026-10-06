@@ -5,9 +5,16 @@
 ```ts
 
 import type { Component } from 'vue';
+import { ComputedRef } from 'vue';
+import { FilterDraft } from '@dolusoft/query-protocol';
+import { FilterLabel } from '@dolusoft/query-table-core';
+import { MaybeRefOrGetter } from 'vue';
 import { PublicProps } from 'vue';
+import { Query as Query_2 } from '@dolusoft/query-protocol';
 import { ShallowUnwrapRef } from 'vue';
+import { TableFeature } from '@tanstack/table-core';
 import { VNode } from 'vue';
+import { VueTable } from '@tanstack/vue-table';
 
 // @public
 export interface CellContextMenuPayload<T> {
@@ -50,6 +57,14 @@ export interface Column {
 }
 
 // @public
+export interface ColumnEntry {
+    // (undocumented)
+    column: Column;
+    // (undocumented)
+    index: number;
+}
+
+// @public
 export interface ColumnResizePayload {
     field: string;
     width: number;
@@ -57,6 +72,23 @@ export interface ColumnResizePayload {
 
 // @public
 export type ColumnType = 'string' | 'number' | 'integer' | 'date' | 'datetime' | 'bool';
+
+// @public
+export interface CursorQuery {
+    cursor: CursorRequest | null;
+    // (undocumented)
+    filters: FilterRule[];
+    // (undocumented)
+    pageSize: number;
+    search?: string;
+    sort: SortState | null;
+}
+
+// @public
+export interface CursorRequest {
+    direction: 'next' | 'prev';
+    token: string;
+}
 
 // Warning: (ae-forgotten-export) The symbol "__VLS_export" needs to be exported by the entry point index.d.ts
 //
@@ -127,6 +159,14 @@ export interface HeaderSlotProps {
     toggleSort: () => void;
 }
 
+// @public
+export interface PageCursors {
+    // (undocumented)
+    next: string | null;
+    // (undocumented)
+    prev: string | null;
+}
+
 // @public (undocumented)
 export interface PaginationOptions {
     alwaysShow?: boolean;
@@ -138,6 +178,7 @@ export interface PaginationSlotProps {
     canNext: boolean;
     // (undocumented)
     canPrevious: boolean;
+    cursorMode: boolean;
     // (undocumented)
     nextPage: () => void;
     // (undocumented)
@@ -159,7 +200,22 @@ export interface PaginationSlotProps {
 export function parseFilterInput(text: string, column: Column, condition?: FilterCondition | null): FilterRule[];
 
 // @public
-export type QueryChangeReason = 'page' | 'pageSize' | 'sort' | 'filter' | 'reset';
+export type Query = TableQuery | CursorQuery;
+
+// @public
+export type QueryChangeReason = 'page' | 'pageSize' | 'sort' | 'filter' | 'reset' | 'search';
+
+// @public
+export interface QueryTableExpansion<T extends object> {
+    // (undocumented)
+    collapseAll: () => void;
+    expandAll: () => void;
+    // (undocumented)
+    isExpanded: (row: T, index: number) => boolean;
+    keyOf: (row: T, index: number) => string | number;
+    // (undocumented)
+    toggle: (row: T, index: number) => void;
+}
 
 // @public
 export interface QueryTableExpose {
@@ -168,6 +224,76 @@ export interface QueryTableExpose {
     flushPendingFilters(): void;
     focusFilter(field: string): boolean;
 }
+
+// Warning: (ae-forgotten-export) The symbol "features" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export type QueryTableFeatures = typeof features;
+
+// @public
+export interface QueryTableFilters {
+    apply: (field: string) => void;
+    canClearAll: () => boolean;
+    clear: (field: string) => void;
+    clearAll: () => void;
+    draftOf: (field: string) => Readonly<FilterDraft>;
+    flushAll: () => boolean;
+    labelOf: (field: string) => FilterLabel | null;
+    multiOf: (field: string) => number;
+    setCondition: (field: string, condition: FilterCondition | null) => void;
+    setInput: (field: string, text: string) => void;
+}
+
+// @public
+export interface QueryTableSearch {
+    apply: () => boolean;
+    set: (text: string) => void;
+    text: ComputedRef<string>;
+}
+
+// @public
+export interface QueryTableSelection<T extends object> {
+    allSelected: ComputedRef<boolean>;
+    enabled: ComputedRef<boolean>;
+    // (undocumented)
+    isSelected: (row: T, index: number) => boolean;
+    someSelected: ComputedRef<boolean>;
+    // (undocumented)
+    toggle: (row: T, index: number) => void;
+    toggleAll: (value: boolean) => void;
+}
+
+// @public
+export interface QueryTableSort {
+    isSortable: (column: Column) => boolean;
+    sortBy: (column: Column, direction?: SortDirection) => void;
+    sortOf: (column: Column) => SortDirection | null;
+}
+
+// @public (undocumented)
+export interface QueryTableState<T extends object, Q extends Query_2 = TableQuery> {
+    baseQuery: () => Q;
+    columns: ComputedRef<ColumnEntry[]>;
+    // (undocumented)
+    expansion: QueryTableExpansion<T>;
+    // (undocumented)
+    filters: QueryTableFilters;
+    hasPinned: ComputedRef<boolean>;
+    pagination: ComputedRef<PaginationSlotProps>;
+    // (undocumented)
+    search: QueryTableSearch;
+    // (undocumented)
+    selection: QueryTableSelection<T>;
+    // (undocumented)
+    sort: QueryTableSort;
+    table: VueTable<QueryTableFeatures, T>;
+}
+
+// @public
+export type RowKey<T extends object> = TableProps<T>['rowKey'];
+
+// @public
+export type RowSelection = Record<string, boolean>;
 
 // @public (undocumented)
 export type SortDirection = 'asc' | 'desc';
@@ -188,8 +314,9 @@ export interface SubtableSlotProps<T> {
 }
 
 // @public
-export type TableEmits<T> = {
-    'update:query': [query: TableQuery, reason: QueryChangeReason];
+export type TableEmits<T, Q extends Query = TableQuery> = {
+    'update:query': [query: Q, reason: QueryChangeReason];
+    'update:selection': [selection: RowSelection];
     rowRightPanelClick: [row: T];
     cellContextMenu: [payload: CellContextMenuPayload<T>];
     columnResize: [payload: ColumnResizePayload];
@@ -206,11 +333,14 @@ export interface TableLabels {
     filterOptions: (column: string) => string;
     openRightPanel: string;
     resizeColumn: (column: string) => string;
+    selectAllRows: string;
+    selectRow: string;
 }
 
 // @public (undocumented)
-export interface TableProps<T extends object = Record<string, unknown>> {
+export interface TableProps<T extends object = Record<string, unknown>, Q extends Query = TableQuery> {
     columns: Column[];
+    cursors?: PageCursors | null;
     filterable?: boolean;
     filterDebounce?: number;
     footerRows?: FooterRow[];
@@ -219,10 +349,12 @@ export interface TableProps<T extends object = Record<string, unknown>> {
     labels?: Partial<TableLabels>;
     loading?: boolean;
     pagination?: PaginationOptions;
-    query: TableQuery;
+    query: Q;
     resizable?: boolean;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rows?: T[];
+    searchDebounce?: number;
+    selection?: RowSelection;
     sortable?: boolean;
     totalRows?: number | null;
 }
@@ -234,6 +366,7 @@ export interface TableQuery {
     page: number;
     // (undocumented)
     pageSize: number;
+    search?: string;
     sort: SortState | null;
 }
 
@@ -252,8 +385,32 @@ export interface TableSlots<T> {
 
 // @public (undocumented)
 export interface ToolbarSlotProps {
+    applySearch: () => void;
     canClearFilters: boolean;
     clearFilters: () => void;
+    search: string;
+    setSearch: (text: string) => void;
+}
+
+// @public
+export function useQueryTable<T extends object, Q extends Query_2 = TableQuery>(options: UseQueryTableOptions<T, Q>): QueryTableState<T, Q>;
+
+// @public (undocumented)
+export interface UseQueryTableOptions<T extends object, Q extends Query_2 = TableQuery> {
+    columns: MaybeRefOrGetter<Column[]>;
+    cursors?: MaybeRefOrGetter<PageCursors | null | undefined>;
+    filterDebounce?: MaybeRefOrGetter<number | undefined>;
+    hasSubtable?: MaybeRefOrGetter<boolean | undefined>;
+    onQueryChange: (query: Q, reason: QueryChangeReason) => void;
+    onSelectionChange?: (selection: RowSelection) => void;
+    pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>;
+    query: MaybeRefOrGetter<Q>;
+    rowKey?: MaybeRefOrGetter<RowKey<T>>;
+    rows?: MaybeRefOrGetter<T[] | undefined>;
+    searchDebounce?: MaybeRefOrGetter<number | undefined>;
+    selection?: MaybeRefOrGetter<RowSelection | undefined>;
+    sortable?: MaybeRefOrGetter<boolean | undefined>;
+    totalRows?: MaybeRefOrGetter<number | null | undefined>;
 }
 
 // (No @packageDocumentation comment for this package)
