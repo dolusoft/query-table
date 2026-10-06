@@ -12,7 +12,8 @@ export interface ClassEntry {
   description: string
   /**
    * The rule that adds the hook on top of the 2.2.x table, when 2.2.x does
-   * not render it. C-40 checks the entries without it; C-66 the ones with it.
+   * not render it. C-40 checks the entries without it; C-66 the ones the
+   * selection adds (`C-64`) and C-72 the ones of the 3.1 features.
    */
   addedBy?: string
 }
@@ -122,6 +123,13 @@ export const domClasses: ClassEntry[] = [
     description:
       'Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS.'
   },
+  {
+    name: 'qt-reorder-handle',
+    on: 'th > button',
+    description:
+      'Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS.',
+    addedBy: 'C-73'
+  },
   { name: 'qt-footer', on: 'tfoot', description: 'Totals block.' },
   {
     name: 'qt-pagination',
@@ -176,6 +184,13 @@ export const domAttributes: AttributeEntry[] = [
     description: 'Present on an expanded row.'
   },
   {
+    name: 'data-pinned-row',
+    on: 'tbody > tr',
+    description:
+      '`top` or `bottom` on a pinned row and on its subtable row (C-74).',
+    addedBy: 'C-74'
+  },
+  {
     name: 'data-selected',
     on: 'tbody > tr',
     description: 'Present on a selected row (C-64).',
@@ -185,7 +200,27 @@ export const domAttributes: AttributeEntry[] = [
     name: 'data-pinned',
     on: 'th, td',
     description:
-      'Present on every cell of a pinned column (header, body, footer) and, when some column is pinned, on the utility cells. The cell also carries `--qt-pin-left`.'
+      'Empty on every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, on the utility cells; the cell also carries `--qt-pin-left`. `right` on a column pinned to the right (C-71).'
+  },
+  {
+    name: 'data-pinned',
+    on: 'th[data-pinned="right"], td[data-pinned="right"]',
+    description:
+      'Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71).',
+    addedBy: 'C-71'
+  },
+  {
+    name: 'data-dragging',
+    on: 'th',
+    description: 'On the header cell of the column being dragged (C-73).',
+    addedBy: 'C-73'
+  },
+  {
+    name: 'data-drop',
+    on: 'th',
+    description:
+      '`before` or `after`: the header cell the dragged column would be placed next to (C-73).',
+    addedBy: 'C-73'
   },
   {
     name: 'aria-sort',
@@ -199,6 +234,8 @@ export interface InlineStyleEntry {
   /** CSS selector an element carrying the property must match. */
   on: string
   description: string
+  /** As on `ClassEntry`. */
+  addedBy?: string
 }
 
 /** The only inline styles the table writes (C-31). */
@@ -211,8 +248,15 @@ export const domInlineStyles: InlineStyleEntry[] = [
   },
   {
     property: '--qt-pin-left',
-    on: '[data-pinned]',
+    on: '[data-pinned=""]',
     description:
       'Left offset of a pinned cell in pixels: the measured widths of the pinned header cells before it. Use it as `left: var(--qt-pin-left)` next to your own `position: sticky`.'
+  },
+  {
+    property: '--qt-pin-right',
+    on: '[data-pinned="right"]',
+    description:
+      'Right offset of a right-pinned cell in pixels: the measured widths of the right-pinned header cells after it. Use it as `right: var(--qt-pin-right)` next to your own `position: sticky`.',
+    addedBy: 'C-71'
   }
 ]

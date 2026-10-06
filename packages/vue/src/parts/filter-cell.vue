@@ -28,7 +28,7 @@ defineSlots<{
   'filter-menu'?(props: FilterMenuSlotProps): unknown
 }>()
 
-const { filters, sort, labels } = useTableContext()
+const { filters, sort, layout, labels } = useTableContext()
 
 const inputName = () => labels().filterInput(columnName(props.column))
 
@@ -73,7 +73,8 @@ const menuProps = (): FilterMenuSlotProps => {
     sortDirection: sort.sortOf(column),
     // `sortBy` does nothing where sorting is off, like a header click (C-07).
     setSort: direction => sort.sortBy(column, direction),
-    trigger
+    trigger,
+    control: layout.controlOf(column.field)
   }
 }
 

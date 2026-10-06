@@ -5,6 +5,7 @@
 >
 import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
 
+import { applyWidth, sideOf, type PinSide } from './columns/column-layout'
 import type {
   CellSlotProps,
   HeaderSlotProps,
@@ -25,6 +26,7 @@ import TableHeader from './parts/table-header.vue'
 import TablePagination from './parts/table-pagination.vue'
 import { utilityKey, type Utility } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
+import { useColumnReorder } from './reorder/use-column-reorder'
 import { useColumnResize } from './resize/use-column-resize'
 import { useQueryTable } from './use-query-table'
 
@@ -33,6 +35,7 @@ defineOptions({ name: 'QueryTable' })
 const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   cursors: null,
   selection: undefined,
+  rowPinning: undefined,
   searchDebounce: 300,
   rows: () => [],
   totalRows: null,
@@ -41,6 +44,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   sortable: false,
   filterable: false,
   resizable: false,
+  reorderable: false,
   filterDebounce: 100,
   hasSubtable: false,
   hasRightPanel: false,
@@ -65,11 +69,14 @@ const state = useQueryTable<T, Q>({
   filterDebounce: () => props.filterDebounce,
   searchDebounce: () => props.searchDebounce,
   selection: () => props.selection,
+  rowPinning: () => props.rowPinning,
   rowKey: () => props.rowKey,
   hasSubtable: () => props.hasSubtable,
   pageSizeOptions: () => props.pagination?.pageSizeOptions,
   onQueryChange: (query, reason) => emit('update:query', query, reason),
-  onSelectionChange: selection => emit('update:selection', selection)
+  onSelectionChange: selection => emit('update:selection', selection),
+  onColumnsChange: (columns, reason) => emit('update:columns', columns, reason),
+  onRowPinningChange: rowPinning => emit('update:rowPinning', rowPinning)
 })
 const { filters, sort, search, expansion } = state
 const rowSelection = state.selection
@@ -101,21 +108,23 @@ const utilities = computed(() =>
 const utilityCount = computed(() => utilities.value.length)
 const columnCount = computed(() => entries.value.length + utilityCount.value)
 
+/** Utilities are pinned only with a left-pinned column (C-46, C-71). */
+const utilitySide = (): PinSide => (hasPinned.value ? 'left' : false)
 const tableEl = shallowRef<HTMLTableElement | null>(null)
 const { widths, tableWidth, offsets } = useHeaderGeometry({
   table: tableEl,
   cells: () => [
     ...utilities.value.map(utility => ({
       key: utilityKey(utility),
-      pinned: hasPinned.value
+      side: utilitySide()
     })),
     ...entries.value.map(({ column }) => ({
       key: column.field,
-      pinned: column.pinned === 'left'
+      side: sideOf(column)
     }))
   ],
   active: () =>
-    hasPinned.value ||
+    entries.value.some(entry => sideOf(entry.column) !== false) ||
     (props.resizable &&
       entries.value.some(entry => entry.column.resizable !== false))
 })
@@ -123,13 +132,29 @@ const resize = useColumnResize({
   resizable: () => props.resizable,
   measuredWidth: field => widths.value[field],
   tableWidth: () => tableWidth.value,
-  emit: payload => emit('columnResize', payload)
+  // C-68: the width goes back as `columnResize`, then as the new `columns`.
+  emit: payload => {
+    emit('columnResize', payload)
+    const next = applyWidth(props.columns, payload.field, `${payload.width}px`)
+    if (next) {
+      emit('update:columns', next, 'resize')
+    }
+  }
+})
+
+const reorder = useColumnReorder({
+  reorderable: () => props.reorderable,
+  table: tableEl,
+  layout: state.layout,
+  columns: () => props.columns
 })
 
 provideTableContext({
   filters,
   sort,
+  layout: state.layout,
   resize,
+  reorder,
   selection: rowSelection,
   labels: () => labels.value
 })
@@ -231,6 +256,8 @@ defineExpose(exposed)
         </thead>
         <table-body
           :rows="rows"
+          :body-rows="state.rowPinning.rows.value"
+          :pin-row="state.rowPinning.pin"
           :loading="loading"
           :entries="entries"
           :column-count="columnCount"

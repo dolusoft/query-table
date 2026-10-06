@@ -49,12 +49,10 @@ describe('feature matrix data', () => {
       'row-selection',
       'row-expanding',
       'column-pinning-left',
-      'column-sizing'
-    ])
-    expect(inGroup('planned')).toEqual([
+      'column-pinning-right',
       'column-visibility',
       'column-ordering',
-      'column-pinning-right',
+      'column-sizing',
       'row-pinning'
     ])
     expect(inGroup('backend')).toEqual(['grouping', 'faceting'])
@@ -73,13 +71,6 @@ describe('feature matrix data', () => {
       'phone-mode',
       'contract-tests'
     ])
-  })
-
-  it('marks the planned group as 3.1 for the component and usable on the TanStack path', () => {
-    for (const feature of features.filter(entry => entry.group === 'planned')) {
-      expect(feature.component, feature.id).toBe('planned')
-      expect(feature.tanstackPath, feature.id).toBe('yes')
-    }
   })
 
   it('gives every backend-dependent row the backend tag and no support today', () => {

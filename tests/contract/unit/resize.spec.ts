@@ -326,3 +326,24 @@ describe('C-50 Keyboard and autofit', () => {
     expect(th.style.width).toBe('100px')
   })
 })
+
+describe('C-71 Resizing a right-pinned column (unit)', () => {
+  it('the handle stands for the left edge: left widens, by pointer and by key', async () => {
+    headerWidth(100)
+    const m = mountIt({
+      columns: [...columns().slice(0, 2), { field: 'age', pinned: 'right' }],
+      resizable: true
+    })
+    const h = handle(m, 'age')
+    vi.spyOn(h.element, 'setPointerCapture').mockImplementation(() => undefined)
+    pointer(h.element, 'pointerdown', 200)
+    pointer(h.element, 'pointerup', 170)
+    await h.trigger('keydown', { key: 'ArrowLeft' })
+    await h.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    expect(resized(m)).toEqual([
+      { field: 'age', width: 130 },
+      { field: 'age', width: 110 },
+      { field: 'age', width: 50 }
+    ])
+  })
+})

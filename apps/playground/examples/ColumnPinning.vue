@@ -10,23 +10,30 @@ import TablePager from '../harness/TablePager.vue'
 import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
 
 // `pinned: 'left'` keeps ID and Name at the start while the rest scrolls
-// sideways. The table draws pinned columns first and writes `data-pinned`
-// and the measured offset `--qt-pin-left` on their cells (the expand cell
-// too); `position: sticky`, the layer and the background are this page's
-// CSS (the skin):
+// sideways; `pinned: 'right'` keeps a column at the end. The table draws
+// left-pinned columns first and right-pinned ones last, and writes
+// `data-pinned` (empty on the left, `right` on the right) and the measured
+// offset `--qt-pin-left` or `--qt-pin-right` on their cells (the expand cell
+// too, with a left-pinned column); `position: sticky`, the layer and the
+// background are this page's CSS (the skin). One rule serves both sides,
+// since the unset property leaves the other side `auto` (LTR layout):
 //
 //   .qt-table [data-pinned] {
 //     position: sticky;
 //     left: var(--qt-pin-left);
+//     right: var(--qt-pin-right);
 //     z-index: 1;
 //     background: var(--background);
 //   }
 const pinCity = ref(false)
+const pinActiveRight = ref(false)
 const columns = computed(() =>
   wideColumns().map(column =>
     column.field === 'city' && pinCity.value
       ? { ...column, pinned: 'left' as const }
-      : column
+      : column.field === 'active' && pinActiveRight.value
+        ? { ...column, pinned: 'right' as const }
+        : column
   )
 )
 const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
@@ -37,6 +44,10 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
     <Label class="font-normal text-muted-foreground">
       <Checkbox v-model="pinCity" />
       Pin City too (it moves next to Name)
+    </Label>
+    <Label class="font-normal text-muted-foreground">
+      <Checkbox v-model="pinActiveRight" />
+      Pin Active to the right
     </Label>
     <!-- Consumer CSS of this page: the table takes its columns' widths and
          scrolls sideways instead of squeezing them. -->

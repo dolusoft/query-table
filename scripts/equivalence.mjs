@@ -1,7 +1,8 @@
 // Runs the behavior specs (`tests/contract/**`) against two builds of the
 // package and compares them test by test: the result of every test and the
-// ordered `update:query` trace (reason and query) it recorded. v3 ships only
-// when this finds no difference against the 2.2.x baseline (ADR 0006).
+// ordered `update:query` trace (reason and query) it recorded. A release
+// ships only when this finds no difference against the baseline (2.2.x for
+// 3.0.0, 3.0.0 for 3.1.0; ADR 0006).
 //
 //   node scripts/equivalence.mjs [--baseline <target>] [--candidate <target>]
 //                                [--unit-only] [--browser-only]
@@ -57,6 +58,7 @@ const MIN_TESTS = 300
 // test fails the run, so the list cannot go stale.
 const K6_UNIT = 'tests/contract/unit/k6.spec.ts'
 const K6_PAGES = 'tests/contract/browser/k6-pages.browser.spec.ts'
+const COLUMNS_UNIT = 'tests/contract/unit/columns.spec.ts'
 const ADDED_AFTER_BASELINE = [
   // C-63 search, C-65 cursor paging controls, C-62 `useQueryTable`: no such
   // surface in 2.2.x. (C-64's "draws no column without `selection`" is
@@ -75,7 +77,27 @@ const ADDED_AFTER_BASELINE = [
   `${K6_PAGES} > the checkbox column selects rows into the page selection`,
   `${K6_PAGES} > the TanStack path sorts, filters and pages through the query`,
   // C-66: the selection column's DOM hooks.
-  'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract'
+  'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract',
+  // 3.1 additions (C-67 to C-74, ADR 0007): not in a 3.0.0 baseline.
+  `${COLUMNS_UNIT} > C-67 Column visibility [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-68 Columns are controlled [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-69 Column order [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-70 Column controls in slots [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-68 composable: TanStack calls go to the consumer [tanstack]`,
+  `tests/contract/unit/pin.spec.ts > C-71 Right pinning [tanstack] [own]`,
+  `tests/contract/browser/pin-right.browser.spec.ts > C-71 Right pinning [tanstack] [own]`,
+  'tests/contract/browser/accessibility.browser.spec.ts > C-71 accessibility scan',
+  'tests/contract/browser/pin-right.browser.spec.ts > C-71 Resizing a right-pinned column [own]',
+  'tests/contract/unit/resize.spec.ts > C-71 Resizing a right-pinned column (unit)',
+  'tests/contract/browser/dom-contract-3-1.browser.spec.ts > C-72 the DOM with 3.1 features matches the DOM contract',
+  'tests/contract/browser/reorder.browser.spec.ts > C-73 Reorder handle [tanstack] [own]',
+  'tests/contract/unit/reorder.spec.ts > C-73 Reorder handle (unit) [own]',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-73 accessibility scan',
+  'tests/contract/unit/row-pinning.spec.ts > C-74 Row pinning [tanstack] [own]',
+  'tests/contract/unit/row-pinning.spec.ts > C-74 composable: TanStack calls go to the consumer [tanstack]',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
+  // `moveColumn` is its own test, so the other C-44 tests still compare.
+  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

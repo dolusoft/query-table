@@ -6,7 +6,7 @@
 // went unanswered for a second). The Vitest client reconnects two seconds
 // later, but whoever already waits for the connection is bound to the dead
 // socket. The run then either fails with "Failed to connect to the browser
-// session" or, when the stalled page is a tester, waits forever: the
+// session" or "The iframe ... did not become ready within ...", or hangs: the
 // orchestrator waits for a `response:prepare` message that has no timeout.
 //
 // A run that hung or lost its connection is retried once; a run whose tests
@@ -23,7 +23,8 @@ import { dirname, join } from 'node:path'
 const attemptTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 120_000
 const maxAttempts = Number(process.env.BROWSER_TEST_ATTEMPTS) || 2
 const project = process.env.BROWSER_TEST_PROJECT || 'browser'
-const lostConnection = /Failed to connect to the browser session/
+const lostConnection =
+  /Failed to connect to the browser session|The iframe "[^"\r\n]+" did not become ready within \d+ms/
 
 const vitestBin = join(
   dirname(createRequire(import.meta.url).resolve('vitest/package.json')),
