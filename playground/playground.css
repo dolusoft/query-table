@@ -22,6 +22,15 @@
     min-width: 2.5rem;
   }
 
+  /* An unsortable column's title is plain text, a sortable one's sits in the
+     sort button the rule above makes 2.5rem tall. The title keeps the same
+     box, or its filter row sits higher than its neighbours' in the header. */
+  main .qt-title {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+  }
+
   /* A native checkbox in a table slot, or the shadcn-vue Checkbox (a button
      with role="checkbox") of a page's toolbar. */
   main input[type="checkbox"],
