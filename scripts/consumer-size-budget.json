@@ -12,7 +12,7 @@
     "3.2.0 (2026-10-07): component 36260 B (+3933 B over next at 32327 B; composable unchanged). Virtual rows (own windowing: prefix sums, one ResizeObserver, scroll correction, kept focus, print, scrollToIndex) and infinite scroll (IntersectionObserver trigger, load-more slot); ADR 0010. Budget set to measure plus 5%, ceiling rounded up to the next 500 B.",
     "3.2.0 (PR #79, 2026-10-07): component 36390 B (+130 B over next at 36260 B). C-22: a keyed clear all hands the focus to the first filter (focusFirstFilter, one nextTick after the click). Budget set to measure plus 5%; ceiling unchanged.",
     "3.3.0 (change flash, 2026-10-07): component 39088 B (+2698 B over the 36390 B budget measure; composable 22666 B, unchanged within noise). The flash controller and the core row-change tracker (C-92 to C-95, ADR 0011) are 2349 B of it, measured by building without the controller (36739 B); the rest is the off path (one watcher of `flash`) and the bindings in the body. A dynamic import of the controller would move those 2349 B to a second chunk loaded when `flash` turns on, but leaves a window after that where a change is not seen, adds a chunk to the package and makes the start asynchronous; kept static. Budget set to measure plus 5%, ceiling rounded up to the next 500 B.",
-    "3.3.0 (change flash, review fixes, 2026-10-07): component 39216 B (+128 B). A cell mounted under a flashing row is bound to that row's flash, the clock is read only when a mark exists, and a zero duration is read once a frame. Budget set to measure plus 5%; ceiling unchanged."
+    "3.3.0 (change flash, review fixes, 2026-10-07): component 39223 B (+135 B). A cell mounted under a flashing row is bound to that row's flash, the clock is read only when a mark exists, a zero duration is read once a frame, and the timer is set again for an earlier end. Budget set to measure plus 5%; ceiling unchanged."
   ],
   "fixtures": {
     "composable": {
@@ -21,8 +21,8 @@
       "ceilingGzipBytes": 24000
     },
     "component": {
-      "measuredGzipBytes": 39216,
-      "maxGzipBytes": 41177,
+      "measuredGzipBytes": 39223,
+      "maxGzipBytes": 41185,
       "ceilingGzipBytes": 41500
     },
     "local-composable": {
