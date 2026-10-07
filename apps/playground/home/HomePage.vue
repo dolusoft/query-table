@@ -406,30 +406,16 @@ const base = import.meta.env.BASE_URL
       <p class="max-w-3xl text-sm text-muted-foreground sm:text-base">
         {{ architecture.text }}
       </p>
-      <!-- The hero's picture standing still, the card resting on the hub.
-           The detailed diagram (the README's) opens below it. -->
-      <ArchDiagram :animated="false" class="w-full max-w-4xl" />
-      <details v-show="diagramLoaded" class="group w-full max-w-4xl">
-        <summary
-          class="flex min-h-11 w-fit cursor-pointer list-none items-center gap-1 text-sm font-medium sm:pointer-fine:min-h-0 [&::-webkit-details-marker]:hidden"
-        >
-          <ChevronRightIcon
-            aria-hidden="true"
-            class="size-4 transition-transform group-open:rotate-90"
-          />
-          The detailed diagram
-        </summary>
-        <!-- The SVG draws its own light card (it is the README's picture
-             too), so the page adds only the card's ring and radius around
-             it: a padded frame on top of that showed a card inside a card. -->
-        <img
-          v-show="diagramLoaded"
-          :src="diagramUrl"
-          alt="Architecture diagram: the page, the table and the server around v-model:query"
-          class="mt-3 w-full rounded-xl ring-1 ring-foreground/10"
-          @load="diagramLoaded = true"
-        />
-      </details>
+      <!-- The SVG draws its own light card (it is the README's picture too),
+           so the page adds only the card's ring and radius around it: a
+           padded frame on top of that showed a card inside a card. -->
+      <img
+        v-show="diagramLoaded"
+        :src="diagramUrl"
+        alt="Architecture diagram: the page, the table and the server around v-model:query"
+        class="w-full max-w-4xl rounded-xl ring-1 ring-foreground/10"
+        @load="diagramLoaded = true"
+      />
     </section>
   </div>
 </template>
