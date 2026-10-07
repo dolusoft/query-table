@@ -1,4 +1,4 @@
-// Builds playground/skin/test-skin.css, the stylesheet of the browser tests.
+// Builds apps/playground/skin/test-skin.css, the stylesheet of the browser tests.
 //
 //   theme.css         the theme the shadcn-vue CLI wrote (`shadcn-vue init`,
 //                     style reka-nova, base color neutral). Not edited by hand:
@@ -8,8 +8,8 @@
 //                     `@layer components`, so a Tailwind utility on a page
 //                     overrides it (see `buildSkin`).
 //
-//   node playground/skin/gen-skin.ts          write test-skin.css
-//   node playground/skin/gen-skin.ts --check  fail when test-skin.css is stale
+//   node apps/playground/skin/gen-skin.ts          write test-skin.css
+//   node apps/playground/skin/gen-skin.ts --check  fail when test-skin.css is stale
 //
 // Parts of the CLI output are replaced on purpose:
 //   - the Google Fonts `@import url(...)`: tests must not need the network;

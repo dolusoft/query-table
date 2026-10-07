@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { rulesOf } from '@dolusoft/query-protocol'
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import type {
   Column,
@@ -64,45 +64,31 @@ const dragAttrs = (column: Column) => {
 // pending filter draft.
 const canClearAll = computed(() => filters.canClearAll())
 
-// C-22: a disabled button drops the focus to the page. The button a key or
-// assistive technology (a click with `detail` 0) activated hands it to the
-// first filter instead; a pointer click is left alone, so a touch screen
-// opens no keyboard.
-let keyedButton: HTMLButtonElement | null = null
-
-const onClearAll = (event: MouseEvent) => {
-  keyedButton =
-    event.detail === 0 ? (event.currentTarget as HTMLButtonElement) : null
+// C-22: a disabled button drops the focus to the page. When the button holds
+// the focus, a click with `detail` 0 (a key, `element.click()`, some
+// assistive technologies) activates it and the update that clear causes
+// disables it, the focus goes to the first filter instead. A pointer click
+// is left alone, so a touch screen opens no keyboard; nothing else (the
+// `toolbar` slot's `clearFilters()`, a later query) moves the focus.
+const onClearAll = async (event: MouseEvent) => {
+  const button = event.currentTarget as HTMLButtonElement
+  const doc = button.ownerDocument
+  const keyed = event.detail === 0 && doc.activeElement === button
   filters.clearAll()
+  if (!keyed) {
+    return
+  }
+  // The clear queued the re-render that disables the button, or keeps it
+  // enabled when the consumer's query keeps a filter.
+  await nextTick()
+  const active = doc.activeElement
+  if (
+    button.disabled &&
+    (active === button || active === doc.body || active === null)
+  ) {
+    focusFirstFilter(button.closest('table'))
+  }
 }
-
-// The user left the button: a later clear from elsewhere is not theirs.
-const forgetKey = () => {
-  keyedButton = null
-}
-
-// `pre`: the button still holds the focus when the answer turns false.
-watch(
-  canClearAll,
-  can => {
-    const button = keyedButton
-    if (can || button === null) {
-      return
-    }
-    keyedButton = null
-    const doc = button.ownerDocument
-    if (doc.activeElement !== button) {
-      return
-    }
-    void nextTick(() => {
-      const active = doc.activeElement
-      if (active === button || active === doc.body || active === null) {
-        focusFirstFilter(button.closest('table'))
-      }
-    })
-  },
-  { flush: 'pre' }
-)
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -171,7 +157,6 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           :aria-label="labels().clearAllFilters"
           :disabled="!canClearAll"
           @click.stop="onClearAll"
-          @blur="forgetKey"
         >
           <svg
             width="14"

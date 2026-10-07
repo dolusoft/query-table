@@ -118,8 +118,10 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 a narrow number header keeps its filter button at the end [own]',
   // 3.2: a keyed clear all hands the focus to the first filter (C-22); a
   // 3.1 button drops it to the page when it turns disabled.
-  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing an applied filter with the keyboard hands the focus to the first filter',
-  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing text typed and not applied with the keyboard hands the focus to the first filter'
+  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing an applied filter with the key {Enter} hands the focus to the first filter',
+  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing an applied filter with the key [Space] hands the focus to the first filter',
+  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing text typed and not applied with the key {Enter} hands the focus to the first filter',
+  'tests/contract/unit/filter.spec.ts > C-22 Clearing all filters a keyed click hands the focus to the first filter'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

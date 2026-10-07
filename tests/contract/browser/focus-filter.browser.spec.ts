@@ -1,14 +1,16 @@
 import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, ref, type Ref } from 'vue'
 
 import QueryTable, {
+  type Column,
   type FilterDatetimeSlotProps,
   type QueryTableExpose,
   type Query,
   type QueryChangeReason,
-  type TableQuery
+  type TableQuery,
+  type ToolbarSlotProps
 } from '@dolusoft/query-table'
 
 import {
@@ -173,44 +175,97 @@ test('C-54 focusFilter returns false and moves no focus when there is no filter 
   outside.remove()
 })
 
-const renderClearAll = async (filterDebounce: number) => {
-  const query = ref(makeQuery())
+const renderClearAll = async (
+  filterDebounce: number,
+  options: {
+    /** While true, the consumer ignores a `reset` and keeps its filters. */
+    keepFilters?: Ref<boolean>
+    columns?: Column[]
+    initial?: TableQuery
+    /** A `filter-datetime` slot whose only input is disabled. */
+    disabledDate?: boolean
+  } = {}
+) => {
+  const query = ref(options.initial ?? makeQuery())
   const updates: { reason: QueryChangeReason; query: Query }[] = []
+  let clearFilters = () => {}
   await render(
     defineComponent(
       () => () =>
-        h(QueryTable, {
-          query: query.value,
-          columns: columns(),
-          rows: rows(2),
-          filterable: true,
-          hasRightPanel: true,
-          filterDebounce,
-          'onUpdate:query': (next: Query, reason: QueryChangeReason) => {
-            if (!('page' in next)) {
-              throw new Error('Expected a page query')
+        h(
+          QueryTable,
+          {
+            query: query.value,
+            columns: options.columns ?? columns(),
+            rows: rows(2),
+            filterable: true,
+            hasRightPanel: true,
+            filterDebounce,
+            'onUpdate:query': (next: Query, reason: QueryChangeReason) => {
+              if (!('page' in next)) {
+                throw new Error('Expected a page query')
+              }
+              traceUpdate(next, reason)
+              updates.push({ reason, query: next })
+              if (reason !== 'reset' || options.keepFilters?.value !== true) {
+                query.value = next
+              }
             }
-            traceUpdate(next, reason)
-            updates.push({ reason, query: next })
-            query.value = next
+          },
+          {
+            ...(options.disabledDate === true
+              ? {
+                  'filter-datetime': () => [
+                    h('input', {
+                      disabled: true,
+                      'aria-label': 'Unavailable date'
+                    })
+                  ]
+                }
+              : {}),
+            toolbar: (slot: ToolbarSlotProps) => {
+              clearFilters = slot.clearFilters
+              return [
+                h(
+                  'button',
+                  {
+                    class: 'toolbar-clear',
+                    disabled: !slot.canClearFilters,
+                    onClick: slot.clearFilters
+                  },
+                  'Clear'
+                )
+              ]
+            }
           }
-        })
+        )
     )
   )
-  return { updates, button: el<HTMLButtonElement>('.qt-clear-all-button') }
+  return {
+    updates,
+    button: el<HTMLButtonElement>('.qt-clear-all-button'),
+    clearFilters: () => clearFilters()
+  }
 }
 
+/** The focus is where a disabled button leaves it, not on a filter. */
+const focusLeftOn = (button: HTMLButtonElement) =>
+  document.activeElement === button ||
+  document.activeElement === document.body ||
+  document.activeElement === null
+
 test.each([
-  ['an applied filter', 0],
-  ['text typed and not applied', 60_000]
+  ['an applied filter', '{Enter}', 0],
+  ['an applied filter', '[Space]', 0],
+  ['text typed and not applied', '{Enter}', 60_000]
 ] as const)(
-  'C-22 clearing %s with the keyboard hands the focus to the first filter',
-  async (_, filterDebounce) => {
+  'C-22 clearing %s with the key %s hands the focus to the first filter',
+  async (_, key, filterDebounce) => {
     const { updates, button } = await renderClearAll(filterDebounce)
     await userEvent.fill(page.getByCSS('th[data-field="name"] input'), 'ali')
     await expect.poll(() => button.disabled).toBe(false)
     button.focus()
-    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard(key)
     await expect.poll(() => button.disabled).toBe(true)
     const first = el<HTMLInputElement>('th[data-field="id"] .qt-filter-input')
     await expect.poll(() => document.activeElement).toBe(first)
@@ -233,5 +288,62 @@ test('C-22 a pointer click on clear all moves no focus to a filter', async () =>
   await expect.poll(() => button.disabled).toBe(true)
   await sleep(0)
   expect(updates.map(update => update.reason)).toEqual(['filter', 'reset'])
-  expect(document.activeElement?.tagName).not.toBe('INPUT')
+  expect(focusLeftOn(button)).toBe(true)
+})
+
+test('C-22 a clear all button the consumer keeps enabled keeps the focus, and a later clearFilters() moves none', async () => {
+  const keepFilters = ref(true)
+  const { updates, button, clearFilters } = await renderClearAll(0, {
+    keepFilters,
+    initial: makeQuery({ filters: [rule('name', 'Contains', 'ali')] })
+  })
+  expect(button.disabled).toBe(false)
+  button.focus()
+  await userEvent.keyboard('{Enter}')
+  await sleep(0)
+  await sleep(0)
+  expect(updates.map(update => update.reason)).toEqual(['reset'])
+  expect(button.disabled).toBe(false)
+  expect(document.activeElement).toBe(button)
+  // The consumer's own clear, with the focus still on the button: the
+  // button turns disabled, and no filter takes the focus (P13).
+  keepFilters.value = false
+  clearFilters()
+  await expect.poll(() => button.disabled).toBe(true)
+  await sleep(0)
+  expect(updates.map(update => update.reason)).toEqual(['reset', 'reset'])
+  expect(focusLeftOn(button)).toBe(true)
+})
+
+test('C-22 clearFilters() from the toolbar slot moves no focus', async () => {
+  const { updates, button } = await renderClearAll(0, {
+    initial: makeQuery({ filters: [rule('name', 'Contains', 'ali')] })
+  })
+  const toolbar = el<HTMLButtonElement>('.toolbar-clear')
+  toolbar.focus()
+  await userEvent.keyboard('{Enter}')
+  await expect.poll(() => button.disabled).toBe(true)
+  await sleep(0)
+  expect(updates.map(update => update.reason)).toEqual(['reset'])
+  expect(focusLeftOn(toolbar)).toBe(true)
+  expect(document.activeElement?.closest('thead')).toBeNull()
+})
+
+test('C-22 with no filter that can take the focus, a keyed clear all leaves it where the browser puts it', async () => {
+  // The only filter is a date slot whose input is disabled.
+  const { updates, button } = await renderClearAll(0, {
+    columns: [
+      { field: 'id', title: 'ID', type: 'number', filterable: false },
+      { field: 'joined', title: 'Joined', type: 'date' }
+    ],
+    disabledDate: true,
+    initial: makeQuery({ filters: [rule('joined', 'Equal', '2024-05-01')] })
+  })
+  expect(button.disabled).toBe(false)
+  button.focus()
+  await userEvent.keyboard('{Enter}')
+  await expect.poll(() => button.disabled).toBe(true)
+  await sleep(0)
+  expect(updates.map(update => update.reason)).toEqual(['reset'])
+  expect(focusLeftOn(button)).toBe(true)
 })

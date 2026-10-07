@@ -836,11 +836,24 @@ th[data-filtered] .qt-filter-input {
     min-height: 2.75rem;
   }
 
+  /* A narrow data column keeps 6.5rem instead of 5.5rem: its filter input
+     and the button inside the input's end then both get a 44px target. */
+  .qt-table th[data-field] {
+    min-width: 6.5rem;
+  }
+
   /* Under 6rem the button sits inside the input's end and keeps its 1.75rem
-     box, or it would cover the input; an invisible box around it takes the
-     44px target instead. It reaches into the input's own room at its end and
-     the cell's padding, never the next column. */
+     box, or it would cover the input; an invisible box takes the 44px target
+     instead. It grows to the end, up to the cell's padding edge (the button
+     ends 0.125rem inside the input, the cell pads 0.5rem), never into the
+     next column, and to the start only over the room the input keeps at its
+     end (2.25rem here), never over its text: a tap in the middle of the
+     input lands on the input. */
   @container qt-filter (width < 6rem) {
+    .qt-filter-input,
+    .qt-filter-input[type='date'] {
+      padding-right: 2.25rem;
+    }
     .qt-filter-button {
       min-width: 0;
       min-height: 0;
@@ -849,10 +862,10 @@ th[data-filtered] .qt-filter-input {
         content: '';
         position: absolute;
         top: 50%;
-        left: 50%;
+        right: -0.625rem;
         width: 2.75rem;
         height: 2.75rem;
-        transform: translate(-50%, -50%);
+        transform: translateY(-50%);
       }
     }
   }
