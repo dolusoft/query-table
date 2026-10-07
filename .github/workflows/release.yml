@@ -8,6 +8,10 @@ name: Release
 #            tarball per package and the conformance suite
 #            (conformance-<revision>.tgz and the release notes that pin it,
 #            C-79), and uploads them as a workflow artifact.
+#   npm      no install and no repository code: publishes the same tarballs
+#            to npm with trusted publishing (OIDC: no token, no OTP).
+#            Each package on npmjs.com lists this repository and
+#            `release.yml` as its trusted publisher.
 #   publish  write token, no install and no repository code: downloads the
 #            tarballs, creates one GitHub Release with all of them, checks
 #            that every asset URL answers, and optionally tells one consumer
@@ -140,8 +144,49 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  npm:
+    needs: verify
+    # Waits for a reviewer of the `release` environment (Zahid or Enes);
+    # the npm trusted publisher accepts this environment only.
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      # The artifact keeps the common root of its paths: release/ and
+      # release-extra/ land side by side in the workspace.
+      - uses: actions/download-artifact@v4
+        with:
+          name: tarballs
+          path: .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install --global npm@latest
+
+      # Dependencies first. A version already on npm is skipped, so a re-run
+      # is safe.
+      - name: Publish
+        run: |
+          for pkg in query-protocol query-table-core query-table; do
+            if npm view "@dolusoft/$pkg@$VERSION" version > /dev/null 2>&1; then
+              echo "@dolusoft/$pkg@$VERSION is already published: skipped."
+              continue
+            fi
+            npm publish "./release/dolusoft-$pkg-$VERSION.tgz" --access public
+          done
+
   publish:
     needs: verify
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
