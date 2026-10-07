@@ -31,9 +31,11 @@ import { repositoryUrl } from '../home/home-content'
 // NavigationMenu on the left; search, GitHub and the theme menu on the
 // right. Below `md` the links move into a Sheet behind a menu button. The
 // documentation pages pass a menu button of their own (`#menu`, the
-// sidebar's). On every page the bar's content sits in the 96rem frame the
-// documentation layout is centered in (App.vue), as on the shadcn-vue docs:
-// the name stays put going from the home page to the docs.
+// sidebar's), which shows up to 768px: there the links show from 769px, so
+// the button and the links never share the bar. On every page the bar's
+// content sits in the 96rem frame the documentation layout is centered in
+// (App.vue), as on the shadcn-vue docs: the name stays put going from the
+// home page to the docs.
 const theme = defineModel<Theme | 'system'>('theme', { required: true })
 defineProps<{ shortcut: string }>()
 const emit = defineEmits<{ search: [] }>()
@@ -101,7 +103,7 @@ const menuOpen = ref(false)
       <NavigationMenu
         :viewport="false"
         aria-label="Site"
-        class="hidden md:flex"
+        :class="$slots.menu ? 'hidden min-[769px]:flex' : 'hidden md:flex'"
       >
         <NavigationMenuList>
           <NavigationMenuItem v-for="link in links" :key="link.to">
@@ -126,11 +128,15 @@ const menuOpen = ref(false)
       </NavigationMenu>
       <div class="ml-auto flex items-center gap-1">
         <DatasetMenu collapse class="hidden sm:inline-flex" />
+        <!-- 12rem from md to lg: with the site menu shown and a 15px
+             scrollbar, 14rem made the bar wider than the window up to about
+             790px (the name broke onto two lines, the page scrolled 6px
+             sideways at 768px). -->
         <Button
           type="button"
           variant="secondary"
           data-testid="doc-search-button"
-          class="min-h-11 min-w-11 gap-2 font-normal text-muted-foreground sm:pointer-fine:min-h-8 sm:w-56 sm:justify-start sm:pr-1 lg:w-64"
+          class="min-h-11 min-w-11 gap-2 font-normal text-muted-foreground sm:pointer-fine:min-h-8 sm:w-56 sm:justify-start sm:pr-1 md:w-48 lg:w-64"
           @click="emit('search')"
         >
           <SearchIcon class="sm:hidden" />
