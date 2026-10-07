@@ -87,6 +87,11 @@ export const createRowChangeTracker = <T extends object>(
   let answered = false
   /** Some non-empty rows were seen since the start. */
   let seenRows = false
+  /**
+   * The query changed while a hint was given: the rows that answer it
+   * start over, unless they are tagged `append`.
+   */
+  let pendingReset = false
   const readers = new Map<string, Reader>()
   const reader = (field: string): Reader => {
     let read = readers.get(field)
@@ -106,6 +111,7 @@ export const createRowChangeTracker = <T extends object>(
     settling = false
     answered = false
     seenRows = false
+    pendingReset = false
     readers.clear()
   }
 
@@ -122,9 +128,16 @@ export const createRowChangeTracker = <T extends object>(
 
     if (query === null || !sameQuery(query, input.query)) {
       if (!first) {
-        result.reset = true
         settling = true
         answered = false
+        // With a hint the rows that answer the query decide: `append` (the
+        // next page of an infinite list) keeps what runs, anything else
+        // starts over. Without one the query change starts over now.
+        if (input.hint === undefined) {
+          result.reset = true
+        } else {
+          pendingReset = true
+        }
       }
       query = cloneQuery(input.query)
     }
@@ -142,11 +155,20 @@ export const createRowChangeTracker = <T extends object>(
         // hint says: a consumer that always passes `live` still sees no
         // flash on a sort or a filter.
         quiet = input.hint !== 'live' || settling || !seenRows
-        if (input.hint === 'snapshot' || input.hint === 'reset') {
+        if (
+          input.hint === 'snapshot' ||
+          input.hint === 'reset' ||
+          (pendingReset && input.hint !== 'append')
+        ) {
           result.reset = !first
         }
+        pendingReset = false
         settling = false
       } else {
+        if (pendingReset) {
+          result.reset = true
+          pendingReset = false
+        }
         quiet = first || settling || input.loading || !seenRows
         if (!input.loading) {
           settling = false

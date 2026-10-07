@@ -333,10 +333,15 @@ describe('C-92 Row-change tracker [own]', () => {
     it('a constant live hint: the first rows after a query change are its answer', () => {
       const t = track({ rows: rows([1, 1], [2, 2]), hint: 'live' })
       const sort = q({ sort: { field: 'price', direction: 'desc' } })
-      expect(t.step({ query: sort, hint: 'live' }).reset).toBe(true)
-      nothing(t.step({ rows: rows([2, 9], [3, 3]), hint: 'live' }))
+      // With a hint the answer decides; until it comes nothing is reset.
+      expect(t.step({ query: sort, hint: 'live' }).reset).toBe(false)
+      const answer = t.step({ rows: rows([2, 9], [3, 3]), hint: 'live' })
+      nothing(answer)
+      expect(answer.reset).toBe(true)
       // In one update with the query, too.
-      nothing(t.step({ query: q(), rows: rows([4, 4]), hint: 'live' }))
+      const together = t.step({ query: q(), rows: rows([4, 4]), hint: 'live' })
+      nothing(together)
+      expect(together.reset).toBe(true)
       // After the answer, live updates flash again.
       expect(t.step({ rows: rows([4, 5]), hint: 'live' }).changed.size).toBe(1)
     })
@@ -364,6 +369,49 @@ describe('C-92 Row-change tracker [own]', () => {
       // Data of the old query arrives first and takes the boundary.
       nothing(t.step({ rows: rows([1, 2]), hint: 'live' }))
       expect(t.step({ rows: rows([5, 5]), hint: 'live' }).added).toEqual([5])
+    })
+
+    it('append after a query change (the next page) keeps what runs: no reset, the new rows are a baseline', () => {
+      const t = track({ rows: rows([1, 1], [2, 2]), hint: 'live' })
+      expect(
+        t.step({ rows: rows([1, 5], [2, 2]), hint: 'live' }).changed.size
+      ).toBe(1)
+      // The infinite list asks for page 2, then appends it.
+      expect(t.step({ query: q({ page: 2 }), hint: 'live' }).reset).toBe(false)
+      const appended = t.step({
+        rows: rows([1, 5], [2, 2], [3, 3], [4, 4]),
+        hint: 'append'
+      })
+      nothing(appended)
+      expect(appended.reset).toBe(false)
+      // In one update with the query, too.
+      const together = t.step({
+        query: q({ page: 3 }),
+        rows: rows([1, 5], [2, 2], [3, 3], [4, 4], [5, 5]),
+        hint: 'append'
+      })
+      nothing(together)
+      expect(together.reset).toBe(false)
+      // Live changes flash again after it.
+      expect(
+        t.step({
+          rows: rows([1, 5], [2, 2], [3, 3], [4, 9], [5, 5]),
+          hint: 'live'
+        }).changed.size
+      ).toBe(1)
+    })
+
+    it('without a hint a query change resets at once, even before the next page arrives', () => {
+      const t = track({ rows: rows([1, 1]) })
+      expect(t.step({ query: q({ page: 2 }) }).reset).toBe(true)
+    })
+
+    it('a hint dropped while a query change waits resets with the next rows', () => {
+      const t = track({ rows: rows([1, 1]), hint: 'live' })
+      expect(t.step({ query: q({ page: 2 }), hint: 'live' }).reset).toBe(false)
+      expect(
+        t.step({ rows: rows([1, 1], [2, 2]), hint: undefined }).reset
+      ).toBe(true)
     })
 
     it('a hint is read only when rows change', () => {

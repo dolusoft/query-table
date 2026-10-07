@@ -139,6 +139,8 @@ const startFlash = <T extends object>(
   const durationNow = () => {
     if (frameRequest === undefined) {
       duration = readDuration(o.table.value)
+      // Read once a frame, a zero length (reduced motion) included.
+      requestFrame()
     }
     return duration
   }
@@ -159,8 +161,8 @@ const startFlash = <T extends object>(
     timer = setTimeout(
       () => {
         timer = undefined
-        // A frame of slack: what ends within it goes in the same wake.
-        const { nearest, dropped } = marks.prune(performance.now() + 16)
+        // Only what has ended goes; the next wake takes the rest.
+        const { nearest, dropped } = marks.prune(performance.now())
         if (dropped) {
           version.value++
         }
@@ -287,6 +289,8 @@ const startFlash = <T extends object>(
   const written = new WeakMap<Element, string>()
   /** Rows with something bound on them or on one of their cells. */
   const boundRows = new WeakSet<Element>()
+  /** The row flash a cell was last seen under. */
+  const seenUnder = new WeakMap<Element, number>()
 
   const bindTo = (
     el: HTMLElement,
@@ -326,10 +330,15 @@ const startFlash = <T extends object>(
   }
 
   const view: FlashView<T> = {
-    row: (row, index) =>
-      live(rowMarksOf(row, index)?.row, performance.now())?.phase,
-    cell: (row, index, field) =>
-      live(rowMarksOf(row, index)?.cells?.get(field), performance.now())?.phase,
+    // The clock is read only for an element that has a mark.
+    row: (row, index) => {
+      const mark = rowMarksOf(row, index)?.row
+      return mark ? live(mark, performance.now())?.phase : undefined
+    },
+    cell: (row, index, field) => {
+      const mark = rowMarksOf(row, index)?.cells?.get(field)
+      return mark ? live(mark, performance.now())?.phase : undefined
+    },
     bind: vnode => {
       const tr = vnode.el as HTMLTableRowElement | null
       const index = Number(vnode.props?.['data-row-index'])
@@ -343,17 +352,37 @@ const startFlash = <T extends object>(
         return
       }
       const now = performance.now()
-      bindTo(tr, live(rowMarks?.row, now), now, false)
+      const rowMark = live(rowMarks?.row, now)
+      // The row was bound to this flash in an earlier render: a cell seen
+      // only now was mounted since (a column shown), and the row's value,
+      // written when the row was bound, is not its time.
+      const rowWasBound = rowMark !== null && bound.get(tr) === rowMark.gen
+      bindTo(tr, rowMark, now, false)
       const rowValue = written.get(tr) ?? ''
       let any = bound.has(tr)
       const cells = tr.children
       for (let i = 0; i < cells.length; i++) {
         const td = cells[i] as HTMLElement
         const field = td.getAttribute('data-field')
-        // A cell without a flash of its own inherits the row's value.
         const own =
           field === null ? null : live(rowMarks?.cells?.get(field), now)
-        bindTo(td, own, now, rowValue !== '')
+        if (own) {
+          bindTo(td, own, now, rowValue !== '')
+        } else if (
+          rowMark &&
+          (bound.get(td) === rowMark.gen ||
+            (rowWasBound && seenUnder.get(td) !== rowMark.gen))
+        ) {
+          // A cell mounted after its row was bound takes the row's flash
+          // with its own elapsed time.
+          bindTo(td, rowMark, now, false)
+        } else {
+          // A cell without a flash of its own inherits the row's value.
+          bindTo(td, null, now, false)
+        }
+        if (rowMark) {
+          seenUnder.set(td, rowMark.gen)
+        }
         any ||= bound.has(td)
       }
       if (any) {

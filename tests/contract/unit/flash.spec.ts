@@ -15,6 +15,7 @@ import { renderToString } from 'vue/server-renderer'
 
 import QueryTable, { type RowsUpdate } from '@dolusoft/query-table'
 
+import { liveUpdateDom } from '../../support/live-update-dom'
 import {
   makeColumns,
   makeQuery,
@@ -123,6 +124,28 @@ describe('C-93 Change flash: what flashes [own]', () => {
       { id: 6, name: 'Fay', age: 22, joined: '2024-06-01' }
     ])
     expect(marks(m)).toEqual(['td:1/age=a', 'tr:5=a'])
+  })
+
+  it('keeps the running flashes when the next page of an infinite list comes tagged append', async () => {
+    const m = mountFlash({ rowsUpdate: 'live' })
+    await setRows(m, withRow(rowsOf(m), 2, { age: 26 }))
+    expect(marks(m)).toEqual(['td:1/age=a'])
+    // The list asks for page 2: the query changes, the rows do not yet.
+    await m.wrapper.setProps({ query: { ...makeQuery(), page: 2 } })
+    expect(marks(m)).toEqual(['td:1/age=a'])
+    // The page arrives, appended: the flash runs on, the new rows are quiet.
+    await setRows(
+      m,
+      [...rowsOf(m), { id: 6, name: 'Fay', age: 22, joined: '2024-06-01' }],
+      { rowsUpdate: 'append' }
+    )
+    expect(marks(m)).toEqual(['td:1/age=a'])
+    m.wrapper.unmount()
+    // Without a hint a query change still clears every flash.
+    const plain = mountFlash()
+    await setRows(plain, withRow(rowsOf(plain), 2, { age: 26 }))
+    await plain.wrapper.setProps({ query: { ...makeQuery(), page: 2 } })
+    expect(marks(plain)).toEqual([])
   })
 
   it('compares by value: a new object with the same values flashes nothing', async () => {
@@ -451,13 +474,20 @@ describe('C-94 Change flash: marks and timing [own]', () => {
             ? undefined
             : `--qt-flash-duration: ${duration}`
       })
+      const read = vi.spyOn(globalThis, 'getComputedStyle')
       await setRows(m, withRow(rowsOf(m), 1, { age: 31 }))
       expect(marks(m)).toEqual([])
+      // A second change in the same frame reads no style again.
+      await setRows(m, withRow(rowsOf(m), 1, { age: 32 }))
+      expect(read).toHaveBeenCalledTimes(1)
+      read.mockRestore()
+      // No timer: only the frame that bounds the read.
+      await elapse(20)
       expect(vi.getTimerCount()).toBe(0)
       await m.wrapper.setProps({ style: `--qt-flash-duration: ${DURATION}ms` })
       await setRows(
         m,
-        withRow(rowsOf(m), 1, { age: 31 }).map(row => ({ ...row }))
+        withRow(rowsOf(m), 1, { age: 32 }).map(row => ({ ...row }))
       )
       expect(marks(m)).toEqual([])
     }
@@ -634,6 +664,7 @@ describe('C-95 Change flash off and DOM contract of 3.3 [own]', () => {
     const tally = { reads: 0 }
     const s = spies()
     const m = mountTable({ rowKey: 'id', ...props })
+    const mountListeners = s.addEventListener.mock.calls.length
     const html: string[] = [m.wrapper.html()]
     let rows = makeRows()
     for (let i = 0; i < 20; i++) {
@@ -642,10 +673,24 @@ describe('C-95 Change flash off and DOM contract of 3.3 [own]', () => {
       html.push(m.wrapper.html())
     }
     const before = counts(s)
+    const listeners = {
+      // Every listener added on the window or the document.
+      global: s.addEventListener.mock.contexts.filter(
+        target => target === window || target === document
+      ).length,
+      mount: mountListeners,
+      updates: s.addEventListener.mock.calls.length - mountListeners
+    }
     m.wrapper.unmount()
     vi.restoreAllMocks()
-    return { calls: before, reads: tally.reads, html }
+    return { calls: before, reads: tally.reads, html, listeners }
   }
+
+  it('flash false draws the DOM of the 3.2 build, the snapshot flash-off-dom.spec.ts checks on both builds', async () => {
+    await expect(await liveUpdateDom({ flash: false })).toMatchFileSnapshot(
+      './__snapshots__/flash-off-dom.html'
+    )
+  })
 
   it('flash off (absent or false) calls nothing, walks no rows and draws the 3.2 DOM', async () => {
     const absent = await run({})
@@ -679,6 +724,13 @@ describe('C-95 Change flash off and DOM contract of 3.3 [own]', () => {
       style: `--qt-flash-duration: ${DURATION}ms`
     })
     expect(on.calls.addEventListener).toBe(absent.calls.addEventListener)
+    // Absolutely: nothing on the window or the document, nothing while the
+    // rows change, and the mount adds the table's own listeners only.
+    expect(on.listeners.global).toBe(0)
+    expect(on.listeners.updates).toBe(0)
+    expect(absent.listeners.global).toBe(0)
+    expect(absent.listeners.updates).toBe(0)
+    expect(on.listeners.mount).toBe(absent.listeners.mount)
     expect(rowChanges.createRowChangeTracker).toHaveBeenCalledTimes(1)
   })
 

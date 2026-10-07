@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
-import { h } from 'vue'
+import { defineComponent, h, shallowRef } from 'vue'
 
 import { setTheme, type Theme } from '../../../apps/playground/harness/theme'
 import {
@@ -199,8 +199,10 @@ describe('C-94 Change flash: marks and timing [own]', () => {
       { rows, height: 300 }
     )
     const box = host.api.box()
-    await host.setRows(withRow(host.rows(), 1, { age: 99 }))
+    // The flash begins in the update: the clock starts before the frames
+    // `setRows` waits.
     const start = performance.now()
+    await host.setRows(withRow(host.rows(), 1, { age: 99 }))
     expect(animationOf(cell(0, 'age'))).toBeDefined()
     await sleep(300)
     await scrollTo(box, 6000)
@@ -228,6 +230,55 @@ describe('C-94 Change flash: marks and timing [own]', () => {
     expect(cell(0, 'age')).toBe(back)
     expect(parseFloat(back.style.getPropertyValue('--qt-flash-elapsed'))).toBe(
       written
+    )
+  })
+
+  test('a cell mounted while its row flashes (a column shown) runs for the time the row has left', async () => {
+    const columns = shallowRef<Array<Record<string, unknown>>>([
+      { field: 'id', title: 'ID', type: 'number', pinned: 'left', hide: true },
+      { field: 'name', title: 'Name' },
+      { field: 'age', title: 'Age', type: 'number' }
+    ])
+    let api: HostApi | null = null
+    const rows = scrollRows(20)
+    const Wrapper = defineComponent(
+      () => () =>
+        h(ScrollHost as never, {
+          rows,
+          height: 0,
+          tableProps: { flash: true, columns: columns.value },
+          api: (given: HostApi) => {
+            api = given
+          }
+        })
+    )
+    await render(Wrapper as never)
+    await frames(2)
+    const start = performance.now()
+    api!.setRows([...rows, { id: 21, name: 'New', age: 30 }])
+    await frames(2)
+    const row = document.querySelector<HTMLElement>(
+      '.qt-table tbody > tr[data-row-index="20"]'
+    )!
+    expect(row.dataset.flash).toBe('a')
+    // Shown 900 ms into the flash: the pinned cell (C-46) is mounted now.
+    await sleep(900 - (performance.now() - start))
+    columns.value = columns.value.map(column => ({ ...column, hide: false }))
+    await frames(2)
+    const late = cell(20, 'id')!
+    const animation = animationOf(late)!
+    expect(animation.animationName).toBe('qt-flash-row-a')
+    const timing = animation.effect!.getComputedTiming()
+    const remaining = Number(timing.endTime) - Number(timing.localTime)
+    expect(
+      Math.abs(remaining - (2000 - (performance.now() - start)))
+    ).toBeLessThan(50)
+    expect(
+      parseFloat(late.style.getPropertyValue('--qt-flash-elapsed'))
+    ).toBeGreaterThan(850)
+    // The cells that were there inherit the row's value: none of their own.
+    expect(cell(20, 'name')!.style.getPropertyValue('--qt-flash-elapsed')).toBe(
+      ''
     )
   })
 
@@ -322,6 +373,42 @@ describe('C-94 Change flash: marks and timing [own]', () => {
   })
 })
 describe('C-93 Change flash: what flashes [own]', () => {
+  // The focus case of virtual.browser.spec.ts (C-86) with `flash` on and
+  // flashes running on the focused row and next to it: they move neither
+  // the focus nor the kept row. (Rows given after the focus drop the kept
+  // row with or without flash, as 3.2.1 does: a C-86 matter, not tested.)
+  test('with flash on, keeps the focused row drawn after it leaves the window', async () => {
+    const host = await mountHost(
+      { virtual: { overscan: 2 } },
+      {
+        rows: scrollRows(1000),
+        height: 300,
+        slots: {
+          'cell-name': (p: { row: { name: string } }) =>
+            h('button', { class: 'cell-button' }, p.row.name)
+        }
+      }
+    )
+    await host.setRows(
+      withRow(withRow(host.rows(), 3, { age: 99 }), 4, { age: 98 })
+    )
+    expect(cell(2, 'age')!.dataset.flash).toBe('a')
+    expect(cell(3, 'age')!.dataset.flash).toBe('a')
+    const button = document.querySelector<HTMLButtonElement>(
+      '.qt-table tbody > tr[data-row-index="3"] .cell-button'
+    )!
+    button.focus()
+    await scrollTo(host.api.box(), 15000)
+    expect(drawnIndexes()).toContain(3)
+    expect(document.activeElement).toBe(button)
+    // The kept row is the same element, its flash still running.
+    expect(cell(3, 'age')!.dataset.flash).toBe('a')
+    expect(animationOf(cell(3, 'age'))?.playState).toBe('running')
+    button.blur()
+    await frames(3)
+    expect(drawnIndexes()).not.toContain(3)
+  })
+
   test('sorting clears the flashes and its answer does not flash', async () => {
     const host = await mountHost({ sortable: true })
     await host.setRows(withRow(host.rows(), 1, { age: 99 }))
@@ -385,18 +472,29 @@ describe('C-94 Change flash: the skin [own]', () => {
     const host = await mountHost()
     await host.setRows(withRow(host.rows(), 1, { age: 99 }))
     const animation = animationOf(cell(0, 'age'))!
-    animation.pause()
-    animation.currentTime = 0
-    const light = getComputedStyle(cell(0, 'age')!).backgroundColor
+    // Running: the switch neither restarts the animation nor moves its end.
+    await sleep(300)
     const before = animation.effect!.getComputedTiming()
+    const switched = performance.now()
     setTheme('dark')
     await frames(2)
-    const dark = getComputedStyle(cell(0, 'age')!).backgroundColor
     const after = animation.effect!.getComputedTiming()
+    const gone = performance.now() - switched
     expect(animationOf(cell(0, 'age'))).toBe(animation)
-    expect(dark).not.toBe(light)
+    expect(animation.playState).toBe('running')
     expect(after.endTime).toBe(before.endTime)
-    expect(after.localTime).toBe(before.localTime)
+    expect(Number(before.localTime)).toBeGreaterThan(250)
+    expect(
+      Math.abs(Number(after.localTime) - Number(before.localTime) - gone)
+    ).toBeLessThan(20)
+    // At the same progress, the color is the dark one.
+    animation.pause()
+    animation.currentTime = 500
+    const dark = getComputedStyle(cell(0, 'age')!).backgroundColor
+    setTheme('light')
+    await frames(1)
+    const light = getComputedStyle(cell(0, 'age')!).backgroundColor
+    expect(dark).not.toBe(light)
   })
 
   test('reduced motion: the skin sets no length and the table marks nothing', async () => {

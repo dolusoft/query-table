@@ -312,9 +312,9 @@ export const domInlineStyles: InlineStyleEntry[] = [
   },
   {
     property: '--qt-flash-elapsed',
-    on: 'tbody > tr[data-flash], tbody > tr > td[data-flash]',
+    on: 'tbody > tr[data-flash], tbody > tr > td[data-flash], tbody > tr[data-flash] > td',
     description:
-      'With `flash`: the time gone since the flash began, in `ms`, on a row or cell bound after it began (it came into the window of a virtual body, it was mounted again, or the flash that governs it changed); a cell without a flash of its own inherits it from its row (C-94). A time, not geometry. Use it as `animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1)`, so the animation runs for the time it has left.',
+      'With `flash`: the time gone since the flash began, in `ms`, on a row or cell bound after it began (it came into the window of a virtual body, it was mounted again, or the flash that governs it changed); a cell without a flash of its own inherits it from its row, and one mounted after its row was bound (a column shown) carries its own (C-94). A time, not geometry. Use it as `animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1)`, so the animation runs for the time it has left.',
     addedBy: 'C-94'
   }
 ]
