@@ -49,7 +49,7 @@ body:
     attributes:
       label: Version
       description: The installed version of the package you picked (`pnpm why <package>` or `npm ls <package>`).
-      placeholder: 3.2.0
+      placeholder: 3.2.1
     validations:
       required: true
   - type: input
