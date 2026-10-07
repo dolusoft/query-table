@@ -123,6 +123,8 @@ const startFlash = <T extends object>(
   /** The duration read in this frame (valid while a frame is requested). */
   let duration = 0
   let timer: ReturnType<typeof setTimeout> | undefined
+  /** The end the timer wakes at. */
+  let timerAt = Infinity
   /**
    * The first generation started in the update being drawn: an element
    * bound to it in the same render gets no elapsed time.
@@ -149,6 +151,7 @@ const startFlash = <T extends object>(
     if (timer !== undefined) {
       clearTimeout(timer)
       timer = undefined
+      timerAt = Infinity
     }
     if (frameRequest !== undefined) {
       cancelAnimationFrame(frameRequest)
@@ -158,9 +161,14 @@ const startFlash = <T extends object>(
 
   /** Wake at `end`: drop what ended, then wake at the next end. */
   const wakeAt = (end: number) => {
+    if (timer !== undefined) {
+      clearTimeout(timer)
+    }
+    timerAt = end
     timer = setTimeout(
       () => {
         timer = undefined
+        timerAt = Infinity
         // Only what has ended goes; the next wake takes the rest.
         const { nearest, dropped } = marks.prune(performance.now())
         if (dropped) {
@@ -262,8 +270,9 @@ const startFlash = <T extends object>(
           })
         }
         requestFrame()
-        // Every mark lasts as long: a timer already set wakes first.
-        if (timer === undefined) {
+        // A timer set for a later end (the skin shortened the duration)
+        // is set again; one set for an earlier end wakes first.
+        if (at + length < timerAt) {
           wakeAt(at + length)
         }
       }

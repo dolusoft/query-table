@@ -46,7 +46,7 @@ The package ships no stylesheet and takes no styling props. The inline styles ar
 
 Why: every product has its own design system. A library that owns any of the look forces overrides.
 
-Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; the CSS leak scan (`pnpm check:no-css-leak`, run after the build; its marks are checked by `tests/repo/no-css-leak.spec.ts`; added with the implementation of ADR 0011) fails when `@keyframes`, `<style`, `insertRule`, `adoptedStyleSheets`, `CSSStyleSheet`, `.animate(` or a `qt-flash-row-`/`qt-flash-cell-` keyframe name is in the `dist/` or the tarball of any package; C-31 asserts the only inline styles; `contract/dom.ts` lists the inline style the DOM test allows.
+Check: `pnpm check:package` fails when a `.css` file is in `dist/` or the tarball; the CSS leak scan (`tests/repo/no-css-leak.spec.ts`, added with the implementation of ADR 0011) fails when `@keyframes`, `<style` or `insertRule` is in the `dist/` or the tarball of any package; C-31 asserts the only inline styles; `contract/dom.ts` lists the inline style the DOM test allows.
 
 ## P6 The DOM is public API
 

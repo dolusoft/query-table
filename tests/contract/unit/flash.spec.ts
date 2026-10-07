@@ -530,6 +530,32 @@ describe('C-94 Change flash: marks and timing [own]', () => {
     expect(marks(m)).toEqual([])
   })
 
+  it('a duration the skin shortens during a flash ends the newer flash on time', async () => {
+    const m = mountFlash()
+    await setRows(m, withRow(rowsOf(m), 1, { age: 31 }))
+    // A frame goes by, so the duration is read again.
+    await elapse(20)
+    await m.wrapper.setProps({ style: '--qt-flash-duration: 100ms' })
+    await setRows(m, withRow(rowsOf(m), 2, { age: 26 }))
+    expect(marks(m)).toEqual(['td:0/age=a', 'td:1/age=a'])
+    await elapse(100)
+    expect(marks(m)).toEqual(['td:0/age=a'])
+    await elapse(DURATION - 120)
+    expect(marks(m)).toEqual([])
+  })
+
+  it('reads no clock for rows that change nothing', async () => {
+    const m = mountFlash()
+    const now = vi.spyOn(performance, 'now')
+    await setRows(
+      m,
+      rowsOf(m).map(row => ({ ...row }))
+    )
+    await m.wrapper.setProps({ loading: true })
+    expect(marks(m)).toEqual([])
+    expect(now).not.toHaveBeenCalled()
+  })
+
   it('a row that is new again flashes as a row, without its old cell flash', async () => {
     const m = mountFlash()
     await setRows(m, withRow(rowsOf(m), 1, { age: 31 }))
