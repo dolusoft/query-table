@@ -589,6 +589,98 @@ th[data-filtered] .qt-filter-input {
     background-color: transparent;
   }
 }
+/* own: change flash (C-94). The table marks a new row (`tr[data-flash]`) or
+   a changed cell (`td[data-flash]`) with `a` or `b` (a new value restarts the
+   animation), gives an element bound late the time already gone in
+   `--qt-flash-elapsed`, and reads the length from `--qt-flash-duration` on
+   the root. Color, length, easing and reduced motion are the skin's. A cell
+   flash is stronger than a row flash. */
+.qt-datatable {
+  --qt-flash-duration: 2000ms;
+  --qt-flash-row-color: color-mix(
+    in oklab,
+    var(--primary) 18%,
+    var(--background)
+  );
+  --qt-flash-cell-color: color-mix(
+    in oklab,
+    var(--primary) 40%,
+    var(--background)
+  );
+}
+/* own: the row flash fades from the row color. */
+@keyframes qt-flash-row-a {
+  from {
+    background-color: var(--qt-flash-row-color);
+  }
+}
+/* own: the same, under the other name, so a restart starts it again. */
+@keyframes qt-flash-row-b {
+  from {
+    background-color: var(--qt-flash-row-color);
+  }
+}
+/* own: the cell flash fades from the cell color. */
+@keyframes qt-flash-cell-a {
+  from {
+    background-color: var(--qt-flash-cell-color);
+  }
+}
+/* own: the same, under the other name, so a restart starts it again. */
+@keyframes qt-flash-cell-b {
+  from {
+    background-color: var(--qt-flash-cell-color);
+  }
+}
+/* own: the timing of every flashing element. A row flash also animates the
+   opaque cells of its row: the pinned columns and every cell of a pinned row,
+   utility cells included. A cell with a flash of its own is left to the cell
+   rule (`:not([data-flash])`), so the two never meet on one element and the
+   order of the rules decides nothing. The negative delay moves the start of
+   an element bound late: it runs for the time it has left. */
+.qt-table tbody > tr[data-flash],
+.qt-table tbody > tr[data-flash] > td[data-pinned]:not([data-flash]),
+.qt-table tbody > tr[data-flash][data-pinned-row] > td:not([data-flash]),
+.qt-table tbody > tr > td[data-flash] {
+  animation-duration: var(--qt-flash-duration);
+  animation-timing-function: ease-out;
+  animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1);
+}
+/* own: the row flash, phase a. */
+.qt-table tbody > tr[data-flash='a'],
+.qt-table tbody > tr[data-flash='a'] > td[data-pinned]:not([data-flash]),
+.qt-table tbody > tr[data-flash='a'][data-pinned-row] > td:not([data-flash]) {
+  animation-name: qt-flash-row-a;
+}
+/* own: the row flash, phase b. */
+.qt-table tbody > tr[data-flash='b'],
+.qt-table tbody > tr[data-flash='b'] > td[data-pinned]:not([data-flash]),
+.qt-table tbody > tr[data-flash='b'][data-pinned-row] > td:not([data-flash]) {
+  animation-name: qt-flash-row-b;
+}
+/* own: the cell flash, phase a. */
+.qt-table tbody > tr > td[data-flash='a'] {
+  animation-name: qt-flash-cell-a;
+}
+/* own: the cell flash, phase b. */
+.qt-table tbody > tr > td[data-flash='b'] {
+  animation-name: qt-flash-cell-b;
+}
+/* own: reduced motion: no length, so the table marks nothing (C-94). */
+@media (prefers-reduced-motion: reduce) {
+  .qt-datatable {
+    --qt-flash-duration: 0ms;
+  }
+}
+/* own: nothing flashes on paper. */
+@media print {
+  .qt-table tbody > tr[data-flash],
+  .qt-table tbody > tr[data-flash] > td,
+  .qt-table tbody > tr > td[data-flash] {
+    animation: none;
+  }
+}
+
 /* own: the load-more row of an infinite list, centered and muted like the
    empty row. */
 .qt-load-more-row td {

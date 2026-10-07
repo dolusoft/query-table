@@ -192,6 +192,18 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-86', 'C-88', 'C-89', 'C-90', 'C-91']
   },
   {
+    id: 'change-flash',
+    title: 'Change flash',
+    summary:
+      'With `flash` the table compares each new `rows` with the one before and marks a new row and a changed cell with `data-flash` while the query stays the same; the skin draws it for `--qt-flash-duration`. A sort, a filter or an answer never flashes, `rowsUpdate` tells an answer from a live change exactly, and a row that scrolls back into view flashes for the time it has left.',
+    example: 'ChangeFlash',
+    api: {
+      props: ['flash', 'rowsUpdate', 'rowKey', 'virtual', 'rowPinning'],
+      types: ['FlashOptions', 'RowsUpdate']
+    },
+    rules: ['C-92', 'C-93', 'C-94', 'C-95']
+  },
+  {
     id: 'footer-rows',
     title: 'Footer rows',
     summary:

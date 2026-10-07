@@ -55,7 +55,7 @@ const packages = [
       '@tanstack/table-core': '9.2.6'
     },
     peers: {},
-    subpaths: ['.', './server-query', './filter-input']
+    subpaths: ['.', './server-query', './filter-input', './row-changes']
   },
   {
     dir: 'vue',

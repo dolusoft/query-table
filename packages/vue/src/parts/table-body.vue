@@ -8,6 +8,7 @@ import type {
   TableLabels,
   TableSlots
 } from '../contract'
+import type { FlashView } from '../flash/use-change-flash'
 import { pinAttrs, utilityKey } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
 import type { DrawnRow, SpacerRow } from '../virtual/use-row-window'
@@ -45,6 +46,11 @@ const props = defineProps<{
   hasContextMenuListener: () => boolean
   /** With `infinite`: what the `load-more` slot receives, else `null` (C-89). */
   loadMore: LoadMoreSlotProps | null
+  /**
+   * With `flash`: the marks and the binding hook (C-94), else `null`; off,
+   * the body draws what it drew in 3.2 and calls nothing per row (C-95).
+   */
+  flash: FlashView<T> | null
 }>()
 
 const emit = defineEmits<{
@@ -103,6 +109,9 @@ const nextIndex = (aria: number | undefined) =>
           :data-selected="
             hasSelection && isSelected(item.row, item.index) ? '' : undefined
           "
+          :data-flash="flash ? flash.row(item.row, item.index) : undefined"
+          :onVnodeBeforeMount="flash ? flash.bind : undefined"
+          :onVnodeUpdated="flash ? flash.bind : undefined"
         >
           <td v-if="hasRightPanel" v-bind="rightPanelAttrs()">
             <button
@@ -163,7 +172,15 @@ const nextIndex = (aria: number | undefined) =>
             />
           </td>
           <template v-for="entry in entries" :key="entry.column.field">
-            <td v-if="hasCellSlot(entry.column)" v-bind="cellAttrs(entry)">
+            <td
+              v-if="hasCellSlot(entry.column)"
+              v-bind="cellAttrs(entry)"
+              :data-flash="
+                flash
+                  ? flash.cell(item.row, item.index, entry.column.field)
+                  : undefined
+              "
+            >
               <slot
                 :name="`cell-${entry.column.field}`"
                 v-bind="
@@ -171,7 +188,15 @@ const nextIndex = (aria: number | undefined) =>
                 "
               />
             </td>
-            <td v-else v-bind="cellAttrs(entry)">
+            <td
+              v-else
+              v-bind="cellAttrs(entry)"
+              :data-flash="
+                flash
+                  ? flash.cell(item.row, item.index, entry.column.field)
+                  : undefined
+              "
+            >
               {{ cellText(item.row, entry.column) }}
             </td>
           </template>

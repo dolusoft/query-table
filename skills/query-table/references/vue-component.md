@@ -21,6 +21,8 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. `labels.filterCondition(condition, type)` names a condition: the label under a filter input and each `label` of the `filter-menu` slot's `conditions` (default: the English names of the protocol's `conditionOptions`). |
 | `virtual` | `true` or `{ rowHeight, estimateRowHeight, overscan, scrollElement }`: draw only the rows in view of the scroll container (C-83). |
 | `infinite` | `true` or `{ threshold }`: emit the next page action as the end of `rows` comes near; you append the rows (C-88). Needs `rowKey`. |
+| `flash` | `true` or `{ rows, cells }`: mark a new row and a changed cell with `data-flash` while the query stays the same; the skin draws it (C-93, C-94). Off by default. Needs `rowKey`. |
+| `rowsUpdate` | What produced `rows`: `live` may flash; `snapshot`, `append` and `reset` never do (C-93). Without it the table guesses from the query and `loading`. |
 
 Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
@@ -147,6 +149,18 @@ async function onQuery(next: TableQuery, reason: QueryChangeReason) {
   }
 }
 ```
+
+## Change flash
+
+```vue
+<QueryTable :rows="rows" row-key="id" flash :rows-update="update" ... />
+```
+
+- The table compares each new `rows` with the one before by `rowKey` and marks a new row and a cell whose column `field` value changed with `data-flash` (`a` or `b`; it switches when a flash starts again). Only drawn columns are compared; a slot that shows other fields is not covered (C-93).
+- A changed row must be a **new object**, with new objects along the changed branch; a value changed in place is not seen. Unchanged rows may stay the same objects, and those are not compared (C-92).
+- A sort, a filter or a page answer never flashes: the first rows after a query change are a baseline. Pass `rowsUpdate` (`live` for a push, `snapshot` for an answer, `append` for an infinite page) to make it exact; without it an answer that arrives late without `loading`, after a live change, may flash (C-93).
+- The table writes no CSS. The skin sets the length with `--qt-flash-duration` on `.qt-datatable` (`0ms` under `prefers-reduced-motion` turns it off) and draws the animation, keyed on the `data-flash` value, with `animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1)` so a row that scrolls back into the window flashes only for the time it has left (C-94).
+- Off, the table runs nothing but one watcher of `flash` and the DOM is unchanged (C-95).
 
 ## useQueryTable()
 

@@ -1,6 +1,6 @@
 {
   "name": "query-table-workspace",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "description": "Workspace of Query Table: the protocol, core and Vue packages in packages/, the playground in apps/.",
   "private": true,
   "type": "module",
@@ -44,6 +44,7 @@
     "measure:consumer-size": "pnpm build && node scripts/consumer-size.mjs",
     "check:size": "node scripts/consumer-size.mjs --check",
     "equivalence": "node scripts/equivalence.mjs",
+    "check:no-css-leak": "node scripts/check-dist-fresh.mjs && node scripts/check-css-leak.mjs",
     "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint packages/query-protocol && publint packages/query-table-core && publint packages/vue && cd packages/query-protocol && attw --pack . --profile esm-only && cd ../query-table-core && attw --pack . --profile esm-only && cd ../vue && attw --pack . --profile esm-only",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",

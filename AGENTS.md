@@ -12,7 +12,7 @@ Read this before changing anything. It is short on purpose; the details live in 
 ## Branches
 
 - `main` is the released 3.x line. Patch fixes go to `main` directly, in their own pull request, and are then merged into `next`.
-- `next` is the work of the next minor version (3.1). Pull requests target `next`; when the minor is released, `next` is merged into `main`.
+- `next` is the work of the next minor version (now 3.3). Pull requests target `next`; when the minor is released, `next` is merged into `main`.
 - Never force push.
 
 ## v3 layers (P14)
@@ -20,7 +20,7 @@ Read this before changing anything. It is short on purpose; the details live in 
 protocol → core → vue → playground. Imports point only that way.
 
 - `@dolusoft/query-protocol`: zero dependencies. Types, rules, grammar, `parseFilterInput`.
-- `@dolusoft/query-table-core`: `@tanstack/table-core` + protocol. Two plugins, `serverQueryFeature` and `filterInputFeature`, and `shared/`.
+- `@dolusoft/query-table-core`: `@tanstack/table-core` + protocol. Two plugins, `serverQueryFeature` and `filterInputFeature`, and `shared/`; pure core modules behind their own entries (P10), such as `/row-changes` (ADR 0011).
 - `@dolusoft/query-table`: Vue. `useQueryTable` + `QueryTable`; public API and DOM contract as in 2.2.x.
 
 ## Plugin contract (ADR 0003, ADR 0004)

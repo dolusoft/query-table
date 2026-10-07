@@ -24,7 +24,8 @@ export default defineConfig({
       entry: {
         index: src('index.ts'),
         'server-query': src('features/server-query/index.ts'),
-        'filter-input': src('features/filter-input/index.ts')
+        'filter-input': src('features/filter-input/index.ts'),
+        'row-changes': src('row-changes/index.ts')
       },
       formats: ['es']
     },

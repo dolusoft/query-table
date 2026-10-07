@@ -19,6 +19,7 @@ import { PageCursors } from '@dolusoft/query-protocol';
 import { PublicProps } from 'vue';
 import { Query } from '@dolusoft/query-protocol';
 import { QueryChangeReason } from '@dolusoft/query-protocol';
+import { RowsUpdate } from '@dolusoft/query-table-core/row-changes';
 import { ShallowUnwrapRef } from 'vue';
 import { SortDirection } from '@dolusoft/query-protocol';
 import { SortState } from '@dolusoft/query-protocol';
@@ -155,6 +156,12 @@ export interface FilterMenuSlotProps {
 export { FilterRule }
 
 export { FilterValue }
+
+// @public
+export interface FlashOptions {
+    cells?: boolean;
+    rows?: boolean;
+}
 
 // @public
 export interface FooterRow {
@@ -343,6 +350,8 @@ export interface RowPinning {
 // @public
 export type RowSelection = Record<string, boolean>;
 
+export { RowsUpdate }
+
 // @public
 export interface ScrollToIndexOptions {
     align?: 'start' | 'center' | 'end' | 'auto';
@@ -394,6 +403,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     cursors?: PageCursors | null;
     filterable?: boolean;
     filterDebounce?: number;
+    flash?: boolean | FlashOptions;
     footerRows?: FooterRow[];
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
@@ -407,6 +417,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rowPinning?: RowPinning;
     rows?: T[];
+    rowsUpdate?: RowsUpdate;
     searchDebounce?: number;
     selection?: RowSelection;
     sortable?: boolean;
