@@ -12,15 +12,10 @@ name: Release
 #            to npm with trusted publishing (OIDC: no token, no OTP).
 #            Each package on npmjs.com lists this repository and
 #            `release.yml` as its trusted publisher.
-#   publish  write token, no install and no repository code: downloads the
-#            tarballs, creates one GitHub Release with all of them, checks
-#            that every asset URL answers, and optionally tells one consumer
-#            repository the URL of the Vue tarball:
-#
-#   secret   CONSUMER_DISPATCH_TOKEN  a token allowed to dispatch to that repo
-#   variable CONSUMER_REPO            `owner/name` of that repo
-#
-# Without both the dispatch step is skipped and the release still succeeds.
+#   publish  write token, no install and no repository code: creates one
+#            GitHub Release with notes and the conformance suite only,
+#            and checks that the conformance asset URL answers.
+#   npm and publish both wait for a reviewer of the release environment.
 
 on:
   push:
@@ -43,7 +38,6 @@ jobs:
       TAG: ${{ github.ref_name }}
     outputs:
       version: ${{ steps.version.outputs.version }}
-      tarball: ${{ steps.pack.outputs.name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -113,7 +107,6 @@ jobs:
       # One tarball per package; pnpm writes the version in place of
       # `workspace:*`. The Vue tarball is the one a consumer adds.
       - name: Pack
-        id: pack
         run: |
           mkdir -p release
           for dir in packages/query-protocol packages/query-table-core packages/vue; do
@@ -124,7 +117,6 @@ jobs:
             echo "::error::Expected three tarballs in release/, found $count."
             exit 1
           fi
-          echo "name=dolusoft-query-table-${{ steps.version.outputs.version }}.tgz" >> "$GITHUB_OUTPUT"
           test -f "release/dolusoft-query-table-${{ steps.version.outputs.version }}.tgz"
           # The conformance suite as an asset of its own, pinned by the notes.
           node scripts/pack-conformance.mjs release-extra
@@ -193,7 +185,6 @@ jobs:
       contents: write
     env:
       TAG: ${{ github.ref_name }}
-      NAME: ${{ needs.verify.outputs.tarball }}
       GH_REPO: ${{ github.repository }}
     steps:
       # The artifact keeps the common root of its paths: release/ and
@@ -203,8 +194,8 @@ jobs:
           name: tarballs
           path: .
 
-      # The three tarballs and the conformance suite go up together, in one
-      # release; the notes that pin the suite come before the generated ones.
+      # Only the conformance suite is attached to the release; the notes
+      # that pin it come before the generated ones. Packages go to npm.
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -217,17 +208,16 @@ jobs:
               echo "::error::Release $TAG exists for commit $tagged, this run is for $GITHUB_SHA."
               exit 1
             fi
-            gh release upload "$TAG" release/*.tgz release-extra/*.tgz --clobber
+            gh release upload "$TAG" release-extra/*.tgz --clobber
           else
-            gh release create "$TAG" release/*.tgz release-extra/*.tgz --title "$TAG" \
+            gh release create "$TAG" release-extra/*.tgz --title "$TAG" \
               --notes-file release-extra/release-notes.md --generate-notes --verify-tag
           fi
 
-      # Every asset answers; the output is the URL of the Vue tarball.
+      # The conformance asset answers.
       - name: Check the asset URLs
-        id: asset
         run: |
-          for file in release/*.tgz release-extra/*.tgz; do
+          for file in release-extra/*.tgz; do
             url="https://github.com/${GH_REPO}/releases/download/${TAG}/$(basename "$file")"
             ok=""
             for attempt in 1 2 3 4 5 6; do
@@ -244,21 +234,3 @@ jobs:
               exit 1
             fi
           done
-          echo "url=https://github.com/${GH_REPO}/releases/download/${TAG}/${NAME}" >> "$GITHUB_OUTPUT"
-
-      - name: Tell the consumer repository
-        env:
-          DISPATCH_TOKEN: ${{ secrets.CONSUMER_DISPATCH_TOKEN }}
-          CONSUMER_REPO: ${{ vars.CONSUMER_REPO }}
-          VERSION: ${{ needs.verify.outputs.version }}
-          TARBALL_URL: ${{ steps.asset.outputs.url }}
-        run: |
-          if [ -z "$DISPATCH_TOKEN" ] || [ -z "$CONSUMER_REPO" ]; then
-            echo "CONSUMER_DISPATCH_TOKEN or CONSUMER_REPO is not set: no dispatch."
-            exit 0
-          fi
-          payload="$(jq -n --arg version "$VERSION" --arg url "$TARBALL_URL" \
-            '{event_type: "query-table-released", client_payload: {version: $version, tarballUrl: $url}}')"
-          echo "$payload" | GH_TOKEN="$DISPATCH_TOKEN" gh api \
-            --method POST "repos/$CONSUMER_REPO/dispatches" --input -
-          echo "Dispatched query-table-released $VERSION to $CONSUMER_REPO."

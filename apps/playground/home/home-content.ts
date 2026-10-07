@@ -10,8 +10,8 @@ export const repositoryUrl = 'https://github.com/dolusoft/query-table'
 export const pitch =
   'A headless Vue 3 table for server-side data. It draws the rows you send and tells you, through v-model:query, which page, sort and filters the user asked for.'
 
-/** The package is published as a GitHub release tarball, not on npm. */
-export const installCommand = `pnpm add ${repositoryUrl}/releases/download/v${version}/dolusoft-query-table-${version}.tgz`
+/** Install from npm at the version shown by this playground. */
+export const installCommand = `pnpm add @dolusoft/query-table@${version}`
 
 export interface HomeSection {
   /** Element id on the home page, the search anchor. */

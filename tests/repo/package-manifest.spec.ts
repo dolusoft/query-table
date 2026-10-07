@@ -126,19 +126,15 @@ describe.each(packages)(
 
 describe('README install lines', () => {
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
-  const urls = [
-    ...readme.matchAll(
-      /releases\/download\/v([\w.-]+)\/dolusoft-(query-[\w-]+?)-(\d[\w.-]*)\.tgz/g
-    )
+  const installs = [
+    ...readme.matchAll(/^pnpm add @dolusoft\/query-table@(\S+)$/gm)
   ]
 
-  it('names each package once, at the version of the workspace', () => {
-    expect(urls.map(([, , file]) => file).sort()).toEqual(
-      ['query-protocol', 'query-table', 'query-table-core'].sort()
-    )
-    for (const [, tag, , file] of urls) {
-      expect(tag).toBe(workspace.version)
-      expect(file).toBe(workspace.version)
-    }
+  it('installs the Vue package at the version of the workspace', () => {
+    expect(installs.map(([, version]) => version)).toEqual([workspace.version])
+  })
+
+  it('contains no GitHub Release download URL', () => {
+    expect(readme).not.toContain('releases/download')
   })
 })
