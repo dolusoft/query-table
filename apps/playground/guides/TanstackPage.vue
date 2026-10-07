@@ -8,6 +8,7 @@ import {
   tanstackVersions,
   usedTanstackFeatures
 } from './tanstack'
+import DocHeader from '../shell/DocHeader.vue'
 import InlineCode from '../shell/InlineCode.vue'
 
 // The TanStack page: pinned versions, the features Query Table builds on and
@@ -18,16 +19,11 @@ const guideOf = (id: string) =>
 </script>
 
 <template>
-  <article class="flex max-w-4xl flex-col gap-8">
-    <header>
-      <h1 class="text-2xl font-semibold tracking-tight">{{ page.title }}</h1>
-      <p class="pt-1 text-sm text-muted-foreground">
-        <InlineCode :text="page.summary" />
-      </p>
-    </header>
-    <section id="tanstack-versions" class="flex flex-col gap-2">
-      <h2 class="text-lg font-semibold">Pinned versions</h2>
-      <p class="text-sm text-muted-foreground">
+  <article class="flex flex-col gap-10">
+    <DocHeader :title="page.title" :summary="page.summary" />
+    <section id="tanstack-versions" class="flex scroll-m-28 flex-col gap-3">
+      <h2 class="text-xl font-medium tracking-tight">Pinned versions</h2>
+      <p>
         Query Table is built on TanStack Table v9 and pins both packages to an
         exact version, read from the package manifests.
       </p>
@@ -44,9 +40,11 @@ const guideOf = (id: string) =>
         </li>
       </ul>
     </section>
-    <section id="tanstack-used" class="flex flex-col gap-2">
-      <h2 class="text-lg font-semibold">TanStack features we use</h2>
-      <p class="text-sm text-muted-foreground">
+    <section id="tanstack-used" class="flex scroll-m-28 flex-col gap-3">
+      <h2 class="text-xl font-medium tracking-tight">
+        TanStack features we use
+      </h2>
+      <p>
         <code class="font-mono">useQueryTable()</code> registers these, in this
         order, next to <code class="font-mono">serverQueryFeature</code> and
         <code class="font-mono">filterInputFeature</code>. To use them on your
@@ -77,8 +75,10 @@ const guideOf = (id: string) =>
         </li>
       </ul>
     </section>
-    <section id="tanstack-docs" class="flex flex-col gap-2">
-      <h2 class="text-lg font-semibold">TanStack Table v9 documentation</h2>
+    <section id="tanstack-docs" class="flex scroll-m-28 flex-col gap-3">
+      <h2 class="text-xl font-medium tracking-tight">
+        TanStack Table v9 documentation
+      </h2>
       <ul class="flex flex-col gap-1 text-sm">
         <li
           v-for="link in tanstackGeneralLinks"
@@ -98,8 +98,8 @@ const guideOf = (id: string) =>
         </li>
       </ul>
     </section>
-    <section id="tanstack-guides" class="flex flex-col gap-2">
-      <h2 class="text-lg font-semibold">Feature guides (Vue)</h2>
+    <section id="tanstack-guides" class="flex scroll-m-28 flex-col gap-3">
+      <h2 class="text-xl font-medium tracking-tight">Feature guides (Vue)</h2>
       <ul class="grid gap-1 text-sm sm:grid-cols-2">
         <li
           v-for="link in tanstackFeatureGuides"

@@ -1,58 +1,32 @@
 <script setup lang="ts">
-import { SearchIcon, SparklesIcon } from '@lucide/vue'
 import { useEventListener } from '@vueuse/core'
-import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, useTemplateRef, watch } from 'vue'
 
-import { Button } from '@/ui/button'
-import { Kbd } from '@/ui/kbd'
-import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider
-} from '@/ui/sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/ui/sidebar'
 
-import { aiNav, guidePages } from './guides/guides'
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
 import { repositoryUrl } from './home/home-content'
-import { pages } from './manifest'
 import DocSearch from './search/DocSearch.vue'
+import DocPager from './shell/DocPager.vue'
+import DocsSidebar from './shell/DocsSidebar.vue'
+import DocToc from './shell/DocToc.vue'
 import ExternalLinks from './shell/ExternalLinks.vue'
 import SiteHeader from './shell/SiteHeader.vue'
-import ThemeToggle from './shell/ThemeToggle.vue'
 
-// The playground shell is shadcn-vue. The home page (`meta.landing`) has a
-// top bar and the page below it. A documentation page sits next to a
-// `Sidebar` (always expanded) with the search button, the page list and the
-// theme switch: on a desktop a column on the left, below `lg` a bar above the
-// page whose page list scrolls sideways.
+// The playground shell is shadcn-vue. Every page has the site header. The
+// home page (`meta.landing`) has the page below it. A documentation page
+// follows the shadcn-vue docs: the sidebar on the left (a Sheet behind the
+// header's menu button below `md`), the page in a 40rem reading column, and
+// "On This Page" on the right from `xl`.
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
-// The API examples first, then the guide pages (features, TanStack); the AI
-// page and its two parts are a group of their own below them.
-const navigation = [
-  ...pages,
-  ...guidePages.filter(page => !aiNav.some(entry => entry.id === page.id))
-]
-
-// The AI entries share a route; the hash tells them apart.
-const route = useRoute()
-const isAiActive = (to: string) => {
-  const [path, hash = ''] = to.split('#')
-  return route.path === path && route.hash.replace('#', '') === hash
-}
-
 const theme = ref<Theme | 'system'>(themeFromUrl() ?? 'system')
 watch(theme, value => setTheme(value === 'system' ? null : value), {
   immediate: true
 })
+
+const column = useTemplateRef<HTMLElement>('column')
 
 // Documentation search: Ctrl+K / ⌘K anywhere, `/` when not typing. The
 // shortcut's Kbd takes the foreground color: the CLI's muted-foreground on
@@ -113,106 +87,39 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
       </div>
     </footer>
   </div>
-  <SidebarProvider v-else class="flex-col lg:flex-row">
-    <aside
-      class="min-w-0 shrink-0 border-b lg:sticky lg:top-0 lg:h-svh lg:border-r lg:border-b-0"
+  <SidebarProvider v-else class="flex-col bg-background">
+    <SiteHeader
+      v-model:theme="theme"
+      wide
+      :shortcut="shortcut"
+      @search="searchOpen = true"
     >
-      <Sidebar collapsible="none" class="h-full w-full lg:w-(--sidebar-width)">
-        <SidebarHeader class="gap-3 p-4 pb-2 lg:pb-3">
-          <RouterLink
-            to="/"
-            class="self-start rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      <template #menu>
+        <SidebarTrigger class="-ml-2 size-11 min-[769px]:hidden" />
+      </template>
+    </SiteHeader>
+    <div class="flex flex-1">
+      <DocsSidebar />
+      <SidebarInset class="min-w-0 flex-row">
+        <div ref="column" class="flex min-w-0 flex-1 flex-col">
+          <!-- Text keeps the 40rem measure of the shadcn-vue docs; a part
+               marked `data-wide` (an example's preview) takes the whole
+               column, or a table example drops to its phone layout. -->
+          <div
+            class="flex w-full min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:mx-auto [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
           >
-            <span class="block text-sm font-semibold">Query Table</span>
-            <span class="block text-xs text-muted-foreground">Playground</span>
-          </RouterLink>
-          <Button
-            type="button"
-            variant="outline"
-            data-testid="doc-search-button"
-            class="min-h-11 w-full justify-start gap-2 bg-background px-2 font-normal text-muted-foreground lg:min-h-8"
-            @click="searchOpen = true"
-          >
-            <SearchIcon class="opacity-60" />
-            <span class="flex-1 text-left">Search docs</span>
-            <Kbd class="text-foreground">{{ shortcut }}</Kbd>
-          </Button>
-        </SidebarHeader>
-        <SidebarContent class="overflow-visible px-2 lg:min-h-0">
-          <nav aria-label="Examples" class="min-h-0 lg:flex-1">
-            <!-- shadcn-vue ScrollArea: sideways on a phone, down on a desktop. -->
-            <ScrollArea class="w-full lg:h-full">
-              <SidebarMenu
-                class="w-max flex-row gap-1 pb-2 lg:w-full lg:flex-col lg:pb-0"
-              >
-                <SidebarMenuItem v-for="page in navigation" :key="page.id">
-                  <RouterLink
-                    v-slot="{ href, navigate, isActive }"
-                    :to="`/${page.id}`"
-                    custom
-                  >
-                    <SidebarMenuButton
-                      as="a"
-                      :href="href"
-                      :is-active="isActive"
-                      :aria-current="isActive ? 'page' : undefined"
-                      class="min-h-11 whitespace-nowrap text-muted-foreground data-active:text-sidebar-accent-foreground lg:min-h-8"
-                      @click="navigate"
-                    >
-                      {{ page.title }}
-                    </SidebarMenuButton>
-                  </RouterLink>
-                </SidebarMenuItem>
-              </SidebarMenu>
-              <ScrollBar orientation="horizontal" class="lg:hidden" />
-            </ScrollArea>
-          </nav>
-          <!-- The AI group stays outside the scrolling page list, so it is
-               always on screen: a tinted block with a label and three
-               entries. The AI page's own sections are the hash targets. -->
-          <nav
-            aria-label="AI"
-            class="mt-1 mb-2 shrink-0 overflow-x-auto rounded-lg [scrollbar-width:none] border border-primary/25 bg-primary/5 p-1 lg:mb-0 lg:overflow-visible"
-            data-testid="nav-ai"
-          >
-            <SidebarMenu
-              class="w-max flex-row items-center gap-1 lg:w-full lg:flex-col lg:items-stretch"
-            >
-              <li
-                role="presentation"
-                class="flex items-center gap-1.5 px-2 text-xs font-semibold tracking-wide text-primary uppercase dark:text-sidebar-primary lg:py-1"
-              >
-                <SparklesIcon aria-hidden="true" class="size-3.5" />
-                AI
-              </li>
-              <SidebarMenuItem v-for="entry in aiNav" :key="entry.id">
-                <RouterLink v-slot="{ href, navigate }" :to="entry.to" custom>
-                  <SidebarMenuButton
-                    as="a"
-                    :href="href"
-                    :is-active="isAiActive(entry.to)"
-                    :aria-current="isAiActive(entry.to) ? 'page' : undefined"
-                    :data-testid="`nav-${entry.id}`"
-                    class="min-h-11 whitespace-nowrap text-foreground data-active:text-sidebar-accent-foreground lg:min-h-8"
-                    @click="navigate"
-                  >
-                    {{ entry.title }}
-                  </SidebarMenuButton>
-                </RouterLink>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </nav>
-        </SidebarContent>
-        <SidebarFooter class="p-4 pt-2 lg:pt-3">
-          <ExternalLinks label="Elsewhere" class="-ml-2.5" />
-          <ThemeToggle v-model="theme" />
-        </SidebarFooter>
-      </Sidebar>
-    </aside>
-    <main class="min-w-0 flex-1 p-4 lg:p-8">
-      <!-- A new page instance per route: each page mounts its own example. -->
-      <RouterView :key="$route.path" />
-    </main>
+            <!-- A new page instance per route: each page mounts its own example. -->
+            <RouterView :key="$route.path" />
+            <DocPager />
+          </div>
+        </div>
+        <aside
+          class="sticky top-16 hidden h-[calc(100svh-4rem)] w-56 shrink-0 flex-col overflow-y-auto pt-8 xl:flex"
+        >
+          <DocToc :root="column" />
+        </aside>
+      </SidebarInset>
+    </div>
   </SidebarProvider>
   <DocSearch v-model:open="searchOpen" />
 </template>

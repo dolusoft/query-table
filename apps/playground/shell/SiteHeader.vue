@@ -28,9 +28,12 @@ import { repositoryUrl } from '../home/home-content'
 
 // The home page's top bar, after the shadcn-vue site header: the name and a
 // NavigationMenu on the left; search, GitHub and the theme menu on the
-// right. Below `md` the links move into a Sheet behind a menu button.
+// right. Below `md` the links move into a Sheet behind a menu button. The
+// documentation pages pass a menu button of their own (`#menu`, the
+// sidebar's) and `wide`: their header spans the window, as on the
+// shadcn-vue docs.
 const theme = defineModel<Theme | 'system'>('theme', { required: true })
-defineProps<{ shortcut: string }>()
+defineProps<{ shortcut: string; wide?: boolean }>()
 const emit = defineEmits<{ search: [] }>()
 
 const links = [
@@ -48,9 +51,11 @@ const menuOpen = ref(false)
     class="sticky top-0 z-20 w-full bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
   >
     <div
-      class="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:px-6"
+      class="mx-auto flex h-16 w-full items-center gap-2 px-4 sm:px-6"
+      :class="wide ? '' : 'max-w-6xl'"
     >
-      <Sheet v-model:open="menuOpen">
+      <slot name="menu" />
+      <Sheet v-if="!$slots.menu" v-model:open="menuOpen">
         <SheetTrigger as-child>
           <Button
             variant="ghost"

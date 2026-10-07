@@ -65,6 +65,14 @@
   }
 }
 
+/* An example's source (shell/CodeBlock.vue): shiki writes the light color
+   inline and the dark one as `--shiki-dark`; the dark theme switches. */
+.shiki span {
+  @variant dark {
+    color: var(--shiki-dark) !important;
+  }
+}
+
 /* The element a documentation search result points to, marked for a moment
    after the page scrolls to it (playground/search/reveal.ts). */
 [data-search-target] {

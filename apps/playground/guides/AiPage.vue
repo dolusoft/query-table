@@ -11,6 +11,7 @@ import {
   skillFiles,
   skillInstall
 } from './guides'
+import DocHeader from '../shell/DocHeader.vue'
 import InlineCode from '../shell/InlineCode.vue'
 
 // The "Use with AI" page: the skill, how to install it, its raw files and
@@ -22,27 +23,25 @@ const base = import.meta.env.BASE_URL
 </script>
 
 <template>
-  <article class="flex max-w-4xl flex-col gap-8">
-    <header>
-      <h1 class="text-2xl font-semibold tracking-tight">{{ page.title }}</h1>
-      <p class="pt-1 text-sm text-muted-foreground">
-        <InlineCode :text="page.summary" />
-      </p>
-    </header>
+  <article class="flex flex-col gap-10">
+    <DocHeader :title="page.title" :summary="page.summary" />
     <section
       v-for="id in ['ai-skill', 'ai-install']"
       :id="id"
       :key="id"
-      class="flex scroll-mt-4 flex-col gap-2"
+      class="flex scroll-m-28 flex-col gap-3"
     >
-      <h2 class="text-lg font-semibold">{{ section(id).title }}</h2>
-      <p class="text-sm text-muted-foreground">
+      <h2 class="text-xl font-medium tracking-tight">
+        {{ section(id).title }}
+      </h2>
+      <p>
         <InlineCode :text="section(id).text" />
       </p>
       <div v-if="id === 'ai-install'" class="flex flex-col gap-2">
         <pre
-          class="overflow-x-auto rounded-md border bg-muted p-3 text-xs"
+          class="overflow-x-auto rounded-xl border bg-muted/50 px-4 py-3.5 text-sm"
           data-testid="skill-install"
+          tabindex="0"
         ><code>{{ skillInstall }}</code></pre>
         <Button
           type="button"
@@ -56,9 +55,11 @@ const base = import.meta.env.BASE_URL
         </Button>
       </div>
     </section>
-    <section id="ai-files" class="flex scroll-mt-4 flex-col gap-2">
-      <h2 class="text-lg font-semibold">{{ section('ai-files').title }}</h2>
-      <p class="text-sm text-muted-foreground">
+    <section id="ai-files" class="flex scroll-m-28 flex-col gap-3">
+      <h2 class="text-xl font-medium tracking-tight">
+        {{ section('ai-files').title }}
+      </h2>
+      <p>
         {{ section('ai-files').text }}
       </p>
       <ul class="flex flex-col gap-1 text-sm">
@@ -73,9 +74,11 @@ const base = import.meta.env.BASE_URL
         </li>
       </ul>
     </section>
-    <section id="ai-llms" class="flex scroll-mt-4 flex-col gap-2">
-      <h2 class="text-lg font-semibold">{{ section('ai-llms').title }}</h2>
-      <p class="text-sm text-muted-foreground">
+    <section id="ai-llms" class="flex scroll-m-28 flex-col gap-3">
+      <h2 class="text-xl font-medium tracking-tight">
+        {{ section('ai-llms').title }}
+      </h2>
+      <p>
         <InlineCode :text="section('ai-llms').text" />
       </p>
       <ul class="flex flex-col gap-1 text-sm">
