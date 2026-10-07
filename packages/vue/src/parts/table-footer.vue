@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { sideOf } from '../columns/column-layout'
 import type { Column, FooterRow } from '../contract'
+import { columnTypeOf } from '../core/column'
 import { pinAttrs } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
 
@@ -32,6 +33,7 @@ const footerText = (row: FooterRow, column: Column) =>
         v-for="entry in entries"
         :key="entry.column.field"
         :data-field="entry.column.field"
+        :data-type="columnTypeOf(entry.column)"
         v-bind="pinAttrs(sideOf(entry.column), offsets[entry.column.field])"
       >
         {{ footerText(footerRow, entry.column) }}

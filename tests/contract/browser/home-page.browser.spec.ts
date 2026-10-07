@@ -34,12 +34,12 @@ test('/ is the home page with the install command and the showcase', async () =>
     .toBeVisible()
   // The fake server answers after a short delay.
   await expect
-    .element(page.getByText('200 people match.'), { timeout: 3000 })
+    .element(page.getByText('200 events match.'), { timeout: 3000 })
     .toBeVisible()
   const root = showcase()!
   expect(root.hasAttribute('data-compact')).toBe(false)
   expect(root.querySelectorAll('thead [data-pinned]').length).toBeGreaterThan(0)
-  expect(root.querySelector('tfoot')?.textContent).toContain('200 people')
+  expect(root.querySelector('tfoot')?.textContent).toContain('200 events')
   for (const id of ['showcase', 'principles', 'architecture']) {
     expect(document.getElementById(id), id).not.toBeNull()
   }
@@ -52,7 +52,7 @@ test('the showcase is compact on a phone', async () => {
   await page.viewport(375, 812)
   await renderAt('/')
   await expect
-    .element(page.getByText('200 people match.'), { timeout: 3000 })
+    .element(page.getByText('200 events match.'), { timeout: 3000 })
     .toBeVisible()
   await expect.poll(() => showcase()?.hasAttribute('data-compact')).toBe(true)
   await expect.element(page.getByTestId('add-filter')).toBeVisible()
@@ -77,11 +77,11 @@ test('the first load shows skeleton rows and a blank footer, no totals yet', asy
   await page.viewport(1280, 900)
   await renderAt('/')
   const root = showcase()!
-  expect(root.querySelectorAll('tbody [data-slot="skeleton"]').length).toBe(70)
+  expect(root.querySelectorAll('tbody [data-slot="skeleton"]').length).toBe(80)
   expect(root.querySelector('tfoot')?.textContent).not.toMatch(/\d/)
   await expect
-    .element(page.getByText('200 people match.'), { timeout: 3000 })
+    .element(page.getByText('200 events match.'), { timeout: 3000 })
     .toBeVisible()
   expect(root.querySelectorAll('[data-slot="skeleton"]').length).toBe(0)
-  expect(root.querySelector('tfoot')?.textContent).toContain('200 people')
+  expect(root.querySelector('tfoot')?.textContent).toContain('200 events')
 })

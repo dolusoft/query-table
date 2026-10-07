@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch, type Component } from 'vue'
 
-import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
 
 import ApiPanel from './ApiPanel.vue'
-import InlineCode from './InlineCode.vue'
+import CodeBlock from './CodeBlock.vue'
+import DocHeader from './DocHeader.vue'
 import RuleList from './RuleList.vue'
 import type { PlaygroundPage } from '../manifest'
+import { datasetId } from '../scenarios/datasets'
 import { sectionAnchors } from '../search/anchors'
 
-// One page: the live example, its source (the same file, imported raw), the
-// API members it shows and the behavior rules it covers.
+// One page: the live example and its source (the same file, imported raw)
+// as Preview and Code tabs, the API members it shows and the behavior rules
+// it covers. The preview stays mounted behind the Code tab, so the example
+// keeps its state when the reader looks at the code and back.
 const props = defineProps<{ page: PlaygroundPage }>()
 
 const examples = import.meta.glob<Component>('../examples/*.vue', {
@@ -37,30 +41,48 @@ watch(
 </script>
 
 <template>
-  <article class="flex max-w-6xl flex-col gap-8">
-    <header>
-      <h1 class="text-2xl font-semibold tracking-tight">{{ page.title }}</h1>
-      <p class="pt-1 text-sm text-muted-foreground">
-        <InlineCode :text="page.summary" />
-      </p>
-    </header>
-    <section :id="sectionAnchors.example" aria-label="Example">
-      <component :is="example" :key="page.id" />
-    </section>
-    <section :id="sectionAnchors.source" aria-label="Source">
-      <h2 class="pb-2 text-lg font-semibold">Source</h2>
-      <p class="pb-2 text-xs break-all text-muted-foreground">
-        apps/playground/examples/{{ page.example }}.vue
-      </p>
-      <!-- shadcn-vue ScrollArea scrolls the source both ways. -->
-      <ScrollArea
-        class="rounded-md border bg-muted/50 *:data-[slot=scroll-area-viewport]:max-h-[32rem]"
-      >
-        <pre
-          class="w-max p-4 text-xs leading-relaxed"
-        ><code>{{ source }}</code></pre>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+  <article class="flex flex-col gap-10">
+    <DocHeader :title="page.title" :summary="page.summary" />
+    <section
+      :id="sectionAnchors.example"
+      aria-label="Example"
+      data-wide
+      class="scroll-m-28"
+    >
+      <Tabs default-value="preview" class="gap-4">
+        <TabsList
+          variant="line"
+          class="justify-start group-data-horizontal/tabs:h-11 lg:group-data-horizontal/tabs:h-8"
+        >
+          <TabsTrigger
+            value="preview"
+            class="h-11 flex-none px-2 lg:pointer-fine:h-7"
+          >
+            Preview
+          </TabsTrigger>
+          <TabsTrigger
+            value="code"
+            class="h-11 flex-none px-2 lg:pointer-fine:h-7"
+          >
+            Code
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="preview"
+          force-mount
+          class="min-w-0 rounded-xl border p-4 data-[state=inactive]:hidden"
+        >
+          <!-- A new example per page and per demo dataset: the example reads
+               the dataset once, so a new choice mounts it again. -->
+          <component :is="example" :key="`${page.id}:${datasetId()}`" />
+        </TabsContent>
+        <TabsContent :id="sectionAnchors.source" value="code" class="min-w-0">
+          <CodeBlock
+            :source="source"
+            :file="`apps/playground/examples/${page.example}.vue`"
+          />
+        </TabsContent>
+      </Tabs>
     </section>
     <ApiPanel :members="page.api" />
     <RuleList :ids="page.rules" />

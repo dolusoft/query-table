@@ -3,21 +3,29 @@
 @import "./skin/test-skin.css";
 @source ".";
 
+/* Code in Geist Mono (main.ts loads it), as on the shadcn-vue site. The
+   theme the CLI writes has no mono font: the preset picks a sans only. */
+@theme {
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+}
+
 /* The playground owns the touch targets around the unstyled table. Keep the
-   desktop skin's compact controls, but give phone and tablet users room to tap. */
+   desktop skin's compact controls, but give phone and tablet users room to tap:
+   44px, the size the page's own controls take below `sm`. */
 @media (max-width: 1023px) {
   main button:not([role="checkbox"]),
   main select,
   main input:not([type="checkbox"]) {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
   }
 
   main button:not([role="checkbox"]) {
-    min-width: 2.5rem;
+    min-width: 2.75rem;
   }
 
   /* In a narrow column the skin moves the filter button into the input's end
-     (`@container qt-filter (width < 6rem)`, 1.75rem wide). The 2.5rem width
+     (`@container qt-filter (width < 6rem)`, 1.75rem wide). The 2.75rem width
      floor above would stretch it over the whole box and leave the input a
      few pixels of text, so the button keeps the skin's width there; the
      height floor stays, it is the touch target. */
@@ -36,12 +44,12 @@
   }
 
   /* An unsortable column's title is plain text, a sortable one's sits in the
-     sort button the rule above makes 2.5rem tall. The title keeps the same
+     sort button the rule above makes 2.75rem tall. The title keeps the same
      box, or its filter row sits higher than its neighbours' in the header. */
   main .qt-title {
     display: inline-flex;
     align-items: center;
-    min-height: 2.5rem;
+    min-height: 2.75rem;
   }
 
   /* A native checkbox in a table slot, or the shadcn-vue Checkbox (a button
@@ -53,7 +61,15 @@
   }
 
   main label:has(> input[type="checkbox"], > button[role="checkbox"]) {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
+  }
+}
+
+/* An example's source (shell/CodeBlock.vue): shiki writes the light color
+   inline and the dark one as `--shiki-dark`; the dark theme switches. */
+.shiki span {
+  @variant dark {
+    color: var(--shiki-dark) !important;
   }
 }
 

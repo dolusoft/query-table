@@ -10,18 +10,19 @@ import { QueryTable } from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, peopleColumns, useSlowServer } from '../scenarios'
+import { currentDataset, listColumns, useSlowServer } from '../scenarios'
 
 // The consumer fetches; the table only draws. `loading` keeps the rows of
 // the last answer on screen while the next request runs, so the table does
 // not jump. The `loading` slot is a body row: the skin places it over the
 // rows (`position: absolute` in a relative `tbody`), the table writes no
 // style for it. Sorting, filtering and paging keep working while loading.
-const columns = peopleColumns()
+const data = currentDataset()
+const columns = listColumns(data)
 const delay = ref(1500)
 const hold = ref(false)
 const server = useSlowServer(
-  createDemoRows(),
+  data.createRows(),
   { pageSize: 10 },
   () => delay.value
 )
@@ -48,7 +49,7 @@ const loading = computed(() => hold.value || server.loading.value)
         Keep loading on
       </Label>
       <span class="text-muted-foreground" aria-live="polite">
-        {{ loading ? 'Loading…' : `${totalRows ?? 0} people` }}
+        {{ loading ? 'Loading…' : `${totalRows ?? 0} ${data.noun.many}` }}
       </span>
     </div>
     <QueryTable
@@ -70,7 +71,7 @@ const loading = computed(() => hold.value || server.loading.value)
           Loading…
         </span>
       </template>
-      <template #empty>No people match.</template>
+      <template #empty>No {{ data.noun.many }} match.</template>
       <template #pagination="page">
         <TablePager :page="page" />
       </template>

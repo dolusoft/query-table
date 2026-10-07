@@ -153,6 +153,7 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
       :key="column.field"
       scope="col"
       :data-field="column.field"
+      :data-type="columnTypeOf(column)"
       :data-sort="sort.sortOf(column) ?? undefined"
       :data-sortable="sort.isSortable(column) ? '' : undefined"
       :data-filtered="isFiltered(column) ? '' : undefined"

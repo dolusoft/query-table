@@ -7,12 +7,14 @@ import {
 } from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
-import { createDemoRows, useFakeServer } from '../scenarios'
+import { currentDataset, useFakeServer } from '../scenarios'
 
 // Every text the table writes comes from `labels`; here in Turkish. Entries
-// left out keep their English defaults. The `city` column has no title: its
-// sort button is named by the field. The table has no utility column, so the
-// clear-all action lives in the toolbar.
+// left out keep their English defaults. The category column has no title:
+// its sort button is named by the field. The table has no utility column, so
+// the clear-all action lives in the toolbar.
+const data = currentDataset()
+const { fields, turkish } = data
 const labels: Partial<TableLabels> = {
   filterInput: column => `${column} filtresi`,
   filterOptions: column => `${column} filtre seçenekleri`,
@@ -22,13 +24,13 @@ const labels: Partial<TableLabels> = {
 }
 
 const columns: Column[] = [
-  { field: 'name', title: 'Ad' },
-  { field: 'city' },
-  { field: 'age', title: 'Yaş', type: 'integer' },
-  { field: 'active', title: 'Aktif', type: 'bool' }
+  { field: fields.primary, title: turkish.primary },
+  { field: fields.category },
+  { field: fields.count, title: turkish.count, type: 'integer' },
+  { field: fields.flag, title: turkish.flag, type: 'bool' }
 ]
 
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 </script>
 
 <template>
@@ -53,7 +55,7 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
           Filtreleri temizle
         </Button>
         <span class="text-sm text-muted-foreground">
-          {{ result.totalRows }} kişi
+          {{ result.totalRows }} {{ turkish.noun }}
         </span>
       </div>
     </template>

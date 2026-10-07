@@ -65,7 +65,7 @@ Row expansion is TanStack's (`rowExpandingFeature`), as a projection of the cons
 
 ## Rules, tests and the contract
 
-The behavior is written down as numbered rules in `contract/rules.md` (C-01 to C-81). Each rule has a `Source:` line, `tanstack` when TanStack does it through its options, `own` when our plugins or the Vue layer do. Every rule is covered by a test whose name contains its number, and a test that names an unknown rule fails the build (`tests/repo/contract-traceability.spec.ts`). The plugin-level tests in `packages/query-table-core/tests/` run without a DOM and are the most exact description of the plugins.
+The behavior is written down as numbered rules in `contract/rules.md` (C-01 to C-82). Each rule has a `Source:` line, `tanstack` when TanStack does it through its options, `own` when our plugins or the Vue layer do. Every rule is covered by a test whose name contains its number, and a test that names an unknown rule fails the build (`tests/repo/contract-traceability.spec.ts`). The plugin-level tests in `packages/query-table-core/tests/` run without a DOM and are the most exact description of the plugins.
 
 The principles that sit above the rules are in `PRINCIPLES.md` (P1 to P15); P14 is the layer rule and P15 the plugin contract.
 

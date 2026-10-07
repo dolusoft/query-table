@@ -2,12 +2,7 @@ import { describe, expect, test } from 'vitest'
 
 import type { FilterRule, TableQuery } from '@dolusoft/query-table'
 
-import {
-  createDemoRows,
-  cursorDemoPage,
-  queryDemoRows,
-  searchDemoRows
-} from './fake-server'
+import { cursorDemoPage, queryDemoRows, searchDemoRows } from './fake-server'
 
 const rows = [
   {
@@ -51,13 +46,6 @@ const ids = (filters: FilterRule[]) =>
   queryDemoRows(rows, query({ filters })).rows.map(row => row.id)
 
 describe('the demo consumer evaluates the server query contract', () => {
-  test('creates 200 repeatable rows with unique identities', () => {
-    const data = createDemoRows()
-    expect(data).toHaveLength(200)
-    expect(new Set(data.map(row => row.id)).size).toBe(200)
-    expect(createDemoRows()).toEqual(data)
-  })
-
   test.each<[FilterRule, number[]]>([
     [rule('name', 'Contains', 'AL'), [1]],
     [rule('name', 'NotContains', 'o'), [1]],
@@ -139,6 +127,27 @@ describe('the demo consumer evaluates the server query contract', () => {
     }
   })
 
+  test('compares a date-time value with a date-only rule by day', () => {
+    const events = [
+      { id: 1, time: '2026-09-13T23:59:59' },
+      { id: 2, time: '2026-09-14T00:00:00' },
+      { id: 3, time: '2026-09-14T18:30:00' },
+      { id: 4, time: '2026-09-15T08:00:00' }
+    ]
+    const match = (filter: FilterRule) =>
+      queryDemoRows(events, query({ filters: [filter] })).rows.map(
+        row => row.id
+      )
+    expect(match(rule('time', 'Equal', '2026-09-14'))).toEqual([2, 3])
+    expect(match(rule('time', 'GreaterThan', '2026-09-14'))).toEqual([4])
+    expect(match(rule('time', 'LessThanOrEqual', '2026-09-14'))).toEqual([
+      1, 2, 3
+    ])
+    expect(match(rule('time', 'GreaterThan', '2026-09-14T12:00'))).toEqual([
+      3, 4
+    ])
+  })
+
   test('returns the final partial page, then no rows beyond the total', () => {
     expect(queryDemoRows(rows, query({ page: 2, pageSize: 2 }))).toEqual({
       rows: [rows[2]],
@@ -152,11 +161,16 @@ describe('the demo consumer evaluates the server query contract', () => {
 })
 
 describe('cursor pages and search of the demo server', () => {
-  const all = createDemoRows()
+  const all = Array.from({ length: 200 }, (_, i) => ({
+    id: i + 1,
+    name: ['Alice', 'Bob', 'Carol', 'Dave'][i % 4],
+    city: ['Ankara', 'Bursa', 'İzmir', 'Antalya', 'Muğla'][i % 5]
+  }))
+  const fields = ['name', 'city']
   const base = { pageSize: 10, sort: null, filters: [] }
 
   test('the first page has a next cursor and no previous one', () => {
-    const first = cursorDemoPage(all, { ...base, cursor: null })
+    const first = cursorDemoPage(all, { ...base, cursor: null }, fields)
     expect(first.rows.map(row => row.id)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     ])
@@ -165,33 +179,37 @@ describe('cursor pages and search of the demo server', () => {
   })
 
   test('a next cursor leads to the following page and back', () => {
-    const first = cursorDemoPage(all, { ...base, cursor: null })
-    const second = cursorDemoPage(all, {
-      ...base,
-      cursor: { token: first.cursors.next!, direction: 'next' }
-    })
+    const first = cursorDemoPage(all, { ...base, cursor: null }, fields)
+    const second = cursorDemoPage(
+      all,
+      { ...base, cursor: { token: first.cursors.next!, direction: 'next' } },
+      fields
+    )
     expect(second.rows[0]?.id).toBe(11)
-    const back = cursorDemoPage(all, {
-      ...base,
-      cursor: { token: second.cursors.prev!, direction: 'prev' }
-    })
+    const back = cursorDemoPage(
+      all,
+      { ...base, cursor: { token: second.cursors.prev!, direction: 'prev' } },
+      fields
+    )
     expect(back.rows[0]?.id).toBe(1)
   })
 
   test('the last page has no next cursor', () => {
-    const last = cursorDemoPage(all, {
-      ...base,
-      cursor: { token: btoa('190'), direction: 'next' }
-    })
+    const last = cursorDemoPage(
+      all,
+      { ...base, cursor: { token: btoa('190'), direction: 'next' } },
+      fields
+    )
     expect(last.rows).toHaveLength(10)
     expect(last.cursors.next).toBeNull()
   })
 
-  test('search matches name or city, case-insensitive, and blank matches all', () => {
-    expect(
-      searchDemoRows(all, 'alice').every(row => row.name === 'Alice')
-    ).toBe(true)
-    expect(searchDemoRows(all, 'bursa').length).toBe(40)
-    expect(searchDemoRows(all, '  ')).toHaveLength(all.length)
+  test('search matches the given fields, case-insensitive, and blank matches all', () => {
+    const alice = searchDemoRows(all, 'alice', fields)
+    expect(alice).toHaveLength(50)
+    expect(alice.every(row => row.name === 'Alice')).toBe(true)
+    expect(searchDemoRows(all, 'bursa', fields)).toHaveLength(40)
+    expect(searchDemoRows(all, 'bursa', ['name'])).toHaveLength(0)
+    expect(searchDemoRows(all, '  ', fields)).toHaveLength(all.length)
   })
 })

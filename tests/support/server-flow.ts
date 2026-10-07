@@ -12,10 +12,10 @@ import QueryTable, {
 } from '@dolusoft/query-table'
 
 import { columns, makeQuery } from './fixtures'
+import { createPeople, peopleSearchFields } from './people'
 import { traceUpdate } from './trace'
 import TablePager from '../../apps/playground/harness/TablePager.vue'
 import {
-  createDemoRows,
   cursorDemoPage,
   queryDemoRows,
   searchDemoRows
@@ -26,15 +26,21 @@ export const renderServerFlow = async (
   initial: Query = makeQuery(),
   options: { deferred?: boolean; searchDebounce?: number } = {}
 ) => {
-  const allRows = createDemoRows()
+  const allRows = createPeople()
   const tableColumns = columns()
   const query = ref(initial)
   const answerFor = (asked: Query) => {
     if ('cursor' in asked) {
-      return { ...cursorDemoPage(allRows, asked), totalRows: null }
+      return {
+        ...cursorDemoPage(allRows, asked, peopleSearchFields),
+        totalRows: null
+      }
     }
     return {
-      ...queryDemoRows(searchDemoRows(allRows, asked.search), asked),
+      ...queryDemoRows(
+        searchDemoRows(allRows, asked.search, peopleSearchFields),
+        asked
+      ),
       cursors: { next: null, prev: null }
     }
   }

@@ -7,27 +7,29 @@ import { QueryTable } from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
+import { currentDataset, listColumns, useFakeServer } from '../scenarios'
 
 // Drag the line at the right edge of a header, or focus it (Tab) and use the
 // arrow keys (Shift for bigger steps); Enter or a double click fits the
 // column to its content, Escape cancels a drag. The table emits
 // `columnResize` and keeps no width: this page stores the widths (a real
 // consumer would save them with the user's view) and writes them back to
-// `Column.width`. ID cannot be resized; Age stays between 60 and 160 px.
+// `Column.width`. ID cannot be resized; the count column stays between 60
+// and 160 px.
 //
 // `table-layout: fixed` (this page's utilities on the wrapper) makes the header width
 // the column width; with the automatic layout, content can override it.
+const data = currentDataset()
 const saved = ref<Record<string, number>>({})
 const columns = computed<Column[]>(() =>
-  peopleColumns().map(column => {
+  listColumns(data).map(column => {
     const base: Column =
       column.field === 'id'
         ? // 104px instead of the scenario's 90: the skin's wider padding
           // beside the resize handles left 62px of filter box, under the
           // 4rem at which the skin hides the input.
           { ...column, width: '104px', resizable: false }
-        : column.field === 'age'
+        : column.field === data.fields.count
           ? { ...column, width: '100px', minWidth: 60, maxWidth: 160 }
           : { ...column, width: column.width ?? '160px' }
     const width = saved.value[column.field]
@@ -37,7 +39,7 @@ const columns = computed<Column[]>(() =>
 const onResize = ({ field, width }: ColumnResizePayload) => {
   saved.value = { ...saved.value, [field]: width }
 }
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 </script>
 
 <template>

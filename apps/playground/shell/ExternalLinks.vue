@@ -18,7 +18,7 @@ const base = import.meta.env.BASE_URL
         as-child
         variant="ghost"
         size="sm"
-        class="min-h-11 text-muted-foreground sm:min-h-7"
+        class="min-h-11 text-muted-foreground sm:pointer-fine:min-h-7"
       >
         <a
           :href="hrefOf(link, base)"
