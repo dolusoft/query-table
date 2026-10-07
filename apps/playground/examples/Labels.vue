@@ -3,6 +3,7 @@ import { Button } from '@/ui/button'
 import {
   QueryTable,
   type Column,
+  type FilterCondition,
   type TableLabels
 } from '@dolusoft/query-table'
 
@@ -13,9 +14,26 @@ import { createDemoRows, useFakeServer } from '../scenarios'
 // left out keep their English defaults. The `city` column has no title: its
 // sort button is named by the field. The table has no utility column, so the
 // clear-all action lives in the toolbar.
+const conditionNames: Record<FilterCondition, string> = {
+  Contains: 'İçerir',
+  NotContains: 'İçermez',
+  Equal: 'Eşittir (=)',
+  NotEqual: 'Eşit değildir (≠)',
+  StartsWith: 'İle başlar',
+  EndsWith: 'İle biter',
+  GreaterThan: 'Büyüktür (>)',
+  GreaterThanOrEqual: 'Büyük veya eşittir (≥)',
+  LessThan: 'Küçüktür (<)',
+  LessThanOrEqual: 'Küçük veya eşittir (≤)'
+}
+
+// The condition label under an input and the options of the filter menu
+// read `filterCondition`. It also receives the column type, so a date column
+// could say "after" where a number column says "greater than".
 const labels: Partial<TableLabels> = {
   filterInput: column => `${column} filtresi`,
   filterOptions: column => `${column} filtre seçenekleri`,
+  filterCondition: condition => conditionNames[condition],
   boolAll: 'Tümü',
   boolTrue: 'Evet',
   boolFalse: 'Hayır'

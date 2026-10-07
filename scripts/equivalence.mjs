@@ -105,7 +105,9 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/row-pinning.spec.ts > C-74 composable: TanStack calls go to the consumer [tanstack]',
   'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
   // `moveColumn` is its own test, so the other C-44 tests still compare.
-  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
+  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn',
+  // `filterCondition` (3.2) is its own test for the same reason.
+  'tests/contract/unit/labels.spec.ts > C-44 Labels takes the condition label from filterCondition'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

@@ -248,6 +248,14 @@ export interface TableLabels {
   resizeColumn: (column: string) => string
   /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
   moveColumn: (column: string) => string
+  /**
+   * The condition label under a filter input, and the `label` of each entry of
+   * `conditions` in the `filter-menu` slot. Receives the condition and the
+   * column type: one condition can read differently by type (`GreaterThan` is
+   * `'After (>)'` on a date). Default: the label in the protocol's
+   * `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`.
+   */
+  filterCondition: (condition: FilterCondition, type: ColumnType) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */
@@ -398,7 +406,7 @@ export interface FilterMenuSlotProps {
   rules: FilterRule[]
   /** Condition shown for the column: the first rule's, else the one picked, else `null`. */
   condition: FilterCondition | null
-  /** Conditions that make sense for the column type. */
+  /** Conditions that make sense for the column type, labelled by `labels.filterCondition`. */
   conditions: FilterConditionOption[]
   /**
    * Pick a condition. With a value typed the filter is applied; otherwise the

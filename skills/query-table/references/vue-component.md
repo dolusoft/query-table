@@ -18,7 +18,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages, and for row pinning. |
 | `hasSubtable`, `hasRightPanel` | Expand button with the `subtable` slot; a button that emits `rowRightPanelClick`. |
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
-| `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. |
+| `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. `labels.filterCondition(condition, type)` names a condition: the label under a filter input and each `label` of the `filter-menu` slot's `conditions` (default: the English names of the protocol's `conditionOptions`). |
 
 Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
