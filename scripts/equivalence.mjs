@@ -108,7 +108,9 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn',
   // 3.2 addition (C-82): `data-type` on the cells of a column.
   'tests/contract/unit/column-type.spec.ts > C-82 Column type on cells [own]',
-  'tests/contract/browser/dom-contract-column-type.browser.spec.ts > C-82 the column type is on every cell of a column, as the DOM contract lists it [own]'
+  'tests/contract/browser/dom-contract-column-type.browser.spec.ts > C-82 the column type is on every cell of a column, as the DOM contract lists it [own]',
+  // The test skin aligns by `data-type`, which a 3.1 table does not write.
+  'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 the skin aligns the cells of a column by its type [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

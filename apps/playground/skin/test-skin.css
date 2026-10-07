@@ -291,17 +291,45 @@
   }
 }
 
+/* own: alignment by column type (`data-type`, C-82), in logical values so a
+   right-to-left page mirrors it. Text and dates start; the header's
+   `text-left` from TableHead is physical. */
+.qt-table
+  :is(th, td):is(
+    [data-type='string'],
+    [data-type='date'],
+    [data-type='datetime']
+  ) {
+  text-align: start;
+}
+/* own: numbers end, with digits of one width, so the places line up down the
+   column; header and footer follow their body cells. */
+.qt-table :is(th, td):is([data-type='number'], [data-type='integer']) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+/* own: a yes/no column (a value, an icon or a checkbox in a cell slot) is
+   centered. */
+.qt-table :is(th, td)[data-type='bool'] {
+  text-align: center;
+}
+
 /* shadcn: table/TableFooter.vue */
 .qt-footer {
   @apply bg-muted/50 border-t font-medium [&>tr]:last:border-b-0;
 }
 
-/* own: the utility columns (clear-all, expand, right panel) keep the width of
-   their icon button. */
-thead :is(th, td):not([data-field]),
-td:has(> .qt-expand),
-td:has(> .qt-right-panel-button) {
+/* own: the utility columns (clear-all, selection, expand, right panel) keep
+   the width of their control, centered in the cell. They carry no
+   `data-type`; the wider padding of a table with resize handles is for the
+   data cells' edges, which a utility cell does not share with a handle. */
+.qt-table thead :is(th, td):not([data-field]),
+.qt-table
+  tbody
+  td:has(> :is(.qt-select-row, .qt-expand, .qt-right-panel-button)) {
   width: 2rem;
+  padding-inline: 0.5rem;
+  text-align: center;
 }
 
 /* own: pinned columns. The table writes `data-pinned` (empty on the left,
@@ -506,6 +534,11 @@ td:has(> .qt-right-panel-button) {
 th[data-sort] .qt-sort-icon {
   color: var(--foreground);
 }
+/* own: in a header aligned to the end the icon goes before the title, so the
+   title ends on the column's edge with the numbers under it. */
+th:is([data-type='number'], [data-type='integer']) > .qt-sort {
+  flex-direction: row-reverse;
+}
 
 /* own: the filter row, Input and Button side by side. The condition label
    shows up on the first keystroke; it sits inside the input's end like an
@@ -550,6 +583,10 @@ th[data-sort] .qt-sort-icon {
 /* own: no condition label over a date input; the filter menu names it. */
 .qt-filter:has(.qt-filter-input[type='date']) .qt-filter-condition {
   display: none;
+}
+/* own: a number is typed where the column's numbers end. */
+th:is([data-type='number'], [data-type='integer']) .qt-filter-input {
+  text-align: end;
 }
 /* own: a filtered column's input shows a stronger border. */
 th[data-filtered] .qt-filter-input {
