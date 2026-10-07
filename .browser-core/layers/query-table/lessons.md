@@ -12,7 +12,8 @@ ilgili tarife taşınır ve buradan silinir. Biçim: tarih, ders, kanıt, durum.
     `apps/playground/harness/theme.ts` (`themeFromUrl`); iki ayrı oturumda
     (responsive ölçümü ve AI içeriği turu) aynı karışıklık yaşandı.
   - Tarih: 2026-10-06 · Durum: `tekrarlandı` (2026-10-07 tema turunda
-    üçüncü kez)
+    üçüncü kez; aynı gün #80 incelemesinde dördüncü kez: `/overview`
+    ana sayfayı açtı, doğrusu `/#/overview`)
 
 - **Tema `<html>`'deki `data-theme` özniteliğiyle değişir.** Tema
   tarifinde `apply`: `method: attribute`, `target: html`,
@@ -51,4 +52,37 @@ ilgili tarife taşınır ve buradan silinir. Biçim: tarih, ders, kanıt, durum.
   ölçümleri ara renk okuyor (`#797979` / `#373737`); 850 ms sonra renkler
   doğru. `open_wait_ms` en az 900 olmalı.
   - Kanıt: theme-check `switch_while_open: true`, `open_wait_ms: 300`.
+  - Tarih: 2026-10-07 · Durum: `ilk görülme`
+
+- **Dokunmatik ölçüm `pointer: coarse` ister; yalnız dar viewport
+  yetmez.** Skin 44 px hedefleri `@media (pointer: coarse)` altında
+  büyütür, fare geometrisi `pointer: fine`'da kalır. 390 px'e küçültülmüş
+  masaüstü sekmesi hâlâ `fine` ölçer ve hedefleri küçük gösterir.
+  Tarayıcıda dokunma emülasyonu açılır; testte `browser-touch` projesi
+  (390x844, `hasTouch`) kullanılır, CDP ile elle kurulmaz.
+  - Kanıt: PR #77 (`vitest.config.ts` `browser-touch`), PR #79
+    (`touch-targets.touch.spec.ts`, `mapping.css` coarse kuralları).
+  - Tarih: 2026-10-07 · Durum: `ilk görülme`
+
+- **Dar sütunda görünmez dokunma alanı komşu girişi yutabilir.**
+  `elementFromPoint` taraması yapılmadan hedef boyutu tek başına yeterli
+  sayılmaz: 44x44 `::after` ortalanınca filtre girişinin ortası düğmeye
+  düşüyordu (giriş alanının %44'ü kalmıştı).
+  - Kanıt: PR #79 incelemesi, 390 px, 5.5rem sütun; düzeltme 6.5rem +
+    asimetrik alan.
+  - Tarih: 2026-10-07 · Durum: `ilk görülme`
+
+- **Programatik kaydırma `behavior: 'instant'` ile yapılır.** Sayfada
+  `scroll-behavior: smooth` varsa `scrollTop += delta` animasyon başlatır
+  ve hemen okunan konum eskidir; sanal gövde yanlış pencereyi çizer.
+  - Kanıt: PR #78, headless Chromium, `scrollToIndex(700)` 161'de kaldı,
+    52 px sapma.
+  - Tarih: 2026-10-07 · Durum: `ilk görülme`
+
+- **shadcn-vue dokümanı referans alınırken `<html>` sınıfı
+  `layout-fixed` yapılır.** Bizim tarayıcıda site `layout-full` ile
+  açılıyor ve kenar çubuğu pencerenin sol kenarında duruyor; ortalı düzen
+  (1536 px kap, 1920'de 185..1721) ancak `layout-fixed` ile ölçülür.
+  - Kanıt: https://www.shadcn-vue.com/docs/introduction,
+    `document.documentElement.classList`, chrome-local, PR #80.
   - Tarih: 2026-10-07 · Durum: `ilk görülme`
