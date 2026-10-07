@@ -71,9 +71,10 @@ test('picking a day closes the popover, filters once and returns focus to the tr
   expect(day).not.toBeNull()
   await userEvent.click(day!)
   await expect.poll(() => updates).toHaveLength(1)
-  expect(updates[0].filters).toEqual([
-    rule('joined', 'Equal', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
-  ])
+  const [filter] = updates[0].filters
+  expect(updates[0].filters).toHaveLength(1)
+  expect(filter).toEqual(rule('joined', 'Equal', String(filter.value)))
+  expect(String(filter.value)).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   await expect.poll(() => calendar()).toBeNull()
   expect(document.activeElement).toBe(trigger().element())
 })

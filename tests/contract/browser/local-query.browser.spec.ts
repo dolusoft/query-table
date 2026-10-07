@@ -129,7 +129,12 @@ describe('C-81 useLocalQuery [own]', () => {
     let names: () => string[] = () => []
     await render(
       defineComponent(() => {
-        const local = useLocalQuery({ allRows, dataset, query, profile: 'tr-1' })
+        const local = useLocalQuery({
+          allRows,
+          dataset,
+          query,
+          profile: 'tr-1'
+        })
         names = () => local.rows.value.map(row => row.name)
         return () => h('div')
       })
