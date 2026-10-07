@@ -105,7 +105,7 @@ jobs:
         timeout-minutes: 5
 
       # One tarball per package; pnpm writes the version in place of
-      # `workspace:*`. The Vue tarball is the one a consumer adds.
+      # `workspace:*`. The npm job publishes these files.
       - name: Pack
         run: |
           mkdir -p release

@@ -18,7 +18,7 @@ import QueryTable, { type TableQuery } from '@dolusoft/query-table'
 
 `TableQuery` stays as an alias of `PageQuery`, the page-mode query, so a 2.2 type annotation compiles unchanged. New code that accepts either mode uses `Query` from `@dolusoft/query-protocol`.
 
-The packages are on npm from 3.1.0: install `@dolusoft/query-table` by name and version, and the other two come with it ([README](../../README.md#install)). If you installed 3.0.x from the GitHub Release tarballs, delete those `overrides` entries and install by version.
+The packages are on npm from 3.0.1: install `@dolusoft/query-table` by name and version, and the other two come with it ([README](../../README.md#install)). If you installed 3.0.x from the GitHub Release tarballs, delete those `overrides` entries and install by version.
 
 The Node and `vue` requirements of 2.2 (Node 22.12 or newer, `vue` 3.5+) are unchanged for the packages.
 
