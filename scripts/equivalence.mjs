@@ -119,7 +119,7 @@ const ADDED_AFTER_BASELINE = [
   // 3.2 additions (C-83 to C-91, ADR 0010): virtual rows and infinite
   // scroll. With both off the table is the one of 3.1; every other test
   // compares that.
-  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface > C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else',
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else',
   'tests/contract/unit/infinite.spec.ts > C-89 Load-more slot and method [own]',
   'tests/contract/unit/infinite.spec.ts > C-90 End of an infinite list [own]',
   'tests/contract/unit/infinite.spec.ts > C-88 Infinite scroll trigger [own]',

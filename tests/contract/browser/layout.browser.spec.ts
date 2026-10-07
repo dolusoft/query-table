@@ -259,7 +259,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
   test.each(['light', 'dark'] as const)(
     'typing a filter moves nothing while the condition label shows up (%s)',
     async theme => {
-      const { filterInput } = await renderTable({ theme })
+      const { filterInput, updates } = await renderTable({ theme })
       const measure = () => {
         const input = box('th[data-field="name"] .qt-filter-input')
         return {
@@ -278,6 +278,12 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
         .toBeInTheDocument()
       expect(measure()).toEqual(before)
       await userEvent.type(filterInput('name'), 'ame 1')
+      expect(measure()).toEqual(before)
+      // Wait for the debounced update, so the test ends at the same point
+      // every run (the equivalence gate compares its update trace).
+      await expect
+        .poll(() => updates.at(-1)?.query.filters[0]?.value)
+        .toBe('Name 1')
       expect(measure()).toEqual(before)
       await shot(`layout-filter-label-${theme}`)
     }
