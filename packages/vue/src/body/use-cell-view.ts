@@ -1,4 +1,4 @@
-import type { Slots } from 'vue'
+import { computed, type Slots } from 'vue'
 
 import { sideOf } from '../columns/column-layout'
 import type { CellContextMenuPayload, CellSlotProps, Column } from '../contract'
@@ -33,9 +33,20 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
     String(valueAt(row, column.field) ?? '')
 
+  // The type of each drawn column, read once per change of the columns
+  // instead of once per body cell (C-82).
+  const types = computed(
+    () =>
+      new Map(
+        options
+          .entries()
+          .map(entry => [entry.column.field, columnTypeOf(entry.column)])
+      )
+  )
+
   const cellAttrs = (entry: ColumnEntry) => ({
     'data-field': entry.column.field,
-    'data-type': columnTypeOf(entry.column),
+    'data-type': types.value.get(entry.column.field),
     ...pinAttrs(sideOf(entry.column), options.offsets()[entry.column.field])
   })
 

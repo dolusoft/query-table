@@ -86,7 +86,7 @@ describe('C-82 Column type on cells [own]', () => {
     expect(typesOf(m, '.qt-footer td')).toEqual(want)
   })
 
-  it('leaves the utility cells, the subtable and the empty row without a type', async () => {
+  it('leaves the utility cells, the subtable, the empty and the loading row without a type', async () => {
     const m = mountIt({
       columns: typed,
       rows: [row],
@@ -112,6 +112,16 @@ describe('C-82 Column type on cells [own]', () => {
       empty.wrapper.find('.qt-empty-row td').attributes('data-type')
     ).toBeUndefined()
     empty.wrapper.unmount()
+
+    const loading = mountTable(
+      { columns: typed, rows: [row], totalRows: 1, loading: true },
+      { slots: { loading: '<span>loading</span>' } }
+    )
+    expect(loading.wrapper.find('.qt-loading-row td').exists()).toBe(true)
+    expect(
+      loading.wrapper.find('.qt-loading-row td').attributes('data-type')
+    ).toBeUndefined()
+    loading.wrapper.unmount()
   })
 
   it('changes no cell content: no placeholder for an empty value, no icon (C-30)', () => {
@@ -144,8 +154,10 @@ describe('C-82 Column type on cells [own]', () => {
     const m = mountIt({
       columns: [{ field: 'n', title: 'N', type: 'string' }],
       rows: [{ n: 1 }],
-      totalRows: 1
+      totalRows: 1,
+      footerRows: [{ cells: [{ field: 'n', text: 'Sum' }] }]
     })
+    expect(typesOf(m, '.qt-footer td')).toEqual({ n: 'string' })
     await m.wrapper.setProps({
       columns: [{ field: 'n', title: 'N', type: 'integer' }]
     })
@@ -153,5 +165,6 @@ describe('C-82 Column type on cells [own]', () => {
     expect(typesOf(m, 'tbody tr[data-row-index] > td')).toEqual({
       n: 'integer'
     })
+    expect(typesOf(m, '.qt-footer td')).toEqual({ n: 'integer' })
   })
 })

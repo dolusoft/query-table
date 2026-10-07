@@ -191,7 +191,7 @@ The table ships no CSS and takes no styling props. It writes three inline styles
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74). `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-type` on the header, body and footer cells of a column (C-82). `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -349,7 +349,7 @@ Source: tanstack, own
 
 ### C-66 DOM contract of the selection column
 
-With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list.
+With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection` for the entries without `addedBy`, which the 2.2.x baseline renders; the entries other rules add are checked by those rules (C-72 for 3.1, C-82 for `data-type`), and together they cover the whole list.
 
 Source: own
 

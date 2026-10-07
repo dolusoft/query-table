@@ -71,7 +71,7 @@
 
 /* shadcn: table/TableRow.vue
    excluded:
-     data-[state=selected]:bg-muted  no row selection; `data-state` is not in contract/dom.ts
+     data-[state=selected]:bg-muted  `data-state` is not in contract/dom.ts; the table marks a selected row with `data-selected`
      has-aria-expanded:bg-muted/50   `aria-expanded` is not a skin hook; `tr[data-expanded]` below draws the same */
 .qt-table tr {
   @apply hover:bg-muted/50 border-b transition-colors;
@@ -79,7 +79,7 @@
 
 /* shadcn: table/TableHead.vue
    excluded:
-     [&:has([role=checkbox])]:pr-0  the table renders no checkbox column; `role` is not a skin hook */
+     [&:has([role=checkbox])]:pr-0  `role` is not a skin hook; the selection header cell (`qt-select-all`) takes its padding from the utility column rule below */
 .qt-table th,
 .qt-table thead td {
   @apply text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap;
@@ -93,7 +93,7 @@
 
 /* shadcn: table/TableCell.vue
    excluded:
-     [&:has([role=checkbox])]:pr-0  the table renders no checkbox column; `role` is not a skin hook */
+     [&:has([role=checkbox])]:pr-0  `role` is not a skin hook; the selection cell (`qt-select-row`) takes its padding from the utility column rule below */
 .qt-table td {
   @apply p-2 align-middle whitespace-nowrap;
 }
@@ -112,9 +112,10 @@
   }
 }
 
-/* own: alignment by column type (`data-type`, C-82), in logical values so a
-   right-to-left page mirrors it. Text and dates start; the header's
-   `text-left` from TableHead is physical. */
+/* own: alignment by column type (`data-type`, C-82). These rules use logical
+   values (start, end); the rest of the skin assumes LTR, as the pinning and
+   the resize handles do (C-71). Text and dates start, replacing the physical
+   `text-left` from TableHead. */
 .qt-table
   :is(th, td):is(
     [data-type='string'],
@@ -281,6 +282,23 @@
   ) {
   padding-right: 1.625rem;
 }
+/* own: the body and footer cells under the last header keep its end padding
+   when it has a handle, so an end-aligned column (C-82) ends at one edge in
+   every row. */
+.qt-table:has(thead th:last-child > .qt-resize-handle)
+  :is(tbody > tr[data-row-index], .qt-footer > tr)
+  > td:last-child {
+  padding-right: 1.625rem;
+}
+/* own: the same for the cells before the right-pinned ones. `:has()` does
+   not nest, so the header cell's own handle cannot be asked for here: this
+   follows a table with handles and right-pinned cells, which pads the header
+   cell in that place whenever its column is resizable. */
+.qt-table:has(.qt-resize-handle):has(thead th[data-pinned='right'])
+  :is(tbody > tr[data-row-index], .qt-footer > tr)
+  > td:has(+ td[data-pinned='right']):not([data-pinned]) {
+  padding-right: 1.625rem;
+}
 /* own: the handle's line on header hover. */
 .qt-table th:hover > .qt-resize-handle:not(:focus-visible)::after {
   background-color: var(--border);
@@ -405,7 +423,9 @@ th:is([data-type='number'], [data-type='integer']) > .qt-sort {
 .qt-filter:has(.qt-filter-input[type='date']) .qt-filter-condition {
   display: none;
 }
-/* own: a number is typed where the column's numbers end. */
+/* own: a number filter's text is aligned to the end, toward the column's
+   numbers. It ends before the room the input keeps for the condition label,
+   not on the column's edge. */
 th:is([data-type='number'], [data-type='integer']) .qt-filter-input {
   text-align: end;
 }

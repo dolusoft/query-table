@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { cleanup } from 'vitest-browser-vue'
 
 import { columns, el, renderTable, rows, shot } from '../../support/helpers'
 
@@ -89,6 +90,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
   test('C-82 the skin aligns the cells of a column by its type [own]', async () => {
     await renderTable({
       hasSubtable: true,
+      hasRightPanel: true,
       selection: {},
       rowKey: 'id',
       rows: rows(3).map(row => ({ ...row, active: row.id % 2 === 0 })),
@@ -125,6 +127,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       const r = cell.getBoundingClientRect()
       const style = getComputedStyle(cell)
       return {
+        // + 1: the 1px border of the cell before it, collapsed into this edge.
         left: r.left + parseFloat(style.paddingLeft) + 1,
         right:
           r.right -
@@ -151,9 +154,11 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     ).toBeLessThanOrEqual(0.5)
     const sort = box('th[data-field="age"] > .qt-sort')
     expect(Math.abs(sort.right - end)).toBeLessThanOrEqual(0.5)
-    expect(getComputedStyle(el(body('age'))).fontVariantNumeric).toBe(
-      'tabular-nums'
-    )
+    // Every body cell has tabular digits already; the type rule gives them
+    // to the header too.
+    expect(
+      getComputedStyle(el('th[data-field="age"]')).fontVariantNumeric
+    ).toBe('tabular-nums')
     // The sort icon of an end-aligned header goes before its title.
     expect(box('th[data-field="age"] .qt-sort-icon').right).toBeLessThanOrEqual(
       text('th[data-field="age"] > .qt-sort').left + 0.5
@@ -174,6 +179,7 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     for (const css of [
       'tbody tr[data-row-index="0"] > td:has(> .qt-select-row)',
       'tbody tr[data-row-index="0"] > td:has(> .qt-expand)',
+      'tbody tr[data-row-index="0"] > td:has(> .qt-right-panel-button)',
       'thead th:has(> .qt-select-all)'
     ]) {
       const cell = box(css)
@@ -187,6 +193,48 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       ).toBeLessThanOrEqual(1)
     }
     await shot('layout-column-type-alignment')
+    cleanup()
+
+    // With resize handles the last header cell, and the one before the
+    // right-pinned cells, keep room for the handle at their end; the body and
+    // footer cells under them keep the same, so the column ends at one edge.
+    const endsTogether = (field: string) => {
+      const cellEnd = text(body(field)).right
+      expect(
+        Math.abs(text(`tfoot td[data-field="${field}"]`).right - cellEnd),
+        `${field} footer`
+      ).toBeLessThanOrEqual(0.5)
+      expect(
+        Math.abs(box(`th[data-field="${field}"] > .qt-sort`).right - cellEnd),
+        `${field} header`
+      ).toBeLessThanOrEqual(0.5)
+    }
+    await renderTable({
+      resizable: true,
+      rows: rows(3),
+      columns: [
+        { field: 'name', title: 'Name' },
+        { field: 'joined', title: 'Joined', type: 'date' },
+        { field: 'age', title: 'Age', type: 'number' }
+      ],
+      footerRows: [{ cells: [{ field: 'age', text: 63 }] }]
+    })
+    endsTogether('age')
+    await shot('layout-column-type-resizable-last')
+    cleanup()
+
+    await renderTable({
+      resizable: true,
+      rows: rows(3),
+      columns: [
+        { field: 'name', title: 'Name' },
+        { field: 'age', title: 'Age', type: 'number' },
+        { field: 'id', title: 'ID', type: 'number', pinned: 'right' }
+      ],
+      footerRows: [{ cells: [{ field: 'age', text: 63 }] }]
+    })
+    endsTogether('age')
+    await shot('layout-column-type-resizable-before-pinned')
   })
 
   test.each(['light', 'dark'] as const)(
