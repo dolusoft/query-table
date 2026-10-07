@@ -416,6 +416,22 @@ td:has(> .qt-right-panel-button) {
   right: 0;
   z-index: 10;
 }
+/* own: the handle reaches 0.75rem into the cells on both sides of an edge,
+   past their 0.5rem padding, and took the clicks at the ends of their
+   controls. A table with handles gives its cells 0.875rem of inline padding,
+   body cells too so their text lines up with the header's. */
+.qt-table:has(.qt-resize-handle) :is(th, td) {
+  padding-inline: 0.875rem;
+}
+/* own: where the handle sits inside its cell (the last one, the one before
+   the right-pinned cells) it covers 1.5rem of the cell's end. */
+.qt-table th:last-child:has(> .qt-resize-handle),
+.qt-table
+  th:has(+ th[data-pinned='right']):not([data-pinned]):has(
+    > .qt-resize-handle
+  ) {
+  padding-right: 1.625rem;
+}
 /* own: the handle's line on header hover. */
 .qt-table th:hover > .qt-resize-handle:not(:focus-visible)::after {
   background-color: var(--border);
@@ -594,9 +610,11 @@ th[data-filtered] .qt-filter-input {
 .qt-table th[data-field] {
   min-width: 5.5rem;
 }
-/* own: under 6rem the button moves into the input. */
+/* own: under 6rem the button moves into the input, which keeps room for it at
+   its end; a date input too, or the button lies over its picker icon. */
 @container qt-filter (width < 6rem) {
-  .qt-filter-input {
+  .qt-filter-input,
+  .qt-filter-input[type='date'] {
     padding-right: 2rem;
   }
   .qt-filter-button {

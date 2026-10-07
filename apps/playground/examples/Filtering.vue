@@ -54,7 +54,9 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
 
 <template>
   <div class="flex flex-col gap-3">
-    <div class="flex flex-wrap items-center gap-2">
+    <!-- gap-x-4: the Checkbox's hit area reaches 0.75rem past its box, so a
+         narrower gap puts it over the end of the button before it. -->
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
       <Button
         v-for="preset in presets"
         :key="preset.label"

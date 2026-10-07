@@ -53,7 +53,9 @@ watch(theme, value => setTheme(value === 'system' ? null : value), {
   immediate: true
 })
 
-// Documentation search: Ctrl+K / ⌘K anywhere, `/` when not typing.
+// Documentation search: Ctrl+K / ⌘K anywhere, `/` when not typing. The
+// shortcut's Kbd takes the foreground color: the CLI's muted-foreground on
+// bg-muted is 4.35:1 in the light theme, under WCAG 1.4.3's 4.5:1.
 const searchOpen = ref(false)
 const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 const isTyping = (target: EventTarget | null) =>
@@ -113,7 +115,9 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
         >
           <SearchIcon class="opacity-60" />
           <span class="sr-only sm:not-sr-only">Search docs</span>
-          <Kbd class="hidden sm:inline-flex">{{ shortcut }}</Kbd>
+          <Kbd class="hidden text-foreground sm:inline-flex">{{
+            shortcut
+          }}</Kbd>
         </Button>
       </div>
     </header>
@@ -161,7 +165,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
           >
             <SearchIcon class="opacity-60" />
             <span class="flex-1 text-left">Search docs</span>
-            <Kbd>{{ shortcut }}</Kbd>
+            <Kbd class="text-foreground">{{ shortcut }}</Kbd>
           </Button>
         </SidebarHeader>
         <SidebarContent class="overflow-visible px-2 lg:min-h-0">

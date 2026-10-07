@@ -23,7 +23,10 @@ const columns = computed<Column[]>(() =>
   peopleColumns().map(column => {
     const base: Column =
       column.field === 'id'
-        ? { ...column, resizable: false }
+        ? // 104px instead of the scenario's 90: the skin's wider padding
+          // beside the resize handles left 62px of filter box, under the
+          // 4rem at which the skin hides the input.
+          { ...column, width: '104px', resizable: false }
         : column.field === 'age'
           ? { ...column, width: '100px', minWidth: 60, maxWidth: 160 }
           : { ...column, width: column.width ?? '160px' }
