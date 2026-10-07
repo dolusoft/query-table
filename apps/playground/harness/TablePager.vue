@@ -34,7 +34,7 @@ const sizeId = useId()
         :id="sizeId"
         size="sm"
         aria-label="Rows per page"
-        class="page-size [&_select]:h-10 [&_select]:bg-background [&_select]:tabular-nums lg:[&_select]:h-7"
+        class="page-size [&_select]:h-11 [&_select]:bg-background [&_select]:tabular-nums lg:[&_select]:h-7"
         :model-value="page.pageSize"
         @change="
           page.setPageSize(Number(($event.target as HTMLSelectElement).value))
@@ -52,7 +52,7 @@ const sizeId = useId()
       <Button
         variant="outline"
         size="sm"
-        class="previous-page min-h-10 lg:min-h-0"
+        class="previous-page min-h-11 lg:min-h-0"
         :disabled="!page.canPrevious"
         @click="page.previousPage()"
       >
@@ -61,7 +61,7 @@ const sizeId = useId()
       <Button
         variant="outline"
         size="sm"
-        class="next-page min-h-10 lg:min-h-0"
+        class="next-page min-h-11 lg:min-h-0"
         :disabled="!page.canNext"
         @click="page.nextPage()"
       >

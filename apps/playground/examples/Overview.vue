@@ -20,7 +20,7 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // Chips above the table show the filters in `query.filters`.
 // Joined gets a width: a date input needs more room than an even share of
 // the fixed layout, which clipped its placeholder at 768px. ID gets 7rem: in
-// the compact header its sort button and funnel (2.5rem and 2.75rem on a
+// the compact header its sort button and funnel (2.75rem each on a
 // touch screen) did not fit the scenario's 90px, and the funnel lay under
 // the Name header.
 const columns = peopleColumns().map(column =>

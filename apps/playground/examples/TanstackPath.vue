@@ -119,7 +119,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
               <Button
                 variant="ghost"
                 size="sm"
-                class="sort-button -ml-2 min-h-10 lg:min-h-0"
+                class="sort-button -ml-2 min-h-11 lg:min-h-0"
                 @click="header.column.toggleQuerySorting()"
               >
                 <FlexRender
@@ -139,7 +139,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
               class="py-1"
             >
               <Input
-                class="filter-input h-10 min-w-24 lg:h-8"
+                class="filter-input h-11 min-w-24 lg:h-8"
                 :aria-label="`Filter ${column.id}`"
                 :model-value="column.getFilterInput().text"
                 @update:model-value="column.setFilterInput(String($event))"
@@ -166,7 +166,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
         <Button
           variant="outline"
           size="sm"
-          class="previous-page min-h-10 lg:min-h-0"
+          class="previous-page min-h-11 lg:min-h-0"
           :disabled="!table.getCanPreviousPage()"
           @click="table.previousPage()"
         >
@@ -175,7 +175,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
         <Button
           variant="outline"
           size="sm"
-          class="next-page min-h-10 lg:min-h-0"
+          class="next-page min-h-11 lg:min-h-0"
           :disabled="!table.getCanNextPage()"
           @click="table.nextPage()"
         >

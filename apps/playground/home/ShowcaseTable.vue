@@ -137,7 +137,7 @@ const edit = (field: string, trigger: HTMLElement) =>
       @column-resize="onResize"
     >
       <template #toolbar>
-        <div class="flex flex-col gap-2 pb-2">
+        <div class="flex flex-col gap-2 pb-3">
           <p class="text-sm text-muted-foreground" aria-live="polite">
             <template v-if="totalRows === null">Loading people…</template>
             <template v-else>

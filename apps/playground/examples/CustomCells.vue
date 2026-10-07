@@ -65,7 +65,7 @@ const onRightPanel = (row: DemoRow) => {
       </template>
       <template #cell-name="{ row, cellValue }">
         <a
-          class="text-primary underline-offset-4 hover:underline"
+          class="text-primary underline-offset-4 hover:underline dark:text-sidebar-primary"
           :href="`#person-${(row as DemoRow).id}`"
           @click.prevent
           >{{ cellValue }}</a

@@ -180,7 +180,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
             >
               <li
                 role="presentation"
-                class="flex items-center gap-1.5 px-2 text-xs font-semibold tracking-wide text-primary uppercase lg:py-1"
+                class="flex items-center gap-1.5 px-2 text-xs font-semibold tracking-wide text-primary uppercase dark:text-sidebar-primary lg:py-1"
               >
                 <SparklesIcon aria-hidden="true" class="size-3.5" />
                 AI

@@ -138,19 +138,21 @@ const base = import.meta.env.BASE_URL
             class="gap-2 border-b py-1.5 pr-1.5"
           >
             <TerminalIcon aria-hidden="true" />
-            <TabsList class="h-8 bg-transparent p-0 font-mono">
+            <TabsList
+              class="bg-transparent p-0 font-mono group-data-horizontal/tabs:h-11 lg:group-data-horizontal/tabs:h-8"
+            >
               <TabsTrigger
                 v-for="entry in installCommands"
                 :key="entry.manager"
                 :value="entry.manager"
-                class="h-7 min-h-11 px-2 data-active:border-input data-active:shadow-none sm:min-h-0"
+                class="h-11 px-2 data-active:border-input data-active:shadow-none lg:h-7"
               >
                 {{ entry.manager }}
               </TabsTrigger>
             </TabsList>
             <InputGroupButton
               size="icon-sm"
-              class="ml-auto size-11 sm:size-7"
+              class="ml-auto size-11 lg:size-7"
               :aria-label="copied ? 'Copied' : 'Copy install command'"
               data-testid="copy-install"
               @click="copy(command)"
@@ -194,7 +196,7 @@ const base = import.meta.env.BASE_URL
       </div>
       <!-- The page background, not bg-card: the table and its toolbar draw
            on bg-background, a lighter card would frame them in two tones. -->
-      <Card class="min-w-0 gap-3 bg-background py-3 sm:gap-4 sm:py-4">
+      <Card class="min-w-0 gap-3 bg-background py-3 sm:py-4">
         <CardHeader class="gap-3 px-3 sm:px-4">
           <ul
             class="flex flex-wrap gap-1.5"
@@ -230,7 +232,7 @@ const base = import.meta.env.BASE_URL
       </h2>
       <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <li v-for="feature in moreFeatures" :id="feature.id" :key="feature.id">
-          <Item as-child variant="outline" class="h-full flex-nowrap">
+          <Item as-child variant="outline" class="h-full min-h-11 flex-nowrap">
             <RouterLink :to="`/${feature.pageId}`">
               <ItemContent>
                 <ItemTitle>{{ feature.title }}</ItemTitle>
@@ -365,11 +367,14 @@ const base = import.meta.env.BASE_URL
       <p class="max-w-3xl text-sm text-muted-foreground sm:text-base">
         {{ architecture.text }}
       </p>
+      <!-- The SVG draws its own light card (it is the README's picture too),
+           so the page adds only the card's ring and radius around it: a
+           padded frame on top of that showed a card inside a card. -->
       <img
         v-show="diagramLoaded"
         :src="diagramUrl"
         alt="Architecture diagram: the page, the table and the server around v-model:query"
-        class="w-full max-w-4xl rounded-xl bg-card p-4 ring-1 ring-foreground/10"
+        class="w-full max-w-4xl rounded-xl ring-1 ring-foreground/10"
         @load="diagramLoaded = true"
       />
     </section>

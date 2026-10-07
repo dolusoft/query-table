@@ -128,7 +128,10 @@ const menuOpen = ref(false)
             shortcut
           }}</Kbd>
         </Button>
-        <Separator orientation="vertical" class="mx-1 hidden h-4! sm:block" />
+        <Separator
+          orientation="vertical"
+          class="mx-1 hidden h-4! self-center! sm:block"
+        />
         <Button as-child variant="ghost" size="icon" class="size-11 sm:size-8">
           <a
             :href="repositoryUrl"

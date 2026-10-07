@@ -121,7 +121,7 @@ test.each([
 )
 
 // Headers that differ in height must still line up their filter rows. The
-// sorting page mixes sortable columns (title in a 2.5rem sort button on a
+// sorting page mixes sortable columns (title in a 2.75rem sort button on a
 // phone) with an unsortable one (title as plain text); the header-slot page
 // puts a two-line title of the page's own in the Salary column.
 test.each(
