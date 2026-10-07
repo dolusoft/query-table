@@ -36,6 +36,7 @@ import {
 import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
 
+import ArchDiagram from './ArchDiagram.vue'
 import {
   aiHome,
   architecture,
@@ -86,108 +87,118 @@ const base = import.meta.env.BASE_URL
 
 <template>
   <div class="mx-auto flex w-full max-w-6xl flex-col px-4 sm:px-6">
+    <!-- Text on the left, the architecture picture large on the right; on a
+         narrow screen the picture comes under the install command. -->
     <section
       aria-labelledby="home-title"
-      class="flex flex-col items-center gap-2 py-12 text-center md:py-20"
+      class="grid items-center gap-10 py-12 md:py-16 lg:grid-cols-[minmax(22rem,1fr)_minmax(0,2fr)] lg:gap-8"
     >
-      <!-- No version here: package.json carries the next version before its
-           release exists. -->
-      <Badge as-child variant="secondary" class="mb-2">
-        <RouterLink to="/tanstack" data-testid="tanstack-line">
-          Vue 3 · {{ tanstackLine }}
-          <ArrowRightIcon data-icon="inline-end" />
-        </RouterLink>
-      </Badge>
-      <h1
-        id="home-title"
-        class="text-4xl leading-tight font-semibold tracking-tighter md:text-5xl md:leading-none"
+      <div
+        class="flex flex-col items-center gap-2 text-center lg:items-start lg:text-left"
       >
-        Query Table
-      </h1>
-      <p class="max-w-2xl text-base text-balance text-foreground sm:text-lg">
-        {{ pitch }}
-      </p>
-      <div class="flex flex-wrap justify-center gap-2 pt-2">
-        <Button as-child size="sm" class="min-h-11 sm:pointer-fine:min-h-0">
-          <RouterLink to="/overview">
-            Read the docs
+        <!-- No version here: package.json carries the next version before its
+           release exists. -->
+        <Badge as-child variant="secondary" class="mb-2">
+          <RouterLink to="/tanstack" data-testid="tanstack-line">
+            Vue 3 · {{ tanstackLine }}
             <ArrowRightIcon data-icon="inline-end" />
           </RouterLink>
-        </Button>
-        <Button
-          as-child
-          size="sm"
-          variant="ghost"
-          class="min-h-11 sm:pointer-fine:min-h-0"
+        </Badge>
+        <h1
+          id="home-title"
+          class="text-4xl leading-tight font-semibold tracking-tighter md:text-5xl md:leading-none"
         >
-          <a
-            :href="repositoryUrl"
-            target="_blank"
-            rel="noopener"
-            aria-label="GitHub (opens in a new tab)"
+          Query Table
+        </h1>
+        <p class="max-w-2xl text-base text-balance text-foreground sm:text-lg">
+          {{ pitch }}
+        </p>
+        <div class="flex flex-wrap justify-center gap-2 pt-2 lg:justify-start">
+          <Button as-child size="sm" class="min-h-11 sm:pointer-fine:min-h-0">
+            <RouterLink to="/overview">
+              Read the docs
+              <ArrowRightIcon data-icon="inline-end" />
+            </RouterLink>
+          </Button>
+          <Button
+            as-child
+            size="sm"
+            variant="ghost"
+            class="min-h-11 sm:pointer-fine:min-h-0"
           >
-            <BrandIcon name="github" />
-            GitHub
-          </a>
-        </Button>
-      </div>
-      <!-- The install command for three package managers. The command
+            <a
+              :href="repositoryUrl"
+              target="_blank"
+              rel="noopener"
+              aria-label="GitHub (opens in a new tab)"
+            >
+              <BrandIcon name="github" />
+              GitHub
+            </a>
+          </Button>
+        </div>
+        <!-- The install command for three package managers. The command
            scrolls sideways in its own box; the copy button sits in the tab
            row, never over the text. -->
-      <Tabs
-        v-model="manager"
-        class="mt-6 w-full max-w-xl gap-0 text-left"
-        data-testid="install-command"
-      >
-        <InputGroup
-          class="h-auto flex-col items-stretch bg-muted/50 dark:bg-muted/50"
+        <Tabs
+          v-model="manager"
+          class="mt-6 w-full max-w-xl gap-0 text-left"
+          data-testid="install-command"
         >
-          <InputGroupAddon
-            align="block-start"
-            class="gap-2 border-b py-1.5 pr-1.5"
+          <InputGroup
+            class="h-auto flex-col items-stretch bg-muted/50 dark:bg-muted/50"
           >
-            <TerminalIcon aria-hidden="true" />
-            <TabsList
-              class="bg-transparent p-0 font-mono group-data-horizontal/tabs:h-11 lg:group-data-horizontal/tabs:h-8"
+            <InputGroupAddon
+              align="block-start"
+              class="gap-2 border-b py-1.5 pr-1.5"
             >
-              <TabsTrigger
-                v-for="entry in installCommands"
-                :key="entry.manager"
-                :value="entry.manager"
-                class="h-11 px-2 data-active:border-input data-active:shadow-none lg:pointer-fine:h-7"
+              <TerminalIcon aria-hidden="true" />
+              <TabsList
+                class="bg-transparent p-0 font-mono group-data-horizontal/tabs:h-11 lg:group-data-horizontal/tabs:h-8"
               >
-                {{ entry.manager }}
-              </TabsTrigger>
-            </TabsList>
-            <InputGroupButton
-              size="icon-sm"
-              class="ml-auto size-11 lg:pointer-fine:size-7"
-              :aria-label="copied ? 'Copied' : 'Copy install command'"
-              data-testid="copy-install"
-              @click="copy(command)"
+                <TabsTrigger
+                  v-for="entry in installCommands"
+                  :key="entry.manager"
+                  :value="entry.manager"
+                  class="h-11 px-2 data-active:border-input data-active:shadow-none lg:pointer-fine:h-7"
+                >
+                  {{ entry.manager }}
+                </TabsTrigger>
+              </TabsList>
+              <InputGroupButton
+                size="icon-sm"
+                class="ml-auto size-11 lg:pointer-fine:size-7"
+                :aria-label="copied ? 'Copied' : 'Copy install command'"
+                data-testid="copy-install"
+                @click="copy(command)"
+              >
+                <CheckIcon v-if="copied" />
+                <CopyIcon v-else />
+              </InputGroupButton>
+            </InputGroupAddon>
+            <TabsContent
+              v-for="entry in installCommands"
+              :key="entry.manager"
+              :value="entry.manager"
+              class="min-w-0"
             >
-              <CheckIcon v-if="copied" />
-              <CopyIcon v-else />
-            </InputGroupButton>
-          </InputGroupAddon>
-          <TabsContent
-            v-for="entry in installCommands"
-            :key="entry.manager"
-            :value="entry.manager"
-            class="min-w-0"
-          >
-            <ScrollArea class="w-full">
-              <pre
-                class="w-max px-4 py-3.5 font-mono text-sm"
-              ><code>{{ entry.command }}</code></pre>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          </TabsContent>
-        </InputGroup>
-      </Tabs>
-      <span class="sr-only" aria-live="polite">{{
-        copied ? 'Install command copied' : ''
-      }}</span>
+              <ScrollArea class="w-full">
+                <pre
+                  class="w-max px-4 py-3.5 font-mono text-sm"
+                ><code>{{ entry.command }}</code></pre>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </TabsContent>
+          </InputGroup>
+        </Tabs>
+        <span class="sr-only" aria-live="polite">{{
+          copied ? 'Install command copied' : ''
+        }}</span>
+      </div>
+      <!-- Centred, the picture's top labels start above the badge on the
+           left. A translate moves the picture alone; a margin would grow the
+           row and the centred text would move down with it. -->
+      <ArchDiagram class="mx-auto w-full max-w-3xl lg:translate-y-8" />
     </section>
 
     <section
@@ -395,16 +406,29 @@ const base = import.meta.env.BASE_URL
       <p class="max-w-3xl text-sm text-muted-foreground sm:text-base">
         {{ architecture.text }}
       </p>
-      <!-- The SVG draws its own light card (it is the README's picture too),
-           so the page adds only the card's ring and radius around it: a
-           padded frame on top of that showed a card inside a card. -->
-      <img
-        v-show="diagramLoaded"
-        :src="diagramUrl"
-        alt="Architecture diagram: the page, the table and the server around v-model:query"
-        class="w-full max-w-4xl rounded-xl ring-1 ring-foreground/10"
-        @load="diagramLoaded = true"
-      />
+      <!-- The hero's picture standing still, the card resting on the hub.
+           The detailed diagram (the README's) opens below it. -->
+      <ArchDiagram :animated="false" class="w-full max-w-4xl" />
+      <details v-show="diagramLoaded" class="group w-full max-w-4xl">
+        <summary
+          class="flex min-h-11 w-fit cursor-pointer list-none items-center gap-1 text-sm font-medium sm:pointer-fine:min-h-0 [&::-webkit-details-marker]:hidden"
+        >
+          <ChevronRightIcon
+            aria-hidden="true"
+            class="size-4 transition-transform group-open:rotate-90"
+          />
+          The detailed diagram
+        </summary>
+        <!-- The SVG draws its own light card (it is the README's picture
+             too), so the page adds only the card's ring and radius around
+             it: a padded frame on top of that showed a card inside a card. -->
+        <img
+          :src="diagramUrl"
+          alt="Architecture diagram: the page, the table and the server around v-model:query"
+          class="mt-3 w-full rounded-xl ring-1 ring-foreground/10"
+          @load="diagramLoaded = true"
+        />
+      </details>
     </section>
   </div>
 </template>

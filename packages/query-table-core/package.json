@@ -1,6 +1,6 @@
 {
   "name": "@dolusoft/query-table-core",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Headless core of a server-side table: TanStack Table plugins that turn sort, filter, page and search actions into query updates the consumer owns.",
   "private": false,
   "type": "module",
