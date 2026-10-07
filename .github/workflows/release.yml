@@ -4,10 +4,12 @@ name: Release
 # `v<version>` that equals the `version` of the root and of every
 # packages/*/package.json (see CONTRIBUTING.md, "Releasing").
 #
-#   verify   read-only token: runs every check of CI, builds, packs one
-#            tarball per package and the conformance suite
-#            (conformance-<revision>.tgz and the release notes that pin it,
-#            C-79), and uploads them as a workflow artifact.
+#   version  the tag equals every package.json version.
+#   ci       read-only token: every check of CI (ci.yml, called as is).
+#   pack     read-only token: builds, packs one tarball per package and the
+#            conformance suite (conformance-<revision>.tgz and the release
+#            notes that pin it, C-79), and uploads them as a workflow
+#            artifact.
 #   npm      no install and no repository code: publishes the same tarballs
 #            to npm with trusted publishing (OIDC: no token, no OTP).
 #            Each package on npmjs.com lists this repository and
@@ -29,9 +31,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  # The three packages are released together under one version: fails in
+  # seconds, before any check runs, when the tag and a package.json differ.
+  version:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 5
     permissions:
       contents: read
     env:
@@ -43,15 +47,6 @@ jobs:
         with:
           persist-credentials: false
 
-      # The pnpm version is the `packageManager` field of package.json.
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-
-      # The three packages are released together under one version.
       - name: Tag matches every package.json
         id: version
         run: |
@@ -69,40 +64,34 @@ jobs:
           done
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm knip
-      - run: pnpm contract:check
-      - run: pnpm schema:check
-      - run: pnpm conformance:check
-      - run: pnpm playground:build
-      - run: pnpm test:coverage
+  # Every check of CI, from the same workflow file.
+  ci:
+    needs: version
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
 
-      - name: Resolve Playwright version
-        id: playwright
-        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v4
+  pack:
+    needs: [version, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+          persist-credentials: false
 
-      - run: pnpm exec playwright install --with-deps chromium
-        timeout-minutes: 5
-      - run: pnpm test:browser
-        timeout-minutes: 5
-      - run: pnpm check:renders
-        timeout-minutes: 5
-      # One build of dist/; the checks below and the pack use it.
+      # The pnpm version is the `packageManager` field of package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm check:package
-      - run: pnpm check:deps
-      - run: pnpm check:size
-      - run: pnpm check:package-size
-      - run: pnpm api:check
-      - run: pnpm pack-install
-        timeout-minutes: 5
 
       # One tarball per package; pnpm writes the version in place of
       # `workspace:*`. The npm job publishes these files.
@@ -117,7 +106,7 @@ jobs:
             echo "::error::Expected three tarballs in release/, found $count."
             exit 1
           fi
-          test -f "release/dolusoft-query-table-${{ steps.version.outputs.version }}.tgz"
+          test -f "release/dolusoft-query-table-${{ needs.version.outputs.version }}.tgz"
           # The conformance suite as an asset of its own, pinned by the notes.
           node scripts/pack-conformance.mjs release-extra
           test -f release-extra/release-notes.md
@@ -137,7 +126,7 @@ jobs:
           retention-days: 7
 
   npm:
-    needs: verify
+    needs: [version, pack]
     # Waits for a reviewer of the `release` environment (Zahid or Enes);
     # the npm trusted publisher accepts this environment only.
     environment: release
@@ -147,7 +136,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      VERSION: ${{ needs.verify.outputs.version }}
+      VERSION: ${{ needs.version.outputs.version }}
     steps:
       # The artifact keeps the common root of its paths: release/ and
       # release-extra/ land side by side in the workspace.
@@ -177,7 +166,7 @@ jobs:
           done
 
   publish:
-    needs: verify
+    needs: [version, pack]
     environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 10
