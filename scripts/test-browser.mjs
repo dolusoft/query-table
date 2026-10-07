@@ -15,15 +15,19 @@
 //   BROWSER_TEST_TIMEOUT_MS  per attempt, default 120000 (a run takes ~10 s
 //                            locally and up to ~45 s on CI)
 //   BROWSER_TEST_ATTEMPTS    default 2
-//   BROWSER_TEST_PROJECT     Vitest project to run, default "browser" (scripts/measure-renders.mjs
-//                            runs "measure" through this same wrapper)
+//   BROWSER_TEST_PROJECT     Vitest projects to run, comma-separated, default
+//                            "browser,browser-touch" (the touch instance of the
+//                            browser project); scripts/measure-renders.mjs runs
+//                            "measure" through this same wrapper
 import { spawn, spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 
 const attemptTimeoutMs = Number(process.env.BROWSER_TEST_TIMEOUT_MS) || 120_000
 const maxAttempts = Number(process.env.BROWSER_TEST_ATTEMPTS) || 2
-const project = process.env.BROWSER_TEST_PROJECT || 'browser'
+const projects = (process.env.BROWSER_TEST_PROJECT || 'browser,browser-touch')
+  .split(',')
+  .flatMap(name => ['--project', name.trim()])
 const lostConnection =
   /Failed to connect to the browser session|The iframe "[^"\r\n]+" did not become ready within \d+ms|Failed to fetch dynamically imported module: http:\/\/localhost:\d+\//
 
@@ -50,7 +54,7 @@ const runOnce = () =>
   new Promise(resolve => {
     const child = spawn(
       process.execPath,
-      [vitestBin, 'run', '--project', project, ...process.argv.slice(2)],
+      [vitestBin, 'run', ...projects, ...process.argv.slice(2)],
       {
         stdio: ['inherit', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
