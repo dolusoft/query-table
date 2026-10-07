@@ -9,7 +9,8 @@
     "3.1.0 (PR-D1): component 30022 B, composable 21640 B when the budget was set; right pinning and the reorder handle bring them to 31164 B and 21750 B, within it. Column visibility, column order and the column controls (TanStack columnVisibility and columnOrdering), the update:columns write-back, right pinning (measured --qt-pin-right), the reorder handle (pointer drag, keys, focus kept; component only).",
     "3.1.0 (PR-D2, 2026-10-06): component 32224 B (+1060 B since PR-D1's 31164 B), composable 22652 B (+902 B). Row pinning: TanStack rowPinningFeature, the controlled rowPinning map and update:rowPinning, the body drawn in top, center, bottom order, rowPinned and pinRow in the cell slot. Budgets set to measure plus 5%, ceilings rounded up to the next 500 B.",
     "3.1.0 (PR-L3, 2026-10-06): local-composable 5739 B. useLocalQuery over the local evaluator. Budget 6026 B (measure plus 5%), ceiling 7000 B (measure times 1.2 rounded up to 500 B).",
-    "3.2.0 (2026-10-07): component 36260 B (+3933 B over next at 32327 B; composable unchanged). Virtual rows (own windowing: prefix sums, one ResizeObserver, scroll correction, kept focus, print, scrollToIndex) and infinite scroll (IntersectionObserver trigger, load-more slot); ADR 0010. Budget set to measure plus 5%, ceiling rounded up to the next 500 B."
+    "3.2.0 (2026-10-07): component 36260 B (+3933 B over next at 32327 B; composable unchanged). Virtual rows (own windowing: prefix sums, one ResizeObserver, scroll correction, kept focus, print, scrollToIndex) and infinite scroll (IntersectionObserver trigger, load-more slot); ADR 0010. Budget set to measure plus 5%, ceiling rounded up to the next 500 B.",
+    "3.2.0 (PR #79, 2026-10-07): component 36390 B (+130 B over next at 36260 B). C-22: a keyed clear all hands the focus to the first filter (focusFirstFilter, one nextTick after the click). Budget set to measure plus 5%; ceiling unchanged."
   ],
   "fixtures": {
     "composable": {
@@ -18,8 +19,8 @@
       "ceilingGzipBytes": 24000
     },
     "component": {
-      "measuredGzipBytes": 36260,
-      "maxGzipBytes": 38073,
+      "measuredGzipBytes": 36390,
+      "maxGzipBytes": 38210,
       "ceilingGzipBytes": 38500
     },
     "local-composable": {

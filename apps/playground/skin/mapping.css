@@ -660,3 +660,119 @@ th[data-filtered] .qt-filter-input {
 .qt-pagination {
   padding: 1rem 0.5625rem;
 }
+
+/* own: on a touch screen (`pointer: coarse`) every control the table draws
+   takes a 44px (2.75rem) target, the size WCAG 2.5.5 and Apple's guidelines
+   give a finger. A mouse keeps the compact shadcn sizes above: the media
+   query never matches a fine pointer, so the desktop look and the geometry
+   the browser tests measure stay as they are. Buttons and the filter input
+   grow to the target; the filter row stays one line. */
+@media (pointer: coarse) {
+  .qt-sort,
+  .qt-filter-button,
+  .qt-clear-all-button,
+  .qt-expand,
+  .qt-right-panel-button,
+  .qt-reorder-handle {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+  .qt-filter-input {
+    min-height: 2.75rem;
+  }
+
+  /* A narrow data column keeps 6.5rem instead of 5.5rem: its filter input
+     and the button inside the input's end then both get a 44px target. */
+  .qt-table th[data-field] {
+    min-width: 6.5rem;
+  }
+
+  /* Under 6rem the button sits inside the input's end and keeps its 1.75rem
+     box, or it would cover the input; an invisible box takes the 44px target
+     instead. It grows to the end, up to the cell's padding edge (the button
+     ends 0.125rem inside the input, the cell pads 0.5rem), never into the
+     next column, and to the start only over the room the input keeps at its
+     end (2.25rem here), never over its text: a tap in the middle of the
+     input lands on the input. */
+  @container qt-filter (width < 6rem) {
+    .qt-filter-input,
+    .qt-filter-input[type='date'] {
+      padding-right: 2.25rem;
+    }
+    .qt-filter-button {
+      min-width: 0;
+      min-height: 0;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -0.625rem;
+        width: 2.75rem;
+        height: 2.75rem;
+        transform: translateY(-50%);
+      }
+    }
+  }
+
+  /* A native checkbox ignores its size and padding for the box it draws, so
+     the selection checkboxes are drawn by the skin: a 2.75rem target with the
+     1.25rem box of shadcn's Checkbox in its middle, its check mark on
+     `:checked` and its bar on `:indeterminate` (the page's partial
+     selection). */
+  .qt-select-row,
+  .qt-select-all {
+    appearance: none;
+    position: relative;
+    display: inline-block;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0;
+    vertical-align: middle;
+    cursor: pointer;
+    outline: none;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      width: 1.25rem;
+      height: 1.25rem;
+      margin: auto;
+      border: 1px solid var(--input);
+      border-radius: 4px;
+      background-color: var(--background);
+    }
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      width: 0.375rem;
+      height: 0.6875rem;
+      margin: auto;
+      border: solid var(--primary-foreground);
+      border-width: 0 2px 2px 0;
+      opacity: 0;
+      transform: translateY(-1px) rotate(45deg);
+    }
+    &:is(:checked, :indeterminate)::before {
+      border-color: var(--primary);
+      background-color: var(--primary);
+    }
+    &:checked::after {
+      opacity: 1;
+    }
+    &:indeterminate::after {
+      width: 0.625rem;
+      height: 0;
+      border-width: 0 0 2px;
+      opacity: 1;
+      transform: none;
+    }
+    &:focus-visible::before {
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+    }
+  }
+}

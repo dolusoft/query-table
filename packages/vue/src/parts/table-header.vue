@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { rulesOf } from '@dolusoft/query-protocol'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import type {
   Column,
@@ -16,6 +16,7 @@ import SortButton from './sort-button.vue'
 import { sideOf } from '../columns/column-layout'
 import { columnTypeOf } from '../core/column'
 import { useTableContext } from '../core/table-context'
+import { focusFirstFilter } from '../filter/focus-filter'
 import { pinAttrs, utilityKey, type Utility } from '../pin/pin'
 import { ariaSort } from '../sort/sort'
 
@@ -62,6 +63,32 @@ const dragAttrs = (column: Column) => {
 // A computed: the header re-renders when the answer changes, not with every
 // pending filter draft.
 const canClearAll = computed(() => filters.canClearAll())
+
+// C-22: a disabled button drops the focus to the page. When the button holds
+// the focus, a click with `detail` 0 (a key, `element.click()`, some
+// assistive technologies) activates it and the update that clear causes
+// disables it, the focus goes to the first filter instead. A pointer click
+// is left alone, so a touch screen opens no keyboard; nothing else (the
+// `toolbar` slot's `clearFilters()`, a later query) moves the focus.
+const onClearAll = async (event: MouseEvent) => {
+  const button = event.currentTarget as HTMLButtonElement
+  const doc = button.ownerDocument
+  const keyed = event.detail === 0 && doc.activeElement === button
+  filters.clearAll()
+  if (!keyed) {
+    return
+  }
+  // The clear queued the re-render that disables the button, or keeps it
+  // enabled when the consumer's query keeps a filter.
+  await nextTick()
+  const active = doc.activeElement
+  if (
+    button.disabled &&
+    (active === button || active === doc.body || active === null)
+  ) {
+    focusFirstFilter(button.closest('table'))
+  }
+}
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -129,7 +156,7 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           :title="labels().clearAllFilters"
           :aria-label="labels().clearAllFilters"
           :disabled="!canClearAll"
-          @click.stop="filters.clearAll()"
+          @click.stop="onClearAll"
         >
           <svg
             width="14"

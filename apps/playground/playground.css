@@ -53,11 +53,21 @@
   }
 
   /* A native checkbox in a table slot, or the shadcn-vue Checkbox (a button
-     with role="checkbox") of a page's toolbar. */
-  main input[type="checkbox"],
+     with role="checkbox") of a page's toolbar. On a touch screen the skin
+     draws the table's selection checkboxes at 2.75rem itself
+     (skin/mapping.css), so this floor leaves them alone there. Every other
+     primary pointer (a mouse, or none at all) keeps the floor. */
+  main input[type="checkbox"]:not(.qt-select-row, .qt-select-all),
   main button[role="checkbox"] {
     width: 1.25rem;
     height: 1.25rem;
+  }
+
+  @media not (pointer: coarse) {
+    main :is(.qt-select-row, .qt-select-all) {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
   }
 
   main label:has(> input[type="checkbox"], > button[role="checkbox"]) {
