@@ -18,7 +18,7 @@ import {
   type ScenarioUpdate
 } from '../support/scenario-host'
 
-// The playground's three demo datasets (Vigil, Ticker, Harbor Goods) have
+// The playground's three demo datasets (Security alerts, Market quotes, Store orders) have
 // different columns and types. The user picks one in the dataset menu, then
 // runs the short form of the server scenario on it: filter, sort, next
 // page, clear. On each, the skin aligns the cells by `data-type` (C-82).
@@ -26,9 +26,9 @@ import {
 // tests/support/setup.ts puts the default dataset back before each test.
 
 const datasetNames = [
-  ['vigil', 'Vigil'],
-  ['ticker', 'Ticker'],
-  ['harbor', 'Harbor Goods']
+  ['vigil', 'Security alerts'],
+  ['ticker', 'Market quotes'],
+  ['harbor', 'Store orders']
 ] as const
 
 /** The alignment the test skin gives a column type (C-82). */

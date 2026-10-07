@@ -14,8 +14,8 @@ import {
 import { currentDataset, datasets, selectDataset } from '../scenarios/datasets'
 
 // The demo data switch: a shadcn-vue dropdown menu with one radio item per
-// dataset. Every example page and the home page table draw the one picked
-// here; the choice is kept in the browser.
+// dataset, named for what its rows are. Every example page and the home
+// page table draw the one picked here; the choice is kept in the browser.
 // Classes given by the shell go to the trigger button, not the menu root.
 // The trigger and the items are 2.75rem touch targets; they take the compact
 // shadcn height only on a wide screen with a fine pointer (a mouse), so a
@@ -74,12 +74,7 @@ const pick = (value: unknown) => {
           :data-dataset="dataset.id"
           class="min-h-11 sm:pointer-fine:min-h-0"
         >
-          <span class="flex flex-col">
-            <span>{{ dataset.name }}</span>
-            <span class="text-xs text-muted-foreground">{{
-              dataset.kind
-            }}</span>
-          </span>
+          {{ dataset.name }}
         </DropdownMenuRadioItem>
       </DropdownMenuRadioGroup>
     </DropdownMenuContent>

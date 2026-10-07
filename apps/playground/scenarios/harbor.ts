@@ -1,7 +1,7 @@
 import type { Dataset, DemoRow } from './dataset'
 import { isoDate, isoDateTime, round2, seeded } from './random'
 
-// Harbor Goods: the order desk of a home goods shop. One row is one order,
+// Store orders: the order desk of a home goods shop. One row is one order,
 // newest last.
 
 const customers = [
@@ -77,8 +77,7 @@ const money = new Intl.NumberFormat('en-US', {
 
 export const harbor: Dataset = {
   id: 'harbor',
-  name: 'Harbor Goods',
-  kind: 'Store orders',
+  name: 'Store orders',
   noun: { one: 'order', many: 'orders' },
   fields: {
     primary: 'customer',
