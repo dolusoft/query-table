@@ -31,10 +31,11 @@ import { repositoryUrl } from '../home/home-content'
 // NavigationMenu on the left; search, GitHub and the theme menu on the
 // right. Below `md` the links move into a Sheet behind a menu button. The
 // documentation pages pass a menu button of their own (`#menu`, the
-// sidebar's) and `wide`: their header spans the window, as on the
-// shadcn-vue docs.
+// sidebar's). On every page the bar's content sits in the 96rem frame the
+// documentation layout is centered in (App.vue), as on the shadcn-vue docs:
+// the name stays put going from the home page to the docs.
 const theme = defineModel<Theme | 'system'>('theme', { required: true })
-defineProps<{ shortcut: string; wide?: boolean }>()
+defineProps<{ shortcut: string }>()
 const emit = defineEmits<{ search: [] }>()
 
 const links = [
@@ -52,8 +53,7 @@ const menuOpen = ref(false)
     class="sticky top-0 z-20 w-full bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
   >
     <div
-      class="mx-auto flex h-16 w-full items-center gap-2 px-4 sm:px-6"
-      :class="wide ? '' : 'max-w-6xl'"
+      class="mx-auto flex h-16 w-full max-w-(--breakpoint-2xl) items-center gap-2 px-4 sm:px-6"
     >
       <slot name="menu" />
       <Sheet v-if="!$slots.menu" v-model:open="menuOpen">

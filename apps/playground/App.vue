@@ -18,7 +18,10 @@ import SiteHeader from './shell/SiteHeader.vue'
 // follows the shadcn-vue docs: the sidebar on the left (a Sheet behind the
 // header's menu button below `md`), the page in a 40rem reading column whose
 // example preview widens to the right, and "On This Page" on the right from
-// 84rem.
+// 84rem. Sidebar, page and "On This Page" sit in a 96rem frame centered in
+// the window, the frame the header's content takes too: on a wide screen the
+// room left over goes to both sides evenly, and the page is centered between
+// the sidebar and "On This Page".
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
@@ -91,7 +94,6 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
   <SidebarProvider v-else class="flex-col bg-background">
     <SiteHeader
       v-model:theme="theme"
-      wide
       :shortcut="shortcut"
       @search="searchOpen = true"
     >
@@ -99,16 +101,17 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
         <SidebarTrigger class="-ml-2 size-11 min-[769px]:hidden" />
       </template>
     </SiteHeader>
-    <div class="flex flex-1">
+    <div class="mx-auto flex w-full max-w-(--breakpoint-2xl) flex-1">
       <DocsSidebar />
       <SidebarInset class="min-w-0 flex-row">
         <div ref="column" class="flex min-w-0 flex-1 flex-col">
           <!-- Text keeps the 40rem measure of the shadcn-vue docs. A part
                marked `data-wide` (an example's preview) starts on the same
                left edge and widens to the right, up to 64rem: in 40rem a
-               table example drops to its phone layout. -->
+               table example drops to its phone layout. Where the column is
+               wider than that, the 64rem block is centered in it. -->
           <div
-            class="flex w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
+            class="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
           >
             <!-- A new page instance per route: each page mounts its own example. -->
             <RouterView :key="$route.path" />

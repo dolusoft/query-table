@@ -23,6 +23,11 @@ import { aiNav } from '../guides/guides'
 // and AI. Below `md` the same Sidebar is a Sheet that the header's menu
 // button opens, with the demo data switch on top; following a link closes
 // it.
+//
+// On a desktop the shadcn-vue `Sidebar` is `fixed` to the window's left
+// edge. The docs layout is a frame centered in the window (App.vue), so the
+// sidebar is `sticky` instead: it stays in the frame's first column and
+// still holds still below the header while the page scrolls.
 const route = useRoute()
 const { isMobile, setOpenMobile } = useSidebar()
 
@@ -47,7 +52,7 @@ const link =
 <template>
   <Sidebar
     collapsible="offcanvas"
-    class="top-16 h-[calc(100svh-4rem)]! border-r-0! *:data-[slot=sidebar-inner]:bg-background"
+    class="sticky top-16 bottom-auto h-[calc(100svh-4rem)]! border-r-0! *:data-[slot=sidebar-inner]:bg-background"
   >
     <SidebarContent class="pt-4">
       <!-- In the Sheet the header's menu button opens, the demo data switch
