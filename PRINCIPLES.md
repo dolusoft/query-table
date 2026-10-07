@@ -1,6 +1,6 @@
 # Principles
 
-Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)), and P1, P4, P9, P10 and P14 for the local evaluator ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)). P5 was amended for 3.2.0 on 2026-10-07 ([ADR 0010](docs/decisions/0010-virtual-and-infinite-scroll.md)): the spacer row of a virtual body carries an inline `height`.
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)), and P1, P4, P9, P10 and P14 for the local evaluator ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)). P5 was amended for 3.2.0 on 2026-10-07 ([ADR 0010](docs/decisions/0010-virtual-and-infinite-scroll.md)): the spacer row of a virtual body carries an inline `height`. P2, P5, P8, P9, P10 and P14 were amended for 3.3.0 on 2026-10-07 ([ADR 0011](docs/decisions/0011-change-flash.md)): the change flash, its row-change module in the core and its marks.
 
 These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
 
@@ -18,7 +18,7 @@ Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `lo
 
 ## P2 Lasting state is controlled; internal state is short-lived
 
-Lasting state comes in as props: the query, and later column widths and pinning. The table keeps only UI state with a clear lifetime: typed filter text, focus, a drag preview, row expansion. It never writes to its inputs.
+Lasting state comes in as props: the query, and later column widths and pinning. The table keeps only UI state with a clear lifetime: typed filter text, focus, a drag preview, row expansion, a change flash (its marks, which last as long as the skin's animation, and the rows it compares against). It never writes to its inputs.
 
 Why: two owners of one state drift apart. A consumer restoring a route or a saved view must be able to set everything that matters.
 
@@ -42,7 +42,7 @@ Check: the C-03 test that sends every emitted query through a JSON round trip; `
 
 ## P5 No CSS, no styling props
 
-The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag), `--qt-pin-left` on a cell pinned to the left, `--qt-pin-right` on a cell pinned to the right, and `height` on the spacer row of a virtual body (`tr.qt-virtual-spacer`: the height of the rows it stands for). Any other geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS. The spacer's `height` is the one exception, because the scroll position depends on it: a consumer rule that left it out would break scrolling, not only look different.
+The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag), `--qt-pin-left` on a cell pinned to the left, `--qt-pin-right` on a cell pinned to the right, `height` on the spacer row of a virtual body (`tr.qt-virtual-spacer`: the height of the rows it stands for), and `--qt-flash-elapsed` on a flashed row or cell bound after its flash began (time, not geometry: the milliseconds already gone, so the skin's animation goes on from there). Any other geometry or time value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS. The spacer's `height` is the one exception, because the scroll position depends on it: a consumer rule that left it out would break scrolling, not only look different. The table reads one style value, and only with `flash` on: `--qt-flash-duration` on its root, so a mark lives as long as the skin's animation and the duration has one source.
 
 Why: every product has its own design system. A library that owns any of the look forces overrides.
 
@@ -66,7 +66,7 @@ Check: C-44 (a test fails on a literal `aria-label="` in any `packages/vue/src/*
 
 ## P8 Performance is a budget, per consumer fixture
 
-Every package has a size budget, measured the way a consumer pays for it: a built application that imports the package by name, minus the same application without it, minified and gzipped, transitive code (TanStack included) counted. The fixtures are: protocol only, each core entry (`/server-query`, `/filter-input`), the composable, and the component. A complete application is measured on its own; budgets are not summed. The render budget stays: component updates per fixed scenario. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows.
+Every package has a size budget, measured the way a consumer pays for it: a built application that imports the package by name, minus the same application without it, minified and gzipped, transitive code (TanStack included) counted. The fixtures are: protocol only, each core entry (`/server-query`, `/filter-input`, `/row-changes`), the composable, and the component. A complete application is measured on its own; budgets are not summed. The render budget stays: component updates per fixed scenario. There is no listener per row or cell, and kept state is bounded: expansion keys are pruned to the supplied rows, and flash marks to the supplied rows and the skin's duration. A feature that is off does no work: no comparison, no timer, no listener and no style read (ADR 0011).
 
 Size is not a goal in itself: a useful library may grow. A budget is the last measure plus 5%; a fixture can also have a ceiling. Both guard against silent drift. A deliberate growth raises the budget, and the ceiling when needed, in the same change, with a one-line reason in the budget's history; it needs no separate approval.
 
@@ -76,7 +76,7 @@ Check: `pnpm check:package-size` (`scripts/package-size-budget.json`, one entry 
 
 ## P9 One small, typed surface per package
 
-Every published TypeScript API surface is covered by a reviewed API report; independently exposed surfaces receive separate reports. A new capability goes into the core plugins first; the Vue package exposes what the core provides. New surface is a minor release and fixes are patch releases, within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made. A data-source helper that is not table behavior (the local evaluator) lives in the protocol, with a thin binding in the Vue package; it is not a plugin and the core does not know it.
+Every published TypeScript API surface is covered by a reviewed API report; independently exposed surfaces receive separate reports. A new capability goes into the core plugins first, or, when it is logic over consecutive inputs that TanStack offers no hook for, into a pure module of the core behind its own entry (the row-change tracker, ADR 0011); the Vue package exposes what the core provides. New surface is a minor release and fixes are patch releases, within a major; the three packages are versioned together; a breaking change is decided explicitly before it is made. A data-source helper that is not table behavior (the local evaluator) lives in the protocol, with a thin binding in the Vue package; it is not a plugin and the core does not know it.
 
 Why: a version number only means something when the surface it versions is enumerable, and three packages released together must agree on one surface.
 
@@ -84,7 +84,7 @@ Check: `pnpm api:check` (api-extractor, one report per published TypeScript entr
 
 ## P10 Extension order: slot, event, prop, method; inside, plugin first
 
-For the public API of `QueryTable`: a slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`. Inside the packages, a behavior is first a TanStack option, then a TanStack plugin of ours, and only then Vue code. The local evaluator is not table behavior; TanStack's client row models stay unused (ADR 0008).
+For the public API of `QueryTable`: a slot when the consumer draws something, an event when the consumer reacts, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state. A new prop or method rests on a rule in `contract/rules.md`. Inside the packages, a behavior is first a TanStack option, then a TanStack plugin of ours, then a pure module of the core that keeps no table state (ADR 0011), and only then Vue code. The local evaluator is not table behavior; TanStack's client row models stay unused (ADR 0008).
 
 Why: slots and events keep the table thin; props and methods grow it. A behavior that lives in a plugin is usable without our component.
 
@@ -116,7 +116,7 @@ Check: review; C-34 states that the table draws no popover and no tooltip.
 
 ## P14 Layers point one way
 
-protocol → core → vue → playground. A package imports only from the layers before it; inside core, a feature (`serverQueryFeature`, `filterInputFeature`) imports only `shared/` and the protocol, never another feature. The protocol's local evaluator depends on the protocol types, never the other way; the Vue binding depends on the evaluator, never the table.
+protocol → core → vue → playground. A package imports only from the layers before it; inside core, a feature (`serverQueryFeature`, `filterInputFeature`) imports only `shared/` and the protocol, never another feature, and the row-change module imports only the protocol. The protocol's local evaluator depends on the protocol types, never the other way; the Vue binding depends on the evaluator, never the table.
 
 Why: a layer that imports upward cannot be used without the one above it, and two features that import each other are one feature.
 

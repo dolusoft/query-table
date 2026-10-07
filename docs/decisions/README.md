@@ -16,5 +16,6 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0008](0008-local-query-evaluation.md)      | Local query evaluation as a data source                     | Accepted |
 | [0009](0009-npm-distribution.md)            | npm as the only package distribution channel                | Accepted |
 | [0010](0010-virtual-and-infinite-scroll.md) | Virtual rows and infinite scroll (3.2)                      | Accepted |
+| [0011](0011-change-flash.md)                | Change flash (3.3)                                          | Proposed |
 
 Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code.
