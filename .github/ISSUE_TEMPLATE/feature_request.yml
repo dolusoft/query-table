@@ -18,7 +18,7 @@ body:
     attributes:
       label: What you would like
       description: |
-        The smallest change that solves it. The table grows in this order (P10): a slot when you draw something, an event when you react, a prop when the table needs data, a method only for an action that is not state.
+        The smallest change that solves it. The table grows in this order (P10): a slot when you draw something, an event when you react, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state.
     validations:
       required: true
   - type: textarea
