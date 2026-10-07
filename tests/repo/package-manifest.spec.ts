@@ -45,7 +45,7 @@ const packages = [
     name: '@dolusoft/query-protocol',
     dependencies: {},
     peers: {},
-    subpaths: ['.', './query.schema.json']
+    subpaths: ['.', './local', './query.schema.json', './conformance/*']
   },
   {
     dir: 'query-table-core',
@@ -66,7 +66,7 @@ const packages = [
       '@tanstack/vue-table': '9.2.6'
     },
     peers: { vue: '^3.5.0' },
-    subpaths: ['.']
+    subpaths: ['.', './local']
   }
 ]
 

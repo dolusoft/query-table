@@ -9,7 +9,7 @@ export interface PageApi {
   emits?: string[]
   slots?: string[]
   exposed?: string[]
-  /** Functions exported from src/index.ts next to the component. */
+  /** Functions exported from the default and opt-in local entries. */
   functions?: string[]
   /** Exported types of src/contract.ts. */
   types?: string[]
@@ -59,6 +59,15 @@ export const pages: PlaygroundPage[] = [
       'C-40',
       'C-41'
     ]
+  },
+  {
+    id: 'local-query',
+    title: 'Local query',
+    summary:
+      'All rows in memory: opt-in tr-1 filtering, search, sorting and paging, with an unpaged print view.',
+    example: 'LocalQuery',
+    api: { functions: ['useLocalQuery'] },
+    rules: ['C-75', 'C-76', 'C-77', 'C-78', 'C-79', 'C-80', 'C-81']
   },
   {
     id: 'filtering',
@@ -140,6 +149,20 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-26']
   },
   {
+    id: 'row-pinning',
+    title: 'Row pinning',
+    summary:
+      'Pin rows to the top or the bottom of the page from a cell slot (`pinRow`). The page owns the map of pinned keys with `v-model:rowPinning`; keys of other pages stay in it, and showing a pinned row on every page is the page adding it to `rows`.',
+    example: 'RowPinning',
+    api: {
+      props: ['rowPinning', 'rowKey'],
+      emits: ['update:rowPinning'],
+      slots: ['cell-<field>'],
+      types: ['RowPinning', 'CellSlotProps']
+    },
+    rules: ['C-72', 'C-74']
+  },
+  {
     id: 'footer-rows',
     title: 'Footer rows',
     summary:
@@ -152,10 +175,29 @@ export const pages: PlaygroundPage[] = [
     id: 'column-pinning',
     title: 'Column pinning',
     summary:
-      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; the skin makes them sticky while the table scrolls sideways.",
+      "Columns with `pinned: 'left'` are drawn first and carry `data-pinned` and the measured `--qt-pin-left` offset; columns with `pinned: 'right'` are drawn last and carry `data-pinned=\"right\"` and `--qt-pin-right`. The skin makes both sticky while the table scrolls sideways.",
     example: 'ColumnPinning',
     api: { props: ['columns', 'hasSubtable'], types: ['Column'] },
-    rules: ['C-31', 'C-32', 'C-46', 'C-47']
+    rules: ['C-31', 'C-32', 'C-46', 'C-47', 'C-71', 'C-72']
+  },
+  {
+    id: 'column-layout',
+    title: 'Column layout',
+    summary:
+      'Hide, show, move and pin columns; drag a header handle or press the arrow keys on it to reorder. The table emits a new `columns` array with `update:columns`; the page writes it back with `v-model:columns` and announces the new position itself.',
+    example: 'ColumnLayout',
+    api: {
+      props: ['columns', 'reorderable', 'labels'],
+      emits: ['update:columns'],
+      slots: ['header-<field>', 'filter-menu'],
+      types: [
+        'ColumnControl',
+        'ColumnChangeReason',
+        'HeaderSlotProps',
+        'FilterMenuSlotProps'
+      ]
+    },
+    rules: ['C-67', 'C-68', 'C-69', 'C-70', 'C-72', 'C-73']
   },
   {
     id: 'column-resizing',

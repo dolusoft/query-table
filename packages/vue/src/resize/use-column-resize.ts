@@ -99,6 +99,14 @@ const cellOf = (event: Event) =>
   (event.currentTarget as HTMLElement).closest('th')
 
 /**
+ * Which edge of the column the handle stands for: `1` for the right edge,
+ * `-1` for the left one. A right-pinned column stays at the right edge of the
+ * scroll container, so it grows to the left: its handle stands for its left
+ * edge, and moving that edge to the left widens it (C-71).
+ */
+const edgeOf = (column: Column) => (column.pinned === 'right' ? -1 : 1)
+
+/**
  * Resizing a column (C-48 to C-50). The table holds a width only while a
  * drag is under way (the preview, P2); every committed width goes out as a
  * `columnResize` event and comes back, if the consumer wants it, as
@@ -126,7 +134,8 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
   }
 
   const dragged = (current: Drag) =>
-    current.startWidth + current.lastX - current.startX
+    current.startWidth +
+    edgeOf(current.column) * (current.lastX - current.startX)
 
   const end = (apply: boolean) => {
     const current = drag
@@ -194,7 +203,8 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
       }
       return
     }
-    const sign = key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0
+    const sign =
+      (key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0) * edgeOf(column)
     const th = cellOf(event)
     if (th && (sign || key === 'Enter' || event.type === 'dblclick')) {
       event.preventDefault()

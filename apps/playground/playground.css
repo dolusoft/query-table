@@ -27,6 +27,14 @@
     }
   }
 
+  /* A date filter needs 13rem at the 16px text of a touch screen to show
+     `mm/dd/yyyy` next to its picker icon and the filter button; squeezed to
+     an even share of a phone, it showed "mm/" under the button. A column
+     whose width the page sets keeps that width. */
+  main .qt-table th:not([style*="width"]):has(.qt-filter-input[type="date"]) {
+    min-width: 13rem;
+  }
+
   /* An unsortable column's title is plain text, a sortable one's sits in the
      sort button the rule above makes 2.5rem tall. The title keeps the same
      box, or its filter row sits higher than its neighbours' in the header. */

@@ -36,6 +36,93 @@ const namingConvention = variableFormats => [
   }
 ]
 
+// PRINCIPLES.md P1: the table renders, the consumer fetches and persists.
+const p1Globals = [
+  ...['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource'].map(name => ({
+    name,
+    message: 'The table does not fetch; the consumer does (P1).'
+  })),
+  ...['localStorage', 'sessionStorage', 'indexedDB'].map(name => ({
+    name,
+    message: 'The table does not persist state; the consumer does (P1).'
+  }))
+]
+const p1Properties = [
+  'fetch',
+  'XMLHttpRequest',
+  'localStorage',
+  'sessionStorage',
+  'indexedDB'
+].flatMap(property =>
+  ['window', 'globalThis', 'self'].map(object => ({
+    object,
+    property,
+    message: 'No network or storage access in the library (P1).'
+  }))
+)
+
+// The local evaluator works on UTF-16 code units with its own closed tables
+// and its own calendar (docs/guide/semantics.md, profile tr-1). These APIs
+// depend on the runtime, its Unicode version or its locale, walk code
+// points, or let the engine roll an invalid day into a valid one.
+const localUnits =
+  'Iterate UTF-16 code units with an index (semantics.md#text).'
+const localProperties = [
+  ...[
+    'normalize',
+    'localeCompare',
+    'toLowerCase',
+    'toUpperCase',
+    'toLocaleLowerCase',
+    'toLocaleUpperCase',
+    'trim',
+    'trimStart',
+    'trimEnd'
+  ].map(property => ({
+    property,
+    message: 'tr-1 uses its own tables, not the runtime (semantics.md#text).'
+  })),
+  ...['codePointAt', 'fromCodePoint'].map(property => ({
+    property,
+    message: localUnits
+  })),
+  ...['UTC', 'parse'].map(property => ({
+    object: 'Date',
+    property,
+    message: 'tr-1 checks and counts the calendar by hand (semantics.md#time).'
+  })),
+  ...['window', 'globalThis', 'self'].map(object => ({
+    object,
+    property: 'Intl',
+    message: 'tr-1 uses its own tables, not a locale (semantics.md#text).'
+  })),
+  {
+    object: 'Array',
+    property: 'from',
+    message: `Array.from splits a string by code point. ${localUnits}`
+  }
+]
+// What no-restricted-properties cannot see (it already sees the banned names
+// in a destructuring pattern): a method taken off a prototype, a Date built
+// from a string, a string spread into code points.
+const localSyntax = [
+  { selector: 'ForOfStatement', message: localUnits },
+  {
+    selector:
+      "VariableDeclarator[id.type='ObjectPattern'][init.type='MemberExpression'][init.property.name='prototype']",
+    message: 'Do not take methods off a prototype (semantics.md#text).'
+  },
+  {
+    selector:
+      "NewExpression[callee.name='Date'], CallExpression[callee.name='Date']",
+    message: 'tr-1 checks and counts the calendar by hand (semantics.md#time).'
+  },
+  {
+    selector: 'ArrayExpression > SpreadElement, CallExpression > SpreadElement',
+    message: `A spread splits a string by code point. ${localUnits}`
+  }
+]
+
 export default defineConfig([
   globalIgnores([
     'dist',
@@ -208,35 +295,30 @@ export default defineConfig([
     files: ['packages/*/src/**', 'contract/**'],
     ignores: ['packages/*/src/**/*.spec.ts'],
     rules: {
+      'no-restricted-globals': ['error', ...p1Globals],
+      'no-restricted-properties': ['error', ...p1Properties]
+    }
+  },
+  {
+    // The local evaluator: no runtime text or calendar API (tr-1). It
+    // repeats the P1 entries, since a later block replaces a rule's options.
+    files: ['packages/query-protocol/src/local/**/*.ts'],
+    ignores: ['packages/query-protocol/src/local/**/*.spec.ts'],
+    rules: {
       'no-restricted-globals': [
         'error',
-        ...['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource'].map(
-          name => ({
-            name,
-            message: 'The table does not fetch; the consumer does (P1).'
-          })
-        ),
-        ...['localStorage', 'sessionStorage', 'indexedDB'].map(name => ({
-          name,
-          message: 'The table does not persist state; the consumer does (P1).'
-        }))
+        ...p1Globals,
+        {
+          name: 'Intl',
+          message: 'tr-1 uses its own tables, not a locale (semantics.md#text).'
+        }
       ],
       'no-restricted-properties': [
         'error',
-        ...[
-          'fetch',
-          'XMLHttpRequest',
-          'localStorage',
-          'sessionStorage',
-          'indexedDB'
-        ].flatMap(property =>
-          ['window', 'globalThis', 'self'].map(object => ({
-            object,
-            property,
-            message: 'No network or storage access in the library (P1).'
-          }))
-        )
-      ]
+        ...p1Properties,
+        ...localProperties
+      ],
+      'no-restricted-syntax': ['error', ...localSyntax]
     }
   }
 ])

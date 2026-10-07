@@ -125,12 +125,15 @@ td:has(> .qt-right-panel-button) {
   width: 2rem;
 }
 
-/* own: pinned columns. The table writes `data-pinned` and the measured offset
-   `--qt-pin-left`; sticky positioning, the layer and an opaque background are
-   the skin's. The header and footer sit above the body cells. */
+/* own: pinned columns. The table writes `data-pinned` (empty on the left,
+   `right` on the right) and the measured offset `--qt-pin-left` or
+   `--qt-pin-right`; sticky positioning, the layer and an opaque background are
+   the skin's. One rule serves both sides: the unset property leaves the other
+   side `auto`. The header and footer sit above the body cells. */
 .qt-table [data-pinned] {
   position: sticky;
   left: var(--qt-pin-left);
+  right: var(--qt-pin-right);
   z-index: 10;
   background-color: var(--background);
 }
@@ -167,11 +170,20 @@ td:has(> .qt-right-panel-button) {
 .qt-table:has([data-pinned]) .qt-footer > tr:last-child > td {
   border-bottom-width: 0;
 }
-/* own: a shadow on the last pinned cell shows where the scrolled part starts. */
-.qt-table [data-pinned]:not(:has(+ [data-pinned])) {
+/* own: a shadow on the last left-pinned cell shows where the scrolled part
+   starts. */
+.qt-table [data-pinned='']:not(:has(+ [data-pinned=''])) {
   box-shadow:
     1px 0 0 var(--border),
     4px 0 6px -4px var(--border);
+}
+/* own: a shadow on the first right-pinned cell shows where the scrolled part
+   ends. */
+.qt-table
+  [data-pinned='right']:not([data-pinned='right'] + [data-pinned='right']) {
+  box-shadow:
+    -1px 0 0 var(--border),
+    -4px 0 6px -4px var(--border);
 }
 
 /* own: resize handle, a 24px hit area (WCAG 2.5.8) over the right edge of the
@@ -210,9 +222,80 @@ td:has(> .qt-right-panel-button) {
 .qt-table th:last-child > .qt-resize-handle {
   right: 0;
 }
+/* own: a right-pinned column grows to the left, so its handle sits over its
+   left edge, the one that moves (C-71). */
+.qt-table th[data-pinned='right'] > .qt-resize-handle {
+  right: auto;
+  left: -0.75rem;
+}
+/* own: the cell before the first right-pinned one keeps its handle inside its
+   own cell and under the pinned cells, so the two handles on that edge do
+   not cover each other. */
+.qt-table
+  th:has(+ th[data-pinned='right']):not([data-pinned])
+  > .qt-resize-handle {
+  right: 0;
+  z-index: 10;
+}
+/* own: the handle reaches 0.75rem into the cells on both sides of an edge,
+   past their 0.5rem padding, and took the clicks at the ends of their
+   controls. A table with handles gives its cells 0.875rem of inline padding,
+   body cells too so their text lines up with the header's. */
+.qt-table:has(.qt-resize-handle) :is(th, td) {
+  padding-inline: 0.875rem;
+}
+/* own: where the handle sits inside its cell (the last one, the one before
+   the right-pinned cells) it covers 1.5rem of the cell's end. */
+.qt-table th:last-child:has(> .qt-resize-handle),
+.qt-table
+  th:has(+ th[data-pinned='right']):not([data-pinned]):has(
+    > .qt-resize-handle
+  ) {
+  padding-right: 1.625rem;
+}
 /* own: the handle's line on header hover. */
 .qt-table th:hover > .qt-resize-handle:not(:focus-visible)::after {
   background-color: var(--border);
+}
+
+/* own: reorder handle, a grip before the header text. `touch-action: none`
+   keeps a touch drag from scrolling the page (C-73). */
+.qt-reorder-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: 0.25rem;
+  vertical-align: middle;
+  border-radius: calc(var(--radius) - 4px);
+  color: var(--muted-foreground);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  user-select: none;
+
+  &:hover {
+    color: var(--foreground);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+}
+/* own: the column being dragged fades. */
+.qt-table th[data-dragging] {
+  opacity: 0.5;
+
+  & > .qt-reorder-handle {
+    cursor: grabbing;
+  }
+}
+/* own: the drop target, a line on its left: the column goes before it. */
+.qt-table th[data-drop='before'] {
+  box-shadow: inset 2px 0 0 var(--ring);
+}
+/* own: the drop target, a line on its right: the column goes after it. */
+.qt-table th[data-drop='after'] {
+  box-shadow: inset -2px 0 0 var(--ring);
 }
 
 /* own: sorting, a ghost button around the header text. A Button would
@@ -348,9 +431,11 @@ th[data-filtered] .qt-filter-input {
 .qt-table th[data-field] {
   min-width: 5.5rem;
 }
-/* own: under 6rem the button moves into the input. */
+/* own: under 6rem the button moves into the input, which keeps room for it at
+   its end; a date input too, or the button lies over its picker icon. */
 @container qt-filter (width < 6rem) {
-  .qt-filter-input {
+  .qt-filter-input,
+  .qt-filter-input[type='date'] {
     padding-right: 2rem;
   }
   .qt-filter-button {
@@ -401,6 +486,17 @@ th[data-filtered] .qt-filter-input {
    it, through the contract's `data-expanded`. */
 .qt-table tr[data-expanded] {
   background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+}
+/* own: a pinned row and its subtable row (`data-pinned-row`, C-74), tinted
+   and opaque, so a pinned column's cell matches the rest of the row. */
+.qt-table tbody tr[data-pinned-row] > td {
+  background-color: color-mix(in oklab, var(--muted) 35%, var(--background));
+}
+/* own: the row hover of TableRow, opaque on a pinned row. */
+@media (hover: hover) {
+  .qt-table tbody tr[data-pinned-row]:hover > td {
+    background-color: color-mix(in oklab, var(--muted) 50%, var(--background));
+  }
 }
 /* own: the subtable slot wraps its text. */
 .qt-subtable-row td {

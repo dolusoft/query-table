@@ -49,16 +49,15 @@ describe('feature matrix data', () => {
       'row-selection',
       'row-expanding',
       'column-pinning-left',
-      'column-sizing'
-    ])
-    expect(inGroup('planned')).toEqual([
+      'column-pinning-right',
       'column-visibility',
       'column-ordering',
-      'column-pinning-right',
+      'column-sizing',
       'row-pinning'
     ])
     expect(inGroup('backend')).toEqual(['grouping', 'faceting'])
     expect(inGroup('client')).toEqual([
+      'local-query',
       'fuzzy-search',
       'client-functions',
       'virtualization'
@@ -75,13 +74,6 @@ describe('feature matrix data', () => {
     ])
   })
 
-  it('marks the planned group as 3.1 for the component and usable on the TanStack path', () => {
-    for (const feature of features.filter(entry => entry.group === 'planned')) {
-      expect(feature.component, feature.id).toBe('planned')
-      expect(feature.tanstackPath, feature.id).toBe('yes')
-    }
-  })
-
   it('gives every backend-dependent row the backend tag and no support today', () => {
     for (const feature of features.filter(entry => entry.group === 'backend')) {
       expect(feature.mode, feature.id).toBe('backend')
@@ -92,7 +84,7 @@ describe('feature matrix data', () => {
   it('ties every TanStack feature to a known guide', () => {
     const guides = tanstackFeatureGuides.map(guide => guide.id)
     for (const feature of features) {
-      if (feature.group === 'own') {
+      if (feature.group === 'own' || feature.id === 'local-query') {
         expect(feature.tanstack, feature.id).toBeNull()
       } else {
         expect(guides, feature.id).toContain(feature.tanstack)

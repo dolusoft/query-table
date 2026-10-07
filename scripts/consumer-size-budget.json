@@ -5,18 +5,26 @@
     "2.2.8: 10224 B (2.2.7 was 8279 B). +1945 B for column pinning (measured offsets, one ResizeObserver), column resizing (pointer, keyboard and autofit on an accessible separator) and the header slot.",
     "2.2.11: 10792 B (+568 B since 2.2.8). The 2.2.9 to 2.2.11 fixes plus the echo memory of the filter drafts: a bounded memory (last 8 emits per column) that counts the older unanswered ones, so a late answer neither rewinds the input nor drops the emits still in flight (C-18).",
     "2.2.12: 10815 B (+23 B). C-04, C-13, C-14: pending filter drafts are applied in one `filter` update (#31). The budget follows the measure plus 5%. This is the v3 baseline (ADR 0001).",
-    "3.0.0-next.0 (PR-C): one entry per fixture. `component` (QueryTable) 28490 B, `composable` (useQueryTable) 20242 B. The planned ceilings (component 23000 B, composable 16500 B) were set before the core existed; the core fixture alone is 17564 B (TanStack table-core with five features and both plugins), and the Vue package adds row expansion, column pinning, @tanstack/vue-table, the composable and, for the component, its parts. Ceilings raised to measure plus 5%, rounded up (K7: size is not a blocker; ceilings guard drift)."
+    "3.0.0-next.0 (PR-C): one entry per fixture. `component` (QueryTable) 28490 B, `composable` (useQueryTable) 20242 B. The planned ceilings (component 23000 B, composable 16500 B) were set before the core existed; the core fixture alone is 17564 B (TanStack table-core with five features and both plugins), and the Vue package adds row expansion, column pinning, @tanstack/vue-table, the composable and, for the component, its parts. Ceilings raised to measure plus 5%, rounded up (K7: size is not a blocker; ceilings guard drift).",
+    "3.1.0 (PR-D1): component 30022 B, composable 21640 B when the budget was set; right pinning and the reorder handle bring them to 31164 B and 21750 B, within it. Column visibility, column order and the column controls (TanStack columnVisibility and columnOrdering), the update:columns write-back, right pinning (measured --qt-pin-right), the reorder handle (pointer drag, keys, focus kept; component only).",
+    "3.1.0 (PR-D2, 2026-10-06): component 32224 B (+1060 B since PR-D1's 31164 B), composable 22652 B (+902 B). Row pinning: TanStack rowPinningFeature, the controlled rowPinning map and update:rowPinning, the body drawn in top, center, bottom order, rowPinned and pinRow in the cell slot. Budgets set to measure plus 5%, ceilings rounded up to the next 500 B.",
+    "3.1.0 (PR-L3, 2026-10-06): local-composable 5739 B. useLocalQuery over the local evaluator. Budget 6026 B (measure plus 5%), ceiling 7000 B (measure times 1.2 rounded up to 500 B)."
   ],
   "fixtures": {
     "composable": {
-      "measuredGzipBytes": 20242,
-      "maxGzipBytes": 21254,
-      "ceilingGzipBytes": 21500
+      "measuredGzipBytes": 22652,
+      "maxGzipBytes": 23785,
+      "ceilingGzipBytes": 24000
     },
     "component": {
-      "measuredGzipBytes": 28490,
-      "maxGzipBytes": 29915,
-      "ceilingGzipBytes": 30000
+      "measuredGzipBytes": 32224,
+      "maxGzipBytes": 33836,
+      "ceilingGzipBytes": 34000
+    },
+    "local-composable": {
+      "measuredGzipBytes": 5739,
+      "maxGzipBytes": 6026,
+      "ceilingGzipBytes": 7000
     }
   }
 }

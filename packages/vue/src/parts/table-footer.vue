@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sideOf } from '../columns/column-layout'
 import type { Column, FooterRow } from '../contract'
 import { pinAttrs } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
@@ -8,9 +9,9 @@ defineProps<{
   entries: ColumnEntry[]
   /** Cells before the first column (right panel, expand button). */
   utilityCount: number
-  /** Pinned cells, the utility cell included, get `data-pinned` (C-47). */
+  /** Some column is pinned to the left: the utility cell gets `data-pinned` (C-46). */
   hasPinned: boolean
-  /** `--qt-pin-left` of each pinned cell, by key. */
+  /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: Readonly<Record<string, number>>
 }>()
 
@@ -25,15 +26,13 @@ const footerText = (row: FooterRow, column: Column) =>
       <td
         v-if="utilityCount > 0"
         :colspan="utilityCount"
-        v-bind="pinAttrs(hasPinned, 0)"
+        v-bind="pinAttrs(hasPinned ? 'left' : false, 0)"
       />
       <td
         v-for="entry in entries"
         :key="entry.column.field"
         :data-field="entry.column.field"
-        v-bind="
-          pinAttrs(entry.column.pinned === 'left', offsets[entry.column.field])
-        "
+        v-bind="pinAttrs(sideOf(entry.column), offsets[entry.column.field])"
       >
         {{ footerText(footerRow, entry.column) }}
       </td>

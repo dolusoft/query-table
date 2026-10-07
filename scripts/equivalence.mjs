@@ -1,7 +1,8 @@
 // Runs the behavior specs (`tests/contract/**`) against two builds of the
 // package and compares them test by test: the result of every test and the
-// ordered `update:query` trace (reason and query) it recorded. v3 ships only
-// when this finds no difference against the 2.2.x baseline (ADR 0006).
+// ordered `update:query` trace (reason and query) it recorded. A release
+// ships only when this finds no difference against the baseline (2.2.x for
+// 3.0.0, 3.0.0 for 3.1.0; ADR 0006).
 //
 //   node scripts/equivalence.mjs [--baseline <target>] [--candidate <target>]
 //                                [--unit-only] [--browser-only]
@@ -33,6 +34,8 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 
+import { build } from 'vite'
+
 const root = resolve(import.meta.dirname, '..')
 const work = join(root, '.equivalence')
 const releaseUrl = version =>
@@ -57,7 +60,14 @@ const MIN_TESTS = 300
 // test fails the run, so the list cannot go stale.
 const K6_UNIT = 'tests/contract/unit/k6.spec.ts'
 const K6_PAGES = 'tests/contract/browser/k6-pages.browser.spec.ts'
+const COLUMNS_UNIT = 'tests/contract/unit/columns.spec.ts'
 const ADDED_AFTER_BASELINE = [
+  // 3.0.1 has no rowPinning prop or data-pinned-row on rows and subtables
+  // (C-74); the other new selection and expansion tests run on both builds.
+  'tests/contract/browser/row-expansion.browser.spec.ts > F4 C-74 row-pinned details follow their row with the same data-pinned-row placement',
+  // This existing playground case calls the C-74 cell-slot pinRow method
+  // and reads rowPinned; neither slot member exists in 3.0.1.
+  'tests/contract/browser/playground.browser.spec.ts > C-74 playground pin buttons stay enabled and focused after keyboard pinning',
   // C-63 search, C-65 cursor paging controls, C-62 `useQueryTable`: no such
   // surface in 2.2.x. (C-64's "draws no column without `selection`" is
   // compared: 2.2.x draws none either.)
@@ -75,7 +85,27 @@ const ADDED_AFTER_BASELINE = [
   `${K6_PAGES} > the checkbox column selects rows into the page selection`,
   `${K6_PAGES} > the TanStack path sorts, filters and pages through the query`,
   // C-66: the selection column's DOM hooks.
-  'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract'
+  'tests/contract/browser/dom-contract-selection.browser.spec.ts > C-66 the DOM with a selection matches the DOM contract',
+  // 3.1 additions (C-67 to C-74, ADR 0007): not in a 3.0.0 baseline.
+  `${COLUMNS_UNIT} > C-67 Column visibility [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-68 Columns are controlled [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-69 Column order [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-70 Column controls in slots [tanstack] [own]`,
+  `${COLUMNS_UNIT} > C-68 composable: TanStack calls go to the consumer [tanstack]`,
+  `tests/contract/unit/pin.spec.ts > C-71 Right pinning [tanstack] [own]`,
+  `tests/contract/browser/pin-right.browser.spec.ts > C-71 Right pinning [tanstack] [own]`,
+  'tests/contract/browser/accessibility.browser.spec.ts > C-71 accessibility scan',
+  'tests/contract/browser/pin-right.browser.spec.ts > C-71 Resizing a right-pinned column [own]',
+  'tests/contract/unit/resize.spec.ts > C-71 Resizing a right-pinned column (unit)',
+  'tests/contract/browser/dom-contract-3-1.browser.spec.ts > C-72 the DOM with 3.1 features matches the DOM contract',
+  'tests/contract/browser/reorder.browser.spec.ts > C-73 Reorder handle [tanstack] [own]',
+  'tests/contract/unit/reorder.spec.ts > C-73 Reorder handle (unit) [own]',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-73 accessibility scan',
+  'tests/contract/unit/row-pinning.spec.ts > C-74 Row pinning [tanstack] [own]',
+  'tests/contract/unit/row-pinning.spec.ts > C-74 composable: TanStack calls go to the consumer [tanstack]',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
+  // `moveColumn` is its own test, so the other C-44 tests still compare.
+  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
@@ -129,8 +159,8 @@ const entryOfTarball = (tarball, into) => {
   return { entry: join(pkgDir, file), version: manifest.version }
 }
 
-/** Exports `ref`, builds its library and packs it, like a release does. */
-const packGitRef = ref => {
+/** Exports `ref`, builds its library and packs it for the comparison. */
+const packGitRef = async ref => {
   const sha = spawnSync('git', ['rev-parse', ref], {
     cwd: root,
     encoding: 'utf8'
@@ -154,8 +184,82 @@ const packGitRef = ref => {
       'bin',
       'vite.js'
     )
-    must(process.execPath, [vite, 'build', '--logLevel', 'warn'], { cwd: dir })
-    must('pnpm', ['pack', '--pack-destination', work], { cwd: dir })
+    const vueDir = join(dir, 'packages', 'vue')
+    const workspace = existsSync(join(vueDir, 'package.json'))
+    if (workspace) {
+      const manifest = JSON.parse(
+        readFileSync(join(vueDir, 'package.json'), 'utf8')
+      )
+      const externalPackages = [
+        ...Object.keys(manifest.peerDependencies ?? {}),
+        ...Object.keys(manifest.dependencies ?? {}).filter(
+          name => !name.startsWith('@dolusoft/')
+        )
+      ]
+      // Bundle this ref's protocol and core into its Vue entry. Otherwise the
+      // test aliases would silently substitute the candidate's workspace code.
+      const nodeEnv = process.env.NODE_ENV
+      try {
+        await build({
+          root: vueDir,
+          configFile: join(vueDir, 'vite.config.ts'),
+          logLevel: 'warn',
+          resolve: {
+            alias: [
+              {
+                find: /^@dolusoft\/query-protocol$/,
+                replacement: join(dir, 'packages/query-protocol/src/index.ts')
+              },
+              {
+                find: /^@dolusoft\/query-table-core$/,
+                replacement: join(dir, 'packages/query-table-core/src/index.ts')
+              },
+              {
+                find: /^@dolusoft\/query-table-core\/([\w-]+)$/,
+                replacement: join(
+                  dir,
+                  'packages/query-table-core/src/features/$1/index.ts'
+                )
+              }
+            ]
+          },
+          build: {
+            rollupOptions: {
+              external: id =>
+                externalPackages.some(
+                  name => id === name || id.startsWith(`${name}/`)
+                )
+            }
+          }
+        })
+      } finally {
+        // Vite sets NODE_ENV during a build; the test runner must retain its
+        // original environment (Vue Test Utils records emits via devtools).
+        if (nodeEnv === undefined) {
+          delete process.env.NODE_ENV
+        } else {
+          process.env.NODE_ENV = nodeEnv
+        }
+      }
+      // The bundled workspace packages need no install or workspace resolution
+      // when packing this disposable test artifact.
+      manifest.dependencies = Object.fromEntries(
+        Object.entries(manifest.dependencies ?? {}).filter(
+          ([name]) => !name.startsWith('@dolusoft/')
+        )
+      )
+      writeFileSync(
+        join(vueDir, 'package.json'),
+        `${JSON.stringify(manifest, null, 2)}\n`
+      )
+    } else {
+      must(process.execPath, [vite, 'build', '--logLevel', 'warn'], {
+        cwd: dir
+      })
+    }
+    must('pnpm', ['pack', '--pack-destination', work], {
+      cwd: workspace ? vueDir : dir
+    })
     const packed = readdirSync(work).find(
       name => name.startsWith('dolusoft-query-table-') && name.endsWith('.tgz')
     )
@@ -192,7 +296,7 @@ const prepare = async target => {
   let tarball
   let label
   if (kind === 'git') {
-    ;({ tarball, label } = packGitRef(value))
+    ;({ tarball, label } = await packGitRef(value))
   } else if (kind === 'release') {
     tarball = join(work, `release-${value}.tgz`)
     if (!existsSync(tarball)) {

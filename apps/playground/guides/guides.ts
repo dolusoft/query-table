@@ -16,7 +16,7 @@ export const guidePages: GuidePage[] = [
     id: 'features',
     title: 'Features',
     summary:
-      'What TanStack Table has, where Query Table offers it today, what comes in 3.1 and what a server must do.'
+      'What TanStack Table has, where Query Table offers it and what a server must do.'
   },
   {
     id: 'tanstack',
@@ -45,6 +45,7 @@ export const blobUrl = (path: string) => `${repositoryUrl}/blob/main/${path}`
 export const skillFiles = [
   'skills/query-table/SKILL.md',
   'skills/query-table/references/vue-component.md',
+  'skills/query-table/references/local-query.md',
   'skills/query-table/references/tanstack-path.md',
   'skills/query-table/references/protocol-server.md'
 ]

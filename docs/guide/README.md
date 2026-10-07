@@ -5,6 +5,7 @@ Short, example-first guides for the v3 packages. Every code sample is a file und
 | Guide                                      | Read it when                                                                                    |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | [Protocol](protocol.md)                    | you write a backend, or need the shape of a query: page and cursor mode, filters, search, schema |
+| [Semantics (`tr-1`)](semantics.md)         | you evaluate a query over local rows, or align a server: matching, order, paging, errors        |
 | [TanStack plugins](tanstack-plugins.md)    | you use TanStack Table and want `serverQueryFeature` and `filterInputFeature`                   |
 | [Architecture](architecture.md)            | you want the layers, the state ownership, the size budgets and the reasons behind them          |
 | [Migrating to 3.0](migration-v3.md)        | you run 2.2.x today (draft; includes the Vue package)                       |

@@ -6,11 +6,14 @@ export default QueryTable
 export { parseFilterInput } from './filter/parse-filter-input'
 export {
   useQueryTable,
+  type BodyRow,
   type ColumnEntry,
   type QueryTable as QueryTableState,
   type QueryTableExpansion,
   type QueryTableFeatures,
   type QueryTableFilters,
+  type QueryTableLayout,
+  type QueryTableRowPinning,
   type QueryTableSearch,
   type QueryTableSelection,
   type QueryTableSort,

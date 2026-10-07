@@ -27,8 +27,16 @@ export default defineConfig(({ mode }) => {
   const packageAlias = [
     { find: /^@dolusoft\/query-table$/, replacement: packageEntry },
     {
+      find: /^@dolusoft\/query-table\/local$/,
+      replacement: resolve(packages, 'vue/src/local/index.ts')
+    },
+    {
       find: /^@dolusoft\/query-protocol$/,
       replacement: resolve(packages, 'query-protocol/src/index.ts')
+    },
+    {
+      find: /^@dolusoft\/query-protocol\/local$/,
+      replacement: resolve(packages, 'query-protocol/src/local/index.ts')
     },
     {
       find: /^@dolusoft\/query-protocol\/query\.schema\.json$/,

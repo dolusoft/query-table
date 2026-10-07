@@ -14,7 +14,7 @@ const firstIds = () =>
     row => row.querySelector('td:not(:has(input))')?.textContent?.trim() ?? ''
   )
 
-test('cursor paging walks forward and back with the cursors of the server', async () => {
+test('cursor paging walks forward and back with the cursors of the server C-56 C-65', async () => {
   await render(SearchSelectionCursors)
   await expect.element(page.getByText('Cursor paging')).toBeVisible()
   const previous = page.getByRole('button', { name: 'Previous' })
@@ -28,7 +28,7 @@ test('cursor paging walks forward and back with the cursors of the server', asyn
   await expect.poll(() => firstIds()[0]).toBe('1')
 })
 
-test('typed search is applied once, after the debounce, from the first page', async () => {
+test('typed search is applied once, after the debounce, from the first page C-58 C-63', async () => {
   await render(SearchSelectionCursors)
   await userEvent.click(page.getByRole('button', { name: 'Next' }))
   await expect.poll(() => firstIds()[0]).toBe('11')

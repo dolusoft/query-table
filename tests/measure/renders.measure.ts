@@ -165,6 +165,8 @@ interface Scenario {
   mountOnly?: boolean
   /** Query updates the action must end with. */
   expectedUpdates: number
+  /** Mounts with reorder handles (C-73); off by default. */
+  reorderable?: boolean
   act: (applied: number[]) => Promise<void>
 }
 
@@ -182,7 +184,8 @@ const once = async (scenario: Scenario): Promise<Run> => {
         // Long on purpose, and the filter scenario ends with Enter: the
         // update comes from Enter, so no timer decides how many there are.
         filterDebounce: 5000,
-        applied
+        applied,
+        reorderable: scenario.reorderable ?? false
       } as never
     })
 
@@ -311,6 +314,32 @@ const scenarios: Scenario[] = [
         }
         await userEvent.click(next)
         await expect.poll(() => applied.length).toBe(step)
+      }
+    }
+  },
+  {
+    // C-73: ArrowRight on the Name handle over 100 rows. The consumer writes
+    // the order back (`v-model:columns`); no query update.
+    name: 'move',
+    pageSize: 100,
+    expectedUpdates: 0,
+    reorderable: true,
+    act: async () => {
+      const handle = document.querySelector<HTMLElement>(
+        'th[data-field="name"] .qt-reorder-handle'
+      )
+      if (!handle) {
+        throw new Error('no name reorder handle')
+      }
+      handle.focus()
+      await userEvent.keyboard('{ArrowRight}')
+      await frame()
+      if (
+        document
+          .querySelector('th[data-field="name"]')
+          ?.previousElementSibling?.getAttribute('data-field') !== 'age'
+      ) {
+        throw new Error('name did not move')
       }
     }
   }

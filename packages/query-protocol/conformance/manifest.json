@@ -1,0 +1,69 @@
+{
+  "fixtureFormat": 1,
+  "suite": "query-local-conformance",
+  "revision": 1,
+  "profiles": [
+    "tr-1"
+  ],
+  "querySchema": {
+    "path": "../query.schema.json",
+    "sha256": "ccd4f7686393000f65fd702a70128d2bbc61897ab1b002bc59d59ed91024b654"
+  },
+  "files": [
+    {
+      "path": "cases/errors.json",
+      "active": 10,
+      "withdrawn": 0,
+      "executions": 43,
+      "sha256": "a4375923b7d9d96becdc74bc64cb60e7f6c172e40ba3851e2b0da3c74a83323b"
+    },
+    {
+      "path": "cases/filters.json",
+      "active": 17,
+      "withdrawn": 0,
+      "executions": 68,
+      "sha256": "d0102220cb93d90cf6c0a2cf757739ab6588b98f301b3768d4f2ce65651c0f3e"
+    },
+    {
+      "path": "cases/paging.json",
+      "active": 9,
+      "withdrawn": 0,
+      "executions": 13,
+      "sha256": "302c90d79eca2af17d4ea91349a7410b87f455243c6442cd8777d161000ae144"
+    },
+    {
+      "path": "cases/search.json",
+      "active": 5,
+      "withdrawn": 0,
+      "executions": 10,
+      "sha256": "9a0c46f528fe1e59c65c6272be4f8bd2e93a1400f3a0182622aba29a6d74e553"
+    },
+    {
+      "path": "cases/sort.json",
+      "active": 14,
+      "withdrawn": 0,
+      "executions": 23,
+      "sha256": "ced226c96f444931f196956e7f440aafcce0417d68988eb24cb0824f86311a3b"
+    },
+    {
+      "path": "cases/temporal.json",
+      "active": 8,
+      "withdrawn": 0,
+      "executions": 49,
+      "sha256": "7465150a57740c24ab00035a84cfd2f9cee2152089e03548eef63b10480835e8"
+    },
+    {
+      "path": "cases/text.json",
+      "active": 7,
+      "withdrawn": 0,
+      "executions": 18,
+      "sha256": "a5bf216c1c2598fb43e2d984508e8952841a115b19d310a8106589bd104e8923"
+    }
+  ],
+  "data": [
+    {
+      "path": "data/people.json",
+      "sha256": "1b0b560c75d4c445f9e9c343411a1f6437aa4ec0914c9a515869c5961c4aa724"
+    }
+  ]
+}
