@@ -141,7 +141,7 @@ export const createRowChangeTracker = <T extends object>(
         // The first rows after a query change are its answer whatever the
         // hint says: a consumer that always passes `live` still sees no
         // flash on a sort or a filter.
-        quiet = input.hint !== 'live' || settling
+        quiet = input.hint !== 'live' || settling || !seenRows
         if (input.hint === 'snapshot' || input.hint === 'reset') {
           result.reset = !first
         }

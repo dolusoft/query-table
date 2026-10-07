@@ -341,6 +341,31 @@ describe('C-92 Row-change tracker [own]', () => {
       expect(t.step({ rows: rows([4, 5]), hint: 'live' }).changed.size).toBe(1)
     })
 
+    it('a constant live hint: the first non-empty rows are a baseline', () => {
+      const t = track({ rows: [], hint: 'live' })
+      nothing(t.step({ rows: rows([1, 1]), hint: 'live' }))
+      expect(t.step({ rows: rows([1, 2]), hint: 'live' }).changed.size).toBe(1)
+    })
+
+    it('a constant live hint: a filter answer does not flash', () => {
+      const t = track({ rows: rows([1, 1], [2, 2]), hint: 'live' })
+      t.step({
+        query: q({
+          filters: [{ field: 'price', condition: 'Equals', value: '2' }]
+        }),
+        hint: 'live'
+      })
+      nothing(t.step({ rows: rows([2, 2], [7, 7]), hint: 'live' }))
+    })
+
+    it('a constant live hint: a live update for the old query before the answer makes the answer flash (documented limit)', () => {
+      const t = track({ rows: rows([1, 1]), hint: 'live' })
+      t.step({ query: q({ page: 2 }), hint: 'live' })
+      // Data of the old query arrives first and takes the boundary.
+      nothing(t.step({ rows: rows([1, 2]), hint: 'live' }))
+      expect(t.step({ rows: rows([5, 5]), hint: 'live' }).added).toEqual([5])
+    })
+
     it('a hint is read only when rows change', () => {
       const t = track({ rows: rows([1, 1]) })
       const changes = t.step({ hint: 'reset' })
