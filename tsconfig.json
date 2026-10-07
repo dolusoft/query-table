@@ -26,6 +26,9 @@
       "@dolusoft/query-table-core": [
         "./packages/query-table-core/src/index.ts"
       ],
+      "@dolusoft/query-table-core/row-changes": [
+        "./packages/query-table-core/src/row-changes/index.ts"
+      ],
       "@dolusoft/query-table-core/*": [
         "./packages/query-table-core/src/features/*/index.ts"
       ],

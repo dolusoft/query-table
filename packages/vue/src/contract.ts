@@ -8,6 +8,7 @@ import type {
   SortDirection,
   TableQuery
 } from '@dolusoft/query-protocol'
+import type { RowsUpdate } from '@dolusoft/query-table-core/row-changes'
 import type { Component } from 'vue'
 
 /**
@@ -37,6 +38,12 @@ export type {
   SortState,
   TableQuery
 } from '@dolusoft/query-protocol'
+
+/**
+ * What produced the `rows` given with it (C-93), from the core's row-change
+ * module (`@dolusoft/query-table-core/row-changes`).
+ */
+export type { RowsUpdate } from '@dolusoft/query-table-core/row-changes'
 
 /**
  * Rows the user selected (`v-model:selection`), keyed by the row identity
@@ -240,6 +247,30 @@ export interface TableProps<
    * defaults. Defaults to `false`.
    */
   infinite?: boolean | InfiniteOptions
+  /**
+   * Flash the rows that are new and the cells whose value changed while the
+   * query stays the same (C-93, C-94). Off by default; needs `rowKey`, and a
+   * changed row must be a new object. The table finds the change and marks
+   * it with `data-flash`; the skin draws it and sets its length with
+   * `--qt-flash-duration`. `true` flashes both; `{ rows, cells }` picks.
+   */
+  flash?: boolean | FlashOptions
+  /**
+   * What produced the current `rows`, read when `rows` changes (C-93):
+   * `live` may flash; `snapshot` (an answer to a query), `append` (a page
+   * added) and `reset` (another source) never do, and `snapshot` and
+   * `reset` clear every flash. Without it the table tells an answer from a
+   * live change by the query, `loading` and the first rows: a best effort.
+   */
+  rowsUpdate?: RowsUpdate
+}
+
+/** Options of `flash` (C-93). */
+export interface FlashOptions {
+  /** Flash a row whose key is new. Defaults to `true`. */
+  rows?: boolean
+  /** Flash a cell whose value changed. Defaults to `true`. */
+  cells?: boolean
 }
 
 /** Options of `virtual` (C-83 to C-87). */

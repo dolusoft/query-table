@@ -65,6 +65,8 @@ jobs:
       # Linted as packages (publint, attw); sources and dist/ against the
       # dependency allow-list.
       - run: pnpm check:package
+      # No stylesheet or scripted animation in dist/ or the tarballs (P5).
+      - run: pnpm check:no-css-leak
       - run: pnpm check:deps
       # Size (P8): the Vue fixtures against scripts/consumer-size-budget.json,
       # the protocol and core fixtures against scripts/package-size-budget.json.

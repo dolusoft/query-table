@@ -154,6 +154,20 @@
       "required": false,
       "default": "false",
       "description": "Ask for the next page (`update:query`, reason `page`) when the end of\n`rows` comes into view (C-88); append the rows of a `page` answer and\nreplace them for any other reason. Needs `rowKey`. `true` takes the\ndefaults. Defaults to `false`."
+    },
+    {
+      "name": "flash",
+      "type": "boolean | FlashOptions",
+      "required": false,
+      "default": "false",
+      "description": "Flash the rows that are new and the cells whose value changed while the\nquery stays the same (C-93, C-94). Off by default; needs `rowKey`, and a\nchanged row must be a new object. The table finds the change and marks\nit with `data-flash`; the skin draws it and sets its length with\n`--qt-flash-duration`. `true` flashes both; `{ rows, cells }` picks."
+    },
+    {
+      "name": "rowsUpdate",
+      "type": "RowsUpdate",
+      "required": false,
+      "default": "undefined",
+      "description": "What produced the current `rows`, read when `rows` changes (C-93):\n`live` may flash; `snapshot` (an answer to a query), `append` (a page\nadded) and `reset` (another source) never do, and `snapshot` and\n`reset` clear every flash. Without it the table tells an answer from a\nlive change by the query, `loading` and the first rows: a best effort."
     }
   ],
   "emits": [
@@ -356,6 +370,11 @@
       "description": "The cursors of the page shown (cursor mode). `next` comes from the server;\n`prev` may come from the server or from the consumer's own stack of earlier\ncursors, and the table does not tell them apart. `null` means there is no\npage on that side."
     },
     {
+      "name": "RowsUpdate",
+      "kind": "type",
+      "description": "What produced the rows given with it (C-93): `live` is a change of the\ndata under the same query and flashes; `append` adds a page and\nflashes nothing; `snapshot` (an answer to a query) and `reset` (another\nsource) start over."
+    },
+    {
       "name": "RowSelection",
       "kind": "type",
       "description": "Rows the user selected (`v-model:selection`), keyed by the row identity\n(`rowKey`, as a string). Only `true` entries count."
@@ -384,6 +403,11 @@
       "name": "TableProps",
       "kind": "interface",
       "description": ""
+    },
+    {
+      "name": "FlashOptions",
+      "kind": "interface",
+      "description": "Options of `flash` (C-93)."
     },
     {
       "name": "VirtualOptions",
@@ -640,12 +664,12 @@
     {
       "id": "C-31",
       "title": "No styling",
-      "text": "The table ships no CSS and takes no styling props. It writes four inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71) and `height` on a `tr.qt-virtual-spacer` (C-83). The custom properties carry a measured number and the spacer's height the height of the rows it stands for; `position: sticky`, `z-index` and backgrounds are the consumer's CSS."
+      "text": "The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS."
     },
     {
       "id": "C-32",
       "title": "State attributes",
-      "text": "State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-type` on the header, body and footer cells of a column (C-82). `aria-sort` follows the sorted header."
+      "text": "State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header."
     },
     {
       "id": "C-33",
@@ -685,7 +709,7 @@
     {
       "id": "C-40",
       "title": "DOM contract",
-      "text": "Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72) or a 3.2 feature (checked by C-91), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them."
+      "text": "Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72), a 3.2 feature (checked by C-91) or the change flash of 3.3 (`C-94`, checked by C-95), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them."
     },
     {
       "id": "C-41",
@@ -941,6 +965,26 @@
       "id": "C-91",
       "title": "DOM contract of 3.2",
       "text": "With `virtual` and `infinite` on, the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entries the contract marks `addedBy: 'C-83'` (`qt-virtual-spacer` and its `height`), `'C-86'` (`aria-rowcount`, `aria-rowindex`) and `'C-89'` (`qt-load-more-row`) are rendered, each on its element, by the state that adds it. With both off the DOM is the one C-40 and C-72 check. Source: own"
+    },
+    {
+      "id": "C-92",
+      "title": "Row-change tracker",
+      "text": "`createRowChangeTracker(keyOf)` of `@dolusoft/query-table-core/row-changes` compares consecutive inputs: `update({ rows, query, loading, fields, hint, quiet })` returns the keys that are new (`added`), the changed fields of each key that was there before (`changed`), the fields no longer given (`droppedFields`), `reset` when the context changed and `badKeys` when a row had no key or shared one; `clear()` makes the next update a baseline. Only `fields` given both before and now are compared, by `sameValue`: primitives by SameValueZero (`NaN` equals `NaN`, `0` equals `-0`, `null` is not `undefined`), dates by their time, arrays item by item in order, plain objects by their keys in any order, anything else (maps, sets, class instances, functions) and a cycle by reference; it is symmetric. A row given as the same object as before is not compared, so a change must be a new row object with new objects along the changed branch; a value changed in place is not seen. A dotted field reads a nested value, and a missing path reads as `undefined`. Keys are compared as `Map` keys: `1` and `\"1\"` are two rows. Nothing is reported, and the rows only become the ones compared against, on the first update, for the first non-empty rows, and when `quiet` is set (a hidden document: nothing replays later). A query that is not `sameQuery` to the previous one (kept as a clone) starts over: without a `hint` it sets `reset` at once; with one, `reset` waits for the rows that answer it and comes with them unless they are tagged `append`, so the next page of an infinite list keeps what runs (rows that answer without a hint set it too). The first rows after a query change are a baseline whatever `hint` says. With a `hint`, read when `rows` changes, `live` reports changes, `append` is a baseline, `snapshot` and `reset` are a baseline and set `reset`. So a consumer that always passes `live` sees no sort or filter answer flash; but when rows for the old query arrive first, they are taken as the answer and the real answer reports changes: only rows tagged `snapshot`, `append` or `reset` are never reported. Without a hint the split is a best effort: rows that arrive while `loading` is on are a baseline, and after a query change so are the rows until some arrive with `loading` off, or `loading` turns off after they arrived. The module keeps its state in the tracker it returns; it has no DOM, no Vue, no clock, no timer and no module-level state, and imports only the protocol (ADR 0011; the query boundary with a hint, ADR 0012). Source: own"
+    },
+    {
+      "id": "C-93",
+      "title": "Change flash: what flashes",
+      "text": "With `flash` and `rowKey`, every new `rows` is compared with the one before through the tracker of C-92, and while the query stays the same the table flashes a row whose key is new (`flash.rows`, default on) and a cell of a drawn column whose `field` value changed (`flash.cells`, default on); `true` turns both on, and `flash` is off by default. The first rows are a baseline, and so are the first rows after the query changed (C-92, whatever `rowsUpdate` says), rows tagged `snapshot`, `append` or `reset` by `rowsUpdate`, and rows that come while the document is hidden: a hidden document flashes nothing and nothing replays when it shows again. A query change, a `snapshot` or `reset` and a new `rowKey` clear every flash; with `rowsUpdate` a query change clears them when its answer arrives, and an answer tagged `append` (the next page of an infinite list) clears nothing and flashes nothing; a `rowKey` function given anew on every render is a new `rowKey` each time, so it must be stable. Without `rowsUpdate` the split of an answer from a live change is the best effort of C-92: a consumer that sets `rows` for a new query without `loading`, after a live update for the old one, may see the answer flash; `rowsUpdate` makes it exact, and dropping a late answer is the consumer's (a request counter). Only the column's own `field` is watched: a slot that shows other fields is not covered. A changed row must be a new object, with new objects along the changed branch. A hidden column drops its cell flashes and a column shown again is a quiet baseline. Turning `flash`, `flash.rows` or `flash.cells` off drops the flashes of that kind at once. Without `rowKey`, `flash` is ignored and a development build logs one `console.warn`; rows without a key, or two rows with one key, log one `console.warn` and are never told apart by their index. A `KeepAlive` deactivation drops every flash and its activation takes the current rows as a baseline. Nothing runs on the server. The table emits nothing for a flash and changes no order, focus, window or infinite request. Source: own"
+    },
+    {
+      "id": "C-94",
+      "title": "Change flash: marks and timing",
+      "text": "A flashing data row carries `data-flash` and so does a flashing data cell (a cell with `data-field`); a cell flash and the flash of its row are independent. The value is `a` or `b`: a flash that starts again before it ended switches it, so a CSS animation keyed on the value starts again, and the starts within one animation frame switch it once. The length is the skin's: `--qt-flash-duration` on `.qt-datatable` or an ancestor, in `ms` or `s`. The table reads it with `getComputedStyle` at most once a frame and only for an update that flashes something; a missing, invalid or zero length (a reduced-motion skin) flashes nothing, and the rows compared against move all the same. A flash ends that long after the change was found (`performance.now()`): one timer wakes at the nearest end, and a flash whose time is up is never drawn, even when the timer runs late. Animation events are not listened to: an animation inside a cell cannot end a flash. A row or a cell bound after its flash began (it entered the window of a virtual body, it was mounted again, or the flash that governs it changed) gets the inline `--qt-flash-elapsed`, the time gone since the flash began in `ms`, written once when it is bound and not when it is under `1ms`; the skin moves the start of its animation by it (`animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1)`), so a flash that comes back into view runs for the time it has left. A cell without a flash of its own inherits the value of its row, except one mounted after its row was bound (a column shown, a slot that changed what it renders), which is bound to the row's flash and carries its own value; a cell flash that starts in a row that carries one writes `0ms`. A cell that moves without being mounted again (its column becomes pinned or is moved) is not bound again: if the browser restarts its animation on the move, the animation runs from the value written at its last bind. The subtable, spacer, empty, loading and load-more rows, the utility cells, the header and the footer carry no `data-flash`. The table writes no `aria-live` and announces nothing. Source: own"
+    },
+    {
+      "id": "C-95",
+      "title": "Change flash off and DOM contract of 3.3",
+      "text": "With `flash` absent or `false` the table sets up one watcher of `flash` and nothing else: no tracker, comparison, timer, animation frame, listener, style read or clock read, no memory per row, and the DOM is the one C-40, C-72 and C-91 check. With `flash` on the table adds no listener anywhere and keeps no module-level state, and the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract; the entries the contract marks `addedBy: 'C-94'` (`data-flash` on a row and on a data cell, `--qt-flash-elapsed`) are rendered, each on its element, by the state that adds them. An unmount and a `KeepAlive` deactivation leave no timer and no animation frame. Source: own"
     }
   ]
 }
