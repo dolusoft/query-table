@@ -105,7 +105,10 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/row-pinning.spec.ts > C-74 composable: TanStack calls go to the consumer [tanstack]',
   'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
   // `moveColumn` is its own test, so the other C-44 tests still compare.
-  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn'
+  'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn',
+  // 3.2 addition (C-82): `data-type` on the cells of a column.
+  'tests/contract/unit/column-type.spec.ts > C-82 Column type on cells [own]',
+  'tests/contract/browser/dom-contract-column-type.browser.spec.ts > C-82 the column type is on every cell of a column, as the DOM contract lists it [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

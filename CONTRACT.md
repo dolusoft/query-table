@@ -930,7 +930,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 #### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66) or a 3.1 feature (checked by C-72). Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66) or a 3.1 feature (checked by C-72), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 #### C-41 Skin selectors
 
@@ -1150,6 +1150,12 @@ Source: own
 
 Source: own
 
+#### C-82 Column type on cells
+
+Every header, body and footer cell of a column carries `data-type`: the column's type as C-39 reads it, one of `string`, `number`, `integer`, `date`, `datetime` and `bool`, so a missing or unknown type is `string`. The utility cells, the subtable row and the empty and loading rows carry none. A change of the column's type changes the attribute. It is the hook for styling by type, alignment included: the table has no alignment option and draws no alignment (P5), and the type never changes what a cell shows (C-30), so the table adds no placeholder for an empty value and no icon.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1199,6 +1205,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-pinned` | `th[data-pinned="right"], td[data-pinned="right"]` | Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71). |
 | `data-dragging` | `th` | On the header cell of the column being dragged (C-73). |
 | `data-drop` | `th` | `before` or `after`: the header cell the dragged column would be placed next to (C-73). |
+| `data-type` | `th[data-field], td[data-field]` | The column type as C-39 reads it (`string`, `number`, `integer`, `date`, `datetime` or `bool`; `string` when missing or unknown), on the header, body and footer cells of a column. The table draws no alignment; a skin aligns by it (C-82). |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 
 ### Inline style

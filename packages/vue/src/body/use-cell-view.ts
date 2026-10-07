@@ -2,7 +2,7 @@ import type { Slots } from 'vue'
 
 import { sideOf } from '../columns/column-layout'
 import type { CellContextMenuPayload, CellSlotProps, Column } from '../contract'
-import { valueAt } from '../core/column'
+import { columnTypeOf, valueAt } from '../core/column'
 import { pinAttrs } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
 
@@ -35,6 +35,7 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
 
   const cellAttrs = (entry: ColumnEntry) => ({
     'data-field': entry.column.field,
+    'data-type': columnTypeOf(entry.column),
     ...pinAttrs(sideOf(entry.column), options.offsets()[entry.column.field])
   })
 

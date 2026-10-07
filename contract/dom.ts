@@ -13,7 +13,8 @@ export interface ClassEntry {
   /**
    * The rule that adds the hook on top of the 2.2.x table, when 2.2.x does
    * not render it. C-40 checks the entries without it; C-66 the ones the
-   * selection adds (`C-64`) and C-72 the ones of the 3.1 features.
+   * selection adds (`C-64`), C-72 the ones of the 3.1 features and C-82 the
+   * column type.
    */
   addedBy?: string
 }
@@ -221,6 +222,13 @@ export const domAttributes: AttributeEntry[] = [
     description:
       '`before` or `after`: the header cell the dragged column would be placed next to (C-73).',
     addedBy: 'C-73'
+  },
+  {
+    name: 'data-type',
+    on: 'th[data-field], td[data-field]',
+    description:
+      'The column type as C-39 reads it (`string`, `number`, `integer`, `date`, `datetime` or `bool`; `string` when missing or unknown), on the header, body and footer cells of a column. The table draws no alignment; a skin aligns by it (C-82).',
+    addedBy: 'C-82'
   },
   {
     name: 'aria-sort',

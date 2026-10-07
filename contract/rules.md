@@ -223,7 +223,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 ### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66) or a 3.1 feature (checked by C-72). Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66) or a 3.1 feature (checked by C-72), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 ### C-41 Skin selectors
 
@@ -440,5 +440,11 @@ Source: own
 ### C-81 useLocalQuery
 
 `useLocalQuery` from `@dolusoft/query-table/local` gives `rows`, `totalRows` and `error` equal at every moment to `applyQuery(allRows, query, dataset, { profile, paginate })` (`[]` and `0` while there is an error; an invalid page or a cursor comes before a data error found earlier). A change of only `page`, `pageSize` or `paginate` does not evaluate again: with the same `allRows` and `dataset` objects, the same profile, equal rules (`sameRules`), an equal sort field and direction and an equal search, filtering, search and sorting do not run again, even for a new query object. It reads the rows as the consumer gives them (no `toRaw`), so a change inside a deeply reactive array evaluates again; it returns the given row objects; it never writes the query, emits nothing and does not correct the page. In a development build (`process.env.NODE_ENV !== 'production'`) each new error (`code`, `path`, `field`) is logged once with `console.error`; in production it is only returned. An error that clears and returns is logged again.
+
+Source: own
+
+### C-82 Column type on cells
+
+Every header, body and footer cell of a column carries `data-type`: the column's type as C-39 reads it, one of `string`, `number`, `integer`, `date`, `datetime` and `bool`, so a missing or unknown type is `string`. The utility cells, the subtable row and the empty and loading rows carry none. A change of the column's type changes the attribute. It is the hook for styling by type, alignment included: the table has no alignment option and draws no alignment (P5), and the type never changes what a cell shows (C-30), so the table adds no placeholder for an empty value and no icon.
 
 Source: own
