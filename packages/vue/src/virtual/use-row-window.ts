@@ -380,7 +380,12 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       return
     }
     if (!pending && fixed() === undefined) {
-      const position = indexAt(offsets, scrollTop)
+      // The item at the top of the view, or the nearest drawn one when a
+      // fast scroll went past the drawn rows: the anchor must be drawn now.
+      const position = Math.min(
+        Math.max(indexAt(offsets, scrollTop), current.start),
+        current.end - 1
+      )
       const tr = position < 0 ? null : rowElement(tbody, position)
       anchor = tr ? { position, top: tr.getBoundingClientRect().top } : null
     }
