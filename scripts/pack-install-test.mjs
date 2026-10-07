@@ -1,11 +1,10 @@
 // `pnpm pack-install`: installs the three packed tarballs into a new app
-// outside the workspace, the way the README tells a consumer to, then
+// outside the workspace to simulate an npm install, then
 // typechecks and builds that app, and runs the conformance suite of the
 // installed protocol tarball (fixtures/pack-install/conformance.mjs: every
 // hash of its manifest, two runs). Catches what the workspace hides: a
 // `workspace:*` range left in a manifest, a file missing from `files`, a type
-// that only resolves through the workspace `paths`, an override the README
-// forgets.
+// that only resolves through the workspace `paths`, a stale README version.
 //
 //   node scripts/pack-install-test.mjs   (after `pnpm build`)
 //
@@ -79,32 +78,20 @@ try {
     packed[manifest.name] = { file, version: manifest.version, manifest }
   }
 
-  // 2. The README's overrides name every @dolusoft dependency of the Vue
-  // package, and each points at the tarball of that name and version.
+  // 2. The README installs the Vue package by name at the packed version.
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
   const vue = packed['@dolusoft/query-table']
+  const installs = [
+    ...readme.matchAll(/^pnpm add @dolusoft\/query-table@(\S+)$/gm)
+  ]
+  if (installs.length !== 1 || installs[0][1] !== vue.version) {
+    fail(`README.md must install @dolusoft/query-table@${vue.version}`)
+  }
   const internal = Object.keys(vue.manifest.dependencies ?? {}).filter(name =>
     name.startsWith('@dolusoft/')
   )
-  for (const name of internal) {
-    const line = new RegExp(
-      `^\\s+'${name.replaceAll('/', '\\/')}': (\\S+)$`,
-      'm'
-    ).exec(readme)
-    if (!line) {
-      fail(`README.md has no override for ${name}`)
-    }
-    if (!line[1].endsWith(`/v${packed[name].version}/${packed[name].file}`)) {
-      fail(
-        `README.md overrides ${name} with ${line[1]}, expected the v${packed[name].version} asset ${packed[name].file}`
-      )
-    }
-  }
-  if (!readme.includes(`/v${vue.version}/${vue.file}`)) {
-    fail(`README.md does not install ${vue.file}`)
-  }
 
-  // 3. A consumer app: the overrides of the README with local tarballs.
+  // 3. Simulate registry dependency resolution with local tarball overrides.
   const tarball = name => `file:../tarballs/${packed[name].file}`
   writeFileSync(
     join(app, 'pnpm-workspace.yaml'),

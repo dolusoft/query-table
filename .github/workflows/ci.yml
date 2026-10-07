@@ -74,8 +74,8 @@ jobs:
       - run: pnpm api:check
       # The default entries never reach the local evaluator (C-75).
       - run: pnpm check:entry-graph
-      # The three tarballs installed into an app outside the workspace, as the
-      # README says, then typechecked and built.
+      # The three tarballs installed into an app outside the workspace, the
+      # way an npm install resolves them, then typechecked and built.
       - run: pnpm pack-install
         timeout-minutes: 5
 

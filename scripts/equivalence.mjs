@@ -12,7 +12,7 @@
 //   git:<ref>          a tarball packed from a git ref: the ref is exported,
 //                      its library is built and `pnpm pack`ed (default
 //                      baseline: git:origin/main)
-//   release:<version>  the tarball of a published GitHub release
+//   release:<version>  the tarball of a version published on npm
 //   tgz:<path>         a local tarball
 //
 // The specs are always the ones of this working tree; only the package they
@@ -39,7 +39,7 @@ import { build } from 'vite'
 const root = resolve(import.meta.dirname, '..')
 const work = join(root, '.equivalence')
 const releaseUrl = version =>
-  `https://github.com/dolusoft/query-table/releases/download/v${version}/dolusoft-query-table-${version}.tgz`
+  `https://registry.npmjs.org/@dolusoft/query-table/-/query-table-${version}.tgz`
 
 const args = process.argv.slice(2)
 const option = (name, fallback) => {

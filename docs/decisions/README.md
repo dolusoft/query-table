@@ -14,5 +14,6 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0006](0006-release-3.md)                   | Releasing 3.0.0: the `next` branch and the equivalence gate | Accepted |
 | [0007](0007-column-layout-row-pinning.md)   | Column layout and row pinning (3.1)                         | Accepted |
 | [0008](0008-local-query-evaluation.md)      | Local query evaluation as a data source                     | Accepted |
+| [0009](0009-npm-distribution.md)            | npm as the only package distribution channel                | Accepted |
 
 Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code.

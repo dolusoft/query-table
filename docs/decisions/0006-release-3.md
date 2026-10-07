@@ -1,6 +1,6 @@
 # 0006 Releasing 3.0.0: the `next` branch and the equivalence gate
 
-Status: Accepted (2026-10-06)
+Status: Accepted (2026-10-06); package tarball distribution superseded by [0009](0009-npm-distribution.md).
 
 ## Context
 

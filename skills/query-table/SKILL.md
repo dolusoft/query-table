@@ -13,7 +13,7 @@ Three packages, versioned together, layered one way (protocol -> core -> vue):
 - `@dolusoft/query-table-core`: two TanStack Table v9 features, `serverQueryFeature` and `filterInputFeature`.
 - `@dolusoft/query-table`: the `QueryTable` component and `useQueryTable()`.
 
-The packages are GitHub Release tarballs, not on npm. Install steps and the exact version are in the repository README; do not guess an npm version.
+The packages are on npm (`@dolusoft/query-table`; the protocol and the core come with it as dependencies). The current version is in the repository README; do not guess one.
 
 ## Which path
 
