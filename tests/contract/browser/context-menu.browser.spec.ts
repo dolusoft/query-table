@@ -118,3 +118,133 @@ test('C-28 a once listener receives only the first real right-click and suppress
     true
   ])
 })
+
+// A table with a listener whose tbody is asked about places other than a data
+// cell. `rows` and the extra props vary per test; the listener is the same.
+const renderListening = async (
+  props: Record<string, unknown>,
+  slots: Record<string, (...args: never[]) => unknown> = {}
+) => {
+  const payloads: CellContextMenuPayload<object>[] = []
+  const observed: MouseEvent[] = []
+  await render(
+    defineComponent(
+      () => () =>
+        h(
+          'div',
+          { onContextmenu: (event: MouseEvent) => observed.push(event) },
+          [
+            h(
+              QueryTable,
+              {
+                query: makeQuery(),
+                columns: columns(),
+                onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+                  payloads.push(payload),
+                ...props
+              },
+              slots
+            )
+          ]
+        )
+    )
+  )
+  return { payloads, observed }
+}
+
+test.each([
+  ['subtable toggle', { hasSubtable: true }, '.qt-expand'],
+  ['selection checkbox', { selection: {}, rowKey: 'id' }, '.qt-select-row'],
+  ['right panel button', { hasRightPanel: true }, '.qt-right-panel-button']
+] as const)(
+  'C-28 a real right-click on the %s utility cell emits nothing and keeps the native menu',
+  async (_name, props, selector) => {
+    const flow = await renderListening({ rows: rows(2), ...props })
+    await userEvent.click(page.getByCSS(`tr[data-row-index="0"] ${selector}`), {
+      button: 'right'
+    })
+    expect(flow.observed).toHaveLength(1)
+    expect(flow.observed[0].defaultPrevented).toBe(false)
+    expect(flow.payloads).toHaveLength(0)
+  }
+)
+
+test('C-28 a real right-click in the subtable row emits nothing for the outer table', async () => {
+  const flow = await renderListening(
+    { rows: rows(2), hasSubtable: true },
+    { subtable: () => h('p', { class: 'detail' }, 'detail') }
+  )
+  await userEvent.click(page.getByCSS('tr[data-row-index="0"] .qt-expand'))
+  await expect.element(page.getByCSS('.qt-subtable-row .detail')).toBeVisible()
+  await userEvent.click(page.getByCSS('.qt-subtable-row .detail'), {
+    button: 'right'
+  })
+  expect(flow.observed).toHaveLength(1)
+  expect(flow.observed[0].defaultPrevented).toBe(false)
+  expect(flow.payloads).toHaveLength(0)
+})
+
+test('C-28 a real right-click on an empty table emits nothing and keeps the native menu', async () => {
+  const flow = await renderListening(
+    { rows: [] },
+    { empty: () => h('i', { class: 'none' }, 'nothing') }
+  )
+  await userEvent.click(page.getByCSS('.qt-empty-row .none'), {
+    button: 'right'
+  })
+  expect(flow.observed).toHaveLength(1)
+  expect(flow.observed[0].defaultPrevented).toBe(false)
+  expect(flow.payloads).toHaveLength(0)
+})
+
+test('C-28 a table nested in a subtable slot answers for its own cells only', async () => {
+  const inner: CellContextMenuPayload<object>[] = []
+  const flow = await renderListening(
+    { rows: rows(1), hasSubtable: true },
+    {
+      subtable: () =>
+        h(QueryTable, {
+          query: makeQuery(),
+          columns: [{ field: 'label', title: 'Label' }],
+          rows: [{ label: 'inner' }],
+          onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+            inner.push(payload)
+        })
+    }
+  )
+  await userEvent.click(page.getByCSS('tr[data-row-index="0"] .qt-expand'))
+  const cell = page.getByCSS('.qt-subtable-row td[data-field="label"]')
+  await expect.element(cell).toBeVisible()
+  await userEvent.click(cell, { button: 'right' })
+  await expect.poll(() => inner.length).toBe(1)
+  expect(inner[0].cellValue).toBe('inner')
+  expect(flow.payloads).toHaveLength(0)
+  expect(flow.observed.map(event => event.defaultPrevented)).toEqual([true])
+})
+
+test('C-28 a table nested in a cell slot emits for its own cell, then the outer table for the cell that holds it', async () => {
+  const inner: CellContextMenuPayload<object>[] = []
+  const flow = await renderListening(
+    { rows: rows(2), columns: columns().slice(0, 2) },
+    {
+      'cell-name': () =>
+        h(QueryTable, {
+          query: makeQuery(),
+          columns: [{ field: 'label', title: 'Label' }],
+          rows: [{ label: 'inner' }],
+          onCellContextMenu: (payload: CellContextMenuPayload<object>) =>
+            inner.push(payload)
+        })
+    }
+  )
+  await userEvent.click(
+    page.getByCSS('tr[data-row-index="1"] td[data-field="label"]'),
+    { button: 'right' }
+  )
+  await expect.poll(() => flow.payloads.length).toBe(1)
+  expect(inner).toHaveLength(1)
+  expect(inner[0].column.field).toBe('label')
+  expect(flow.payloads[0].column.field).toBe('name')
+  expect(flow.payloads[0].rowIndex).toBe(1)
+  expect(flow.payloads[0].event).toBe(inner[0].event)
+})
