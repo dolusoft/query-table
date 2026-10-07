@@ -36,6 +36,7 @@
     "test:browser": "node scripts/test-browser.mjs",
     "test:browser:headless": "node scripts/test-browser.mjs --browser.headless",
     "test:browser:inspect": "vitest --project browser --mode inspect --watch",
+    "test:browser:inspect:touch": "vitest --project browser-touch --mode inspect --watch",
     "measure:renders": "node scripts/measure-renders.mjs",
     "check:renders": "node scripts/measure-renders.mjs --check",
     "analyze:build": "vite build -c vite.analyze.config.ts",
