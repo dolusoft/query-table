@@ -46,10 +46,8 @@ interface DatasetDetail {
 
 export interface Dataset {
   id: DatasetId
-  /** The product name the header shows. */
+  /** What the rows are, as the header menu names the dataset. */
   name: string
-  /** What the rows are, under the name in the header menu. */
-  kind: string
   noun: { one: string; many: string }
   fields: DatasetRoles
   /** Title, type and showcase width of every field. */

@@ -120,13 +120,13 @@ describe.each(datasets.map(data => [data.name, data] as [string, Dataset]))(
 describe('the dataset choice', () => {
   afterEach(() => resetDataset())
 
-  test('starts on Vigil and keeps a new choice in localStorage', () => {
+  test('starts on Security alerts and keeps a new choice in localStorage', () => {
     resetDataset()
     expect(defaultDatasetId).toBe('vigil')
-    expect(currentDataset().name).toBe('Vigil')
+    expect(currentDataset().name).toBe('Security alerts')
     selectDataset('harbor')
     expect(datasetId()).toBe('harbor')
-    expect(currentDataset().name).toBe('Harbor Goods')
+    expect(currentDataset().name).toBe('Store orders')
     expect(localStorage.getItem('query-table-playground:dataset')).toBe(
       'harbor'
     )

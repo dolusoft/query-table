@@ -1,7 +1,7 @@
 import type { Dataset, DemoRow } from './dataset'
 import { isoDate, isoDateTime, round2, seeded } from './random'
 
-// Ticker: the quote board of a stock exchange terminal. One row is one
+// Market quotes: the quote board of a stock exchange terminal. One row is one
 // listed company with its last price.
 
 const names = [
@@ -81,8 +81,7 @@ const price = new Intl.NumberFormat('en-US', {
 
 export const ticker: Dataset = {
   id: 'ticker',
-  name: 'Ticker',
-  kind: 'Market quotes',
+  name: 'Market quotes',
   noun: { one: 'symbol', many: 'symbols' },
   fields: {
     primary: 'symbol',

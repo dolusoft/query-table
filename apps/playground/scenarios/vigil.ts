@@ -1,8 +1,8 @@
 import type { Dataset, DemoRow } from './dataset'
 import { day, isoDate, isoDateTime, seeded } from './random'
 
-// Vigil: the alert log of a security monitoring service. One row is one
-// alert a detection rule raised, in time order.
+// Security alerts: the alert log of a security monitoring service. One row
+// is one alert a detection rule raised, in time order.
 
 const users = [
   'Işık Demir',
@@ -81,8 +81,7 @@ const megabytes = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
 
 export const vigil: Dataset = {
   id: 'vigil',
-  name: 'Vigil',
-  kind: 'Security alerts',
+  name: 'Security alerts',
   noun: { one: 'event', many: 'events' },
   fields: {
     primary: 'user',

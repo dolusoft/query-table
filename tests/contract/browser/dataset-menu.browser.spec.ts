@@ -57,10 +57,8 @@ const visibleMenu = () => {
 
 const pick = async (name: string) => {
   await userEvent.click(visibleMenu())
-  // An item reads as its name and its kind ("Harbor Goods Store orders").
-  await userEvent.click(
-    page.getByRole('menuitemradio', { name: new RegExp(`^${name}`) })
-  )
+  // An item reads as its name alone ("Store orders").
+  await userEvent.click(page.getByRole('menuitemradio', { name, exact: true }))
 }
 
 const headerFields = (root: ParentNode = document) =>
@@ -75,10 +73,12 @@ test('the menu switches the showcase and an example page, and the choice is kept
   await render(App, { global: { plugins: [router] } })
   await showcaseSettled()
   expect(showcaseCount()).toContain('200 events match.')
-  expect(visibleMenu().getAttribute('aria-label')).toBe('Demo data: Vigil')
+  expect(visibleMenu().getAttribute('aria-label')).toBe(
+    'Demo data: Security alerts'
+  )
   expect(headerFields()).toContain('severity')
 
-  await pick('Harbor Goods')
+  await pick('Store orders')
   // The home page mounts a new showcase on the picked data.
   await expect.poll(() => headerFields()).toContain('customer')
   await showcaseSettled()
@@ -86,7 +86,7 @@ test('the menu switches the showcase and an example page, and the choice is kept
   expect(headerFields()).toContain('customer')
   expect(headerFields()).not.toContain('severity')
   expect(visibleMenu().getAttribute('aria-label')).toBe(
-    'Demo data: Harbor Goods'
+    'Demo data: Store orders'
   )
   expect(datasetId()).toBe('harbor')
 
@@ -96,7 +96,7 @@ test('the menu switches the showcase and an example page, and the choice is kept
 
   // The documentation pages have the same top bar: a change there while an
   // example page is open remounts it on the new data.
-  await pick('Ticker')
+  await pick('Market quotes')
   await expect.poll(() => headerFields()).toContain('symbol')
   expect(headerFields()).not.toContain('customer')
 
@@ -128,7 +128,7 @@ test('on a phone, a documentation page offers the menu in its sidebar sheet', as
   expect(visibleMenu().getBoundingClientRect().height).toBeGreaterThanOrEqual(
     44
   )
-  await pick('Harbor Goods')
+  await pick('Store orders')
   await expect.poll(() => headerFields()).toContain('customer')
   expect(datasetId()).toBe('harbor')
 })

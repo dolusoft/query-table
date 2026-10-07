@@ -9,8 +9,8 @@ import { resetDataset } from '../../apps/playground/scenarios/datasets'
 // looking at the table in either one; without it the OS decides.
 setTheme(themeFromUrl())
 
-// Tests that mount playground pages expect the default demo data (Vigil),
-// whatever an earlier test picked in the dataset menu.
+// Tests that mount playground pages expect the default demo data (Security
+// alerts), whatever an earlier test picked in the dataset menu.
 beforeEach(() => resetDataset())
 
 // The library ships no CSS. The browser tests style the table with the test
