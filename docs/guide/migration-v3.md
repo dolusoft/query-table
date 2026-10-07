@@ -18,7 +18,7 @@ import QueryTable, { type TableQuery } from '@dolusoft/query-table'
 
 `TableQuery` stays as an alias of `PageQuery`, the page-mode query, so a 2.2 type annotation compiles unchanged. New code that accepts either mode uses `Query` from `@dolusoft/query-protocol`.
 
-Until 3.0.0 is on npm, the packages are GitHub Release tarballs, and the Vue package depends on the other two by name. Map those names to their tarballs with `overrides` (`pnpm-workspace.yaml` for pnpm; the `overrides` or `resolutions` field of `package.json` for npm and Yarn), then add the component from its tarball. The exact lines are in the [README](../../README.md#install). When 3.0.0 reaches npm, delete the `overrides` entries and install by version: the names then resolve on their own.
+The packages are on npm from 3.0.1: install `@dolusoft/query-table` by name and version, and the other two come with it ([README](../../README.md#install)). If you installed 3.0.x from the GitHub Release tarballs, delete those `overrides` entries and install by version.
 
 The Node and `vue` requirements of 2.2 (Node 22.12 or newer, `vue` 3.5+) are unchanged for the packages.
 
@@ -91,5 +91,4 @@ Applies to the TanStack plugins only, not to the component. `serverQueryFeature`
 
 ## Known open items
 
-- The tarball `overrides` of [Install](#install) go away when 3.0.0 is published to npm; the version and the release location are then updated here and in the README.
 - Render counts are reported by the gate, not compared; v3 re-baselines them, so a performance test that counts renders can need new numbers.

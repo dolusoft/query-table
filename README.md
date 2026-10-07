@@ -10,17 +10,10 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 
 ## Install
 
-The three packages are released together as GitHub Release tarballs. The Vue package depends on the other two, so map their names to the tarballs (pnpm `overrides` in `pnpm-workspace.yaml`; npm and Yarn have the same field in `package.json`) and add the component:
-
-```yaml
-# pnpm-workspace.yaml
-overrides:
-  '@dolusoft/query-protocol': https://github.com/dolusoft/query-table/releases/download/v3.1.0/dolusoft-query-protocol-3.1.0.tgz
-  '@dolusoft/query-table-core': https://github.com/dolusoft/query-table/releases/download/v3.1.0/dolusoft-query-table-core-3.1.0.tgz
-```
+The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add https://github.com/dolusoft/query-table/releases/download/v3.1.0/dolusoft-query-table-3.1.0.tgz
+pnpm add @dolusoft/query-table@3.1.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
