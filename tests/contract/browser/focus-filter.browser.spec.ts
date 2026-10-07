@@ -122,3 +122,47 @@ test.each(['input', 'date slot'] as const)(
     )
   }
 )
+
+test('C-54 focusFilter returns false and moves no focus when there is no filter to focus', async () => {
+  const table = ref<QueryTableExpose | null>(null)
+  const filterable = ref(true)
+  const cols = [
+    { field: 'id', title: 'ID', type: 'number' as const, filterable: false },
+    { field: 'name', title: 'Name', hide: true },
+    { field: 'age', title: 'Age', type: 'number' as const },
+    { field: 'active', title: 'Active', type: 'bool' as const }
+  ]
+  await render(
+    defineComponent(
+      () => () =>
+        h(QueryTable, {
+          ref: table,
+          query: makeQuery({
+            filters: [
+              rule('active', 'Equal', true),
+              rule('active', 'Equal', false)
+            ]
+          }),
+          columns: cols,
+          rows: rows(2),
+          filterable: filterable.value
+        })
+    )
+  )
+  const outside = document.createElement('button')
+  document.body.append(outside)
+  outside.focus()
+  // not filterable, hidden, unknown, disabled bool select (several rules)
+  for (const field of ['id', 'name', 'nope', 'active']) {
+    expect(table.value!.focusFilter(field)).toBe(false)
+    expect(document.activeElement).toBe(outside)
+  }
+  expect(table.value!.focusFilter('age')).toBe(true)
+  expect(document.activeElement).not.toBe(outside)
+  outside.focus()
+  filterable.value = false
+  await expect.poll(() => document.querySelector('.qt-filter-input')).toBeNull()
+  expect(table.value!.focusFilter('age')).toBe(false)
+  expect(document.activeElement).toBe(outside)
+  outside.remove()
+})
