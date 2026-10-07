@@ -1,23 +1,24 @@
 import { defineDataset } from '@dolusoft/query-protocol/local'
 import { useLocalQuery } from '@dolusoft/query-table/local'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
-import { defineComponent, h, ref, shallowRef } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
 import {
   QueryTable,
   type PaginationSlotProps,
   type Query,
-  type QueryChangeReason,
-  type TableQuery,
   type ToolbarSlotProps
 } from '@dolusoft/query-table'
 
 import TablePager from '../../apps/playground/harness/TablePager.vue'
 import { makeQuery, rule } from '../support/fixtures'
-import { expectUpdates, type ScenarioUpdate } from '../support/scenario-host'
-import { traceUpdate } from '../support/trace'
+import {
+  expectUpdates,
+  recordUpdates,
+  type ScenarioUpdate
+} from '../support/scenario-host'
 
 // A page that holds all its rows and evaluates the query itself with
 // `useLocalQuery` and the `tr-1` profile: a user searches with Turkish
@@ -41,6 +42,12 @@ const people = (): Person[] => [
   { id: 7, name: 'Ali Işıklı', city: 'Antalya', age: 27 },
   { id: 8, name: 'Çağla Doğan', city: 'izmir', age: 41 }
 ]
+
+/** The people with one name that is a number: `invalid-data`. */
+const broken = () =>
+  people().map(person =>
+    person.id === 3 ? ({ ...person, name: 42 } as unknown as Person) : person
+  )
 
 const dataset = defineDataset<Person>({
   key: 'id',
@@ -84,14 +91,9 @@ const renderLocal = async () => {
           filterDebounce: 0,
           searchDebounce: 0,
           pagination: { pageSizeOptions: [2, 5], alwaysShow: true },
-          'onUpdate:query': (next: Query, reason: QueryChangeReason) => {
-            traceUpdate(next as TableQuery, reason)
-            updates.push({
-              reason,
-              query: JSON.parse(JSON.stringify(next)) as Query
-            })
+          'onUpdate:query': recordUpdates(updates, next => {
             query.value = next
-          }
+          })
         },
         {
           toolbar: (bar: ToolbarSlotProps) =>
@@ -151,7 +153,7 @@ test('C-81 C-80 C-78 C-77 tr-1 search with Turkish capitals, name order, city fi
   await expect.poll(flow.names).toEqual(['Işık Demir', 'Ali Işıklı'])
   expect(flow.pageInfo()).toBe('Page 1 of 1')
 
-  // The same rows for the dotted capital and for plain ASCII.
+  // The same rows in lower case with a dotted `i` for the `ı` of the data.
   await userEvent.fill(page.getByRole('searchbox'), 'işik')
   expected.push({
     reason: 'search',
@@ -159,6 +161,19 @@ test('C-81 C-80 C-78 C-77 tr-1 search with Turkish capitals, name order, city fi
   })
   await expectUpdates(flow.updates, expected)
   await expect.poll(flow.names).toEqual(['Işık Demir', 'Ali Işıklı'])
+
+  // Plain ASCII finds nothing: only the four i letters match each other,
+  // `ş` is not `s` (accents are not folded).
+  await userEvent.fill(page.getByRole('searchbox'), 'isik')
+  expected.push({
+    reason: 'search',
+    query: makeQuery({ pageSize: 2, search: 'isik' })
+  })
+  await expectUpdates(flow.updates, expected)
+  await expect.poll(flow.names).toEqual([])
+  await expect
+    .element(page.getByText('No results.', { exact: true }))
+    .toBeVisible()
 
   // 2. No search: the key goes away, every row is back.
   await userEvent.fill(page.getByRole('searchbox'), '')
@@ -195,26 +210,58 @@ test('C-81 C-80 C-78 C-77 tr-1 search with Turkish capitals, name order, city fi
   await expect.poll(flow.names).toEqual(['İpek Yılmaz'])
   expect(flow.pageInfo()).toBe('Page 2 of 2')
 
-  // 6. A row's name turns into a number: `invalid-data`, even though the
-  //    row is filtered out. The page shows the error, not "no results";
-  //    the table emits nothing and keeps the page (C-02, C-81).
-  flow.allRows.value = people().map(person =>
-    person.id === 3 ? ({ ...person, name: 42 } as unknown as Person) : person
-  )
-  await expect
-    .element(page.getByRole('alert'))
-    .toHaveTextContent('Cannot show the list: invalid-data in name')
-  expect(flow.errorCode()).toBe('invalid-data')
-  expect(flow.names()).toEqual([])
-  expect(document.querySelector('.qt-datatable')).toHaveAttribute('data-empty')
-  await expectUpdates(flow.updates, expected)
-  expect(flow.query.value).toEqual(second)
+  // A development build logs each new data error once with `console.error`
+  // (C-81). The spy keeps the log out of the test output and is removed
+  // whatever happens.
+  const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+  try {
+    // 6. A row's name turns into a number: `invalid-data`, even though the
+    //    row is filtered out. The page shows the error, not "no results";
+    //    the table emits nothing and keeps the page (C-02, C-81).
+    flow.allRows.value = broken()
+    await expect
+      .element(page.getByRole('alert'))
+      .toHaveTextContent('Cannot show the list: invalid-data in name')
+    expect(flow.errorCode()).toBe('invalid-data')
+    expect(flow.names()).toEqual([])
+    expect(document.querySelector('.qt-datatable')).toHaveAttribute(
+      'data-empty'
+    )
+    await expectUpdates(flow.updates, expected)
+    expect(flow.query.value).toEqual(second)
+    expect(errorLog).toHaveBeenCalledTimes(1)
+    expect(errorLog).toHaveBeenLastCalledWith(
+      '[useLocalQuery]',
+      expect.objectContaining({ code: 'invalid-data', field: 'name' })
+    )
 
-  // 7. Fixed data: the same page of the same query again.
-  flow.allRows.value = people()
-  await expect.poll(flow.names).toEqual(['İpek Yılmaz'])
-  expect(flow.errorCode()).toBeNull()
-  expect(document.querySelector('[role="alert"]')).toBeNull()
-  expect(flow.pageInfo()).toBe('Page 2 of 2')
-  await expectUpdates(flow.updates, expected)
+    // The same error in new rows is not logged again.
+    flow.allRows.value = broken()
+    await nextTick()
+    expect(flow.errorCode()).toBe('invalid-data')
+    expect(errorLog).toHaveBeenCalledTimes(1)
+
+    // 7. Fixed data: the same page of the same query again.
+    flow.allRows.value = people()
+    await expect.poll(flow.names).toEqual(['İpek Yılmaz'])
+    expect(flow.errorCode()).toBeNull()
+    expect(document.querySelector('[role="alert"]')).toBeNull()
+    expect(flow.pageInfo()).toBe('Page 2 of 2')
+    await expectUpdates(flow.updates, expected)
+    expect(errorLog).toHaveBeenCalledTimes(1)
+
+    // 8. Broken again: the error is back, and so is its log line.
+    flow.allRows.value = broken()
+    await expect
+      .element(page.getByRole('alert'))
+      .toHaveTextContent('Cannot show the list: invalid-data in name')
+    expect(errorLog).toHaveBeenCalledTimes(2)
+    expect(errorLog).toHaveBeenLastCalledWith(
+      '[useLocalQuery]',
+      expect.objectContaining({ code: 'invalid-data', field: 'name' })
+    )
+    await expectUpdates(flow.updates, expected)
+  } finally {
+    errorLog.mockRestore()
+  }
 })

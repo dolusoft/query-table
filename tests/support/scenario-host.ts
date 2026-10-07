@@ -60,8 +60,29 @@ export interface ScenarioOptions {
   props?: Record<string, unknown>
 }
 
-type Answer =
+/**
+ * The server's answer to the latest request. `totalRows` overrides the
+ * total it reports, for a total that disagrees with the rows (C-24).
+ */
+type Answer = (
   { kind: 'rows' } | { kind: 'error'; message: string } | { kind: 'empty' }
+) & { totalRows?: number }
+
+/**
+ * An `update:query` listener that records the event (reason and a copy of
+ * the query, in order) in `updates` and in the test's trace, then hands the
+ * new query to `then`.
+ */
+export const recordUpdates =
+  (updates: ScenarioUpdate[], then: (next: Query) => void) =>
+  (next: Query, reason: QueryChangeReason) => {
+    traceUpdate(next as TableQuery, reason)
+    updates.push({
+      reason,
+      query: JSON.parse(JSON.stringify(next)) as Query
+    })
+    then(next)
+  }
 
 export const renderScenario = async (options: ScenarioOptions = {}) => {
   const allRows = options.allRows ?? createPeople()
@@ -69,7 +90,13 @@ export const renderScenario = async (options: ScenarioOptions = {}) => {
   const tableColumns = options.columns ?? defaultColumns()
   const query = ref<Query>(options.initial ?? makeQuery())
   const selection = ref<RowSelection>({})
-  const answerFor = (asked: Query) => {
+  const answerFor = (
+    asked: Query
+  ): {
+    rows: typeof allRows
+    totalRows: number | null
+    cursors: { next: string | null; prev: string | null }
+  } => {
     if ('cursor' in asked) {
       return {
         ...cursorDemoPage(allRows, asked, searchFields),
@@ -120,18 +147,16 @@ export const renderScenario = async (options: ScenarioOptions = {}) => {
       error.value = null
       answer.value = answerFor(asked)
     }
+    if (reply.totalRows !== undefined) {
+      answer.value = { ...answer.value, totalRows: reply.totalRows }
+    }
     loading.value = false
     await nextTick()
   }
-  const onQuery = (next: Query, reason: QueryChangeReason) => {
-    traceUpdate(next as TableQuery, reason)
-    updates.push({
-      reason,
-      query: JSON.parse(JSON.stringify(next)) as Query
-    })
+  const onQuery = recordUpdates(updates, next => {
     query.value = next
     request()
-  }
+  })
   // The first fetch is the page's own request, never an update of the table.
   request()
   if (options.deferred) {

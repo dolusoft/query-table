@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 
 import { makeQuery, rule } from '../support/fixtures'
-import { createPeople } from '../support/people'
+import { byAge, createPeople } from '../support/people'
 import {
   expectUpdates,
   pageIds,
@@ -16,18 +16,25 @@ import {
 // `update:query` events (reason and query) it has emitted so far.
 
 const people = createPeople()
-const byAge = (a: { age: number; id: number }, b: typeof a) =>
-  a.age - b.age || a.id - b.id
 
-test('C-09 C-07 C-05 C-59 C-26 C-22 filter, sort, next page, select, expand and clear the filter', async () => {
-  const flow = await renderScenario({ selection: true, subtable: true })
+test('C-09 C-12 C-07 C-05 C-59 C-26 C-22 type a filter, sort, next page, select, expand and clear the filter', async () => {
+  // A real filter debounce: typing waits for the user to stop (C-09).
+  const flow = await renderScenario({
+    selection: true,
+    subtable: true,
+    props: { filterDebounce: 300 }
+  })
   const expected: ScenarioUpdate[] = []
   expect(flow.ids()).toEqual(pageIds(people, 1, 10))
   expect(flow.pageInfo()).toBe('Page 1 of 20')
   expect(flow.updates).toEqual([])
 
-  // 1. Filter by name: page 1 of the matching rows.
-  await userEvent.fill(flow.filter('name'), 'Alice')
+  // 1. Type a name key by key: nothing while typing, then one update for
+  //    the whole text, page 1 of the matching rows.
+  await userEvent.click(flow.filter('name'))
+  await userEvent.keyboard('Alice')
+  await expect.element(flow.filter('name')).toHaveValue('Alice')
+  expect(flow.updates).toEqual([])
   const filtered = makeQuery({ filters: [rule('name', 'Contains', 'Alice')] })
   expected.push({ reason: 'filter', query: filtered })
   await expectUpdates(flow.updates, expected)
@@ -101,8 +108,9 @@ test('C-09 C-07 C-05 C-59 C-26 C-22 filter, sort, next page, select, expand and 
   expect(document.querySelector('.scenario-detail')).toBeNull()
 
   // Back to the picked row with the filter typed again: still selected,
-  // closed.
+  // closed. Enter applies the text without waiting (C-12).
   await userEvent.fill(flow.filter('name'), 'Alice')
+  await userEvent.keyboard('{Enter}')
   expected.push({ reason: 'filter', query: { ...sorted, page: 1 } })
   await expectUpdates(flow.updates, expected)
   await userEvent.click(page.getByRole('button', { name: 'Next', exact: true }))

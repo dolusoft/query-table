@@ -53,8 +53,10 @@ test('C-52 C-38 C-24 loading, empty, error and rows again keep the focus where t
   expect(flow.ids()).toEqual(pageIds(people, 1, 10))
   expect(document.activeElement).toBe(input)
 
-  // Empty: the `empty` slot, no loading row.
-  await flow.respond()
+  // Empty: the `empty` slot, no loading row. The server still reports the
+  // old total; the empty state comes from the rows, not the total (C-24).
+  await flow.respond({ kind: 'empty', totalRows: 200 })
+  expect(document.querySelector('.scenario-total')?.textContent).toBe('200')
   await expect.poll(() => root.hasAttribute('data-empty')).toBe(true)
   expectState(root, 'empty')
   await expect
@@ -108,8 +110,12 @@ test('C-52 C-38 C-24 loading, empty, error and rows again keep the focus where t
   await expect.poll(() => root.hasAttribute('data-loading')).toBe(true)
   expect(document.activeElement).toBe(expand)
   expect(expand.isConnected).toBe(true)
-  await flow.respond()
+  // This answer reports a total of 0 with rows: the rows are drawn whatever
+  // the total says (C-24).
+  await flow.respond({ kind: 'rows', totalRows: 0 })
   await expect.poll(() => root.hasAttribute('data-loading')).toBe(false)
+  expect(document.querySelector('.scenario-total')?.textContent).toBe('0')
+  expect(flow.ids()).toEqual(aliceIds.slice(0, 10))
   expectState(root, 'rows')
   expect(document.activeElement).toBe(expand)
   expect(expand.isConnected).toBe(true)

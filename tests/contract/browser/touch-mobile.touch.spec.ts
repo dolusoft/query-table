@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { commands, page } from 'vitest/browser'
+import { page } from 'vitest/browser'
 
 import { makeQuery, rule } from '../../support/fixtures'
 import { createPeople } from '../../support/people'
@@ -8,21 +8,14 @@ import {
   pageIds,
   renderScenario
 } from '../../support/scenario-host'
+import { expectNoPageOverflow, tap } from '../../support/touch'
 
 // A phone: the touch instance of the browser project (390x844, a touch
-// screen, a coarse pointer). Every action is a tap; text is typed with the
-// on-screen keyboard, which reaches the page as key events.
+// screen, a coarse pointer). Every action is a tap. Text goes in with
+// `fill()`: one `input` event for the whole text (as an on-screen keyboard's
+// suggestion does), not key by key.
 
 const people = createPeople()
-const tap = (css: string) => commands.tap(page.getByCSS(css).selector)
-
-/** The page never scrolls sideways; the table scrolls in its own box. */
-const expectNoPageOverflow = () => {
-  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
-    window.innerWidth
-  )
-  expect(document.body.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
-}
 
 describe('touch screen at 390 wide', () => {
   test('the page is a phone: 390 wide, a coarse pointer, touch events', () => {
@@ -93,6 +86,10 @@ describe('touch screen at 390 wide', () => {
       { reason: 'page', query: makeQuery() }
     ])
     await expect.poll(flow.ids).toEqual(pageIds(people, 1, 10))
+    // A tap on the native `<select>` opens the system picker, which is not
+    // part of the page and cannot be tapped; the option is picked as the
+    // picker does it, with `selectOptions`.
+    await tap('.qt-pagination select')
     await page
       .getByRole('combobox', { name: 'Rows per page' })
       .selectOptions('5')
@@ -111,10 +108,14 @@ describe('touch screen at 390 wide', () => {
       '.qt-table-responsive'
     )!
     expect(scroller.getBoundingClientRect().right).toBeLessThanOrEqual(390)
+    // The table is wider than the phone, so there is something to scroll.
+    expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
+    expect(scroller.scrollLeft).toBe(0)
     expectNoPageOverflow()
     // The last column can be reached: tapping its sort button scrolls the
     // box, not the page.
     await tap('th[data-field="joined"] .qt-sort')
+    expect(scroller.scrollLeft).toBeGreaterThan(0)
     expectNoPageOverflow()
     const joined = document
       .querySelector('th[data-field="joined"] .qt-sort')!

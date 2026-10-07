@@ -3,7 +3,7 @@ import { page, userEvent } from 'vitest/browser'
 
 import { makeQuery, rule } from '../support/fixtures'
 import { tabTo } from '../support/keyboard'
-import { createPeople } from '../support/people'
+import { byAge, createPeople } from '../support/people'
 import {
   expectUpdates,
   pageIds,
@@ -16,8 +16,6 @@ import {
 // the user left it, even though the table drew new rows.
 
 const people = createPeople()
-const byAge = (a: { age: number; id: number }, b: typeof a) =>
-  a.age - b.age || a.id - b.id
 
 test('C-12 C-07 C-05 C-26 filter, sort, page and open a row with the keyboard only', async () => {
   const flow = await renderScenario({

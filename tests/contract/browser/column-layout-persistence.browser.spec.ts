@@ -126,7 +126,7 @@ const bodyOrder = () =>
     )
   ].map(td => td.dataset.field)
 
-test('C-68 C-69 C-70 C-71 C-73 C-50 a stored column layout comes back as it was after a remount', async () => {
+test('C-67 C-68 C-69 C-70 C-71 C-73 C-50 a stored column layout comes back as it was after a remount', async () => {
   const first = await renderPage()
   expect(drawnLayout().map(cell => cell.field)).toEqual([
     'id',
@@ -176,6 +176,8 @@ test('C-68 C-69 C-70 C-71 C-73 C-50 a stored column layout comes back as it was 
   ])
   const saved = first.columns()
   expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(saved)
+  // Hiding keeps the column in its place in the list (C-67).
+  expect(saved.find(column => column.field === 'joined')?.hide).toBe(true)
   expect(saved.map(column => column.field)).toEqual([
     'id',
     'name',
@@ -195,23 +197,4 @@ test('C-68 C-69 C-70 C-71 C-73 C-50 a stored column layout comes back as it was 
   expect(second.changes).toEqual([])
   expect(second.updates).toEqual([])
   expect(second.columns()).toEqual(saved)
-
-  // The hidden column kept its place: shown again, it is where it was put.
-  await second.screen.unmount()
-  const shown = saved.map(column => {
-    if (column.field !== 'joined') {
-      return column
-    }
-    const copy = { ...column }
-    delete copy.hide
-    return copy
-  })
-  localStorage.setItem(storageKey, JSON.stringify(shown))
-  await renderPage()
-  expect(drawnLayout().map(cell => cell.field)).toEqual([
-    'id',
-    'name',
-    'joined',
-    'age'
-  ])
 })

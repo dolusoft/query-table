@@ -1,23 +1,24 @@
 import { expect, test } from 'vitest'
-import { commands, page } from 'vitest/browser'
+import { page } from 'vitest/browser'
 
 import { makeQuery, rule } from '../support/fixtures'
-import { createPeople } from '../support/people'
+import { byAge, createPeople } from '../support/people'
 import {
   expectUpdates,
   pageIds,
   renderScenario,
   type ScenarioUpdate
 } from '../support/scenario-host'
+import { expectNoPageOverflow, tap } from '../support/touch'
 
 // The scenario of server-flow.browser.spec.ts on a phone (the touch instance
-// of the browser project: 390x844, a touch screen): every action is a tap,
-// text comes from the on-screen keyboard. The page never scrolls sideways.
+// of the browser project: 390x844, a touch screen): every action is a tap.
+// Text goes in with `fill()`, one `input` event for the whole text (as an
+// on-screen keyboard's suggestion does), not key by key; with
+// `filterDebounce: 0` that applies at once (C-12). The page never scrolls
+// sideways.
 
 const people = createPeople()
-const byAge = (a: { age: number; id: number }, b: typeof a) =>
-  a.age - b.age || a.id - b.id
-const tap = (css: string) => commands.tap(page.getByCSS(css).selector)
 const tapRow = (
   id: number,
   css: string,
@@ -26,11 +27,8 @@ const tapRow = (
   const index = flow.rowOf(id).dataset.rowIndex
   return tap(`.qt-table > tbody > tr[data-row-index="${index}"] ${css}`)
 }
-const expectNoPageOverflow = () => {
-  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(390)
-}
 
-test('C-09 C-07 C-05 C-59 C-26 C-22 tap to filter, sort, page, select, expand and clear on a phone', async () => {
+test('C-12 C-07 C-05 C-59 C-26 C-22 tap to filter, sort, page, select, expand and clear on a phone', async () => {
   expect(window.innerWidth).toBe(390)
   const flow = await renderScenario({ selection: true, subtable: true })
   const expected: ScenarioUpdate[] = []

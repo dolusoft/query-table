@@ -138,8 +138,16 @@ export default defineConfig(({ mode }) => {
                   browser: 'chromium' as const,
                   name: `${name}-touch`,
                   include: touchInclude,
+                  // Inspect mode: CDP on 9334, beside the desktop's 9333.
                   provider: playwright({
-                    contextOptions: { colorScheme: null, hasTouch: true }
+                    contextOptions: { colorScheme: null, hasTouch: true },
+                    ...(inspect
+                      ? {
+                          launchOptions: {
+                            args: ['--remote-debugging-port=9334']
+                          }
+                        }
+                      : {})
                   }),
                   viewport: { width: 390, height: 844 }
                 }

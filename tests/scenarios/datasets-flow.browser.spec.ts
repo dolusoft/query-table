@@ -1,13 +1,10 @@
-import { afterEach, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
 import type { Column, TableQuery } from '@dolusoft/query-table'
 
-import {
-  datasetId,
-  resetDataset
-} from '../../apps/playground/scenarios/datasets'
+import { datasetId } from '../../apps/playground/scenarios/datasets'
 import { queryDemoRows } from '../../apps/playground/scenarios/fake-server'
 import {
   currentDataset,
@@ -25,10 +22,8 @@ import {
 // different columns and types. The user picks one in the dataset menu, then
 // runs the short form of the server scenario on it: filter, sort, next
 // page, clear. On each, the skin aligns the cells by `data-type` (C-82).
-
-afterEach(() => {
-  resetDataset()
-})
+// The host has `filterDebounce: 0`, so the filter applies at once (C-12).
+// tests/support/setup.ts puts the default dataset back before each test.
 
 const datasetNames = [
   ['vigil', 'Vigil'],
@@ -66,7 +61,7 @@ const expectTypedCells = (columns: Column[]) => {
 
 describe('the server scenario on each playground dataset', () => {
   test.each(datasetNames)(
-    'C-82 C-09 C-07 C-05 C-22 %s: pick it, filter, sort, next page and clear',
+    'C-82 C-12 C-07 C-05 C-22 %s: pick it, filter, sort, next page and clear',
     async (id, name) => {
       // Pick the dataset in the menu; the choice is kept in the browser.
       const menu = await render(DatasetMenu)
