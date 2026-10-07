@@ -36,3 +36,9 @@ export const createPeople = () =>
 
 /** The fields a global search over people matches. */
 export const peopleSearchFields = ['name', 'city']
+
+/** Age ascending, equal ages by id: how the fake server sorts by age. */
+export const byAge = (
+  a: { age: number; id: number },
+  b: { age: number; id: number }
+) => a.age - b.age || a.id - b.id
