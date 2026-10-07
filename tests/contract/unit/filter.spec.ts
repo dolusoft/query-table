@@ -729,6 +729,44 @@ describe('C-22 Clearing all filters', () => {
     expect((input(m, 'name').element as HTMLInputElement).value).toBe('')
   })
 
+  const firstFilter = () => document.querySelector('thead .qt-filter-input')
+
+  it('a keyed click hands the focus to the first filter', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({ filters: [rule('age', 'Equal', 3)] })
+    })
+    const button = clearAll(m).element as HTMLButtonElement
+    button.focus()
+    // `element.click()`: a click with `detail` 0, as a key gives.
+    button.click()
+    await flush()
+    expect(reasons(m.events)).toEqual(['reset'])
+    expect(button.disabled).toBe(true)
+    expect(document.activeElement).toBe(firstFilter())
+  })
+
+  it.each([
+    ['a pointer click', true, 1, true],
+    ['a keyed click on a button without the focus', false, 0, true],
+    ['a keyed click the consumer does not apply', true, 0, false]
+  ])('moves no focus after %s', async (_, focused, detail, apply) => {
+    const m = mountIt(
+      { ...base, query: makeQuery({ filters: [rule('age', 'Equal', 3)] }) },
+      { apply }
+    )
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    const button = clearAll(m).element as HTMLButtonElement
+    ;(focused ? button : outside).focus()
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail }))
+    await flush()
+    expect(reasons(m.events)).toEqual(['reset'])
+    expect(button.disabled).toBe(apply)
+    expect(document.activeElement).not.toBe(firstFilter())
+    outside.remove()
+  })
+
   it('is enabled with rules that came from outside', () => {
     const m = mountIt({
       ...base,

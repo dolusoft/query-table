@@ -30,6 +30,8 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
 | `labels` | `Partial<TableLabels>` |  | `undefined` | Text the table writes for people: accessible names and the options of a bool filter. Give only the entries you want to change; the rest keep their English defaults. |
+| `virtual` | `boolean \| VirtualOptions` |  | `false` | Draw only the rows in view of the scroll container, between two spacer rows (C-83). `true` takes the defaults. Give the table `table-layout: fixed` (C-85). Defaults to `false`. |
+| `infinite` | `boolean \| InfiniteOptions` |  | `false` | Ask for the next page (`update:query`, reason `page`) when the end of `rows` comes into view (C-88); append the rows of a `page` answer and replace them for any other reason. Needs `rowKey`. `true` takes the defaults. Defaults to `false`. |
 
 ### Events
 
@@ -54,6 +56,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `empty` | `none` | Shown when there are no rows and `loading` is off. |
 | `loading` | `none` | Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last row of the body. The rows stay; place the row over them in your CSS. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
+| `load-more` | `LoadMoreSlotProps` | With `infinite`: the last row of the body while `loading` is off, in a `tr.qt-load-more-row`, for a "load more" or "try again" control (C-89). |
 | `header-<field>` | `((props: HeaderSlotProps) => unknown)` | Header content of one column: `header-${column.field}`. It replaces the sort button or the title only; the header cell, its filter row and its resize handle stay. Draw a sort control with `toggleSort` if you want one. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
@@ -65,6 +68,8 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `expandAll` | `() => void` | Open every row in `rows` (needs `hasSubtable`). Rows that arrive later are not opened, and nothing is fetched. |
 | `focusFilter` | `(field: string) => boolean` | Move focus to the filter of a column: its filter input, or the first focusable element the `filter-datetime` slot draws. Returns `false` when nothing took focus (no filter drawn for the field, a disabled select). |
 | `flushPendingFilters` | `() => void` | Apply typed-but-not-yet-applied filter text now, in one `update:query` that has been emitted when the call returns. |
+| `scrollToIndex` | `(index: number, options?: ScrollToIndexOptions) => void` | Scroll the row with this index in `rows` into view (C-87). Emits nothing; an index outside `rows` does nothing. |
+| `loadMore` | `() => void` | With `infinite`: ask for the next page now (C-89), as a retry after an error. Nothing while `loading` or when there is no next page. |
 
 ### Functions
 
@@ -317,6 +322,55 @@ export interface TableProps<
    * their English defaults.
    */
   labels?: Partial<TableLabels>
+  /**
+   * Draw only the rows in view of the scroll container, between two spacer
+   * rows (C-83). `true` takes the defaults. Give the table
+   * `table-layout: fixed` (C-85). Defaults to `false`.
+   */
+  virtual?: boolean | VirtualOptions
+  /**
+   * Ask for the next page (`update:query`, reason `page`) when the end of
+   * `rows` comes into view (C-88); append the rows of a `page` answer and
+   * replace them for any other reason. Needs `rowKey`. `true` takes the
+   * defaults. Defaults to `false`.
+   */
+  infinite?: boolean | InfiniteOptions
+}
+
+/** Options of `virtual` (C-83 to C-87). */
+export interface VirtualOptions {
+  /** Height of every row in pixels: nothing is measured (C-84). */
+  rowHeight?: number
+  /** Height counted for a row not measured yet. Defaults to the first measured row, else `32`. */
+  estimateRowHeight?: number
+  /** Rows drawn beyond each edge of the view. Defaults to `10`. */
+  overscan?: number
+  /**
+   * The scroll container. Defaults to the nearest scrolling ancestor of the
+   * table, else the window (C-85).
+   */
+  scrollElement?: () => HTMLElement | null
+}
+
+/** Options of `infinite` (C-88). */
+export interface InfiniteOptions {
+  /** Ask for the next page when the last this many rows come near. Defaults to `5`. */
+  threshold?: number
+}
+
+/** Options of `scrollToIndex` (C-87). */
+export interface ScrollToIndexOptions {
+  /** Where the row ends up in the container. Defaults to `'auto'`: the nearest edge, nothing when in view. */
+  align?: 'start' | 'center' | 'end' | 'auto'
+}
+
+/** What the `load-more` slot receives (C-89). */
+export interface LoadMoreSlotProps {
+  /** Ask for the next page now; nothing while `loading` or when `canLoadMore` is false. */
+  loadMore: () => void
+  /** There is a next page (C-90). */
+  canLoadMore: boolean
+  loading: boolean
 }
 
 /**
@@ -338,6 +392,14 @@ export interface TableLabels {
   resizeColumn: (column: string) => string
   /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
   moveColumn: (column: string) => string
+  /**
+   * The condition label under a filter input, and the `label` of each entry of
+   * `conditions` in the `filter-menu` slot. Receives the condition and the
+   * column type: one condition can read differently by type (`GreaterThan` is
+   * `'After (>)'` on a date). Default: the label in the protocol's
+   * `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`.
+   */
+  filterCondition: (condition: FilterCondition, type: ColumnType) => string
   /** Bool filter option that removes the filter. Default `'All'`. */
   boolAll: string
   /** Bool filter option for `true`. Default `'True'`. */
@@ -488,7 +550,7 @@ export interface FilterMenuSlotProps {
   rules: FilterRule[]
   /** Condition shown for the column: the first rule's, else the one picked, else `null`. */
   condition: FilterCondition | null
-  /** Conditions that make sense for the column type. */
+  /** Conditions that make sense for the column type, labelled by `labels.filterCondition`. */
   conditions: FilterConditionOption[]
   /**
    * Pick a condition. With a value typed the filter is applied; otherwise the
@@ -577,6 +639,11 @@ export interface TableSlots<T> {
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
   /**
+   * With `infinite`: the last row of the body while `loading` is off, in a
+   * `tr.qt-load-more-row`, for a "load more" or "try again" control (C-89).
+   */
+  'load-more'?(props: LoadMoreSlotProps): unknown
+  /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its
    * resize handle stay. Draw a sort control with `toggleSort` if you want one.
@@ -606,6 +673,16 @@ export interface QueryTableExpose {
    * that has been emitted when the call returns.
    */
   flushPendingFilters(): void
+  /**
+   * Scroll the row with this index in `rows` into view (C-87). Emits
+   * nothing; an index outside `rows` does nothing.
+   */
+  scrollToIndex(index: number, options?: ScrollToIndexOptions): void
+  /**
+   * With `infinite`: ask for the next page now (C-89), as a retry after an
+   * error. Nothing while `loading` or when there is no next page.
+   */
+  loadMore(): void
 }
 ```
 
@@ -854,7 +931,7 @@ Source: own
 
 #### C-22 Clearing all filters
 
-The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. Text typed into a column that then leaves `columns` goes with it: it no longer enables the button and does not come back when the column does. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click).
+The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. Text typed into a column that then leaves `columns` goes with it: it no longer enables the button and does not come back when the column does. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click). A disabled button cannot keep the focus: when the button holds it, is activated by a click with `detail` 0 (a key, `element.click()`, some assistive technologies) and the update that clear causes disables it, the focus moves to the first filter of the header that can take it, in column order, the way `focusFilter` finds one (C-54); with none, it stays where the browser puts it. A pointer click moves no focus, so a touch screen does not open its keyboard, and a button that the consumer's query keeps enabled keeps the focus. `clearFilters()` from the `toolbar` slot moves no focus, nor does a later update that disables the button: that clear is the consumer's (P13).
 
 Source: own
 
@@ -874,7 +951,7 @@ The `qt-pagination` block is drawn when the `pagination` slot is given and there
 
 #### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. With `virtual` (C-83) a row that leaves the drawn window unmounts the content of its `subtable` slot; its expansion state stays, by key. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
 
 #### C-27 Cell slots
 
@@ -894,19 +971,19 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 #### C-31 No styling
 
-The table ships no CSS and takes no styling props. It writes three inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47) and `--qt-pin-right` on a cell pinned to the right (C-71). The custom property carries a measured number; `position: sticky`, `z-index` and backgrounds are the consumer's CSS.
+The table ships no CSS and takes no styling props. It writes four inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71) and `height` on a `tr.qt-virtual-spacer` (C-83). The custom properties carry a measured number and the spacer's height the height of the rows it stands for; `position: sticky`, `z-index` and backgrounds are the consumer's CSS.
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74). `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-type` on the header, body and footer cells of a column (C-82). `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
-A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54) and `flushPendingFilters` (C-13) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed.
+A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54), `flushPendingFilters` (C-13), `scrollToIndex` (C-87) and `loadMore` (C-89) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed, and `loadMore`, which asks for the next page.
 
 #### C-34 Filter menu slot
 
-The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions`, `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select with no condition to pick, so it has no filter button and no menu (the header click still sorts it).
+The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions` (the conditions of the column type in menu order, each `label` from `labels.filterCondition`, C-44), `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select with no condition to pick, so it has no filter button and no menu (the header click still sorts it).
 
 #### C-35 Date filter slot
 
@@ -922,7 +999,7 @@ With `hasRightPanel` a button per row emits `rowRightPanelClick` with the row.
 
 #### C-38 Empty and loading
 
-The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-row`) is shown when there are no rows and `loading` is off. While `loading` is on it is not shown, with rows or without: a table that is fetching is not empty yet. The `loading` slot (C-52) takes its place.
+The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-row`) is shown when there are no rows and `loading` is off. While `loading` is on it is not shown, with rows or without: a table that is fetching is not empty yet. The `loading` slot (C-52) takes its place. With `infinite` an empty body draws no `load-more` row (C-89): the empty state is the only row.
 
 #### C-39 Column types
 
@@ -930,7 +1007,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 #### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute and `aria-sort` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66) or a 3.1 feature (checked by C-72). Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72) or a 3.2 feature (checked by C-91), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 #### C-41 Skin selectors
 
@@ -946,7 +1023,7 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 #### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs, resize handles and reorder handles and the options of a bool filter. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`). A label function receives the column name: its `title`, else its `field`. No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs, resize handles, reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. No component template holds a literal `aria-label`.
 
 #### C-45 Header semantics
 
@@ -978,7 +1055,7 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 #### C-52 Loading state
 
-`loading` tells the table that the consumer is fetching; the table never sets it. While it is on, the root carries `data-loading` and `aria-busy="true"`, and both are absent otherwise. The rows given stay drawn as they are: nothing is cleared, remounted or reordered, so focus and the state of slot content are kept. The empty state is not shown (C-38). With a `loading` slot the body ends with one `tr.qt-loading-row` whose single cell spans every column, utilities included, and holds the slot; without the slot nothing is drawn. The row is ordinary table markup in the body: placing it over the rows (for example `position: absolute` inside a `tbody` with `position: relative`) is the consumer's CSS, and the table writes no inline style for it. The table blocks no interaction while loading: sorting, filtering, paging and the row buttons work and emit as usual, and a consumer that wants to block them does so in its CSS or its handlers. Turning `loading` on or off emits nothing and re-renders only the root and the body.
+`loading` tells the table that the consumer is fetching; the table never sets it. While it is on, the root carries `data-loading` and `aria-busy="true"`, and both are absent otherwise. The rows given stay drawn as they are: nothing is cleared, remounted or reordered, so focus and the state of slot content are kept. The empty state is not shown (C-38). With a `loading` slot the body ends with one `tr.qt-loading-row` whose single cell spans every column, utilities included, and holds the slot; without the slot nothing is drawn. While `loading` is on the `load-more` row (C-89) is not drawn, so the two never show together. The row is ordinary table markup in the body: placing it over the rows (for example `position: absolute` inside a `tbody` with `position: relative`) is the consumer's CSS, and the table writes no inline style for it. The table blocks no interaction while loading: sorting, filtering, paging and the row buttons work and emit as usual, and a consumer that wants to block them does so in its CSS or its handlers. Turning `loading` on or off emits nothing and re-renders only the root and the body.
 
 #### C-53 Filter parser
 
@@ -1044,7 +1121,7 @@ Source: own
 
 #### C-64 Selection column
 
-With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row of the page is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows of the page and keeps the keys of other pages. The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
+With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row given is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows given and keeps the keys of other pages. The rows given are the page, or with infinite scroll (C-88) every row loaded so far. The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
 
 Source: tanstack, own
 
@@ -1056,7 +1133,7 @@ Source: tanstack, own
 
 #### C-66 DOM contract of the selection column
 
-With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection`, which is the table the 2.2.x baseline renders; the two rules together cover the whole list.
+With a `selection` prop the rendered DOM still uses only the classes and attributes of the DOM contract, and the entries the contract marks `addedBy: 'C-64'` (`qt-select-row`, `qt-select-all`, `data-selected`) are rendered, each on its element. C-40 checks the same without `selection` for the entries without `addedBy`, which the 2.2.x baseline renders; the entries other rules add are checked by those rules (C-72 for 3.1, C-82 for `data-type`), and together they cover the whole list.
 
 Source: own
 
@@ -1150,6 +1227,66 @@ Source: own
 
 Source: own
 
+#### C-82 Column type on cells
+
+Every header, body and footer cell of a column carries `data-type`: the column's type as C-39 reads it, one of `string`, `number`, `integer`, `date`, `datetime` and `bool`, so a missing or unknown type is `string`. The utility cells, the subtable row and the empty and loading rows carry none. A change of the column's type changes the attribute. It is the hook for styling by type, alignment included: the table has no alignment option and draws no alignment (P5), and the type never changes what a cell shows (C-30), so the table adds no placeholder for an empty value and no icon.
+
+Source: own
+
+#### C-83 Virtual rows
+
+With `virtual` the body draws only the rows that fall in the visible part of the scroll container (C-85) and `overscan` rows on each side (default `10`). A row and its open `qt-subtable-row` are one item. One `tr.qt-virtual-spacer` above the drawn rows and one below hold the height of the items left out: it is `aria-hidden="true"`, has one empty cell spanning every column, carries its height as an inline `height` and is not drawn while that height is `0`. The drawn rows keep their index in `rows`: `data-row-index`, the `rowIndex` of the `cell-<field>` and `subtable` slots and of `cellContextMenu` (C-28) are the same as without `virtual`, and a row keeps its key (C-26). Pinned rows (C-74) are always drawn, the top ones before the upper spacer and the bottom ones after the lower spacer, and the `loading`, `empty` and `load-more` rows follow them. There is no threshold: with `virtual` the table always draws a window, whatever the number of rows. The options of `virtual` are compared by value: a new object with the same values draws nothing again. The selection (C-64) is over the rows given, drawn or not. Without `virtual` the body is the one of 3.1. Nothing here emits `update:query`.
+
+Source: own
+
+#### C-84 Row heights
+
+With `virtual.rowHeight` every item is that many pixels tall and nothing is measured. Without it every drawn item is measured (one `ResizeObserver` for the drawn rows) and the height is kept by the row's key; an item not measured yet counts as `virtual.estimateRowHeight`, else the first item measured, else `32`. The spacers hold the sum of the heights of the items they stand for. When items drawn above the first visible one come in with a height other than the one counted for them, the first visible row would move; the table moves the scroll position of the container by the same amount, so the rows in view stay where they were. Heights of keys that leave `rows` are dropped.
+
+Source: own
+
+#### C-85 Scroll element
+
+The scroll container of a virtual body is `virtual.scrollElement()` when it returns an element; else the nearest ancestor of the table whose `overflow-y` is `auto` or `scroll` and whose content is taller than it (the `qt-table-responsive` element included); else the window. The table writes no style, no `tabindex` and no attribute to it, and sets its scroll position only for the correction of C-84, for `scrollToIndex` (C-87) and to undo the browser's own scroll anchoring when the drawn rows change (the position goes back to the one the window was computed for). Each of these writes is instant (`behavior: 'instant'`), also under `scroll-behavior: smooth`. A table mounted where it has no size (inside `display: none`) looks for its container again once it has one. Making the container focusable and naming it, so the keyboard can scroll it, is the consumer's. The table recommends `table-layout: fixed` (or a `width` on every column): with the automatic layout the column widths follow the drawn rows and change as the window moves. A development build logs one `console.warn` when a virtual table has the automatic layout.
+
+Source: own
+
+#### C-86 Virtual accessibility
+
+With `virtual` the `table` carries `aria-rowcount` and every drawn row of the header, the body (data rows and subtable rows) and the footer carries `aria-rowindex`, its position counted from 1 among all of them, the rows left out included. The count is the header rows, the rows given, the open subtable rows and the footer rows. With `infinite` (C-88) while there is more to load, a known total counts as `totalRows` rows instead of the rows given, and an unknown total makes the count `-1`; while there is more to load the footer rows carry no `aria-rowindex`. The spacers are `aria-hidden`; the `loading`, `empty` and `load-more` rows carry no index. While the focus is inside a drawn item (a data row or its subtable row), the item stays drawn after it leaves the window, between spacers of its own, until the focus leaves it. Without `virtual` neither attribute is written.
+
+Source: own
+
+#### C-87 Print and scrollToIndex
+
+With `virtual` every row is drawn and no spacer while the page prints: from `beforeprint` to `afterprint`, and while the `print` media query matches. `scrollToIndex(index, { align })` scrolls the row with that index in `rows` into view: `align` is `start`, `center`, `end` or `auto` (the default: the nearest edge, nothing when the row is in view already). With `virtual` it sets the container's scroll position from the counted heights and, once the row is drawn, corrects it once from the row's measured position, below a sticky header that covers the top of the container; without `virtual`, and for a pinned row, it calls `scrollIntoView` on the row (`block` is the `align`, `nearest` for `auto`). An index outside `rows` does nothing. A correction still waiting when `rows` change, or whose row is not drawn within a few frames, is dropped, and the correction of C-84 works again. Neither emits anything.
+
+Source: own
+
+#### C-88 Infinite scroll trigger
+
+With `infinite` and `rowKey`, the table asks for the next page when the end of `rows` comes near: with `virtual` when the drawn window (C-83) reaches one of the last `threshold` rows (default `5`); without it when the row `threshold` rows before the last one (the first row when there are fewer), counted among the rows that are not pinned (C-74), intersects the viewport, watched by an `IntersectionObserver` on that row. The first check runs once the table is laid out, never while it mounts (C-02). It asks only while there is more to load (C-90) and `loading` is off, and only once for the same `query` and number of rows. On an error the consumer keeps its rows and puts back the query of those rows: the table then does not ask again by itself, and `loadMore` (C-89) asks for the same page again. A consumer that keeps the failed query instead skips that page: the next request is for the page after it. The request is the next page action (C-05, C-56): one `update:query` with reason `page`, `page + 1` in page mode, the `next` cursor in cursor mode, a pending filter applied first (C-14). The table never adds rows: the consumer appends the rows of a `page` answer to `rows` and replaces `rows` for every other reason, so a sort, a filter, a search or a page size change starts the list over (C-57). Without `rowKey`, `infinite` is ignored, and a development build logs one `console.warn`.
+
+Source: own
+
+#### C-89 Load-more slot and method
+
+With `infinite` (and `rowKey`) and a `load-more` slot, while `loading` is off and `rows` is not empty (an empty body draws the empty state of C-38 alone), the body ends with one `tr.qt-load-more-row` whose single cell spans every column and holds the slot. The slot receives `loadMore`, `canLoadMore` and `loading`; a retry button or an error message in it is the consumer's. While `loading` is on the `loading` row (C-52) is drawn instead. `loadMore()`, exposed and given to the slot, asks for the next page as C-88 does, without the threshold and without the once rule; it does nothing without `infinite` and `rowKey`, while `loading` is on, or when there is nothing more to load.
+
+Source: own
+
+#### C-90 End of an infinite list
+
+There is more to load (`canLoadMore`) in cursor mode when `cursors.next` is given (C-56); in page mode when `page < pageCount` with a known total (C-23), and when `rows.length >= page * pageSize` with an unknown one: a short last page ends the list. The `canNext` of the `pagination` slot stays the one of C-23.
+
+Source: own
+
+#### C-91 DOM contract of 3.2
+
+With `virtual` and `infinite` on, the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entries the contract marks `addedBy: 'C-83'` (`qt-virtual-spacer` and its `height`), `'C-86'` (`aria-rowcount`, `aria-rowindex`) and `'C-89'` (`qt-load-more-row`) are rendered, each on its element, by the state that adds it. With both off the DOM is the one C-40 and C-72 check.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1178,6 +1315,8 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-loading-row` | `tbody > tr` | Last row of the body while `loading` is on, holding the `loading` slot in one cell that spans every column. Place it over the rows in your CSS. |
 | `qt-resize-handle` | `th > div` | Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS. |
 | `qt-reorder-handle` | `th > button` | Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS. |
+| `qt-virtual-spacer` | `tbody > tr` | With `virtual`: the row above or below the drawn rows that holds the height of the rows left out, as an inline `height` (C-83). `aria-hidden`, one empty cell. Give its cell `padding: 0; border: 0` in your CSS. |
+| `qt-load-more-row` | `tbody > tr` | With `infinite` and a `load-more` slot: the last row of the body while `loading` is off, holding the slot in one cell that spans every column (C-89). |
 | `qt-footer` | `tfoot` | Totals block. |
 | `qt-pagination` | `div` | Block around the `pagination` slot. |
 
@@ -1199,7 +1338,10 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-pinned` | `th[data-pinned="right"], td[data-pinned="right"]` | Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71). |
 | `data-dragging` | `th` | On the header cell of the column being dragged (C-73). |
 | `data-drop` | `th` | `before` or `after`: the header cell the dragged column would be placed next to (C-73). |
+| `data-type` | `th[data-field], td[data-field]` | The column type as C-39 reads it (`string`, `number`, `integer`, `date`, `datetime` or `bool`; `string` when missing or unknown), on the header, body and footer cells of a column. The table draws no alignment; a skin aligns by it (C-82). |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
+| `aria-rowcount` | `table` | With `virtual`: the number of rows of the table, the ones not drawn included; `-1` while an infinite list of unknown total has more to load (C-86). |
+| `aria-rowindex` | `tr` | With `virtual`: the position of a drawn header, body or footer row among all rows, from 1 (C-86). |
 
 ### Inline style
 
@@ -1210,6 +1352,7 @@ These are the only inline styles the table writes. A custom property carries dat
 | `width` | `th[data-field]` | Set from `Column.width` when the column defines it, and from the drag preview while a resize is under way. |
 | `--qt-pin-left` | `[data-pinned=""]` | Left offset of a pinned cell in pixels: the measured widths of the pinned header cells before it. Use it as `left: var(--qt-pin-left)` next to your own `position: sticky`. |
 | `--qt-pin-right` | `[data-pinned="right"]` | Right offset of a right-pinned cell in pixels: the measured widths of the right-pinned header cells after it. Use it as `right: var(--qt-pin-right)` next to your own `position: sticky`. |
+| `height` | `tr.qt-virtual-spacer` | With `virtual`: the height of the rows a spacer stands for, in pixels (C-83). |
 
 ## How the contract is kept
 

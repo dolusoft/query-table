@@ -69,7 +69,7 @@ test('Esc closes the search and gives focus back', async () => {
 })
 
 test('slash opens the search, but not while typing in a filter input', async () => {
-  const filter = page.getByCSS('th[data-field="name"] .qt-filter-input')
+  const filter = page.getByCSS('th[data-field="user"] .qt-filter-input')
   await userEvent.click(filter)
   await userEvent.keyboard('/')
   expect(dialog()).toBeNull()

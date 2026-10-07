@@ -90,7 +90,7 @@ export const matches = (row: Person, filters: readonly FilterRule[]) =>
   })
 ```
 
-**Conditions and values per column type.** The table offers these in its filter menu, and the type decides the `value` type:
+**Conditions and values per column type.** The table offers these in its filter menu (the Vue component names them through `labels.filterCondition`), and the type decides the `value` type:
 
 | Column type         | `value` is | Conditions offered                                                                | Default      |
 | ------------------- | ---------- | --------------------------------------------------------------------------------- | ------------ |
@@ -585,4 +585,4 @@ export function describePaging(query: Query): string {
 - [Using the plugins with TanStack Table](tanstack-plugins.md), for the other side of the wire.
 - [Architecture](architecture.md), for how the three packages fit together.
 - [The `tr-1` semantics profile](semantics.md), for what a query means when it is evaluated: matching, order, paging and errors.
-- `contract/rules.md` in the repository: every behavior of the table as a numbered rule (C-01 to C-66), each covered by a test.
+- `contract/rules.md` in the repository: every behavior of the table as a numbered rule (C-01 to C-91), each covered by a test.

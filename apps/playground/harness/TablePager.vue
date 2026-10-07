@@ -29,12 +29,15 @@ const sizeId = useId()
     <div class="flex flex-wrap items-center gap-2">
       <Label :for="sizeId">Rows per page</Label>
       <!-- Chromium's native popup needs an opaque select background: a
-           translucent input surface can leave its list white. -->
+           translucent input surface can leave its list white. The touch
+           target is a min-height: the select's own `data-[size=sm]:h-7`
+           outranks a height utility here, and it stays 2.75rem on a wide
+           touch screen, where only a fine pointer gets the compact size. -->
       <NativeSelect
         :id="sizeId"
         size="sm"
         aria-label="Rows per page"
-        class="page-size [&_select]:h-10 [&_select]:bg-background [&_select]:tabular-nums lg:[&_select]:h-7"
+        class="page-size [&_select]:min-h-11 [&_select]:bg-background [&_select]:tabular-nums lg:pointer-fine:[&_select]:min-h-0"
         :model-value="page.pageSize"
         @change="
           page.setPageSize(Number(($event.target as HTMLSelectElement).value))
@@ -52,7 +55,7 @@ const sizeId = useId()
       <Button
         variant="outline"
         size="sm"
-        class="previous-page min-h-10 lg:min-h-0"
+        class="previous-page min-h-11 lg:pointer-fine:min-h-0"
         :disabled="!page.canPrevious"
         @click="page.previousPage()"
       >
@@ -61,7 +64,7 @@ const sizeId = useId()
       <Button
         variant="outline"
         size="sm"
-        class="next-page min-h-10 lg:min-h-0"
+        class="next-page min-h-11 lg:pointer-fine:min-h-0"
         :disabled="!page.canNext"
         @click="page.nextPage()"
       >

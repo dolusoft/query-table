@@ -6,8 +6,8 @@ import { QueryTable } from '@dolusoft/query-table'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
-  createDemoRows,
-  peopleFooter,
+  currentDataset,
+  footerOf,
   useFakeServer,
   wideColumns
 } from '../scenarios'
@@ -15,12 +15,14 @@ import {
 // `footer-rows` are drawn in a `tfoot`, one cell per visible column. The
 // table does not add anything up: the server (here the fake one) sends the
 // totals over every row that matches the filters, not just this page.
-// ID and Name are pinned: the footer cells under them, and the one cell that
-// spans the expand column, stay with them when the table scrolls sideways.
-const allRows = createDemoRows()
-const columns = wideColumns()
+// The first two columns are pinned: the footer cells under them, and the one
+// cell that spans the expand column, stay with them when the table scrolls
+// sideways.
+const data = currentDataset()
+const allRows = data.createRows()
+const columns = wideColumns(data)
 const { query, result } = useFakeServer(allRows, { pageSize: 10 })
-const footerRows = computed(() => peopleFooter(allRows, query.value))
+const footerRows = computed(() => footerOf(data, allRows, query.value))
 </script>
 
 <template>
@@ -41,7 +43,7 @@ const footerRows = computed(() => peopleFooter(allRows, query.value))
            the Column pinning page). -->
       <template #subtable="{ row }">
         <div class="sticky left-2 w-[calc(100cqw-1rem)]">
-          Details of {{ row.name }}.
+          {{ data.describe(row) }}
         </div>
       </template>
       <template #filter-menu="menu">

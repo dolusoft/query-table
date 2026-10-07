@@ -13,10 +13,11 @@ import PageView from './shell/PageView.vue'
 export const router = createRouter({
   history: createWebHashHistory(),
   // A new page opens at its top (back and forward restore the position);
-  // a route with a hash (the sidebar's AI entries) scrolls to that section;
-  // the documentation search scrolls to its anchor after this.
+  // a route with a hash (the sidebar's AI entries, "On This Page") scrolls
+  // to that section, below the 4rem sticky header; the documentation search
+  // scrolls to its anchor after this.
   scrollBehavior: (to, _from, saved) =>
-    saved ?? (to.hash ? { el: to.hash, top: 8 } : { top: 0 }),
+    saved ?? (to.hash ? { el: to.hash, top: 80 } : { top: 0 }),
   routes: [
     { path: '/', component: HomePage, meta: { landing: true } },
     ...pages.map(page => ({

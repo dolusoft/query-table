@@ -6,6 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import { defineConfig, mergeConfig } from 'vitest/config'
 
 import viteConfig from './packages/vue/vite.config.ts'
+import { touchCommands } from './tests/support/touch-commands.ts'
 
 // `vitest --mode inspect` (see the `test:browser:inspect` script) keeps a
 // headed browser and the dev server up, with Vue DevTools and Vite DevTools
@@ -62,7 +63,11 @@ export default defineConfig(({ mode }) => {
   // The real-browser projects share everything but their name and files:
   // `browser` holds the tests, `measure` the render counting behind
   // `pnpm measure:renders` (not a test run, so `pnpm test:browser` skips it).
-  const browserProject = (name: string, include: string[]) => ({
+  const browserProject = (
+    name: string,
+    include: string[],
+    touchInclude: string[] = []
+  ) => ({
     extends: true as const,
     // Tailwind builds the test skin (apps/playground/skin/test-skin.css); the
     // library build never loads it.
@@ -118,11 +123,37 @@ export default defineConfig(({ mode }) => {
           !inspect &&
           (process.env.CI === 'true' || process.env.HEADLESS === '1'),
         ui: false,
+        commands: touchCommands,
         screenshotDirectory: 'tests/contract/browser/__screenshots__',
         // A desktop-sized viewport: the default is phone-sized, which
         // squeezes the table and distorts geometry assertions.
         viewport: { width: 1280, height: 800 },
-        instances: [{ browser: 'chromium' }]
+        instances: [
+          { browser: 'chromium', name },
+          // A phone: a touch screen (Playwright can tap, the page sees a
+          // coarse pointer) at 390x844. Its specs are `*.touch.spec.ts`.
+          ...(touchInclude.length > 0
+            ? [
+                {
+                  browser: 'chromium' as const,
+                  name: `${name}-touch`,
+                  include: touchInclude,
+                  // Inspect mode: CDP on 9334, beside the desktop's 9333.
+                  provider: playwright({
+                    contextOptions: { colorScheme: null, hasTouch: true },
+                    ...(inspect
+                      ? {
+                          launchOptions: {
+                            args: ['--remote-debugging-port=9334']
+                          }
+                        }
+                      : {})
+                  }),
+                  viewport: { width: 390, height: 844 }
+                }
+              ]
+            : [])
+        ]
       }
     }
   })
@@ -171,13 +202,23 @@ export default defineConfig(({ mode }) => {
               // typecheck` and run here (docs/guide/guide.spec.ts).
               'docs/guide/**/*.spec.ts'
             ],
-            exclude: ['tests/contract/browser/**'],
+            exclude: ['tests/contract/browser/**', 'tests/scenarios/**'],
             css: false
           }
         },
-        browserProject('browser', [
-          'tests/contract/browser/**/*.browser.spec.ts'
-        ]),
+        // tests/scenarios: long user flows across rules (no contract
+        // comparison: `scripts/equivalence.mjs` runs tests/contract only).
+        browserProject(
+          'browser',
+          [
+            'tests/contract/browser/**/*.browser.spec.ts',
+            'tests/scenarios/**/*.browser.spec.ts'
+          ],
+          [
+            'tests/contract/browser/**/*.touch.spec.ts',
+            'tests/scenarios/**/*.touch.spec.ts'
+          ]
+        ),
         browserProject('measure', ['tests/measure/**/*.measure.ts'])
       ]
     }

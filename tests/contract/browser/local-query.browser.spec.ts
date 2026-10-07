@@ -111,4 +111,41 @@ describe('C-81 useLocalQuery [own]', () => {
     })
     expect(cells('name')).toEqual(['Ali', 'ali'])
   })
+
+  test('tr-1 text order differs from the ordinal order of the same names', async () => {
+    const allRows = ['Zeynep', 'İpek', 'Işık', 'Ayşe', 'Çağla'].map(
+      (name, id) => ({ id, name })
+    )
+    const dataset = defineDataset<(typeof allRows)[number]>({
+      key: 'id',
+      fields: { id: { type: 'integer' }, name: { type: 'string' } }
+    })
+    const query = ref<Query>({
+      page: 1,
+      pageSize: 10,
+      sort: { field: 'name', direction: 'asc' },
+      filters: []
+    })
+    let names: () => string[] = () => []
+    await render(
+      defineComponent(() => {
+        const local = useLocalQuery({
+          allRows,
+          dataset,
+          query,
+          profile: 'tr-1'
+        })
+        names = () => local.rows.value.map(row => row.name)
+        return () => h('div')
+      })
+    )
+    // `ı` sorts before `i`, `ç` after `c`: Turkish letters sit between the
+    // ASCII ones. A code unit order would put `Ç` and `İ` after `Z`.
+    expect(names()).toEqual(['Ayşe', 'Çağla', 'Işık', 'İpek', 'Zeynep'])
+    expect(names()).not.toEqual(allRows.map(row => row.name).sort())
+    query.value = { ...query.value, sort: { field: 'name', direction: 'desc' } }
+    await expect
+      .poll(names)
+      .toEqual(['Zeynep', 'İpek', 'Işık', 'Çağla', 'Ayşe'])
+  })
 })

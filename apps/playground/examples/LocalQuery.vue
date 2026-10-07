@@ -7,43 +7,29 @@ import { QueryTable, type Column, type TableQuery } from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
+import { columnOf, currentDataset, type DemoRow } from '../scenarios'
 
-interface Person {
-  id: number
-  name: string
-  city: string
-  age: number
-}
-
-const names = ['Ali', 'ali', 'Çağla', 'Işık', 'İpek', 'Ömer', 'Şule', 'Ümit']
-const cities = ['İstanbul', 'Istanbul', 'Ankara', 'İzmir', 'Bursa']
-// Fixed-seed LCG: the same source snapshot on every visit.
-let seed = 81
-const random = () => {
-  seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
-  return seed / 4294967296
-}
-const allRows = shallowRef<Person[]>(
-  Array.from({ length: 200 }, (_, index) => ({
-    id: index + 1,
-    name: names[Math.floor(random() * names.length)],
-    city: cities[Math.floor(random() * cities.length)],
-    age: 18 + Math.floor(random() * 50)
-  }))
-)
+// The whole list is in the page (a fixed-seed snapshot of the selected
+// dataset); `useLocalQuery` evaluates the query here with the `tr-1`
+// profile, so `ışık` finds "Işık" and `ipek` finds "İpek".
+const data = currentDataset()
+const [first, second] = data.searchFields
+const count = data.fields.count
+const allRows = shallowRef<DemoRow[]>(data.createRows())
 const columns: Column[] = [
   { field: 'id', title: 'ID', type: 'integer', filterable: false },
-  { field: 'name', title: 'Name', type: 'string' },
-  { field: 'city', title: 'City', type: 'string' },
-  { field: 'age', title: 'Age', type: 'integer' }
+  { ...columnOf(data, first), type: 'string' },
+  { ...columnOf(data, second), type: 'string' },
+  { ...columnOf(data, count), type: 'integer' }
 ]
-const dataset = defineDataset<Person>({
+const searchLabel = `Search ${columnOf(data, first).title?.toLowerCase()} or ${columnOf(data, second).title?.toLowerCase()}`
+const dataset = defineDataset<DemoRow>({
   key: 'id',
   fields: {
     id: { type: 'integer', filterable: false },
-    name: { type: 'string', search: true },
-    city: { type: 'string', search: true },
-    age: { type: 'integer' }
+    [first]: { type: 'string', search: true },
+    [second]: { type: 'string', search: true },
+    [count]: { type: 'integer' }
   }
 })
 const query = ref<TableQuery>({
@@ -74,13 +60,13 @@ const local = useLocalQuery({
         {{ print ? 'Back to pages' : 'Print' }}
       </button>
       <span class="text-sm text-muted-foreground"
-        >{{ local.totalRows.value }} of 200 people match.
+        >{{ local.totalRows.value }} of 200 {{ data.noun.many }} match.
         {{ print ? 'Showing every match for printing.' : '' }}</span
       >
     </div>
     <p class="text-sm text-muted-foreground">
-      <code>age &gt; 20</code> and <code>age &lt; 40</code> on one field is OR,
-      not a bounded range.
+      <code>{{ count }} &gt; 20</code> and <code>{{ count }} &lt; 40</code> on
+      one field is OR, not a bounded range.
       <a
         class="underline"
         href="https://github.com/dolusoft/query-table/blob/next/docs/guide/semantics.md#composition-and-search"
@@ -111,8 +97,8 @@ const local = useLocalQuery({
         <input
           class="mb-2 rounded border px-3 py-2"
           type="search"
-          aria-label="Search name or city"
-          placeholder="Search name or city"
+          :aria-label="searchLabel"
+          :placeholder="searchLabel"
           :value="bar.search"
           @input="bar.setSearch(($event.target as HTMLInputElement).value)"
           @keydown.enter="bar.applySearch()"

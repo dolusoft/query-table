@@ -22,8 +22,12 @@ const rules = computed(() =>
 </script>
 
 <template>
-  <section :id="sectionAnchors.rules" aria-label="Covered rules">
-    <h2 class="pb-2 text-lg font-semibold">Covered rules</h2>
+  <section
+    :id="sectionAnchors.rules"
+    aria-label="Covered rules"
+    class="scroll-m-28"
+  >
+    <h2 class="pb-4 text-xl font-medium tracking-tight">Covered rules</h2>
     <Accordion type="multiple" class="rounded-md border px-3">
       <AccordionItem
         v-for="rule in rules"

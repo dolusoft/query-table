@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  conditionLabel,
-  conditionOptions,
-  rulesOf
-} from '@dolusoft/query-protocol'
+import { conditionOptions, rulesOf } from '@dolusoft/query-protocol'
 
 import type {
   Column,
@@ -46,7 +42,7 @@ const labelOf = () => {
   if (!label) {
     return ''
   }
-  const text = conditionLabel(props.type, label.condition)
+  const text = labels().filterCondition(label.condition, props.type)
   return label.count > 1 ? `${text} (${label.count})` : text
 }
 
@@ -66,7 +62,10 @@ const menuProps = (): FilterMenuSlotProps => {
     column,
     rules: rulesOf(props.query.filters, column.field),
     condition: currentCondition(),
-    conditions: conditionOptions[props.type],
+    conditions: conditionOptions[props.type].map(({ value }) => ({
+      value,
+      label: labels().filterCondition(value, props.type)
+    })),
     setCondition: condition => filters.setCondition(column.field, condition),
     clear: () => filters.clear(column.field),
     sortable: sort.isSortable(column),

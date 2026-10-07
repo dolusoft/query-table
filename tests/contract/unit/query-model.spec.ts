@@ -186,9 +186,28 @@ describe('C-19 An ignored update changes nothing', () => {
 })
 
 describe('C-33 Exposed surface', () => {
-  it('exposes collapseAll, expandAll, focusFilter and flushPendingFilters and nothing else', () => {
+  it('exposes collapseAll, expandAll, focusFilter and flushPendingFilters', () => {
     const m = mountIt()
     // `exposed` is what a template ref sees through the proxy.
+    const exposed = (
+      m.wrapper.vm.$ as unknown as { exposed: Record<string, unknown> }
+    ).exposed
+    expect(Object.keys(exposed)).toEqual(
+      expect.arrayContaining([
+        'collapseAll',
+        'expandAll',
+        'flushPendingFilters',
+        'focusFilter'
+      ])
+    )
+    for (const member of Object.values(exposed)) {
+      expect(typeof member).toBe('function')
+    }
+  })
+
+  // 3.2 (C-87, C-89): not in a 3.1 baseline (`ADDED_AFTER_BASELINE`).
+  it('C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else', () => {
+    const m = mountIt()
     const exposed = (
       m.wrapper.vm.$ as unknown as { exposed: Record<string, unknown> }
     ).exposed
@@ -196,11 +215,10 @@ describe('C-33 Exposed surface', () => {
       'collapseAll',
       'expandAll',
       'flushPendingFilters',
-      'focusFilter'
+      'focusFilter',
+      'loadMore',
+      'scrollToIndex'
     ])
-    for (const member of Object.values(exposed)) {
-      expect(typeof member).toBe('function')
-    }
   })
 
   it('emits nothing from collapseAll, expandAll and focusFilter', () => {

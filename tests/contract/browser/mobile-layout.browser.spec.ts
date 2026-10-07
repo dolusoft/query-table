@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 
 import '../../../apps/playground/playground.css'
@@ -45,16 +45,37 @@ test.each([
     await visit(
       'overview',
       'Overview',
-      'aside nav a',
       '.qt-table-responsive',
       '.qt-pagination button'
     )
-    // The page list scrolls sideways inside its shadcn-vue ScrollArea.
-    const nav = document.querySelector<HTMLElement>(
-      'aside nav [data-slot="scroll-area-viewport"]'
-    )!
-    expect(nav.scrollWidth).toBeGreaterThan(nav.clientWidth)
-    expect(rect('aside nav a').height).toBeGreaterThanOrEqual(44)
+    // The page starts right below the header: the page list is not above it.
+    expect(rect('h1').top).toBeLessThan(200)
+    // Up to `md` the page list is a Sheet behind the header's menu button;
+    // wider, the sidebar is on screen. Either way its links are 44px tall.
+    const links = 'nav[aria-label="Examples"] a'
+    if (width <= 768) {
+      expect(document.querySelector(links)).toBeNull()
+      await userEvent.click(
+        page.getByRole('button', { name: 'Toggle Sidebar' })
+      )
+      await expect.poll(() => document.querySelector(links)).not.toBeNull()
+      expect(rect('[data-mobile="true"]').right).toBeLessThanOrEqual(width)
+    }
+    for (const link of document.querySelectorAll(links)) {
+      expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+    }
+    if (width <= 768) {
+      // Following a link closes the Sheet.
+      await userEvent.click(
+        page.getByRole('link', { name: 'Filtering', exact: true })
+      )
+      await expect.poll(() => document.querySelector(links)).toBeNull()
+      await router.push('/overview')
+      await expect
+        .poll(() => document.querySelector('.qt-table'))
+        .not.toBeNull()
+      await frame()
+    }
     const scroller = document.querySelector<HTMLElement>(
       '.qt-table-responsive'
     )!
@@ -121,9 +142,10 @@ test.each([
 )
 
 // Headers that differ in height must still line up their filter rows. The
-// sorting page mixes sortable columns (title in a 2.5rem sort button on a
+// sorting page mixes sortable columns (title in a 2.75rem sort button on a
 // phone) with an unsortable one (title as plain text); the header-slot page
-// puts a two-line title of the page's own in the Salary column.
+// puts a two-line title of the page's own in the amount column (Bytes in the
+// default demo data).
 test.each(
   ['sorting', 'header-slot'].flatMap(route =>
     [375, 390].map(width => [route, width] as const)

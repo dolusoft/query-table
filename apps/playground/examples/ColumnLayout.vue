@@ -19,7 +19,7 @@ import {
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
+import { currentDataset, useFakeServer, wideColumns } from '../scenarios'
 
 // The page owns the layout: `hide`, the order of the array and `pinned`
 // live in its `columns`. The buttons next to each filter menu call the
@@ -35,8 +35,9 @@ import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
 // With `reorderable` every header starts with a handle: drag it, or focus it
 // and press the arrow keys, Home or End. The table draws no live region, so
 // the page announces the new position itself, from `update:columns`.
-const columns = shallowRef<Column[]>(wideColumns())
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
+const data = currentDataset()
+const columns = shallowRef<Column[]>(wideColumns(data))
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
 
 const withoutHide = (column: Column): Column => {
   const copy = { ...column }
@@ -100,9 +101,11 @@ const setShown = (field: string, on: boolean) => {
          so the column controls can take their own row. In a narrow column
          the skin centres the filter button on the whole filter box; with the
          controls under the input that put it between them, so it is centred
-         on the input's row instead (2rem tall, 2.5rem on a touch screen). -->
+         on the input's row instead (2rem tall, 2.75rem on a touch screen):
+         `top-4` and `top-5.5` are half of those heights, 1rem and 1.375rem. -->
+
     <div
-      class="[&_.qt-filter]:flex-wrap [&_.qt-filter-button]:top-4 max-lg:[&_.qt-filter-button]:top-5 [&_.qt-table]:w-max [&_.qt-table]:min-w-full"
+      class="[&_.qt-filter]:flex-wrap [&_.qt-filter-button]:top-4 max-lg:[&_.qt-filter-button]:top-5.5 [&_.qt-table]:w-max [&_.qt-table]:min-w-full"
     >
       <QueryTable
         v-model:query="query"

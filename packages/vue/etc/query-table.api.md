@@ -175,6 +175,19 @@ export interface HeaderSlotProps {
     toggleSort: () => void;
 }
 
+// @public
+export interface InfiniteOptions {
+    threshold?: number;
+}
+
+// @public
+export interface LoadMoreSlotProps {
+    canLoadMore: boolean;
+    // (undocumented)
+    loading: boolean;
+    loadMore: () => void;
+}
+
 export { PageCursors }
 
 // @public (undocumented)
@@ -231,6 +244,8 @@ export interface QueryTableExpose {
     expandAll(): void;
     flushPendingFilters(): void;
     focusFilter(field: string): boolean;
+    loadMore(): void;
+    scrollToIndex(index: number, options?: ScrollToIndexOptions): void;
 }
 
 // Warning: (ae-forgotten-export) The symbol "features" needs to be exported by the entry point index.d.ts
@@ -328,6 +343,11 @@ export interface RowPinning {
 // @public
 export type RowSelection = Record<string, boolean>;
 
+// @public
+export interface ScrollToIndexOptions {
+    align?: 'start' | 'center' | 'end' | 'auto';
+}
+
 export { SortDirection }
 
 export { SortState }
@@ -358,6 +378,7 @@ export interface TableLabels {
     boolTrue: string;
     clearAllFilters: string;
     expandRow: string;
+    filterCondition: (condition: FilterCondition, type: ColumnType) => string;
     filterInput: (column: string) => string;
     filterOptions: (column: string) => string;
     moveColumn: (column: string) => string;
@@ -376,6 +397,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     footerRows?: FooterRow[];
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
+    infinite?: boolean | InfiniteOptions;
     labels?: Partial<TableLabels>;
     loading?: boolean;
     pagination?: PaginationOptions;
@@ -389,6 +411,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     selection?: RowSelection;
     sortable?: boolean;
     totalRows?: number | null;
+    virtual?: boolean | VirtualOptions;
 }
 
 export { TableQuery }
@@ -397,6 +420,7 @@ export { TableQuery }
 export interface TableSlots<T> {
     'filter-datetime'?(props: FilterDatetimeSlotProps): unknown;
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
+    'load-more'?(props: LoadMoreSlotProps): unknown;
     [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
     empty?(): unknown;
@@ -437,6 +461,14 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     selection?: MaybeRefOrGetter<RowSelection | undefined>;
     sortable?: MaybeRefOrGetter<boolean | undefined>;
     totalRows?: MaybeRefOrGetter<number | null | undefined>;
+}
+
+// @public
+export interface VirtualOptions {
+    estimateRowHeight?: number;
+    overscan?: number;
+    rowHeight?: number;
+    scrollElement?: () => HTMLElement | null;
 }
 
 // (No @packageDocumentation comment for this package)

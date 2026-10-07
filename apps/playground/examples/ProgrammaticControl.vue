@@ -8,7 +8,7 @@ import { QueryTable, type QueryTableExpose } from '@dolusoft/query-table'
 
 import TablePager from '../harness/TablePager.vue'
 import {
-  createDemoRows,
+  currentDataset,
   typedColumns,
   useFakeServer,
   type DemoRow
@@ -18,11 +18,12 @@ import {
 // `focusFilter(field)` puts the caret in a column's filter and reports
 // whether something took focus (a hidden or unknown column gives `false`);
 // `expandAll()` opens the rows on this page only, it never fetches more.
-const columns = typedColumns()
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
+const data = currentDataset()
+const columns = typedColumns(data)
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 const table = ref<QueryTableExpose | null>(null)
 const fields = [...columns.map(column => column.field), 'unknown']
-const field = ref('name')
+const field = ref(data.fields.primary)
 const focused = ref<boolean | null>(null)
 
 const focus = () => {
@@ -66,7 +67,7 @@ const focus = () => {
     >
       <template #subtable="{ row }">
         <p class="py-1 pl-6 text-muted-foreground">
-          {{ (row as DemoRow).name }} lives in {{ (row as DemoRow).city }}.
+          {{ data.describe(row as DemoRow) }}
         </p>
       </template>
       <template #pagination="page">

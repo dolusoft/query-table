@@ -1,0 +1,131 @@
+<script setup lang="ts">
+import { SparklesIcon } from '@lucide/vue'
+import { useRoute } from 'vue-router'
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
+} from '@/ui/sidebar'
+
+import DatasetMenu from './DatasetMenu.vue'
+import { navigation } from './docs-nav'
+import { aiNav } from '../guides/guides'
+
+// The documentation sidebar, after the shadcn-vue docs: an offcanvas
+// shadcn-vue `Sidebar` below the 4rem site header with two groups, the pages
+// and AI. Below `md` the same Sidebar is a Sheet that the header's menu
+// button opens, with the demo data switch on top; following a link closes
+// it.
+//
+// On a desktop the shadcn-vue `Sidebar` is `fixed` to the window's left
+// edge. The docs layout is a frame centered in the window (App.vue), so the
+// sidebar is `sticky` instead: it stays in the frame's first column and
+// still holds still below the header while the page scrolls. A sticky box
+// does not move with `left`, so closing the sidebar (Ctrl+B) hides it
+// instead of sliding it out; its gap goes to 0 and the page takes the room.
+const route = useRoute()
+const { isMobile, setOpenMobile } = useSidebar()
+
+// The AI entries share a route; the hash tells them apart.
+const isAiActive = (to: string) => {
+  const [path, hash = ''] = to.split('#')
+  return route.path === path && route.hash.replace('#', '') === hash
+}
+
+const follow = (
+  navigate: (event?: MouseEvent) => unknown,
+  event: MouseEvent
+) => {
+  setOpenMobile(false)
+  navigate(event)
+}
+
+const link =
+  'min-h-11 text-[0.8rem] font-medium lg:pointer-fine:min-h-0 lg:pointer-fine:h-[30px] data-active:text-sidebar-accent-foreground'
+</script>
+
+<template>
+  <Sidebar
+    collapsible="offcanvas"
+    class="sticky top-16 bottom-auto h-[calc(100svh-4rem)]! border-r-0! group-data-[collapsible=offcanvas]:hidden *:data-[slot=sidebar-inner]:bg-background"
+  >
+    <SidebarContent class="pt-4">
+      <!-- In the Sheet the header's menu button opens, the demo data switch
+           the header shows from `sm` up: on a phone the bar has no room. -->
+      <SidebarGroup v-if="isMobile">
+        <SidebarGroupLabel class="text-muted-foreground"
+          >Demo data</SidebarGroupLabel
+        >
+        <SidebarGroupContent class="px-2">
+          <DatasetMenu align="start" class="w-full" />
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel class="text-muted-foreground"
+          >Pages</SidebarGroupLabel
+        >
+        <SidebarGroupContent>
+          <nav aria-label="Examples">
+            <SidebarMenu class="gap-0.5">
+              <SidebarMenuItem v-for="page in navigation" :key="page.id">
+                <RouterLink
+                  v-slot="{ href, navigate, isActive }"
+                  :to="`/${page.id}`"
+                  custom
+                >
+                  <SidebarMenuButton
+                    as="a"
+                    :href="href"
+                    :is-active="isActive"
+                    :aria-current="isActive ? 'page' : undefined"
+                    :class="link"
+                    @click="follow(navigate, $event)"
+                  >
+                    {{ page.title }}
+                  </SidebarMenuButton>
+                </RouterLink>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </nav>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel
+          class="gap-1.5 text-primary dark:text-sidebar-primary"
+        >
+          <SparklesIcon aria-hidden="true" />
+          AI
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <!-- The AI page's own sections are the hash targets. -->
+          <nav aria-label="AI" data-testid="nav-ai">
+            <SidebarMenu class="gap-0.5">
+              <SidebarMenuItem v-for="entry in aiNav" :key="entry.id">
+                <RouterLink v-slot="{ href, navigate }" :to="entry.to" custom>
+                  <SidebarMenuButton
+                    as="a"
+                    :href="href"
+                    :is-active="isAiActive(entry.to)"
+                    :aria-current="isAiActive(entry.to) ? 'page' : undefined"
+                    :data-testid="`nav-${entry.id}`"
+                    :class="link"
+                    @click="follow(navigate, $event)"
+                  >
+                    {{ entry.title }}
+                  </SidebarMenuButton>
+                </RouterLink>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </nav>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+  </Sidebar>
+</template>

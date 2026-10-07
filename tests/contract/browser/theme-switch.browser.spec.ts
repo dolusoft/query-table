@@ -7,74 +7,98 @@ import '../../../apps/playground/playground.css'
 import App from '../../../apps/playground/App.vue'
 import { router } from '../../../apps/playground/router'
 
-// The theme switch of the playground shell: a shadcn-vue single toggle group.
-// Each item is a toggle button whose `aria-pressed` says which theme is on;
-// no role is forced onto the items, so the ARIA stays reka-ui's own.
+// The theme switch of the playground shell: the site header's shadcn-vue
+// dropdown menu. The button opens a radio group of light, dark and system;
+// `aria-checked` says which theme is on. The ARIA is reka-ui's own.
 
-const group = () => page.getByRole('group', { name: 'Theme' })
-const item = (name: string) =>
-  group().getByRole('button', { name, exact: true })
-const pressed = () =>
-  [...document.querySelectorAll('[aria-label="Theme"] button')]
-    .filter(button => button.getAttribute('aria-pressed') === 'true')
-    .map(button => button.textContent?.trim())
+const trigger = () => page.getByRole('button', { name: 'Theme', exact: true })
+const option = (name: string) =>
+  page.getByRole('menuitemradio', { name, exact: true })
+const checked = () =>
+  [...document.querySelectorAll('[role="menuitemradio"]')]
+    .filter(item => item.getAttribute('aria-checked') === 'true')
+    .map(item => item.textContent?.trim())
+const menu = () => document.querySelector('[role="menu"]')
+
+const pick = async (name: string) => {
+  await userEvent.click(trigger())
+  await expect.element(option(name)).toBeVisible()
+  await userEvent.click(option(name))
+  await expect.poll(menu).toBeNull()
+}
 
 beforeEach(async () => {
   await router.push('/overview')
   await router.isReady()
   await render(App, { global: { plugins: [router] } })
-  await expect.element(group()).toBeVisible()
+  await expect.element(trigger()).toBeVisible()
 })
 
 afterEach(() => {
   document.documentElement.removeAttribute('data-theme')
 })
 
-test('the theme items are toggle buttons; exactly one is pressed', async () => {
-  for (const button of document.querySelectorAll(
-    '[aria-label="Theme"] button'
-  )) {
-    expect(button.getAttribute('role')).toBeNull()
-    expect(button.hasAttribute('aria-checked')).toBe(false)
-  }
-  expect(pressed()).toEqual(['system'])
+test('the theme items are radio menu items; exactly one is checked', async () => {
+  await userEvent.click(trigger())
+  await expect.element(option('System')).toBeVisible()
+  expect(checked()).toEqual(['System'])
+  await userEvent.keyboard('{Escape}')
+  await expect.poll(menu).toBeNull()
 
-  await userEvent.click(item('dark'))
+  await pick('Dark')
   expect(document.documentElement.dataset.theme).toBe('dark')
-  expect(pressed()).toEqual(['dark'])
+  await userEvent.click(trigger())
+  await expect.element(option('Dark')).toBeVisible()
+  expect(checked()).toEqual(['Dark'])
+  await userEvent.keyboard('{Escape}')
+  await expect.poll(menu).toBeNull()
 
-  // Pressing the active item keeps the theme: it always has a value.
-  await userEvent.click(item('dark'))
-  expect(document.documentElement.dataset.theme).toBe('dark')
-  await expect.poll(pressed).toEqual(['dark'])
-
-  await userEvent.click(item('system'))
+  await pick('System')
   expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
-  expect(pressed()).toEqual(['system'])
 })
 
 test('the theme switch has no accessibility violation (axe)', async () => {
-  const root = document.querySelector('[aria-label="Theme"]')!
-  const result = await axe.run(root, { resultTypes: ['violations'] })
-  expect(
-    result.violations.map(
-      violation =>
-        `${violation.id}: ${violation.nodes.map(node => node.target.join(' ')).join(', ')}`
-    )
-  ).toEqual([])
+  // Read before opening: the open menu hides the rest of the page from the
+  // accessibility tree, the button with it.
+  const button = trigger().element()
+  await userEvent.click(trigger())
+  await expect.element(option('System')).toBeVisible()
+  // Checked once the menu's fade-in has ended: axe reads the colors of a
+  // half-transparent menu as too low a contrast.
+  await Promise.all(
+    menu()!
+      .getAnimations({ subtree: true })
+      .map(animation => animation.finished)
+  )
+  for (const root of [button, menu()!]) {
+    const result = await axe.run(root, { resultTypes: ['violations'] })
+    expect(
+      result.violations.map(
+        violation =>
+          `${violation.id}: ${violation.nodes.map(node => node.target.join(' ')).join(', ')}`
+      )
+    ).toEqual([])
+  }
+  await userEvent.keyboard('{Escape}')
 })
 
-test('on a phone, the theme items and the page links are at least 44px tall', async () => {
+test('on a phone, the theme button and its items are at least 44px tall', async () => {
   await page.viewport(390, 844)
   try {
-    const heights = () =>
-      [
-        ...document.querySelectorAll('[aria-label="Theme"] button'),
-        ...document.querySelectorAll('aside nav a')
-      ].map(element => element.getBoundingClientRect().height)
-    expect(heights().length).toBeGreaterThan(3)
     // The phone layout applies once the new viewport has been laid out.
+    await expect
+      .poll(() => trigger().element().getBoundingClientRect().height)
+      .toBeGreaterThanOrEqual(44)
+    await userEvent.click(trigger())
+    await expect.element(option('System')).toBeVisible()
+    const heights = () =>
+      [...document.querySelectorAll('[role="menuitemradio"]')].map(
+        item => item.getBoundingClientRect().height
+      )
+    expect(heights()).toHaveLength(3)
+    // Measured once the menu's zoom-in has ended (it opens at 95%).
     await expect.poll(() => Math.min(...heights())).toBeGreaterThanOrEqual(44)
+    await userEvent.keyboard('{Escape}')
   } finally {
     await page.viewport(1280, 800)
   }
