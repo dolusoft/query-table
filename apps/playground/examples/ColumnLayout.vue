@@ -100,7 +100,8 @@ const setShown = (field: string, on: boolean) => {
          so the column controls can take their own row. In a narrow column
          the skin centres the filter button on the whole filter box; with the
          controls under the input that put it between them, so it is centred
-         on the input's row instead (2rem tall, 2.5rem on a touch screen). -->
+         on the input's row instead (2rem tall, 2.5rem on a touch screen):
+         `top-4` and `top-5` are half of those heights, 1rem and 1.25rem. -->
     <div
       class="[&_.qt-filter]:flex-wrap [&_.qt-filter-button]:top-4 max-lg:[&_.qt-filter-button]:top-5 [&_.qt-table]:w-max [&_.qt-table]:min-w-full"
     >

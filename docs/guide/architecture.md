@@ -65,7 +65,7 @@ Row expansion is TanStack's (`rowExpandingFeature`), as a projection of the cons
 
 ## Rules, tests and the contract
 
-The behavior is written down as numbered rules in `contract/rules.md` (C-01 to C-66). Each rule has a `Source:` line, `tanstack` when TanStack does it through its options, `own` when our plugins or the Vue layer do. Every rule is covered by a test whose name contains its number, and a test that names an unknown rule fails the build (`tests/repo/contract-traceability.spec.ts`). The plugin-level tests in `packages/query-table-core/tests/` run without a DOM and are the most exact description of the plugins.
+The behavior is written down as numbered rules in `contract/rules.md` (C-01 to C-81). Each rule has a `Source:` line, `tanstack` when TanStack does it through its options, `own` when our plugins or the Vue layer do. Every rule is covered by a test whose name contains its number, and a test that names an unknown rule fails the build (`tests/repo/contract-traceability.spec.ts`). The plugin-level tests in `packages/query-table-core/tests/` run without a DOM and are the most exact description of the plugins.
 
 The principles that sit above the rules are in `PRINCIPLES.md` (P1 to P15); P14 is the layer rule and P15 the plugin contract.
 
@@ -75,14 +75,15 @@ Every package has a size budget, measured the way a consumer pays for it: a buil
 
 The policy (K7): size is not a goal, and a useful library may grow. A budget is the last measurement plus 5%, and a fixture may also have a ceiling. Both are there to catch **silent** drift, not to stop growth. A deliberate growth raises the budget, and the ceiling when needed, **in the same pull request**, with a one-line reason in the budget's history. It needs no separate approval.
 
-At the time of writing, for `3.0.0-next.0` (gzip, `scripts/package-size-budget.json`):
+At the time of writing, for `3.1.0` (gzip, `scripts/package-size-budget.json`):
 
-| Fixture        | Measured | Budget | Ceiling |
-| -------------- | -------- | ------ | ------- |
-| `protocol`     | 1,052 B  | 1,105 B | 1,500 B |
-| `server-query` | 13,676 B | 14,360 B | none   |
-| `filter-input` | 11,254 B | 11,817 B | none   |
-| `core`         | 17,564 B | 18,442 B | 18,500 B |
+| Fixture          | Measured | Budget   | Ceiling  |
+| ---------------- | -------- | -------- | -------- |
+| `protocol`       | 1,082 B  | 1,105 B  | 1,500 B  |
+| `protocol-local` | 5,069 B  | 5,322 B  | 6,500 B  |
+| `server-query`   | 13,702 B | 14,360 B | none     |
+| `filter-input`   | 11,411 B | 11,817 B | none     |
+| `core`           | 17,639 B | 18,442 B | 18,500 B |
 
 Most of the core figure is TanStack itself (the stock features the fixture uses). The 2.2.12 component, for comparison, costs 10,815 B. The trade is stated plainly in [ADR 0001](../decisions/0001-tanstack-v9.md): the gain is not less code, it is a TanStack-native path for consumers and a way to extend the table with features. Run `pnpm check:package-size` to check the budgets and `pnpm measure:package-size` to measure.
 

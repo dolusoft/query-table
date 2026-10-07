@@ -746,7 +746,9 @@ th[data-filtered] .qt-filter-input {
 /* own: the pagination block below the bordered table, as in shadcn's
    data-table example. The consumer's slot content (shadcn Pagination in the
    playground) sits inside it; the inline padding is the cell's 0.5rem plus
-   the 1px border, so the text lines up with the cell text. */
+   the 1px border of the scroll box, so the text lines up with the cell text
+   of a table without resize handles. A table with handles gives its cells
+   0.875rem (see above) and this padding does not follow it. */
 .qt-pagination {
   padding: 1rem 0.5625rem;
 }
