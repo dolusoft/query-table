@@ -30,13 +30,22 @@ const conditionNames: Record<FilterCondition, string> = {
   LessThanOrEqual: 'Küçük veya eşittir (≤)'
 }
 
+// On a date the same conditions read as time: "after" where a number column
+// says "greater than".
+const dateConditionNames: Partial<Record<FilterCondition, string>> = {
+  GreaterThan: 'Sonra (>)',
+  LessThan: 'Önce (<)'
+}
+
 // The condition label under an input and the options of the filter menu
-// read `filterCondition`. It also receives the column type, so a date column
-// could say "after" where a number column says "greater than".
+// read `filterCondition`, which receives the condition and the column type.
 const labels: Partial<TableLabels> = {
   filterInput: column => `${column} filtresi`,
   filterOptions: column => `${column} filtre seçenekleri`,
-  filterCondition: condition => conditionNames[condition],
+  filterCondition: (condition, type) =>
+    ((type === 'date' || type === 'datetime') &&
+      dateConditionNames[condition]) ||
+    conditionNames[condition],
   boolAll: 'Tümü',
   boolTrue: 'Evet',
   boolFalse: 'Hayır'
@@ -46,8 +55,17 @@ const columns: Column[] = [
   { field: fields.primary, title: turkish.primary },
   { field: fields.category },
   { field: fields.count, title: turkish.count, type: 'integer' },
-  { field: fields.flag, title: turkish.flag, type: 'bool' }
+  { field: fields.flag, title: turkish.flag, type: 'bool' },
+  { field: fields.date, title: 'Tarih', type: 'date' }
 ]
+
+// The menu is the page's own markup, so its texts are the page's too.
+const menuTexts = {
+  heading: 'Filtre koşulu',
+  sortAscending: 'Artan sırala',
+  sortDescending: 'Azalan sırala',
+  clearFilter: 'Filtreyi temizle'
+}
 
 const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 </script>
@@ -79,7 +97,7 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
       </div>
     </template>
     <template #filter-menu="menu">
-      <FilterMenu :menu="menu" />
+      <FilterMenu :menu="menu" :texts="menuTexts" />
     </template>
   </QueryTable>
 </template>

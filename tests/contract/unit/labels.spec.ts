@@ -243,6 +243,48 @@ describe('C-44 Labels', () => {
     expect(m.wrapper.text()).not.toMatch(/Starts With|Greater Than|After/)
   })
 
+  // 3.2: a separate test, so the ones above still compare with 3.1.0.
+  it('rewrites the condition label when labels change', async () => {
+    const m = mountIt(filtered)
+    expect(conditionTexts(m).name).toBe('Starts With')
+    await m.wrapper.setProps({
+      labels: { filterCondition: () => 'Başlar' }
+    })
+    expect(conditionTexts(m)).toEqual({
+      name: 'Başlar',
+      age: 'Başlar (2)',
+      joined: 'Başlar'
+    })
+    await m.wrapper.setProps({ labels: {} })
+    expect(conditionTexts(m)).toEqual({
+      name: 'Starts With',
+      age: 'Greater Than (>) (2)',
+      joined: 'After (>)'
+    })
+  })
+
+  it('names the selection checkboxes by selectRow and selectAllRows', () => {
+    const checkboxNames = (m: Mounted) => [
+      m.wrapper.find('.qt-select-all').attributes('aria-label'),
+      ...m.wrapper
+        .findAll('.qt-select-row')
+        .map(el => el.attributes('aria-label'))
+    ]
+    const english = mountIt({ selection: {}, rowKey: 'id' })
+    expect(new Set(checkboxNames(english))).toEqual(
+      new Set(['Select all rows', 'Select row'])
+    )
+    english.wrapper.unmount()
+    const turkish = mountIt({
+      selection: {},
+      rowKey: 'id',
+      labels: { selectRow: 'Satırı seç', selectAllRows: 'Tüm satırları seç' }
+    })
+    expect(new Set(checkboxNames(turkish))).toEqual(
+      new Set(['Tüm satırları seç', 'Satırı seç'])
+    )
+  })
+
   it('names a column without a title by its field', () => {
     const m = mountIt({ filterable: true, columns: [{ field: 'city' }] }, menu)
     expect(names(m)).toEqual(['Filter city', 'Filter options for city'])
