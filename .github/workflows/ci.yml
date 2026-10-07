@@ -18,7 +18,7 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
-# Three jobs run side by side; the longest (browser) sets the wall time.
+# Three jobs run side by side; the longest sets the wall time.
 # `verify` is the required status check: it passes only when all three pass.
 jobs:
   checks:
@@ -73,31 +73,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Resolve Playwright version
-        id: playwright
-        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-
-      # Downloads Chromium only on a cache miss. No `--with-deps`: the runner
-      # image ships Google Chrome, so Chromium's system libraries are already
-      # there, and the extra fonts it would add from apt are not needed (no
-      # test compares screenshots). Those font downloads from the runner's apt
-      # mirror stalled the v3.3.0 release run past 5 minutes, twice. A slow
-      # download from the Playwright CDN is cut and retried.
-      - name: Install Chromium
-        timeout-minutes: 8
-        run: |
-          for attempt in 1 2 3; do
-            if timeout 150 pnpm exec playwright install chromium; then
-              exit 0
-            fi
-            echo "::warning::playwright install, attempt $attempt failed or stalled"
-          done
-          exit 1
+      - uses: ./.github/actions/chromium
       - run: pnpm test:browser
         timeout-minutes: 5
       # Render counts against scripts/render-budget.json (PRINCIPLES.md P8).
@@ -137,15 +113,18 @@ jobs:
       # The default entries never reach the local evaluator (C-75).
       - run: pnpm check:entry-graph
       # The three tarballs installed into an app outside the workspace, the
-      # way an npm install resolves them, then typechecked and built.
+      # way an npm install resolves them, then typechecked, built and loaded
+      # in Chromium.
+      - uses: ./.github/actions/chromium
       - run: pnpm pack-install
         timeout-minutes: 5
 
   verify:
     needs: [checks, browser, package]
     # Runs even when a job before it failed, so the required check reports
-    # the failure instead of staying "skipped".
-    if: ${{ always() }}
+    # the failure instead of staying "skipped"; a cancelled run stays
+    # cancelled.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
