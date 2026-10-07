@@ -50,36 +50,40 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
       }
     )
   const initialGeometry = geometry()
-  await userEvent.fill(input('name'), 'Alice,Bob')
+  await userEvent.fill(input('user'), 'admin,svc-backup')
   await userEvent.keyboard('{Enter}')
   await expect
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 2')
   expect(
     [...document.querySelectorAll('.qt-table tbody tr td:nth-child(2)')].every(
-      cell => ['Alice', 'Bob'].includes(cell.textContent ?? '')
+      cell => ['admin', 'svc-backup'].includes(cell.textContent ?? '')
     )
   ).toBe(true)
-  await userEvent.click(page.getByCSS('th[data-field="age"] .qt-filter-button'))
+  await userEvent.click(
+    page.getByCSS('th[data-field="hits"] .qt-filter-button')
+  )
   await userEvent.click(
     page.getByRole('button', { name: 'Greater Than (>)', exact: true })
   )
-  await userEvent.fill(input('age'), '44')
+  await userEvent.fill(input('hits'), '60')
   await userEvent.keyboard('{Enter}')
   await expect
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 1')
-  expect(rowIds()).toHaveLength(7)
-  expect(el('.qt-table tbody tr td:nth-child(2)').textContent).toBe('Bob')
+  expect(rowIds()).toHaveLength(11)
+  expect(el('.qt-table tbody tr td:nth-child(2)').textContent).toBe(
+    'svc-backup'
+  )
   expect(geometry()).toEqual(initialGeometry)
-  await userEvent.fill(input('name'), 'zzz')
+  await userEvent.fill(input('user'), 'zzz')
   await userEvent.keyboard('{Enter}')
   await expect.element(page.getByText('No results.')).toBeVisible()
   await expect.element(page.getByCSS('.next-page')).toBeDisabled()
   expect(geometry()).toEqual(initialGeometry)
-  await userEvent.fill(input('name'), '')
+  await userEvent.fill(input('user'), '')
   await userEvent.keyboard('{Enter}')
-  await userEvent.fill(input('age'), '')
+  await userEvent.fill(input('hits'), '')
   await userEvent.keyboard('{Enter}')
   await expect
     .element(page.getByCSS('.page-info'))

@@ -85,8 +85,8 @@ const groups = computed(() => {
 </script>
 
 <template>
-  <section :id="sectionAnchors.api" aria-label="API">
-    <h2 class="pb-2 text-lg font-semibold">API on this page</h2>
+  <section :id="sectionAnchors.api" aria-label="API" class="scroll-m-28">
+    <h2 class="pb-4 text-xl font-medium tracking-tight">API on this page</h2>
     <div class="flex flex-col gap-4">
       <div v-for="group in groups" :key="group.title">
         <h3 class="pb-1 text-sm font-medium">{{ group.title }}</h3>

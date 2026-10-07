@@ -28,7 +28,12 @@ import {
 } from '@/ui/table'
 import type { Query } from '@dolusoft/query-table'
 
-import { createDemoRows, type DemoRow, useFakeServer } from '../scenarios'
+import {
+  columnOf,
+  currentDataset,
+  type DemoRow,
+  useFakeServer
+} from '../scenarios'
 
 // No QueryTable here: shadcn-vue's Table drawn from a TanStack table that
 // carries the two plugins of `@dolusoft/query-table-core`. serverQueryFeature
@@ -38,7 +43,10 @@ import { createDemoRows, type DemoRow, useFakeServer } from '../scenarios'
 // markup, and which TanStack features to
 // add, are the page's. `useQueryTable()` sits between the two paths: the
 // same table with every feature QueryTable uses, without the markup.
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 8 })
+const data = currentDataset()
+const { primary, category, count } = data.fields
+const titleOf = (field: string) => columnOf(data, field).title ?? field
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 8 })
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -61,9 +69,14 @@ const projection = computed(() =>
 const table = useTable<typeof features, DemoRow>({
   features,
   columns: [
-    { id: 'name', accessorKey: 'name', header: 'Name' },
-    { id: 'city', accessorKey: 'city', header: 'City' },
-    { id: 'age', accessorKey: 'age', header: 'Age', filterType: 'integer' }
+    { id: primary, accessorKey: primary, header: titleOf(primary) },
+    { id: category, accessorKey: category, header: titleOf(category) },
+    {
+      id: count,
+      accessorKey: count,
+      header: titleOf(count),
+      filterType: 'integer'
+    }
   ],
   get data() {
     return result.value.rows
@@ -119,7 +132,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
               <Button
                 variant="ghost"
                 size="sm"
-                class="sort-button -ml-2 min-h-10 lg:min-h-0"
+                class="sort-button -ml-2 min-h-11 lg:pointer-fine:min-h-0"
                 @click="header.column.toggleQuerySorting()"
               >
                 <FlexRender
@@ -139,7 +152,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
               class="py-1"
             >
               <Input
-                class="filter-input h-10 min-w-24 lg:h-8"
+                class="filter-input h-11 min-w-24 lg:pointer-fine:h-8"
                 :aria-label="`Filter ${column.id}`"
                 :model-value="column.getFilterInput().text"
                 @update:model-value="column.setFilterInput(String($event))"
@@ -166,7 +179,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
         <Button
           variant="outline"
           size="sm"
-          class="previous-page min-h-10 lg:min-h-0"
+          class="previous-page min-h-11 lg:pointer-fine:min-h-0"
           :disabled="!table.getCanPreviousPage()"
           @click="table.previousPage()"
         >
@@ -175,7 +188,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
         <Button
           variant="outline"
           size="sm"
-          class="next-page min-h-10 lg:min-h-0"
+          class="next-page min-h-11 lg:pointer-fine:min-h-0"
           :disabled="!table.getCanNextPage()"
           @click="table.nextPage()"
         >

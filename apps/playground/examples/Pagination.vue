@@ -6,13 +6,14 @@ import { Label } from '@/ui/label'
 import { QueryTable } from '@dolusoft/query-table'
 
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
+import { currentDataset, listColumns, useFakeServer } from '../scenarios'
 
 // Paging is always on; the controls are the consumer's, in the `pagination`
 // slot. With the total unknown (`totalRows: null`) there is no page count,
 // and "Next" stays enabled while a full page comes back.
-const columns = peopleColumns()
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
+const data = currentDataset()
+const columns = listColumns(data)
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
 const totalKnown = ref(true)
 const totalRows = computed(() =>
   totalKnown.value ? result.value.totalRows : null

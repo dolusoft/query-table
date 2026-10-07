@@ -22,6 +22,7 @@ import {
 import { blobUrl, guidePages } from './guides'
 import { tanstackFeatureGuides } from './tanstack'
 import { pages } from '../manifest'
+import DocHeader from '../shell/DocHeader.vue'
 import InlineCode from '../shell/InlineCode.vue'
 
 // The feature matrix page: one table per group, all drawn from
@@ -39,31 +40,26 @@ const modeVariant = (value: ServerMode) =>
 </script>
 
 <template>
-  <article class="flex max-w-6xl flex-col gap-8">
-    <header>
-      <h1 class="text-2xl font-semibold tracking-tight">{{ page.title }}</h1>
-      <p class="pt-1 text-sm text-muted-foreground">
-        <InlineCode :text="page.summary" />
-      </p>
-    </header>
+  <article class="flex flex-col gap-10">
+    <DocHeader :title="page.title" :summary="page.summary" />
     <section
       v-for="group in featureGroups"
       :id="`group-${group}`"
       :key="group"
       :aria-labelledby="`group-${group}-title`"
-      class="flex scroll-mt-4 flex-col gap-3"
+      class="flex scroll-m-28 flex-col gap-3"
     >
       <div>
         <h2
           :id="`group-${group}-title`"
-          class="flex items-center gap-2 text-lg font-semibold"
+          class="flex items-center gap-2 text-xl font-medium tracking-tight"
         >
           {{ groupTitles[group] }}
           <Badge v-if="group === 'own'" data-testid="own-badge"
             >Query Table only</Badge
           >
         </h2>
-        <p class="pt-1 text-sm text-muted-foreground">
+        <p class="pt-2">
           <InlineCode :text="groupNotes[group]" />
         </p>
       </div>

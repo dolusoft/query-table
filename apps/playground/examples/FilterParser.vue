@@ -8,10 +8,14 @@ import { NativeSelect, NativeSelectOption } from '@/ui/native-select'
 import type { ColumnType, FilterCondition } from '@dolusoft/query-table'
 import { parseFilterInput } from '@dolusoft/query-table'
 
+import { columnOf, currentDataset } from '../scenarios'
+
 // `parseFilterInput` is the table's own filter grammar as a plain function:
 // it returns the rules the table would emit for the text typed into a
 // column's filter, with the same coercion per column type. Use it to build
 // a query from a search box, a saved string or a URL, without a table.
+const data = currentDataset()
+const column = columnOf(data, data.fields.category)
 const types: ColumnType[] = [
   'string',
   'integer',
@@ -32,16 +36,16 @@ const conditions: FilterCondition[] = [
   'LessThan',
   'LessThanOrEqual'
 ]
-const examples = ['*ank*', 'ist*,!*mir', '!bursa', '42', 'abc', 'true', '*']
+const examples = data.parser.examples
 
 const type = ref<ColumnType>('string')
 const condition = ref<FilterCondition | ''>('')
-const text = ref('*ank*,izmir')
+const text = ref(data.parser.text)
 
 const rules = computed(() =>
   parseFilterInput(
     text.value,
-    { field: 'city', title: 'City', type: type.value },
+    { field: column.field, title: column.title, type: type.value },
     condition.value || null
   )
 )

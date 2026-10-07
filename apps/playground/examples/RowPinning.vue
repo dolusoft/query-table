@@ -13,14 +13,14 @@ import {
 
 import TablePager from '../harness/TablePager.vue'
 import {
-  createDemoRows,
-  peopleColumns,
+  currentDataset,
+  listColumns,
   useFakeServer,
   type DemoRow
 } from '../scenarios'
 
 // The page owns the pinned rows: a map of row keys (`row-key` as a string)
-// pinned to the top or the bottom. The buttons in the Name cell call the
+// pinned to the top or the bottom. The buttons in the primary cell call the
 // slot's `pinRow`; the table emits a new map with `update:rowPinning` and
 // draws nothing new until the page writes it back. `v-model:row-pinning`
 // does that. The keys stay when the page changes: a pinned row of another
@@ -46,8 +46,10 @@ const pinFromButton = async (
   }
 }
 
-const allRows = createDemoRows()
-const columns = peopleColumns()
+const data = currentDataset()
+const primary = data.fields.primary
+const allRows = data.createRows()
+const columns = listColumns(data)
 const { query, result } = useFakeServer(allRows, { pageSize: 10 })
 const pinning = shallowRef<RowPinning>({ top: [], bottom: [] })
 const everyPage = ref(false)
@@ -97,9 +99,9 @@ const pinnedText = computed(() => {
       row-key="id"
       sortable
     >
-      <template #cell-name="{ row, rowPinned, pinRow }">
+      <template #[`cell-${primary}`]="{ row, rowPinned, pinRow }">
         <span class="inline-flex items-center gap-1">
-          {{ (row as DemoRow).name }}
+          {{ (row as DemoRow)[primary] }}
           <Button
             variant="ghost"
             size="icon-xs"

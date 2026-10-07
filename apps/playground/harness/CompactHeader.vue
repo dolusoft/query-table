@@ -59,7 +59,7 @@ const title = computed(() => titleOf(props.header.column))
       type="button"
       variant="ghost"
       size="icon"
-      class="column-filter-trigger size-11 shrink-0 text-muted-foreground data-active:text-primary"
+      class="column-filter-trigger size-11 shrink-0 text-muted-foreground data-active:text-primary dark:data-active:text-sidebar-primary"
       :data-active="props.active ? '' : undefined"
       :aria-label="`Filter ${title}${props.active ? ', active' : ''}`"
       aria-haspopup="dialog"
