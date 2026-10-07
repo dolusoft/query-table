@@ -1,11 +1,13 @@
 {
-  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.9 (filter fell from 50 to 26 when the header got stable slots). v3 (PR-C) raised filter from 26 to 34: the filter draft is table state in the TanStack store (`filterInputFeature`), so each of the six keys re-renders the four filter cells (6 x 4 = 24) and Enter adds 10. The root and the header read `canClearAll` through a computed, which keeps them out of that (an earlier measurement, 44, had `QueryTable` and `table-body` re-render with every key too); the other scenarios are unchanged. 3.1 (PR-D1) added move: ArrowRight on a reorder handle with the order written back re-renders the root, the header and the body once and the four filter cells once each (they read the column layout), 7 in all. Raise it only on purpose, in the change that adds the renders.",
+  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.9 (filter fell from 50 to 26 when the header got stable slots). v3 (PR-C) raised filter from 26 to 34: the filter draft is table state in the TanStack store (`filterInputFeature`), so each of the six keys re-renders the four filter cells (6 x 4 = 24) and Enter adds 10. The root and the header read `canClearAll` through a computed, which keeps them out of that (an earlier measurement, 44, had `QueryTable` and `table-body` re-render with every key too); the other scenarios are unchanged. 3.1 (PR-D1) added move: ArrowRight on a reorder handle with the order written back re-renders the root, the header and the body once and the four filter cells once each (they read the column layout), 7 in all. 3.3 (change flash, ADR 0011) added live and flash: two live changes under the same query over 100 rows (a row at the top, three rows with a new age), once with `flash` off and once on. Both are 14: the root, the body, the header and the four filter cells once per change, so a flash re-renders nothing more; the marks are written by the body's own render of the new rows. The other scenarios are unchanged. Raise it only on purpose, in the change that adds the renders.",
   "scenarios": {
     "mount": { "queryUpdates": 0, "maxLibraryUpdates": 0 },
     "filter": { "queryUpdates": 1, "maxLibraryUpdates": 34 },
     "sort": { "queryUpdates": 2, "maxLibraryUpdates": 18 },
     "loading": { "queryUpdates": 0, "maxLibraryUpdates": 4 },
     "page": { "queryUpdates": 3, "maxLibraryUpdates": 24 },
-    "move": { "queryUpdates": 0, "maxLibraryUpdates": 7 }
+    "move": { "queryUpdates": 0, "maxLibraryUpdates": 7 },
+    "live": { "queryUpdates": 0, "maxLibraryUpdates": 14 },
+    "flash": { "queryUpdates": 0, "maxLibraryUpdates": 14 }
   }
 }

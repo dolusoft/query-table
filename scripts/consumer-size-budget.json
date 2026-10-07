@@ -10,7 +10,8 @@
     "3.1.0 (PR-D2, 2026-10-06): component 32224 B (+1060 B since PR-D1's 31164 B), composable 22652 B (+902 B). Row pinning: TanStack rowPinningFeature, the controlled rowPinning map and update:rowPinning, the body drawn in top, center, bottom order, rowPinned and pinRow in the cell slot. Budgets set to measure plus 5%, ceilings rounded up to the next 500 B.",
     "3.1.0 (PR-L3, 2026-10-06): local-composable 5739 B. useLocalQuery over the local evaluator. Budget 6026 B (measure plus 5%), ceiling 7000 B (measure times 1.2 rounded up to 500 B).",
     "3.2.0 (2026-10-07): component 36260 B (+3933 B over next at 32327 B; composable unchanged). Virtual rows (own windowing: prefix sums, one ResizeObserver, scroll correction, kept focus, print, scrollToIndex) and infinite scroll (IntersectionObserver trigger, load-more slot); ADR 0010. Budget set to measure plus 5%, ceiling rounded up to the next 500 B.",
-    "3.2.0 (PR #79, 2026-10-07): component 36390 B (+130 B over next at 36260 B). C-22: a keyed clear all hands the focus to the first filter (focusFirstFilter, one nextTick after the click). Budget set to measure plus 5%; ceiling unchanged."
+    "3.2.0 (PR #79, 2026-10-07): component 36390 B (+130 B over next at 36260 B). C-22: a keyed clear all hands the focus to the first filter (focusFirstFilter, one nextTick after the click). Budget set to measure plus 5%; ceiling unchanged.",
+    "3.3.0 (change flash, 2026-10-07): component 39088 B (+2698 B over the 36390 B budget measure; composable 22666 B, unchanged within noise). The flash controller and the core row-change tracker (C-92 to C-95, ADR 0011) are 2349 B of it, measured by building without the controller (36739 B); the rest is the off path (one watcher of `flash`) and the bindings in the body. A dynamic import of the controller would move those 2349 B to a second chunk loaded when `flash` turns on, but leaves a window after that where a change is not seen, adds a chunk to the package and makes the start asynchronous; kept static. Budget set to measure plus 5%, ceiling rounded up to the next 500 B."
   ],
   "fixtures": {
     "composable": {
@@ -19,9 +20,9 @@
       "ceilingGzipBytes": 24000
     },
     "component": {
-      "measuredGzipBytes": 36390,
-      "maxGzipBytes": 38210,
-      "ceilingGzipBytes": 38500
+      "measuredGzipBytes": 39088,
+      "maxGzipBytes": 41043,
+      "ceilingGzipBytes": 41500
     },
     "local-composable": {
       "measuredGzipBytes": 5739,

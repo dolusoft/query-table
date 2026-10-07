@@ -167,6 +167,8 @@ interface Scenario {
   expectedUpdates: number
   /** Mounts with reorder handles (C-73); off by default. */
   reorderable?: boolean
+  /** Mounts with `flash` and `rowKey` (C-93); off by default. */
+  flash?: boolean
   act: (applied: number[]) => Promise<void>
 }
 
@@ -185,7 +187,8 @@ const once = async (scenario: Scenario): Promise<Run> => {
         // update comes from Enter, so no timer decides how many there are.
         filterDebounce: 5000,
         applied,
-        reorderable: scenario.reorderable ?? false
+        reorderable: scenario.reorderable ?? false,
+        flash: scenario.flash ?? false
       } as never
     })
 
@@ -342,8 +345,46 @@ const scenarios: Scenario[] = [
         throw new Error('name did not move')
       }
     }
+  },
+  {
+    // The `flash` scenario's two live changes with `flash` off: what the
+    // same rows cost without it.
+    name: 'live',
+    pageSize: 100,
+    expectedUpdates: 0,
+    act: () => liveChanges(0)
+  },
+  {
+    // C-93, C-94: two live changes under the same query over 100 rows with
+    // `flash` on, a frame apart. Each adds a row at the top and changes the
+    // age of three rows (the second restarts their flashes). No update.
+    // The two new rows flash, and the age of the first new row and of the
+    // three rows changed first (the second change hit the first new row
+    // and two of those again).
+    name: 'flash',
+    pageSize: 100,
+    expectedUpdates: 0,
+    flash: true,
+    act: () => liveChanges(6)
   }
 ]
+
+async function liveChanges(flashing: number) {
+  const change = document.querySelector<HTMLElement>('.live-change')
+  if (!change) {
+    throw new Error('no live change button')
+  }
+  await userEvent.click(change)
+  await frame()
+  await userEvent.click(change)
+  await frame()
+  const marked = document.querySelectorAll('tbody [data-flash]').length
+  if (marked !== flashing) {
+    throw new Error(
+      `expected ${flashing} flashing rows and cells, saw ${marked}`
+    )
+  }
+}
 
 for (const scenario of scenarios) {
   test(`renders: ${scenario.name}`, async ({ task }) => {
