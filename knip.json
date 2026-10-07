@@ -29,7 +29,11 @@
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/query-table-core": {
-      "entry": ["src/index.ts", "src/features/*/index.ts"],
+      "entry": [
+        "src/index.ts",
+        "src/features/*/index.ts",
+        "src/row-changes/index.ts"
+      ],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/vue": {

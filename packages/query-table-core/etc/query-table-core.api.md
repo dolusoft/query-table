@@ -21,6 +21,9 @@ import { TableFeature } from '@tanstack/table-core';
 export const applyColumnFilters: (filters: FilterRule[], next: ColumnFiltersState) => FilterRule[];
 
 // @public
+export const createRowChangeTracker: <T extends object>(keyOf: (row: T, index: number) => RowChangeKey) => RowChangeTracker<T>;
+
+// @public
 export const dispose: (table: object) => void;
 
 // @public
@@ -79,6 +82,42 @@ export const projectServerQuery: (input: ServerQueryInput) => {
     state: ServerQueryState;
     pageCount: number;
 };
+
+// @public
+export interface RowChangeInput<T> {
+    fields: readonly string[];
+    hint: RowsUpdate | undefined;
+    loading: boolean;
+    // (undocumented)
+    query: Query;
+    quiet: boolean;
+    // (undocumented)
+    rows: readonly T[];
+}
+
+// @public
+export type RowChangeKey = string | number;
+
+// @public
+export interface RowChanges {
+    added: RowChangeKey[];
+    badKeys: boolean;
+    changed: Map<RowChangeKey, string[]>;
+    droppedFields: string[];
+    reset: boolean;
+}
+
+// @public (undocumented)
+export interface RowChangeTracker<T> {
+    clear(): void;
+    update(input: RowChangeInput<T>): RowChanges;
+}
+
+// @public
+export type RowsUpdate = 'snapshot' | 'append' | 'live' | 'reset';
+
+// @public
+export const sameValue: (a: unknown, b: unknown) => boolean;
 
 // @public (undocumented)
 export interface ServerQueryColumnApi {

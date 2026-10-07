@@ -48,6 +48,13 @@ export default defineConfig(({ mode }) => {
       replacement: resolve(packages, 'query-table-core/src/index.ts')
     },
     {
+      find: /^@dolusoft\/query-table-core\/row-changes$/,
+      replacement: resolve(
+        packages,
+        'query-table-core/src/row-changes/index.ts'
+      )
+    },
+    {
       find: /^@dolusoft\/query-table-core\/([\w-]+)$/,
       replacement: resolve(
         packages,

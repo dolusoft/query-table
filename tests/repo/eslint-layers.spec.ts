@@ -123,6 +123,29 @@ import { recordOf } from '../../shared/registry'`
     ).toEqual([expect.stringContaining('shared/ may not import')])
   })
 
+  it('lets the row-change module import only the protocol and itself (P14)', () => {
+    const file = `${core}/row-changes/tracker.ts`
+    expect(
+      lint(
+        file,
+        `import { sameQuery } from '@dolusoft/query-protocol'
+import { sameValue } from './same-value'`
+      )
+    ).toEqual([])
+    expect(
+      lint(file, `import { constructTable } from '@tanstack/table-core'`)
+    ).toEqual([expect.stringContaining('row-change module')])
+    expect(lint(file, `import { dispatch } from '../shared'`)).toEqual([
+      expect.stringContaining('row-change module')
+    ])
+    expect(
+      lint(
+        `${core}/features/server-query/server-query-feature.ts`,
+        `import { sameValue } from '../../row-changes'`
+      )
+    ).toEqual([expect.stringContaining('may not import')])
+  })
+
   it('lets the entry files gather every part of the core', () => {
     expect(
       lint(
