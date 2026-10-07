@@ -13,8 +13,8 @@ export interface ClassEntry {
   /**
    * The rule that adds the hook on top of the 2.2.x table, when 2.2.x does
    * not render it. C-40 checks the entries without it; C-66 the ones the
-   * selection adds (`C-64`), C-72 the ones of the 3.1 features and C-82 the
-   * column type.
+   * selection adds (`C-64`), C-72 the ones of the 3.1 features, C-82 the
+   * column type and C-91 the ones of the 3.2 features.
    */
   addedBy?: string
 }
@@ -131,6 +131,20 @@ export const domClasses: ClassEntry[] = [
       'Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS.',
     addedBy: 'C-73'
   },
+  {
+    name: 'qt-virtual-spacer',
+    on: 'tbody > tr',
+    description:
+      'With `virtual`: the row above or below the drawn rows that holds the height of the rows left out, as an inline `height` (C-83). `aria-hidden`, one empty cell. Give its cell `padding: 0; border: 0` in your CSS.',
+    addedBy: 'C-83'
+  },
+  {
+    name: 'qt-load-more-row',
+    on: 'tbody > tr',
+    description:
+      'With `infinite` and a `load-more` slot: the last row of the body while `loading` is off, holding the slot in one cell that spans every column (C-89).',
+    addedBy: 'C-89'
+  },
   { name: 'qt-footer', on: 'tfoot', description: 'Totals block.' },
   {
     name: 'qt-pagination',
@@ -234,6 +248,20 @@ export const domAttributes: AttributeEntry[] = [
     name: 'aria-sort',
     on: 'th',
     description: '`ascending` or `descending` on the sorted column.'
+  },
+  {
+    name: 'aria-rowcount',
+    on: 'table',
+    description:
+      'With `virtual`: the number of rows of the table, the ones not drawn included; `-1` while an infinite list of unknown total has more to load (C-86).',
+    addedBy: 'C-86'
+  },
+  {
+    name: 'aria-rowindex',
+    on: 'tr',
+    description:
+      'With `virtual`: the position of a drawn header, body or footer row among all rows, from 1 (C-86).',
+    addedBy: 'C-86'
   }
 ]
 
@@ -266,5 +294,12 @@ export const domInlineStyles: InlineStyleEntry[] = [
     description:
       'Right offset of a right-pinned cell in pixels: the measured widths of the right-pinned header cells after it. Use it as `right: var(--qt-pin-right)` next to your own `position: sticky`.',
     addedBy: 'C-71'
+  },
+  {
+    property: 'height',
+    on: 'tr.qt-virtual-spacer',
+    description:
+      'With `virtual`: the height of the rows a spacer stands for, in pixels (C-83).',
+    addedBy: 'C-83'
   }
 ]

@@ -164,6 +164,34 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-72', 'C-74']
   },
   {
+    id: 'virtual-scroll',
+    title: 'Virtual scroll',
+    summary:
+      'Thousands of rows in one scroll box: `virtual` draws the rows in view and `overscan` more between two spacer rows, measures their heights, keeps the focused row drawn and prints every row. `scrollToIndex` brings any row into view.',
+    example: 'VirtualScroll',
+    api: {
+      props: ['virtual', 'rowKey', 'hasSubtable'],
+      exposed: ['scrollToIndex'],
+      slots: ['subtable'],
+      types: ['VirtualOptions', 'ScrollToIndexOptions', 'QueryTableExpose']
+    },
+    rules: ['C-83', 'C-84', 'C-85', 'C-86', 'C-87', 'C-91']
+  },
+  {
+    id: 'infinite-scroll',
+    title: 'Infinite scroll',
+    summary:
+      'The next page is asked for when the end of the rows comes near; the page appends it. A sort or a filter starts the list over, and the `load-more` row offers a retry after an error.',
+    example: 'InfiniteScroll',
+    api: {
+      props: ['infinite', 'virtual', 'loading'],
+      exposed: ['loadMore'],
+      slots: ['load-more', 'loading'],
+      types: ['InfiniteOptions', 'LoadMoreSlotProps']
+    },
+    rules: ['C-86', 'C-88', 'C-89', 'C-90', 'C-91']
+  },
+  {
     id: 'footer-rows',
     title: 'Footer rows',
     summary:

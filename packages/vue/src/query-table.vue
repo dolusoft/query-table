@@ -9,6 +9,7 @@ import { applyWidth, sideOf, type PinSide } from './columns/column-layout'
 import type {
   CellSlotProps,
   HeaderSlotProps,
+  LoadMoreSlotProps,
   Query,
   QueryTableExpose,
   TableEmits,
@@ -29,6 +30,8 @@ import { useHeaderGeometry } from './pin/use-header-geometry'
 import { useColumnReorder } from './reorder/use-column-reorder'
 import { useColumnResize } from './resize/use-column-resize'
 import { useQueryTable } from './use-query-table'
+import { useLoadMore } from './virtual/use-load-more'
+import { useRowWindow } from './virtual/use-row-window'
 
 defineOptions({ name: 'QueryTable' })
 
@@ -49,7 +52,9 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   hasSubtable: false,
   hasRightPanel: false,
   rowKey: undefined,
-  labels: undefined
+  labels: undefined,
+  virtual: false,
+  infinite: false
 })
 
 const emit = defineEmits<TableEmits<T, Q>>()
@@ -142,6 +147,62 @@ const resize = useColumnResize({
   }
 })
 
+// The virtual body (C-83 to C-87) and infinite scroll (C-88 to C-90).
+// Without `virtual` the body draws `bodyRows` as they are; without
+// `infinite` nothing is asked for.
+const rowWindow = useRowWindow<T>({
+  virtual: () => props.virtual,
+  table: tableEl,
+  bodyRows: () => state.rowPinning.rows.value,
+  keyOf: expansion.keyOf,
+  isExpanded: expansion.isExpanded
+})
+const infinite = useLoadMore({
+  infinite: () => props.infinite,
+  rowKey: () => props.rowKey,
+  rows: () => props.rows,
+  query: () => props.query,
+  totalRows: () => props.totalRows,
+  cursors: () => props.cursors,
+  loading: () => props.loading,
+  nextPage: () => paginationProps.value.nextPage(),
+  table: tableEl,
+  virtual: rowWindow.enabled,
+  window: () =>
+    rowWindow.ready.value
+      ? { end: rowWindow.range.value.end, count: rowWindow.centerCount() }
+      : null
+})
+const loadMoreProps = computed<LoadMoreSlotProps | null>(() =>
+  infinite.enabled.value
+    ? {
+        loadMore: infinite.loadMore,
+        canLoadMore: infinite.canLoadMore.value,
+        loading: props.loading
+      }
+    : null
+)
+const footerCount = computed(() => props.footerRows.length)
+/** More to load in an infinite list: the count is not the rows given (C-86). */
+const growing = () => infinite.enabled.value && infinite.canLoadMore.value
+const ariaRowCount = computed(() => {
+  if (!rowWindow.enabled()) {
+    return undefined
+  }
+  const total = props.totalRows
+  if (growing() && total === null) {
+    return -1
+  }
+  const rows = growing() && total !== null ? total : props.rows.length
+  return 1 + rows + rowWindow.expandedCount() + footerCount.value
+})
+/** `aria-rowindex` of the first footer row, or `undefined` (C-86). */
+const footerRowIndex = computed(() =>
+  !rowWindow.enabled() || growing()
+    ? undefined
+    : 2 + props.rows.length + rowWindow.expandedCount()
+)
+
 const reorder = useColumnReorder({
   reorderable: () => props.reorderable,
   table: tableEl,
@@ -191,7 +252,8 @@ const bodySlotNames = () =>
       name.startsWith('cell-') ||
       name === 'subtable' ||
       name === 'empty' ||
-      name === 'loading'
+      name === 'loading' ||
+      name === 'load-more'
   )
 // A string, so the header sees a changed prop only when the set changes.
 const headerSlotNames = () =>
@@ -211,7 +273,9 @@ const exposed: QueryTableExpose = {
   focusFilter: field => focusFilterOf(tableEl.value, field),
   flushPendingFilters: () => {
     filters.flushAll()
-  }
+  },
+  scrollToIndex: rowWindow.scrollToIndex,
+  loadMore: infinite.loadMore
 }
 defineExpose(exposed)
 </script>
@@ -225,7 +289,7 @@ defineExpose(exposed)
   >
     <slot name="toolbar" v-bind="toolbarProps()" />
     <div class="qt-table-responsive">
-      <table ref="tableEl" class="qt-table">
+      <table ref="tableEl" class="qt-table" :aria-rowcount="ariaRowCount">
         <thead>
           <table-header
             :columns="visibleColumns"
@@ -235,6 +299,7 @@ defineExpose(exposed)
             :has-pinned="hasPinned"
             :offsets="offsets"
             :slot-names="headerSlotNames()"
+            :aria-rowindex="rowWindow.enabled() ? 1 : undefined"
           >
             <!-- Stable slots: the header re-renders only when its props
                  change, not with every render of the root (`loading`,
@@ -256,7 +321,7 @@ defineExpose(exposed)
         </thead>
         <table-body
           :rows="rows"
-          :body-rows="state.rowPinning.rows.value"
+          :body-rows="rowWindow.drawn.value"
           :pin-row="state.rowPinning.pin"
           :loading="loading"
           :entries="entries"
@@ -273,8 +338,11 @@ defineExpose(exposed)
           :toggle="expansion.toggle"
           :labels="labels"
           :has-context-menu-listener="hasContextMenuListener"
+          :load-more="loadMoreProps"
           @row-right-panel-click="row => emit('rowRightPanelClick', row)"
           @cell-context-menu="payload => emit('cellContextMenu', payload)"
+          @focusin="rowWindow.onFocusIn"
+          @focusout="rowWindow.onFocusOut"
         >
           <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
             <!-- Names are dynamic (cell-<field>); the types only widen here. -->
@@ -288,6 +356,7 @@ defineExpose(exposed)
           :utility-count="utilityCount"
           :has-pinned="hasPinned"
           :offsets="offsets"
+          :first-row-index="footerRowIndex"
         />
       </table>
     </div>

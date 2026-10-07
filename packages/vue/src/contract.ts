@@ -227,6 +227,55 @@ export interface TableProps<
    * their English defaults.
    */
   labels?: Partial<TableLabels>
+  /**
+   * Draw only the rows in view of the scroll container, between two spacer
+   * rows (C-83). `true` takes the defaults. Give the table
+   * `table-layout: fixed` (C-85). Defaults to `false`.
+   */
+  virtual?: boolean | VirtualOptions
+  /**
+   * Ask for the next page (`update:query`, reason `page`) when the end of
+   * `rows` comes into view (C-88); append the rows of a `page` answer and
+   * replace them for any other reason. Needs `rowKey`. `true` takes the
+   * defaults. Defaults to `false`.
+   */
+  infinite?: boolean | InfiniteOptions
+}
+
+/** Options of `virtual` (C-83 to C-87). */
+export interface VirtualOptions {
+  /** Height of every row in pixels: nothing is measured (C-84). */
+  rowHeight?: number
+  /** Height counted for a row not measured yet. Defaults to the first measured row, else `32`. */
+  estimateRowHeight?: number
+  /** Rows drawn beyond each edge of the view. Defaults to `10`. */
+  overscan?: number
+  /**
+   * The scroll container. Defaults to the nearest scrolling ancestor of the
+   * table, else the window (C-85).
+   */
+  scrollElement?: () => HTMLElement | null
+}
+
+/** Options of `infinite` (C-88). */
+export interface InfiniteOptions {
+  /** Ask for the next page when the last this many rows come near. Defaults to `5`. */
+  threshold?: number
+}
+
+/** Options of `scrollToIndex` (C-87). */
+export interface ScrollToIndexOptions {
+  /** Where the row ends up in the container. Defaults to `'auto'`: the nearest edge, nothing when in view. */
+  align?: 'start' | 'center' | 'end' | 'auto'
+}
+
+/** What the `load-more` slot receives (C-89). */
+export interface LoadMoreSlotProps {
+  /** Ask for the next page now; nothing while `loading` or when `canLoadMore` is false. */
+  loadMore: () => void
+  /** There is a next page (C-90). */
+  canLoadMore: boolean
+  loading: boolean
 }
 
 /**
@@ -495,6 +544,11 @@ export interface TableSlots<T> {
   /** Paging controls. The block is drawn only when this slot is given. */
   pagination?(props: PaginationSlotProps): unknown
   /**
+   * With `infinite`: the last row of the body while `loading` is off, in a
+   * `tr.qt-load-more-row`, for a "load more" or "try again" control (C-89).
+   */
+  'load-more'?(props: LoadMoreSlotProps): unknown
+  /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its
    * resize handle stay. Draw a sort control with `toggleSort` if you want one.
@@ -524,4 +578,14 @@ export interface QueryTableExpose {
    * that has been emitted when the call returns.
    */
   flushPendingFilters(): void
+  /**
+   * Scroll the row with this index in `rows` into view (C-87). Emits
+   * nothing; an index outside `rows` does nothing.
+   */
+  scrollToIndex(index: number, options?: ScrollToIndexOptions): void
+  /**
+   * With `infinite`: ask for the next page now (C-89), as a retry after an
+   * error. Nothing while `loading` or when there is no next page.
+   */
+  loadMore(): void
 }

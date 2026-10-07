@@ -4,7 +4,7 @@ import { userEvent } from 'vitest/browser'
 import { cleanup } from 'vitest-browser-vue'
 
 import type { Theme } from '../../../apps/playground/harness/theme'
-import { makeQuery } from '../../support/fixtures'
+import { makeQuery, rows } from '../../support/fixtures'
 import { columns, renderTable, rule } from '../../support/helpers'
 
 // PRINCIPLES.md P7: an automated accessibility scan (axe-core) of the table in
@@ -126,6 +126,31 @@ describe.each<Theme>(['light', 'dark'])(
         )
       })
       expect(document.querySelector('.qt-reorder-handle')).not.toBeNull()
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+    })
+  }
+)
+
+// 3.2 (C-83, C-86, C-89): not in a 3.1 baseline (`ADDED_AFTER_BASELINE`).
+describe.each<Theme>(['light', 'dark'])(
+  'C-86 accessibility scan (axe) of a virtual infinite list, %s theme',
+  theme => {
+    test('finds no violation with spacers, row indexes and an open row', async () => {
+      await renderTable({
+        ...everything,
+        theme,
+        rowKey: 'id',
+        rows: rows(300),
+        totalRows: null,
+        query: makeQuery({ pageSize: 300 }),
+        virtual: { overscan: 5 },
+        infinite: true
+      })
+      await userEvent.click(document.querySelector('.qt-expand')!)
+      expect(document.querySelector('.qt-virtual-spacer')).not.toBeNull()
+      expect(
+        document.querySelector('.qt-table')!.getAttribute('aria-rowcount')
+      ).toBe('-1')
       expect(await violationsIn('.qt-datatable')).toEqual([])
     })
   }
