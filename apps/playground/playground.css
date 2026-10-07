@@ -3,6 +3,13 @@
 @import "./skin/test-skin.css";
 @source ".";
 
+/* Code in Geist Mono (main.ts loads it), as on the shadcn-vue site. The
+   theme the CLI writes has no mono font: the preset picks a sans only. */
+@theme {
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+}
+
 /* The playground owns the touch targets around the unstyled table. Keep the
    desktop skin's compact controls, but give phone and tablet users room to tap. */
 @media (max-width: 1023px) {

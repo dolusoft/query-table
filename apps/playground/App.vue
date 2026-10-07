@@ -24,6 +24,7 @@ import { repositoryUrl } from './home/home-content'
 import { pages } from './manifest'
 import DocSearch from './search/DocSearch.vue'
 import ExternalLinks from './shell/ExternalLinks.vue'
+import SiteHeader from './shell/SiteHeader.vue'
 import ThemeToggle from './shell/ThemeToggle.vue'
 
 // The playground shell is shadcn-vue. The home page (`meta.landing`) has a
@@ -86,47 +87,17 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
 
 <template>
   <div v-if="$route.meta.landing" class="flex min-h-svh flex-col bg-background">
-    <header
-      class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
-    >
-      <div
-        class="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6"
-      >
-        <RouterLink to="/" class="mr-auto text-sm font-semibold">
-          Query Table
-        </RouterLink>
-        <nav aria-label="Site" class="flex items-center gap-1">
-          <Button
-            as-child
-            variant="ghost"
-            size="sm"
-            class="min-h-11 sm:min-h-7"
-          >
-            <RouterLink to="/overview">Docs</RouterLink>
-          </Button>
-        </nav>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          data-testid="doc-search-button"
-          class="min-h-11 min-w-11 gap-2 sm:min-h-7 sm:min-w-0 bg-background font-normal text-muted-foreground"
-          @click="searchOpen = true"
-        >
-          <SearchIcon class="opacity-60" />
-          <span class="sr-only sm:not-sr-only">Search docs</span>
-          <Kbd class="hidden text-foreground sm:inline-flex">{{
-            shortcut
-          }}</Kbd>
-        </Button>
-      </div>
-    </header>
+    <SiteHeader
+      v-model:theme="theme"
+      :shortcut="shortcut"
+      @search="searchOpen = true"
+    />
     <main class="flex-1">
       <RouterView />
     </main>
     <footer class="border-t">
       <div
-        class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-muted-foreground sm:px-6"
+        class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-muted-foreground sm:px-6"
       >
         <p>
           Query Table ·
@@ -139,7 +110,6 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
           >
         </p>
         <ExternalLinks label="Elsewhere" />
-        <ThemeToggle v-model="theme" />
       </div>
     </footer>
   </div>

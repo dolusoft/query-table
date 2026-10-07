@@ -13,6 +13,13 @@ export const pitch =
 /** Install from npm at the version shown by this playground. */
 export const installCommand = `pnpm add @dolusoft/query-table@${version}`
 
+/** The same install for each package manager, one tab each on the home page. */
+export const installCommands = [
+  { manager: 'pnpm', command: installCommand },
+  { manager: 'npm', command: `npm install @dolusoft/query-table@${version}` },
+  { manager: 'yarn', command: `yarn add @dolusoft/query-table@${version}` }
+] as const
+
 export interface HomeSection {
   /** Element id on the home page, the search anchor. */
   id: string
@@ -38,7 +45,7 @@ export const showcaseFeatures: Array<{ label: string; pageId: string }> = [
 export const showcase: HomeSection = {
   id: 'showcase',
   title: 'One table, most of the features',
-  text: 'A fake server answers every query after a short delay: it filters, sorts and pages 200 people. The first load shows skeleton rows in the shape of the page, and later requests dim the rows they keep. ID and Name stay pinned while the table scrolls sideways, header edges resize the columns, each row opens its orders in a nested table, and the footer sums the salary over every match. Narrower than 640 pixels the table switches to compact headers, filter chips and a filter sheet.'
+  text: 'A fake server filters, sorts and pages 200 people after a short delay. ID and Name stay pinned, header edges resize the columns, each row opens its orders and the footer sums the salary over every match. Narrower than 640 pixels the table switches to compact headers, filter chips and a filter sheet.'
 }
 
 /** Features with a page of their own that the showcase does not use. */
