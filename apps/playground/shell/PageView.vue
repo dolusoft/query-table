@@ -8,6 +8,7 @@ import CodeBlock from './CodeBlock.vue'
 import DocHeader from './DocHeader.vue'
 import RuleList from './RuleList.vue'
 import type { PlaygroundPage } from '../manifest'
+import { datasetId } from '../scenarios/datasets'
 import { sectionAnchors } from '../search/anchors'
 
 // One page: the live example and its source (the same file, imported raw)
@@ -65,7 +66,9 @@ watch(
           force-mount
           class="min-w-0 rounded-xl border p-4 data-[state=inactive]:hidden"
         >
-          <component :is="example" :key="page.id" />
+          <!-- A new example per page and per demo dataset: the example reads
+               the dataset once, so a new choice mounts it again. -->
+          <component :is="example" :key="`${page.id}:${datasetId()}`" />
         </TabsContent>
         <TabsContent :id="sectionAnchors.source" value="code" class="min-w-0">
           <CodeBlock

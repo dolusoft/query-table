@@ -22,6 +22,7 @@ import {
 } from '@/ui/sheet'
 
 import BrandIcon from './BrandIcon.vue'
+import DatasetMenu from './DatasetMenu.vue'
 import ThemeMenu from './ThemeMenu.vue'
 import type { Theme } from '../harness/theme'
 import { repositoryUrl } from '../home/home-content'
@@ -84,6 +85,10 @@ const menuOpen = ref(false)
               </RouterLink>
             </Button>
           </nav>
+          <!-- The demo data switch of the top bar, here on a phone. -->
+          <div class="px-4">
+            <DatasetMenu align="start" class="w-full" />
+          </div>
         </SheetContent>
       </Sheet>
       <RouterLink
@@ -118,6 +123,7 @@ const menuOpen = ref(false)
         </NavigationMenuList>
       </NavigationMenu>
       <div class="ml-auto flex items-center gap-1">
+        <DatasetMenu collapse class="hidden sm:inline-flex" />
         <Button
           type="button"
           variant="secondary"

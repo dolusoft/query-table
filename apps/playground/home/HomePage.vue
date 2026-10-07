@@ -50,6 +50,7 @@ import {
   tanstackLine
 } from './home-content'
 import ShowcaseTable from './ShowcaseTable.vue'
+import { currentDataset } from '../scenarios/datasets'
 import BrandIcon from '../shell/BrandIcon.vue'
 import InlineCode from '../shell/InlineCode.vue'
 
@@ -57,6 +58,9 @@ import InlineCode from '../shell/InlineCode.vue'
 // shows it working, and links into the documentation pages. Built from
 // shadcn-vue parts (Badge, Button, Tabs, InputGroup, Card, Item) after the
 // shadcn-vue site: a centred hero, then sections in one column.
+
+// The demo data the header selects: the showcase hint and table follow it.
+const dataset = computed(currentDataset)
 
 const manager = ref<string>(installCommands[0].manager)
 const command = computed(
@@ -211,13 +215,12 @@ const base = import.meta.env.BASE_URL
             </li>
           </ul>
           <CardDescription>
-            Try it: type <InlineCode text="`!ankara`" /> into City or
-            <InlineCode text="`ali,eve`" /> into Name, or pick Greater Than in
-            the filter menu of Age.
+            <InlineCode :text="dataset.hint" />
           </CardDescription>
         </CardHeader>
         <CardContent class="min-w-0 px-3 sm:px-4">
-          <ShowcaseTable />
+          <!-- Mounted again when the header picks another dataset. -->
+          <ShowcaseTable :key="dataset.id" />
         </CardContent>
       </Card>
     </section>

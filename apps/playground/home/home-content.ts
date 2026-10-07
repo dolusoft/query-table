@@ -45,7 +45,7 @@ export const showcaseFeatures: Array<{ label: string; pageId: string }> = [
 export const showcase: HomeSection = {
   id: 'showcase',
   title: 'One table, most of the features',
-  text: 'A fake server filters, sorts and pages 200 people after a short delay. ID and Name stay pinned, header edges resize the columns, each row opens its orders and the footer sums the salary over every match. Narrower than 640 pixels the table switches to compact headers, filter chips and a filter sheet.'
+  text: 'A fake server filters, sorts and pages 200 rows of the demo data picked in the header after a short delay. The first two columns stay pinned, header edges resize the columns, each row opens its own detail table and the footer sums a column over every match. Narrower than 640 pixels the table switches to compact headers, filter chips and a filter sheet.'
 }
 
 /** Features with a page of their own that the showcase does not use. */

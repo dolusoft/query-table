@@ -7,9 +7,14 @@ import { QueryTable } from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
+import {
+  columnOf,
+  currentDataset,
+  useFakeServer,
+  wideColumns
+} from '../scenarios'
 
-// `pinned: 'left'` keeps ID and Name at the start while the rest scrolls
+// `pinned: 'left'` keeps the first two columns at the start while the rest scrolls
 // sideways; `pinned: 'right'` keeps a column at the end. The table draws
 // left-pinned columns first and right-pinned ones last, and writes
 // `data-pinned` (empty on the left, `right` on the right) and the measured
@@ -25,29 +30,32 @@ import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
 //     z-index: 1;
 //     background: var(--background);
 //   }
-const pinCity = ref(false)
-const pinActiveRight = ref(false)
+const data = currentDataset()
+const { category, flag, primary } = data.fields
+const title = (field: string) => columnOf(data, field).title ?? field
+const pinCategory = ref(false)
+const pinFlagRight = ref(false)
 const columns = computed(() =>
-  wideColumns().map(column =>
-    column.field === 'city' && pinCity.value
+  wideColumns(data).map(column =>
+    column.field === category && pinCategory.value
       ? { ...column, pinned: 'left' as const }
-      : column.field === 'active' && pinActiveRight.value
+      : column.field === flag && pinFlagRight.value
         ? { ...column, pinned: 'right' as const }
         : column
   )
 )
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
     <Label class="font-normal text-muted-foreground">
-      <Checkbox v-model="pinCity" />
-      Pin City too (it moves next to Name)
+      <Checkbox v-model="pinCategory" />
+      Pin {{ title(category) }} too (it moves next to {{ title(primary) }})
     </Label>
     <Label class="font-normal text-muted-foreground">
-      <Checkbox v-model="pinActiveRight" />
-      Pin Active to the right
+      <Checkbox v-model="pinFlagRight" />
+      Pin {{ title(flag) }} to the right
     </Label>
     <!-- Consumer CSS of this page: the table takes its columns' widths and
          scrolls sideways instead of squeezing them. -->
@@ -72,7 +80,7 @@ const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
              minus the cell's padding. -->
         <template #subtable="{ row }">
           <div class="sticky left-2 w-[calc(100cqw-1rem)]">
-            Details of {{ row.name }} from {{ row.city }}.
+            {{ data.describe(row) }}
           </div>
         </template>
         <template #pagination="page">

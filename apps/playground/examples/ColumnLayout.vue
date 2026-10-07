@@ -19,7 +19,7 @@ import {
 
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
+import { currentDataset, useFakeServer, wideColumns } from '../scenarios'
 
 // The page owns the layout: `hide`, the order of the array and `pinned`
 // live in its `columns`. The buttons next to each filter menu call the
@@ -35,8 +35,9 @@ import { createDemoRows, useFakeServer, wideColumns } from '../scenarios'
 // With `reorderable` every header starts with a handle: drag it, or focus it
 // and press the arrow keys, Home or End. The table draws no live region, so
 // the page announces the new position itself, from `update:columns`.
-const columns = shallowRef<Column[]>(wideColumns())
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 20 })
+const data = currentDataset()
+const columns = shallowRef<Column[]>(wideColumns(data))
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
 
 const withoutHide = (column: Column): Column => {
   const copy = { ...column }

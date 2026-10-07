@@ -8,8 +8,9 @@ import { QueryTable } from '@dolusoft/query-table'
 
 import TablePager from '../harness/TablePager.vue'
 import {
-  createDemoRows,
-  peopleColumns,
+  columnOf,
+  currentDataset,
+  listColumns,
   useFakeServer,
   type DemoRow
 } from '../scenarios'
@@ -18,12 +19,14 @@ import {
 // checkbox, a link, a badge. The table cancels no click, so they keep their
 // default action. A right click on a cell emits `cellContextMenu`; the
 // right-panel button of a row emits `rowRightPanelClick`.
+const data = currentDataset()
+const { primary, flag } = data.fields
 const columns: Column[] = [
   { field: 'pick', title: '', width: '40px', filterable: false },
-  ...peopleColumns(),
-  { field: 'active', title: 'Status', type: 'bool' }
+  ...listColumns(data),
+  columnOf(data, flag)
 ]
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 10 })
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 const picked = ref<number[]>([])
 const togglePick = (id: number, on: boolean) => {
   picked.value = on
@@ -36,7 +39,7 @@ const onContextMenu = (payload: CellContextMenuPayload<DemoRow>) => {
   lastEvent.value = `cellContextMenu: row ${payload.row.id}, column "${payload.column.field}", value ${JSON.stringify(payload.cellValue)}`
 }
 const onRightPanel = (row: DemoRow) => {
-  lastEvent.value = `rowRightPanelClick: row ${row.id} (${row.name})`
+  lastEvent.value = `rowRightPanelClick: row ${row.id} (${String(row[primary])})`
 }
 </script>
 
@@ -63,17 +66,17 @@ const onRightPanel = (row: DemoRow) => {
           @update:model-value="togglePick((row as DemoRow).id, $event === true)"
         />
       </template>
-      <template #cell-name="{ row, cellValue }">
+      <template #[`cell-${primary}`]="{ row, cellValue }">
         <a
           class="text-primary underline-offset-4 hover:underline dark:text-sidebar-primary"
-          :href="`#person-${(row as DemoRow).id}`"
+          :href="`#${data.noun.one}-${(row as DemoRow).id}`"
           @click.prevent
           >{{ cellValue }}</a
         >
       </template>
-      <template #cell-active="{ cellValue }">
+      <template #[`cell-${flag}`]="{ cellValue }">
         <Badge :variant="cellValue ? 'secondary' : 'outline'">{{
-          cellValue ? 'Active' : 'Inactive'
+          cellValue ? data.flagLabels.on : data.flagLabels.off
         }}</Badge>
       </template>
       <template #pagination="page">

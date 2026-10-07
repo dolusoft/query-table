@@ -16,7 +16,7 @@ const around = computed(() => neighbours(route.path))
 <template>
   <nav
     aria-label="Previous and next page"
-    class="mx-auto flex w-full max-w-160 items-center gap-2 pt-10"
+    class="flex w-full max-w-160 items-center gap-2 pt-10"
   >
     <Button
       v-if="around.previous"

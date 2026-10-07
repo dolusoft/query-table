@@ -16,8 +16,9 @@ import SiteHeader from './shell/SiteHeader.vue'
 // The playground shell is shadcn-vue. Every page has the site header. The
 // home page (`meta.landing`) has the page below it. A documentation page
 // follows the shadcn-vue docs: the sidebar on the left (a Sheet behind the
-// header's menu button below `md`), the page in a 40rem reading column, and
-// "On This Page" on the right from `xl`.
+// header's menu button below `md`), the page in a 40rem reading column whose
+// example preview widens to the right, and "On This Page" on the right from
+// 84rem.
 
 // System follows the OS (`prefers-color-scheme`); light and dark set
 // `data-theme` on <html>, which wins. `?theme=light|dark` picks one on load.
@@ -102,19 +103,24 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
       <DocsSidebar />
       <SidebarInset class="min-w-0 flex-row">
         <div ref="column" class="flex min-w-0 flex-1 flex-col">
-          <!-- Text keeps the 40rem measure of the shadcn-vue docs; a part
-               marked `data-wide` (an example's preview) takes the whole
-               column, or a table example drops to its phone layout. -->
+          <!-- Text keeps the 40rem measure of the shadcn-vue docs. A part
+               marked `data-wide` (an example's preview) starts on the same
+               left edge and widens to the right, up to 64rem: in 40rem a
+               table example drops to its phone layout. -->
           <div
-            class="flex w-full min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:mx-auto [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
+            class="flex w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
           >
             <!-- A new page instance per route: each page mounts its own example. -->
             <RouterView :key="$route.path" />
             <DocPager />
           </div>
         </div>
+        <!-- "On This Page" takes a rail of its own only from 84rem: below
+             that the rail would leave the preview too narrow for the
+             Overview table (48rem plus the card), so the page goes without
+             it there and the preview uses that room. -->
         <aside
-          class="sticky top-16 hidden h-[calc(100svh-4rem)] w-56 shrink-0 flex-col overflow-y-auto pt-8 xl:flex"
+          class="sticky top-16 hidden h-[calc(100svh-4rem)] w-56 shrink-0 flex-col overflow-y-auto pt-8 min-[84rem]:flex"
         >
           <DocToc :root="column" />
         </aside>

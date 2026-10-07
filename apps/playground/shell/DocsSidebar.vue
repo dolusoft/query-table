@@ -14,15 +14,17 @@ import {
   useSidebar
 } from '@/ui/sidebar'
 
+import DatasetMenu from './DatasetMenu.vue'
 import { navigation } from './docs-nav'
 import { aiNav } from '../guides/guides'
 
 // The documentation sidebar, after the shadcn-vue docs: an offcanvas
 // shadcn-vue `Sidebar` below the 4rem site header with two groups, the pages
 // and AI. Below `md` the same Sidebar is a Sheet that the header's menu
-// button opens; following a link closes it.
+// button opens, with the demo data switch on top; following a link closes
+// it.
 const route = useRoute()
-const { setOpenMobile } = useSidebar()
+const { isMobile, setOpenMobile } = useSidebar()
 
 // The AI entries share a route; the hash tells them apart.
 const isAiActive = (to: string) => {
@@ -48,6 +50,16 @@ const link =
     class="top-16 h-[calc(100svh-4rem)]! border-r-0! *:data-[slot=sidebar-inner]:bg-background"
   >
     <SidebarContent class="pt-4">
+      <!-- In the Sheet the header's menu button opens, the demo data switch
+           the header shows from `sm` up: on a phone the bar has no room. -->
+      <SidebarGroup v-if="isMobile">
+        <SidebarGroupLabel class="text-muted-foreground"
+          >Demo data</SidebarGroupLabel
+        >
+        <SidebarGroupContent class="px-2">
+          <DatasetMenu align="start" class="w-full" />
+        </SidebarGroupContent>
+      </SidebarGroup>
       <SidebarGroup>
         <SidebarGroupLabel class="text-muted-foreground"
           >Pages</SidebarGroupLabel

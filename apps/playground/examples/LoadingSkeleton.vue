@@ -11,7 +11,7 @@ import FilterMenu from '../harness/FilterMenu.vue'
 import { dimWhileLoading, useSkeletonRows } from '../harness/skeleton'
 import SkeletonCell from '../harness/SkeletonCell.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, peopleColumns, useSlowServer } from '../scenarios'
+import { currentDataset, listColumns, useSlowServer } from '../scenarios'
 
 // The table only exposes `loading` (root `data-loading` and `aria-busy`) and
 // a `loading` slot. A skeleton is the consumer's markup: placeholder rows go
@@ -21,8 +21,9 @@ import { createDemoRows, peopleColumns, useSlowServer } from '../scenarios'
 // First load: no rows yet, so placeholders fill the body. Refetch: the rows of
 // the last answer stay and are dimmed, which keeps the page steady; the second
 // table can swap them for placeholders instead.
-const columns = peopleColumns()
-const allRows = createDemoRows()
+const data = currentDataset()
+const columns = listColumns(data)
+const allRows = data.createRows()
 const delay = ref(1500)
 const hold = ref(false)
 const refetchStyle = ref<'dim' | 'skeleton'>('dim')
@@ -98,7 +99,7 @@ const againRows = useSkeletonRows({
           >
             <SkeletonCell :cell="cell" />
           </template>
-          <template #empty>No people match.</template>
+          <template #empty>No {{ data.noun.many }} match.</template>
         </QueryTable>
       </div>
     </section>
@@ -124,7 +125,9 @@ const againRows = useSkeletonRows({
         </Button>
         <span class="text-muted-foreground" aria-live="polite">
           {{
-            againLoading ? 'Loading…' : `${again.totalRows.value ?? 0} people`
+            againLoading
+              ? 'Loading…'
+              : `${again.totalRows.value ?? 0} ${data.noun.many}`
           }}
         </span>
       </div>
@@ -152,7 +155,7 @@ const againRows = useSkeletonRows({
           <template #filter-menu="menu">
             <FilterMenu :menu="menu" />
           </template>
-          <template #empty>No people match.</template>
+          <template #empty>No {{ data.noun.many }} match.</template>
           <template #pagination="page">
             <TablePager :page="page" />
           </template>

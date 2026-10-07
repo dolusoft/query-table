@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { QueryTable } from '@dolusoft/query-table'
 
@@ -9,7 +9,7 @@ import CompactHeader from '../harness/CompactHeader.vue'
 import FilterChips from '../harness/FilterChips.vue'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
+import { currentDataset, listColumns, useFakeServer } from '../scenarios'
 
 // A server-backed list: the page owns the query, the fake server answers
 // every change with one page of rows and the filtered total.
@@ -18,24 +18,32 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // turns the table's `filterable` off and draws, in `header-<field>` slots, a
 // sort button (`toggleSort`) and a funnel that opens a sheet for that column.
 // Chips above the table show the filters in `query.filters`.
-// Joined gets a width: a date input needs more room than an even share of
-// the fixed layout, which clipped its placeholder at 768px. ID gets 7rem: in
-// the compact header its sort button and funnel (2.75rem each on a
+// The date column gets a width: a date input needs more room than an even
+// share of the fixed layout, which clipped its placeholder at 768px. ID gets
+// 7rem: in the compact header its sort button and funnel (2.75rem each on a
 // touch screen) did not fit the scenario's 90px, and the funnel lay under
-// the Name header.
-const columns = peopleColumns().map(column =>
-  column.field === 'joined'
-    ? { ...column, width: '260px' }
-    : column.field === 'id'
-      ? { ...column, width: '7rem' }
-      : column
-)
-const { query, result } = useFakeServer(createDemoRows(), {
-  sort: { field: 'age', direction: 'asc' }
-})
-
+// the next header.
+// In the compact header the other columns take the dataset's widths too: an
+// even share of 48rem is narrower than a title like "Severity" with its sort
+// button and funnel. The table scrolls sideways there anyway.
+const data = currentDataset()
 const root = ref<HTMLElement | null>(null)
 const compact = useCompact(root)
+const columns = computed(() =>
+  listColumns(data).map(column =>
+    column.field === data.fields.when
+      ? { ...column, width: '260px' }
+      : column.field === 'id'
+        ? { ...column, width: '7rem' }
+        : compact.value
+          ? { ...column, width: data.columns[column.field]?.width }
+          : column
+  )
+)
+const { query, result } = useFakeServer(data.createRows(), {
+  sort: { field: data.fields.count, direction: 'asc' }
+})
+
 // The exposed members of the sheet and the chips.
 const sheet = ref<{
   open: (field: string, trigger?: HTMLElement | null) => Promise<void>
@@ -70,7 +78,11 @@ const edit = (field: string, trigger: HTMLElement) =>
         <div class="flex flex-col gap-2 pb-2">
           <p class="text-sm text-muted-foreground">
             {{ result.totalRows }}
-            {{ result.totalRows === 1 ? 'person matches' : 'people match' }}.
+            {{
+              result.totalRows === 1
+                ? `${data.noun.one} matches`
+                : `${data.noun.many} match`
+            }}.
           </p>
           <FilterChips
             v-if="compact"
