@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { rulesOf } from '@dolusoft/query-protocol'
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import type {
   Column,
@@ -16,6 +16,7 @@ import SortButton from './sort-button.vue'
 import { sideOf } from '../columns/column-layout'
 import { columnTypeOf } from '../core/column'
 import { useTableContext } from '../core/table-context'
+import { focusFirstFilter } from '../filter/focus-filter'
 import { pinAttrs, utilityKey, type Utility } from '../pin/pin'
 import { ariaSort } from '../sort/sort'
 
@@ -62,6 +63,46 @@ const dragAttrs = (column: Column) => {
 // A computed: the header re-renders when the answer changes, not with every
 // pending filter draft.
 const canClearAll = computed(() => filters.canClearAll())
+
+// C-22: a disabled button drops the focus to the page. The button a key or
+// assistive technology (a click with `detail` 0) activated hands it to the
+// first filter instead; a pointer click is left alone, so a touch screen
+// opens no keyboard.
+let keyedButton: HTMLButtonElement | null = null
+
+const onClearAll = (event: MouseEvent) => {
+  keyedButton =
+    event.detail === 0 ? (event.currentTarget as HTMLButtonElement) : null
+  filters.clearAll()
+}
+
+// The user left the button: a later clear from elsewhere is not theirs.
+const forgetKey = () => {
+  keyedButton = null
+}
+
+// `pre`: the button still holds the focus when the answer turns false.
+watch(
+  canClearAll,
+  can => {
+    const button = keyedButton
+    if (can || button === null) {
+      return
+    }
+    keyedButton = null
+    const doc = button.ownerDocument
+    if (doc.activeElement !== button) {
+      return
+    }
+    void nextTick(() => {
+      const active = doc.activeElement
+      if (active === button || active === doc.body || active === null) {
+        focusFirstFilter(button.closest('table'))
+      }
+    })
+  },
+  { flush: 'pre' }
+)
 
 const isFiltered = (column: Column) =>
   rulesOf(props.query.filters, column.field).length > 0
@@ -129,7 +170,8 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           :title="labels().clearAllFilters"
           :aria-label="labels().clearAllFilters"
           :disabled="!canClearAll"
-          @click.stop="filters.clearAll()"
+          @click.stop="onClearAll"
+          @blur="forgetKey"
         >
           <svg
             width="14"

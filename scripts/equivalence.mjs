@@ -115,7 +115,11 @@ const ADDED_AFTER_BASELINE = [
   // The test skin aligns by `data-type`, which a 3.1 table does not write.
   'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 the skin aligns the cells of a column by its type [own]',
   // The skin puts a number header's filter button at the end by `data-type`.
-  'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 a narrow number header keeps its filter button at the end [own]'
+  'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 a narrow number header keeps its filter button at the end [own]',
+  // 3.2: a keyed clear all hands the focus to the first filter (C-22); a
+  // 3.1 button drops it to the page when it turns disabled.
+  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing an applied filter with the keyboard hands the focus to the first filter',
+  'tests/contract/browser/focus-filter.browser.spec.ts > C-22 clearing text typed and not applied with the keyboard hands the focus to the first filter'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

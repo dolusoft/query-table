@@ -172,3 +172,66 @@ test('C-54 focusFilter returns false and moves no focus when there is no filter 
   expect(document.activeElement).toBe(outside)
   outside.remove()
 })
+
+const renderClearAll = async (filterDebounce: number) => {
+  const query = ref(makeQuery())
+  const updates: { reason: QueryChangeReason; query: Query }[] = []
+  await render(
+    defineComponent(
+      () => () =>
+        h(QueryTable, {
+          query: query.value,
+          columns: columns(),
+          rows: rows(2),
+          filterable: true,
+          hasRightPanel: true,
+          filterDebounce,
+          'onUpdate:query': (next: Query, reason: QueryChangeReason) => {
+            if (!('page' in next)) {
+              throw new Error('Expected a page query')
+            }
+            traceUpdate(next, reason)
+            updates.push({ reason, query: next })
+            query.value = next
+          }
+        })
+    )
+  )
+  return { updates, button: el<HTMLButtonElement>('.qt-clear-all-button') }
+}
+
+test.each([
+  ['an applied filter', 0],
+  ['text typed and not applied', 60_000]
+] as const)(
+  'C-22 clearing %s with the keyboard hands the focus to the first filter',
+  async (_, filterDebounce) => {
+    const { updates, button } = await renderClearAll(filterDebounce)
+    await userEvent.fill(page.getByCSS('th[data-field="name"] input'), 'ali')
+    await expect.poll(() => button.disabled).toBe(false)
+    button.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => button.disabled).toBe(true)
+    const first = el<HTMLInputElement>('th[data-field="id"] .qt-filter-input')
+    await expect.poll(() => document.activeElement).toBe(first)
+    await sleep(0)
+    expect(updates.map(update => update.reason)).toEqual(
+      filterDebounce === 0 ? ['filter', 'reset'] : []
+    )
+    expect(el<HTMLInputElement>('th[data-field="name"] input').value).toBe('')
+    // The next Tab goes on from the filter, not from the top of the page.
+    await userEvent.keyboard('{Tab}')
+    expect(first.closest('thead')?.contains(document.activeElement)).toBe(true)
+  }
+)
+
+test('C-22 a pointer click on clear all moves no focus to a filter', async () => {
+  const { updates, button } = await renderClearAll(0)
+  await userEvent.fill(page.getByCSS('th[data-field="name"] input'), 'ali')
+  await expect.poll(() => button.disabled).toBe(false)
+  await userEvent.click(button)
+  await expect.poll(() => button.disabled).toBe(true)
+  await sleep(0)
+  expect(updates.map(update => update.reason)).toEqual(['filter', 'reset'])
+  expect(document.activeElement?.tagName).not.toBe('INPUT')
+})
