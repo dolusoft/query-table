@@ -59,10 +59,11 @@ describe('feature matrix data', () => {
     expect(inGroup('client')).toEqual([
       'local-query',
       'fuzzy-search',
-      'client-functions',
-      'virtualization'
+      'client-functions'
     ])
     expect(inGroup('own')).toEqual([
+      'virtualization',
+      'infinite-scroll',
       'filter-grammar',
       'query-protocol',
       'one-action-one-update',

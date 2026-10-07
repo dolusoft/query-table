@@ -14,6 +14,8 @@ defineProps<{
   hasPinned: boolean
   /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: Readonly<Record<string, number>>
+  /** With `virtual`: `aria-rowindex` of the first footer row (C-86). */
+  firstRowIndex?: number
 }>()
 
 const footerText = (row: FooterRow, column: Column) =>
@@ -22,7 +24,13 @@ const footerText = (row: FooterRow, column: Column) =>
 
 <template>
   <tfoot class="qt-footer">
-    <tr v-for="(footerRow, i) in footerRows" :key="i">
+    <tr
+      v-for="(footerRow, i) in footerRows"
+      :key="i"
+      :aria-rowindex="
+        firstRowIndex === undefined ? undefined : firstRowIndex + i
+      "
+    >
       <!-- One cell spans the utilities; pinned, it starts at offset 0. -->
       <td
         v-if="utilityCount > 0"
