@@ -1,6 +1,6 @@
 # Principles
 
-Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)), and P1, P4, P9, P10 and P14 for the local evaluator ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)).
+Approved by Zahid on 2026-10-06 for 3.0.0 ([ADR 0006](docs/decisions/0006-release-3.md)). Against 2.2.x, P8, P9, P10 and P11 are rewritten and P14 and P15 are new; P1–P7, P12 and P13 keep their substance, and P5 and P6 belong to the Vue package ([docs/decisions/](docs/decisions/README.md)). P5, P9, P10 and P15 were amended for 3.1.0 on 2026-10-06 ([ADR 0007](docs/decisions/0007-column-layout-row-pinning.md)), and P1, P4, P9, P10 and P14 for the local evaluator ([ADR 0008](docs/decisions/0008-local-query-evaluation.md)). P5 was amended for 3.2.0 on 2026-10-07 ([ADR 0010](docs/decisions/0010-virtual-and-infinite-scroll.md)): the spacer row of a virtual body carries an inline `height`.
 
 These are the boundaries of Query Table. A change that crosses one needs the principle changed first, in its own discussion. Each principle names the check that holds it; where the check is a review, it says so.
 
@@ -42,7 +42,7 @@ Check: the C-03 test that sends every emitted query through a JSON round trip; `
 
 ## P5 No CSS, no styling props
 
-The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag), `--qt-pin-left` on a cell pinned to the left and `--qt-pin-right` on a cell pinned to the right. A geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS.
+The package ships no stylesheet and takes no styling props. The inline styles are listed: `width` on a header cell (its column's width, or the preview of a drag), `--qt-pin-left` on a cell pinned to the left, `--qt-pin-right` on a cell pinned to the right, and `height` on the spacer row of a virtual body (`tr.qt-virtual-spacer`: the height of the rows it stands for). Any other geometry value is only added as a listed `--qt-*` custom property that carries data, as the pin offset is; positioning, z-index and backgrounds stay in the consumer's CSS. The spacer's `height` is the one exception, because the scroll position depends on it: a consumer rule that left it out would break scrolling, not only look different.
 
 Why: every product has its own design system. A library that owns any of the look forces overrides.
 

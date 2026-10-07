@@ -573,6 +573,30 @@ th[data-filtered] .qt-filter-input {
   text-align: center;
 }
 
+/* own: a spacer of a virtual body only holds the height of the rows left
+   out (its inline `height`): no border, no padding, no hover. */
+.qt-table tbody > tr.qt-virtual-spacer {
+  border-width: 0;
+}
+/* own: its one cell adds nothing to that height. */
+.qt-table tbody > tr.qt-virtual-spacer > td {
+  padding: 0;
+  border-width: 0;
+}
+/* own: the row hover of TableRow does not reach a spacer. */
+@media (hover: hover) {
+  .qt-table tbody > tr.qt-virtual-spacer:hover {
+    background-color: transparent;
+  }
+}
+/* own: the load-more row of an infinite list, centered and muted like the
+   empty row. */
+.qt-load-more-row td {
+  padding: 0.5rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
 /* own: loading. The table keeps the rows and adds `tr.qt-loading-row` as the
    last row of the body. The skin lays it over the body only (the `tbody` is
    its containing block), so the header and the footer stay readable and
