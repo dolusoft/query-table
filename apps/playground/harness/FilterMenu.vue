@@ -8,9 +8,29 @@ import type { FilterMenuSlotProps } from '@dolusoft/query-table'
 
 // What a consumer writes in the `filter-menu` slot: the table's own trigger
 // wrapped in a real shadcn-vue Popover, with the condition list, the sort
-// buttons and "Clear filter" inside.
-const props = defineProps<{ menu: FilterMenuSlotProps }>()
+// buttons and "Clear filter" inside. The menu's own texts are the consumer's
+// (the table only names the conditions, through `labels.filterCondition`), so
+// a localised page passes `texts`.
+interface MenuTexts {
+  heading: string
+  sortAscending: string
+  sortDescending: string
+  clearFilter: string
+}
+const props = defineProps<{
+  menu: FilterMenuSlotProps
+  texts?: Partial<MenuTexts>
+}>()
 const open = ref(false)
+
+const text = (key: keyof MenuTexts) =>
+  props.texts?.[key] ??
+  {
+    heading: 'Filter Condition',
+    sortAscending: 'Sort Ascending',
+    sortDescending: 'Sort Descending',
+    clearFilter: 'Clear filter'
+  }[key]
 
 const pick = (run: () => void) => {
   run()
@@ -24,7 +44,9 @@ const pick = (run: () => void) => {
       <component :is="props.menu.trigger" />
     </PopoverTrigger>
     <PopoverContent align="start" class="w-56">
-      <p class="text-xs font-medium text-muted-foreground">Filter Condition</p>
+      <p class="text-xs font-medium text-muted-foreground">
+        {{ text('heading') }}
+      </p>
       <Button
         v-for="option in props.menu.conditions"
         :key="option.value"
@@ -44,7 +66,7 @@ const pick = (run: () => void) => {
           class="justify-start"
           @click="pick(() => props.menu.setSort('asc'))"
         >
-          Sort Ascending
+          {{ text('sortAscending') }}
         </Button>
         <Button
           variant="ghost"
@@ -52,7 +74,7 @@ const pick = (run: () => void) => {
           class="justify-start"
           @click="pick(() => props.menu.setSort('desc'))"
         >
-          Sort Descending
+          {{ text('sortDescending') }}
         </Button>
       </template>
       <Separator />
@@ -62,7 +84,7 @@ const pick = (run: () => void) => {
         class="justify-start text-destructive"
         @click="pick(() => props.menu.clear())"
       >
-        Clear filter
+        {{ text('clearFilter') }}
       </Button>
     </PopoverContent>
   </Popover>
