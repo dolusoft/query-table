@@ -1,0 +1,38 @@
+name: Feature request
+description: Something the table cannot do yet.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Query Table is headless and stays small on purpose. Before asking, a look at [PRINCIPLES.md](https://github.com/dolusoft/query-table/blob/main/PRINCIPLES.md) helps: the table ships no CSS (P5), draws no popover or menu (P13), and the consumer owns the data and the query (P1, P2). A request that fits these is the easiest to accept.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to build, and where the table gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: |
+        The smallest change that solves it. The table grows in this order (P10): a slot when you draw something, an event when you react, a prop when the table needs data or configuration, and a method only for an action that cannot be expressed as state.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do today
+      description: Your current workaround, if any.
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Where it belongs, if you know
+      options:
+        - '@dolusoft/query-table (Vue)'
+        - '@dolusoft/query-table-core (TanStack plugins)'
+        - '@dolusoft/query-protocol (query and filter grammar)'
+        - Documentation or playground
+        - Not sure

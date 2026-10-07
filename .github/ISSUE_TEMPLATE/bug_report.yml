@@ -1,0 +1,65 @@
+name: Bug report
+description: The table, the core plugins or the protocol do something other than the documented behavior.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The documented behavior is the numbered rules in [contract/rules.md](https://github.com/dolusoft/query-table/blob/main/contract/rules.md); a report that names the rule it breaks is the fastest to fix.
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What happens
+      description: What you see on the screen, in the emitted `update:query` or in the console.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: The behavior you expected, and the rule (`C-nn`) or documentation page that says so, if you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest setup that shows the problem. A link to a repository or a playground page is welcome.
+      placeholder: |
+        1. Columns: ...
+        2. Query: ...
+        3. Click / type ...
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - '@dolusoft/query-table (Vue)'
+        - '@dolusoft/query-table/local (useLocalQuery)'
+        - '@dolusoft/query-table-core (incl. /server-query, /filter-input)'
+        - '@dolusoft/query-protocol'
+        - '@dolusoft/query-protocol/local'
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The installed version of the package you picked (`pnpm why <package>` or `npm ls <package>`).
+      placeholder: 3.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Vue version, browser and operating system.
+      placeholder: Vue 3.5, Chrome 141, Windows 11
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, screenshots, the query JSON.
