@@ -57,7 +57,8 @@ export const pages: PlaygroundPage[] = [
       'C-32',
       'C-39',
       'C-40',
-      'C-41'
+      'C-41',
+      'C-82'
     ]
   },
   {
