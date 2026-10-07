@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest'
 import { cleanup, render } from 'vitest-browser-vue'
-import { h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
 import {
   drawnIndexes,
@@ -217,6 +217,90 @@ describe('C-85 Scroll element [own]', () => {
     expect(api.events).toEqual([])
   })
 
+  test('corrects the drift and lands scrollToIndex under scroll-behavior: smooth', async () => {
+    const style = document.createElement('style')
+    style.textContent = '.scroll-box { scroll-behavior: smooth; }'
+    document.head.append(style)
+    try {
+      const api = await mount({
+        tableProps: { virtual: { estimateRowHeight: 10, overscan: 2 } },
+        slots: {
+          'cell-name': (p: { rowIndex: number; row: { name: string } }) =>
+            h(
+              'div',
+              { style: p.rowIndex % 10 === 0 ? 'height: 120px' : '' },
+              p.row.name
+            )
+        }
+      })
+      const box = api.box()
+      // The user's own scrolling: instant, as a wheel or a drag would be.
+      const userScroll = async (top: number) => {
+        box.style.scrollBehavior = 'auto'
+        await scrollTo(box, top)
+        box.style.scrollBehavior = ''
+      }
+      await userScroll(3000)
+      await frames(4)
+      const first = firstVisible(box)
+      const index = first.dataset.rowIndex
+      const top = first.getBoundingClientRect().top
+      await userScroll(box.scrollTop - 40)
+      await frames(8)
+      const after = document.querySelector<HTMLElement>(
+        `.qt-table tbody > tr[data-row-index="${index}"]`
+      )!
+      expect(after.getBoundingClientRect().top).toBeCloseTo(top + 40, -1)
+
+      api.table().scrollToIndex(700, { align: 'start' })
+      await frames(8)
+      const tr = document.querySelector(
+        '.qt-table tbody > tr[data-row-index="700"]'
+      )!
+      expect(tr).not.toBeNull()
+      const head = document
+        .querySelector('.qt-table thead')!
+        .getBoundingClientRect()
+      const view = box.getBoundingClientRect()
+      const viewTop =
+        head.bottom > view.top && head.top <= view.top + 1
+          ? head.bottom
+          : view.top
+      expect(tr.getBoundingClientRect().top).toBeCloseTo(viewTop, -1)
+    } finally {
+      style.remove()
+    }
+  })
+
+  test('follows its scroll box when mounted hidden and shown later', async () => {
+    let api: HostApi | null = null
+    const shown = ref(false)
+    const Wrap = defineComponent({
+      setup: () => () =>
+        h('div', { style: shown.value ? '' : 'display: none' }, [
+          h(
+            ScrollHost as never,
+            {
+              rows: scrollRows(1000),
+              tableProps: { virtual: true },
+              height: 300,
+              api: (given: HostApi) => {
+                api = given
+              }
+            } as never
+          )
+        ])
+    })
+    await render(Wrap)
+    await frames(4)
+    shown.value = true
+    await frames(6)
+    await scrollTo(api!.box(), 15000)
+    await frames(4)
+    expect(drawnIndexes()[0]).toBeGreaterThan(300)
+    expect(drawnIndexes().length).toBeLessThan(80)
+  })
+
   test('warns once in development with the automatic table layout', async () => {
     restoreLayout()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
@@ -286,6 +370,23 @@ describe('C-86 Virtual accessibility [own]', () => {
     expect(
       document.querySelector('.qt-table')!.getAttribute('aria-rowcount')
     ).toBe('-1')
+  })
+
+  test('counts the known total while an infinite list has more to load, and leaves the footer unnumbered', async () => {
+    await mount({
+      count: 50,
+      totalRows: 5000,
+      tableProps: {
+        infinite: true,
+        footerRows: [{ cells: [{ field: 'age', text: 'Total' }] }]
+      }
+    })
+    // Header 1 + 5000 rows + 1 footer row.
+    expect(
+      document.querySelector('.qt-table')!.getAttribute('aria-rowcount')
+    ).toBe('5002')
+    const footer = document.querySelector('.qt-table tfoot > tr')!
+    expect(footer.hasAttribute('aria-rowindex')).toBe(false)
   })
 
   test('keeps the focused row drawn after it leaves the window', async () => {
@@ -373,9 +474,70 @@ describe('C-87 Print and scrollToIndex [own]', () => {
       if (align === 'end') {
         expect(rect.bottom).toBeCloseTo(view.top + box.clientHeight, -1)
       }
+      if (align === 'center') {
+        expect((rect.top + rect.bottom) / 2).toBeCloseTo(
+          (viewTop + view.top + box.clientHeight) / 2,
+          -1
+        )
+      }
       expect(api.events).toEqual([])
     }
   )
+
+  test('draws every row while the print media query matches', async () => {
+    let onChange: ((event: { matches: boolean }) => void) | null = null
+    const real = window.matchMedia.bind(window)
+    vi.spyOn(window, 'matchMedia').mockImplementation(query =>
+      query === 'print'
+        ? ({
+            matches: false,
+            media: query,
+            addEventListener: (_: string, handler: never) => {
+              onChange = handler
+            },
+            removeEventListener: () => undefined
+          } as unknown as MediaQueryList)
+        : real(query)
+    )
+    await mount({ count: 300 })
+    expect(onChange).not.toBeNull()
+    onChange!({ matches: true })
+    await frames(2)
+    expect(drawnIndexes()).toHaveLength(300)
+    expect(spacers()).toHaveLength(0)
+    onChange!({ matches: false })
+    await frames(4)
+    expect(drawnIndexes().length).toBeLessThan(300)
+  })
+
+  test('calls scrollIntoView on a pinned row', async () => {
+    const api = await mount({
+      tableProps: { rowPinning: { top: [], bottom: ['500'] } }
+    })
+    const spy = vi.spyOn(Element.prototype, 'scrollIntoView')
+    // Row id 500 is index 499.
+    api.table().scrollToIndex(499, { align: 'center' })
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.contexts[0]).toBe(
+      document.querySelector('.qt-table tbody > tr[data-pinned-row="bottom"]')
+    )
+    expect(spy.mock.calls[0][0]).toMatchObject({ block: 'center' })
+  })
+
+  test('drops a waiting scrollToIndex when rows change, and jumps nowhere later', async () => {
+    const api = await mount({
+      tableProps: { virtual: { rowHeight: 40, overscan: 2 } }
+    })
+    const box = api.box()
+    api.table().scrollToIndex(700, { align: 'start' })
+    api.setRows(scrollRows(50))
+    await frames(6)
+    api.setRows(scrollRows(1000))
+    await frames(6)
+    await scrollTo(box, 695 * 40)
+    await frames(6)
+    expect(box.scrollTop).toBeCloseTo(695 * 40, -1)
+  })
 
   test('does nothing for an index outside rows, and scrolls into view without virtual', async () => {
     const api = await mount({ count: 200, tableProps: { virtual: false } })

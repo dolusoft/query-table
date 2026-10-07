@@ -88,9 +88,12 @@ export const useLoadMore = (o: LoadMoreOptions) => {
       ) {
         return
       }
-      const target = tbody.querySelector(
-        `:scope > tr[data-row-index="${Math.max(0, count - 1 - threshold())}"]`
+      // Pinned rows (C-74) are drawn at the ends whatever their index: the
+      // threshold row is counted among the others, from the last one.
+      const others = tbody.querySelectorAll(
+        ':scope > tr[data-row-index]:not([data-pinned-row])'
       )
+      const target = others[Math.max(0, others.length - 1 - threshold())]
       if (target) {
         observer = new IntersectionObserver(entries => {
           seen.value = entries.some(entry => entry.isIntersecting)

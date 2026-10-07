@@ -88,11 +88,46 @@ describe('C-89 Load-more slot and method [own]', () => {
     expect(m.events).toHaveLength(2)
   })
 
-  it('asks for nothing while loading, without more to load, or without rowKey', async () => {
+  it('asks for nothing while loading, and asks once loading is off', async () => {
     const { m } = mountInfinite()
     await m.wrapper.setProps({ loading: true })
     exposed(m).loadMore()
-    await m.wrapper.setProps({ loading: false, totalRows: 5 })
+    expect(m.events).toEqual([])
+    // The same call with loading off asks: loading alone held it back.
+    await m.wrapper.setProps({ loading: false })
+    exposed(m).loadMore()
+    expect(m.events).toEqual([[makeQuery({ pageSize: 5, page: 2 }), 'page']])
+  })
+
+  it('draws only the empty row when rows is empty (C-38)', () => {
+    const box: Box = { slot: null }
+    mounted = mountTable(
+      {
+        infinite: true,
+        rowKey: 'id',
+        rows: [],
+        totalRows: null,
+        query: makeQuery({ pageSize: 5 })
+      },
+      {
+        slots: {
+          'load-more': (slot: LoadMoreSlotProps) => {
+            box.slot = slot
+            return h('button', 'more')
+          },
+          empty: () => h('i', 'nothing')
+        }
+      }
+    )
+    const classes = mounted.wrapper
+      .findAll('tbody > tr')
+      .map(tr => tr.classes())
+    expect(classes).toEqual([['qt-empty-row']])
+    expect(box.slot).toBe(null)
+  })
+
+  it('asks for nothing without more to load or without rowKey', () => {
+    const { m } = mountInfinite({ totalRows: 5 })
     exposed(m).loadMore()
     expect(m.events).toEqual([])
     m.wrapper.unmount()

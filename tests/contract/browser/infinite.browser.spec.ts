@@ -36,6 +36,7 @@ const mount = async (
     threshold?: number
     slots?: Record<string, unknown>
     totalRows?: number | null
+    tableProps?: Record<string, unknown>
   } = {}
 ) => {
   let api: HostApi | null = null
@@ -49,7 +50,8 @@ const mount = async (
           options.threshold === undefined
             ? true
             : { threshold: options.threshold },
-        virtual: options.virtual ?? false
+        virtual: options.virtual ?? false,
+        ...options.tableProps
       },
       slots: options.slots ?? {},
       api: (given: HostApi) => {
@@ -99,7 +101,35 @@ describe.each([false, true])(
       expect(api.events).toHaveLength(1)
     })
 
-    test('asks for nothing while loading, or at the end of the list', async () => {
+    test('asks for nothing while loading, and asks once loading is off', async () => {
+      const api = await mount({ virtual })
+      await settle()
+      api.setLoading(true)
+      await settle()
+      await bottom(api)
+      await settle()
+      expect(api.events).toEqual([])
+      // Still at the end: loading alone held the request back.
+      api.setLoading(false)
+      await settle()
+      expect(api.events.map(([query]) => query.page)).toEqual([2])
+    })
+
+    test('does not ask early for a pinned row', async () => {
+      // Row 45 is the threshold row by index; pinned to the top it is in
+      // view from the start and must not count.
+      const api = await mount({
+        virtual,
+        tableProps: { rowPinning: { top: ['45'], bottom: [] } }
+      })
+      await settle()
+      expect(api.events).toEqual([])
+      await bottom(api)
+      await settle()
+      expect(api.events.map(([query]) => query.page)).toEqual([2])
+    })
+
+    test('asks for nothing at the end of the list', async () => {
       const api = await mount({ virtual, totalRows: 50 })
       await settle()
       await bottom(api)

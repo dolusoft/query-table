@@ -58,9 +58,19 @@ const spacerKeys = [Symbol('above'), Symbol('between'), Symbol('below')]
  * they are and touches no DOM.
  */
 export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
-  const settings = computed<VirtualOptions | null>(() => {
+  // Compared by value: `:virtual="{ overscan: 5 }"` is a new object on every
+  // render of the consumer and must not draw the body again.
+  const settings = computed<VirtualOptions | null>(previous => {
     const value = o.virtual()
-    return value === true ? {} : value || null
+    const next = value === true ? {} : value || null
+    return previous &&
+      next &&
+      previous.overscan === next.overscan &&
+      previous.rowHeight === next.rowHeight &&
+      previous.estimateRowHeight === next.estimateRowHeight &&
+      previous.scrollElement === next.scrollElement
+      ? previous
+      : next
   })
   const enabled = () => settings.value !== null
   const overscan = () => Math.max(0, settings.value?.overscan ?? 10)
@@ -144,6 +154,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     }
     // Keys that left `rows` are dropped (C-84).
     byKey = kept
+    // A `scrollToIndex` waiting for its row meant the rows it was given.
+    pending = null
     offsets = new Float64Array(rows.length + 1)
     fillOffsets(heights, offsets)
     version.value++
@@ -237,7 +249,9 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
    */
   let expected: number | null = null
   /** A `scrollToIndex` to correct once its row is drawn (C-87). */
-  let pending: { position: number; align: Align } | null = null
+  let pending: { position: number; align: Align; tries: number } | null = null
+  /** Frames a `scrollToIndex` waits for its row before it is given up. */
+  const pendingFrames = 6
 
   const viewport = () => {
     if (container === null || container === window) {
@@ -263,15 +277,17 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   const scrollTopOf = (target: Container) =>
     target === window ? window.scrollY : (target as HTMLElement).scrollTop
 
+  // Always instant: with `scroll-behavior: smooth` on the container (or on
+  // the root, for the window) a plain assignment animates, the position
+  // read right after is the old one and the corrections land wrong.
   const scrollBy = (delta: number) => {
     if (Math.abs(delta) < 1 || !container) {
       return
     }
-    if (container === window) {
-      window.scrollBy(0, delta)
-    } else {
-      ;(container as HTMLElement).scrollTop += delta
-    }
+    container.scrollTo({
+      top: scrollTopOf(container) + delta,
+      behavior: 'instant'
+    })
   }
 
   /** How far to scroll to show an item at `top` (client) with `height`. */
@@ -323,8 +339,15 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
         scrollBy(
           alignDelta(tr.getBoundingClientRect().top, itemHeight(tr), align)
         )
+        return
       }
-      return
+      // Its row never got drawn (the container could not scroll that far,
+      // say): give up, so the drift correction works again.
+      if (++pending.tries <= pendingFrames) {
+        schedule()
+        return
+      }
+      pending = null
     }
     if (anchor) {
       const tr = rowElement(tbody, anchor.position)
@@ -503,6 +526,36 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
 
   let box: ResizeObserver | null = null
   let rowsObserver: ResizeObserver | null = null
+  /**
+   * Watches the table for coming into the layout: a table mounted inside
+   * `display: none` has no scrolling ancestor yet, so the container is
+   * looked for again once it has a size.
+   */
+  let shown: ResizeObserver | null = null
+  let hadSize = false
+  let watchedTable: HTMLTableElement | null = null
+  const watchShown = (table: HTMLTableElement | null) => {
+    if (table === watchedTable) {
+      return
+    }
+    shown?.disconnect()
+    shown = null
+    watchedTable = table
+    if (!table || typeof ResizeObserver === 'undefined') {
+      return
+    }
+    hadSize = table.getBoundingClientRect().height > 0
+    shown = new ResizeObserver(() => {
+      const hasSize = table.getBoundingClientRect().height > 0
+      if (hasSize !== hadSize) {
+        hadSize = hasSize
+        if (hasSize) {
+          attach()
+        }
+      }
+    })
+    shown.observe(table)
+  }
   const observed = new Set<Element>()
   let warned = false
 
@@ -540,9 +593,11 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   const attach = () => {
     const table = o.table.value
     if (!table || !enabled()) {
+      watchShown(null)
       detach()
       return
     }
+    watchShown(table)
     const next = findContainer(table)
     if (next !== container) {
       detach()
@@ -647,6 +702,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
 
   onBeforeUnmount(() => {
     detach()
+    watchShown(null)
     cancelAnimationFrame(frame)
     rowsObserver?.disconnect()
     printMedia?.removeEventListener('change', onPrintMedia)
@@ -667,11 +723,14 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     if (position < 0) {
       tbody
         .querySelector(`:scope > tr[data-row-index="${index}"]`)
-        ?.scrollIntoView({ block: align === 'auto' ? 'nearest' : align })
+        ?.scrollIntoView({
+          block: align === 'auto' ? 'nearest' : align,
+          behavior: 'instant'
+        })
       return
     }
     anchor = null
-    pending = { position, align }
+    pending = { position, align, tries: 0 }
     scrollBy(
       alignDelta(itemsTop(tbody) + offsets[position], heights[position], align)
     )

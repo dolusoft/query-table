@@ -198,7 +198,7 @@ const nextIndex = (aria: number | undefined) =>
       <td :colspan="columnCount"><slot name="empty" /></td>
     </tr>
     <tr
-      v-if="!loading && loadMore && slots['load-more']"
+      v-if="!loading && rows.length > 0 && loadMore && slots['load-more']"
       class="qt-load-more-row"
     >
       <td :colspan="columnCount">

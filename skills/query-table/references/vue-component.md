@@ -131,7 +131,22 @@ const cursors = ref<PageCursors>({ next: null, prev: null })
 - Heights are measured per key unless `rowHeight` is given; the table moves the scroll position so rows in view do not jump (C-84).
 - The scroll container is `scrollElement()`, else the nearest scrolling ancestor, else the window. Set `table-layout: fixed` or widths on every column; a development build warns otherwise (C-85).
 - `aria-rowcount`/`aria-rowindex` are written; a focused row stays drawn; printing draws every row (C-86, C-87).
-- `infinite` emits `update:query` with reason `page` once per query and row count. Append on `page`, replace on every other reason. On an error keep the rows and put back the old query; `loadMore()` retries (C-88, C-89). More to load: `cursors.next`, or `page < pageCount`, or a full last page with an unknown total (C-90).
+- `infinite` emits `update:query` with reason `page` once per query and row count. Append on `page`, replace on every other reason. More to load: `cursors.next`, or `page < pageCount`, or a full last page with an unknown total (C-90). An empty body draws only the `empty` row, no `load-more` row (C-38, C-89).
+- On an error keep the rows and **put back the query of those rows**; `loadMore()` then asks for the same page again (C-88, C-89). If the failed query stays, the next request is for the page after it and the failed page is skipped without a warning:
+
+```ts
+let shown = query.value // the query of the rows in `rows`
+async function onQuery(next: TableQuery, reason: QueryChangeReason) {
+  query.value = next
+  try {
+    const page = await fetchPage(next)
+    rows.value = reason === 'page' ? [...rows.value, ...page.rows] : page.rows
+    shown = next
+  } catch {
+    query.value = shown // keep the rows, put back their query
+  }
+}
+```
 
 ## useQueryTable()
 
