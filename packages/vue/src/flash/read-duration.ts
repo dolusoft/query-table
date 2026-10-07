@@ -1,5 +1,5 @@
 /** The custom property a skin sets the flash duration with (C-94). */
-export const durationProperty = '--qt-flash-duration'
+const durationProperty = '--qt-flash-duration'
 
 /**
  * A CSS time in milliseconds: `250ms`, `2s`, `.5s`. Anything else (a

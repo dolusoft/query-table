@@ -194,5 +194,3 @@ export const createMarks = () => {
     prune
   }
 }
-
-export type Marks = ReturnType<typeof createMarks>
