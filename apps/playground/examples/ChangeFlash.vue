@@ -120,22 +120,36 @@ const publish = (kind: RowsUpdate) => {
 publish('snapshot')
 
 // A live change: new rows at the top of the server's list (the oldest leave
-// at the end), or a new object with new values for a few rows.
-const changeRow = (row: DemoRow): DemoRow => ({
-  ...row,
-  [countField]: Math.max(0, Number(row[countField]) + random.int(-5, 5)),
-  [amountField]: round2(Number(row[amountField]) * (0.9 + random.next() * 0.2))
-})
+// at the end, but the pinned row stays), or a new object with new values for
+// a few rows, the pinned row now and then.
+const pinnedId = 1
+const changeRow = (row: DemoRow): DemoRow => {
+  const amount = Number(row[amountField])
+  const scaled = amount * (0.9 + random.next() * 0.2)
+  return {
+    ...row,
+    [countField]: Math.max(0, Number(row[countField]) + random.int(-5, 5)),
+    // A whole amount (bytes) stays whole.
+    [amountField]: Number.isInteger(amount)
+      ? Math.round(scaled)
+      : round2(scaled)
+  }
+}
 const tick = () => {
   const add = mode.value !== 'place'
   const change = mode.value !== 'top'
   for (let i = 0; i < burst.value; i++) {
     if (add) {
       const row = { ...base[random.int(0, base.length - 1)], id: nextId++ }
-      store = [row, ...store.slice(0, -1)]
+      const last = store.length - 1
+      const drop = store[last].id === pinnedId ? last - 1 : last
+      store = [row, ...store.slice(0, drop), ...store.slice(drop + 1)]
     }
     if (change) {
-      const index = random.int(0, Math.min(store.length, 60) - 1)
+      const index =
+        random.int(0, 9) === 0
+          ? store.findIndex(row => row.id === pinnedId)
+          : random.int(0, Math.min(store.length, 60) - 1)
       store = store.slice()
       store[index] = changeRow(store[index])
     }
