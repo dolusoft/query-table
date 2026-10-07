@@ -14,7 +14,8 @@ export interface ClassEntry {
    * The rule that adds the hook on top of the 2.2.x table, when 2.2.x does
    * not render it. C-40 checks the entries without it; C-66 the ones the
    * selection adds (`C-64`), C-72 the ones of the 3.1 features, C-82 the
-   * column type and C-91 the ones of the 3.2 features.
+   * column type, C-91 the ones of the 3.2 features and C-95 the ones of
+   * the change flash of 3.3 (`C-94`).
    */
   addedBy?: string
 }
@@ -245,6 +246,13 @@ export const domAttributes: AttributeEntry[] = [
     addedBy: 'C-82'
   },
   {
+    name: 'data-flash',
+    on: 'tbody > tr[data-row-index], tbody > tr > td[data-field]',
+    description:
+      'With `flash`: `a` or `b` on a body row whose key is new and on a data cell whose value changed, while the flash runs (C-94). A flash that starts again switches the value, so an animation keyed on it starts again. The skin draws it and sets its length with `--qt-flash-duration` on `.qt-datatable` or above.',
+    addedBy: 'C-94'
+  },
+  {
     name: 'aria-sort',
     on: 'th',
     description: '`ascending` or `descending` on the sorted column.'
@@ -301,5 +309,12 @@ export const domInlineStyles: InlineStyleEntry[] = [
     description:
       'With `virtual`: the height of the rows a spacer stands for, in pixels (C-83).',
     addedBy: 'C-83'
+  },
+  {
+    property: '--qt-flash-elapsed',
+    on: 'tbody > tr[data-flash], tbody > tr > td[data-flash]',
+    description:
+      'With `flash`: the time gone since the flash began, in `ms`, on a row or cell bound after it began (it came into the window of a virtual body, it was mounted again, or the flash that governs it changed); a cell without a flash of its own inherits it from its row (C-94). A time, not geometry. Use it as `animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1)`, so the animation runs for the time it has left.',
+    addedBy: 'C-94'
   }
 ]

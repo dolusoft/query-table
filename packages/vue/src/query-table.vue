@@ -21,6 +21,7 @@ import type {
 import { resolveLabels } from './core/labels'
 import { provideTableContext } from './core/table-context'
 import { focusFilterOf } from './filter/focus-filter'
+import { useChangeFlash } from './flash/use-change-flash'
 import TableBody from './parts/table-body.vue'
 import TableFooter from './parts/table-footer.vue'
 import TableHeader from './parts/table-header.vue'
@@ -54,7 +55,9 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   rowKey: undefined,
   labels: undefined,
   virtual: false,
-  infinite: false
+  infinite: false,
+  flash: false,
+  rowsUpdate: undefined
 })
 
 const emit = defineEmits<TableEmits<T, Q>>()
@@ -203,6 +206,19 @@ const footerRowIndex = computed(() =>
     : 2 + props.rows.length + rowWindow.expandedCount()
 )
 
+// The change flash (C-93 to C-95). Off, one watcher of `flash` and nothing
+// else; the body gets `null` and draws what it drew in 3.2.
+const flashView = useChangeFlash<T>({
+  flash: () => props.flash,
+  rowsUpdate: () => props.rowsUpdate,
+  rows: () => props.rows,
+  query: () => props.query,
+  loading: () => props.loading,
+  fields: () => entries.value.map(entry => entry.column.field),
+  rowKey: () => props.rowKey,
+  table: tableEl
+})
+
 const reorder = useColumnReorder({
   reorderable: () => props.reorderable,
   table: tableEl,
@@ -339,6 +355,7 @@ defineExpose(exposed)
           :labels="labels"
           :has-context-menu-listener="hasContextMenuListener"
           :load-more="loadMoreProps"
+          :flash="flashView"
           @row-right-panel-click="row => emit('rowRightPanelClick', row)"
           @cell-context-menu="payload => emit('cellContextMenu', payload)"
           @focusin="rowWindow.onFocusIn"

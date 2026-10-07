@@ -351,7 +351,7 @@ describe('C-92 Row-change tracker [own]', () => {
       const t = track({ rows: rows([1, 1], [2, 2]), hint: 'live' })
       t.step({
         query: q({
-          filters: [{ field: 'price', condition: 'Equals', value: '2' }]
+          filters: [{ field: 'price', condition: 'Equal', value: '2' }]
         }),
         hint: 'live'
       })
