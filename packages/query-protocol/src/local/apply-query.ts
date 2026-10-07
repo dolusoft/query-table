@@ -1,6 +1,6 @@
 // applyQuery and slicePage: validate, read the used row values, filter and
-// search, count, sort, slice (C-76, C-77, C-80). Inputs are never written; the rows returned are the
-// objects given, always in a new array.
+// search, count, sort, slice (C-76, C-77, C-80). Inputs are never written; the
+// rows returned are the objects given, always in a new array.
 
 import type { Dataset, DatasetField } from './dataset'
 import { isBranded, offsetOf } from './dataset'
