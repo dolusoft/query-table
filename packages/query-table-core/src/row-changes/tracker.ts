@@ -176,11 +176,11 @@ export const createRowChangeTracker = <T extends object>(
           return
         }
         let changedFields: string[] | undefined
-        reads.forEach((read, i) => {
-          if (!sameValue(read(before), read(row))) {
+        for (let i = 0; i < reads.length; i++) {
+          if (!sameValue(reads[i](before), reads[i](row))) {
             ;(changedFields ??= []).push(compared[i])
           }
-        })
+        }
         if (changedFields) {
           result.changed.set(key, changedFields)
         }

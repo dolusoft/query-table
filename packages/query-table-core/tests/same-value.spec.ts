@@ -80,4 +80,20 @@ describe('C-92 sameValue', () => {
     const b = { list: [cyclic()] }
     expect(sameValue(a, b)).toBe(false)
   })
+
+  it('compares data deeper than where it starts to track cycles', () => {
+    const deep = (depth: number, leaf: number): unknown =>
+      depth === 0 ? leaf : { next: [deep(depth - 1, leaf)] }
+    expect(sameValue(deep(60, 1), deep(60, 1))).toBe(true)
+    expect(sameValue(deep(60, 1), deep(60, 2))).toBe(false)
+  })
+
+  it('ends on a cycle that starts deep in the values', () => {
+    const a = cyclic()
+    const b = cyclic()
+    const wrap = (value: unknown, depth: number): unknown =>
+      depth === 0 ? value : { inner: wrap(value, depth - 1) }
+    expect(sameValue(wrap(a, 40), wrap(b, 40))).toBe(false)
+    expect(sameValue(wrap(a, 40), wrap(a, 40))).toBe(true)
+  })
 })
