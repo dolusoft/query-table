@@ -7,6 +7,7 @@ import ApiPanel from './ApiPanel.vue'
 import InlineCode from './InlineCode.vue'
 import RuleList from './RuleList.vue'
 import type { PlaygroundPage } from '../manifest'
+import { datasetId } from '../scenarios/datasets'
 import { sectionAnchors } from '../search/anchors'
 
 // One page: the live example, its source (the same file, imported raw), the
@@ -45,7 +46,9 @@ watch(
       </p>
     </header>
     <section :id="sectionAnchors.example" aria-label="Example">
-      <component :is="example" :key="page.id" />
+      <!-- A new example per page and per demo dataset: the example reads
+           the dataset once, so a new choice mounts it again. -->
+      <component :is="example" :key="`${page.id}:${datasetId()}`" />
     </section>
     <section :id="sectionAnchors.source" aria-label="Source">
       <h2 class="pb-2 text-lg font-semibold">Source</h2>

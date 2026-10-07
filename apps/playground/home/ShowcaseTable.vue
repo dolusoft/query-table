@@ -14,19 +14,22 @@ import { dimWhileLoading, useSkeletonRows } from '../harness/skeleton'
 import SkeletonCell from '../harness/SkeletonCell.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
-  createDemoRows,
+  currentDataset,
+  footerOf,
   makeQuery,
-  orderColumns,
-  ordersOf,
-  peopleFooter,
   useSlowServer,
-  type DemoRow
+  type DemoRow,
+  type DemoValue
 } from '../scenarios'
 
 // The home page table: one consumer page that uses most of the library at
 // once. A fake server with a short delay answers every query; the page owns
-// the query, the rows and the column widths, the table draws them.
-const allRows = createDemoRows()
+// the query, the rows and the column widths, the table draws them. The rows
+// are the dataset selected in the header; the home page mounts this table
+// again when the choice changes.
+const data = currentDataset()
+const { fields } = data
+const allRows = data.createRows()
 const server = useSlowServer(allRows, { pageSize: 10 }, () => 350)
 const { query, totalRows, loading } = server
 // The first load has no rows yet: placeholder rows with the page size of the
@@ -49,57 +52,61 @@ const onResize = ({ field, width }: ColumnResizePayload) => {
 }
 
 // Every column has a width: the fixed layout keeps them still while rows
-// change. ID and Name are pinned while there is room for more than them.
+// change. ID and the primary column are pinned while there is room for more
+// than them; ID keeps its width, the count column stays within its limits.
 const columns = computed<Column[]>(() => {
   const pin = compact.value ? {} : { pinned: 'left' as const }
-  const base: Column[] = [
-    {
-      field: 'id',
-      title: 'ID',
-      type: 'integer',
-      width: '72px',
-      resizable: false,
-      ...pin
-    },
-    { field: 'name', title: 'Name', width: '150px', ...pin },
-    { field: 'city', title: 'City', width: '130px' },
-    {
-      field: 'age',
-      title: 'Age',
-      type: 'integer',
-      width: '110px',
-      minWidth: 80,
-      maxWidth: 200
-    },
-    { field: 'salary', title: 'Salary', type: 'number', width: '150px' },
-    { field: 'joined', title: 'Joined', type: 'date', width: '240px' },
-    { field: 'active', title: 'Status', type: 'bool', width: '120px' }
-  ]
+  const base: Column[] = data.showcase.map((field, index): Column => {
+    const column = { ...data.columns[field] }
+    const pinned = index < 2 ? pin : {}
+    if (field === 'id') {
+      return { ...column, resizable: false, ...pinned }
+    }
+    if (field === fields.count) {
+      return { ...column, minWidth: 80, maxWidth: 200, ...pinned }
+    }
+    return { ...column, ...pinned }
+  })
   return base.map(column => {
     const width = saved.value[column.field]
     return width ? { ...column, width: `${width}px` } : column
   })
 })
 
-const money = new Intl.NumberFormat('en-US')
+const plain = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+/** The text of a cell: the dataset's format, else numbers with separators. */
+const display = (field: string, value: DemoValue | null | undefined) => {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  const format = data.format?.[field]
+  if (format) {
+    return format(value)
+  }
+  return typeof value === 'number' && field !== 'id'
+    ? plain.format(value)
+    : String(value)
+}
+
 // The server sends the totals over every matching row, not just this page.
 // Before the first answer there are no totals: the footer keeps its rows
 // (so the table does not grow later) with blank cells. A footer cell takes
 // text only, so there is no skeleton bar to draw in it.
 const footerRows = computed(() =>
-  peopleFooter(allRows, query.value).map(row => ({
+  footerOf(data, allRows, query.value).map(row => ({
     cells: row.cells.map(cell => {
       if (totalRows.value === null) {
         return { ...cell, text: ' ' }
       }
       return typeof cell.text === 'number'
-        ? { ...cell, text: money.format(cell.text) }
+        ? { ...cell, text: display(cell.field, cell.text) }
         : cell
     })
   }))
 )
 
-const ordersQuery = makeQuery({ pageSize: 10 })
+const detailQuery = makeQuery({ pageSize: 10 })
+const detailColumns = data.detail.columns()
 
 const sheet = ref<{
   open: (field: string, trigger?: HTMLElement | null) => Promise<void>
@@ -139,10 +146,16 @@ const edit = (field: string, trigger: HTMLElement) =>
       <template #toolbar>
         <div class="flex flex-col gap-2 pb-2">
           <p class="text-sm text-muted-foreground" aria-live="polite">
-            <template v-if="totalRows === null">Loading people…</template>
+            <template v-if="totalRows === null">
+              Loading {{ data.noun.many }}…
+            </template>
             <template v-else>
               {{ totalRows }}
-              {{ totalRows === 1 ? 'person matches' : 'people match' }}.
+              {{
+                totalRows === 1
+                  ? `${data.noun.one} matches`
+                  : `${data.noun.many} match`
+              }}.
             </template>
           </p>
           <FilterChips
@@ -177,19 +190,18 @@ const edit = (field: string, trigger: HTMLElement) =>
         #[`cell-${column.field}`]="cell"
       >
         <SkeletonCell :cell="cell">
-          <span v-if="column.field === 'name'" class="font-medium">
+          <span v-if="column.field === fields.primary" class="font-medium">
             {{ cell.cellValue }}
           </span>
-          <template v-else-if="column.field === 'salary'">
-            {{ money.format(cell.cellValue as number) }}
-          </template>
           <Badge
-            v-else-if="column.field === 'active'"
+            v-else-if="column.field === fields.flag"
             :variant="cell.cellValue ? 'secondary' : 'outline'"
           >
-            {{ cell.cellValue ? 'Active' : 'Inactive' }}
+            {{ cell.cellValue ? data.flagLabels.on : data.flagLabels.off }}
           </Badge>
-          <template v-else>{{ cell.cellValue ?? '' }}</template>
+          <template v-else>{{
+            display(column.field, cell.cellValue as DemoValue | undefined)
+          }}</template>
         </SkeletonCell>
       </template>
       <!-- The subtable row is one cell over every column: this wrapper
@@ -199,17 +211,17 @@ const edit = (field: string, trigger: HTMLElement) =>
           class="sticky left-2 flex w-[calc(100cqw-1rem)] flex-col gap-2 py-2"
         >
           <p class="text-sm text-muted-foreground">
-            Orders of {{ (row as DemoRow).name }}
+            {{ data.detail.title(row as DemoRow) }}
           </p>
           <QueryTable
-            :query="ordersQuery"
-            :columns="orderColumns()"
-            :rows="ordersOf((row as DemoRow).id)"
-            row-key="orderId"
+            :query="detailQuery"
+            :columns="detailColumns"
+            :rows="data.detail.rows(row as DemoRow)"
+            :row-key="data.detail.key"
           />
         </div>
       </template>
-      <template #empty>No people match these filters.</template>
+      <template #empty>No {{ data.noun.many }} match these filters.</template>
       <template #pagination="page">
         <TablePager :page="page" />
       </template>

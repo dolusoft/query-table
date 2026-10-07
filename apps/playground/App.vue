@@ -23,6 +23,7 @@ import { setTheme, themeFromUrl, type Theme } from './harness/theme'
 import { repositoryUrl } from './home/home-content'
 import { pages } from './manifest'
 import DocSearch from './search/DocSearch.vue'
+import DatasetMenu from './shell/DatasetMenu.vue'
 import ExternalLinks from './shell/ExternalLinks.vue'
 import SiteHeader from './shell/SiteHeader.vue'
 import ThemeToggle from './shell/ThemeToggle.vue'
@@ -137,6 +138,7 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
             <span class="flex-1 text-left">Search docs</span>
             <Kbd class="text-foreground">{{ shortcut }}</Kbd>
           </Button>
+          <DatasetMenu align="start" class="w-full bg-background" />
         </SidebarHeader>
         <SidebarContent class="overflow-visible px-2 lg:min-h-0">
           <nav aria-label="Examples" class="min-h-0 lg:flex-1">

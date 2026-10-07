@@ -12,17 +12,18 @@ import { QueryTable, type QueryTableExpose } from '@dolusoft/query-table'
 import FilterMenu from '../harness/FilterMenu.vue'
 import TablePager from '../harness/TablePager.vue'
 import {
-  createDemoRows,
+  currentDataset,
+  listColumns,
   makeQuery,
-  peopleColumns,
   queryDemoRows
 } from '../scenarios'
 
 // The table is controlled: it draws `query` and emits `update:query` with
 // a new query and the reason. `v-model:query` applies every update; here the
 // handler is written out so the page can log each one, or ignore it.
-const allRows = createDemoRows()
-const columns = peopleColumns()
+const data = currentDataset()
+const allRows = data.createRows()
+const columns = listColumns(data)
 const query = ref<TableQuery>(makeQuery({ pageSize: 5 }))
 const result = computed(() => queryDemoRows(allRows, query.value))
 

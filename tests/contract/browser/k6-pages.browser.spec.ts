@@ -32,16 +32,16 @@ test('typed search is applied once, after the debounce, from the first page C-58
   await render(SearchSelectionCursors)
   await userEvent.click(page.getByRole('button', { name: 'Next' }))
   await expect.poll(() => firstIds()[0]).toBe('11')
-  await userEvent.type(page.getByRole('searchbox'), 'bursa')
+  await userEvent.type(page.getByRole('searchbox'), 'svc-backup')
   await expect.element(page.getByText('search', { exact: true })).toBeVisible()
   await expect
     .poll(() =>
       [...document.querySelectorAll('tbody > tr')].every(row =>
-        row.textContent?.includes('Bursa')
+        row.textContent?.includes('svc-backup')
       )
     )
     .toBe(true)
-  expect(firstIds()[0]).toBe('4')
+  expect(firstIds()[0]).toBe('13')
 })
 
 test('the checkbox column selects rows into the page selection', async () => {
@@ -75,18 +75,18 @@ test('the TanStack path sorts, filters and pages through the query', async () =>
     .toMatch(/Page 1 of 25/)
   await userEvent.click(page.getByRole('button', { name: 'Next' }))
   await expect.poll(() => json().page).toBe(2)
-  await userEvent.click(page.getByRole('button', { name: /^Age/ }))
+  await userEvent.click(page.getByRole('button', { name: /^Hits/ }))
   await expect
     .poll(() => json().sort)
-    .toEqual({ field: 'age', direction: 'asc' })
-  await userEvent.type(page.getByLabelText('Filter name'), 'Al*{Enter}')
+    .toEqual({ field: 'hits', direction: 'asc' })
+  await userEvent.type(page.getByLabelText('Filter user'), 'Al*{Enter}')
   await expect
     .poll(() => json().filters)
-    .toEqual([{ field: 'name', condition: 'StartsWith', value: 'Al' }])
+    .toEqual([{ field: 'user', condition: 'StartsWith', value: 'Al' }])
   expect(json().page).toBe(1)
   const names = [...document.querySelectorAll('.tanstack-table tbody tr')].map(
     row => row.children[0]?.textContent?.trim()
   )
   expect(names.length).toBeGreaterThan(0)
-  expect(names.every(name => name === 'Alice')).toBe(true)
+  expect(names.every(name => name === 'Ali Şahin')).toBe(true)
 })

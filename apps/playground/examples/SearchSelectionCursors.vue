@@ -12,15 +12,24 @@ import {
 } from '@dolusoft/query-table'
 
 import TablePager from '../harness/TablePager.vue'
-import { createDemoRows, peopleColumns, useCursorServer } from '../scenarios'
+import {
+  columnOf,
+  currentDataset,
+  listColumns,
+  useCursorServer
+} from '../scenarios'
 
 // Three features on one table. The query pages by cursor (`cursor` key):
 // the server answers with the cursors of the page shown and the page passes
 // them back as `cursors`. The toolbar search is typed text the table applies
 // after `searchDebounce`. The selection is the page's, through
 // `v-model:selection`; selecting a row never emits a query.
-const columns = peopleColumns()
-const { query, result } = useCursorServer(createDemoRows())
+const data = currentDataset()
+const columns = listColumns(data)
+const { query, result } = useCursorServer(data.createRows(), data.searchFields)
+const searchLabel = `Search ${data.searchFields
+  .map(field => columnOf(data, field).title?.toLowerCase())
+  .join(' or ')}`
 const selection = ref<RowSelection>({})
 const selected = computed(() => Object.keys(selection.value))
 const lastReason = ref<QueryChangeReason | null>(null)
@@ -52,8 +61,8 @@ const onQuery = (next: CursorQuery, reason: QueryChangeReason) => {
           <Input
             class="search-input h-10 w-full sm:w-64 lg:h-8"
             type="search"
-            aria-label="Search name or city"
-            placeholder="Search name or city"
+            :aria-label="searchLabel"
+            :placeholder="searchLabel"
             :model-value="bar.search"
             @update:model-value="bar.setSearch(String($event))"
             @keydown.enter="bar.applySearch()"

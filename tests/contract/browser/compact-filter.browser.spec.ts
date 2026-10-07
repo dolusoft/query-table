@@ -35,23 +35,25 @@ afterEach(async () => {
 
 test('at 375px the filter row is off, funnels open a sheet and nothing overflows', async () => {
   await render(Overview)
-  await expect.element(funnel('city')).toBeVisible()
+  await expect.element(funnel('severity')).toBeVisible()
   expect(document.querySelector('.qt-filter-input')).toBeNull()
   await expect
-    .element(funnel('city'))
+    .element(funnel('severity'))
     .toHaveAttribute('aria-haspopup', 'dialog')
-  await expect.element(funnel('city')).toHaveAccessibleName('Filter City')
-  const box = funnel('city').element().getBoundingClientRect()
+  await expect
+    .element(funnel('severity'))
+    .toHaveAccessibleName('Filter Severity')
+  const box = funnel('severity').element().getBoundingClientRect()
   expect(box.width).toBeGreaterThanOrEqual(44)
   expect(box.height).toBeGreaterThanOrEqual(44)
   // The sort button and the funnel are siblings, not nested.
-  expect(funnel('city').element().closest('.qt-sort')).toBeNull()
+  expect(funnel('severity').element().closest('.qt-sort')).toBeNull()
 
-  await userEvent.click(funnel('city'))
+  await userEvent.click(funnel('severity'))
   expect(sheetOpen()).toBe(true)
   await expect
     .element(page.getByRole('dialog'))
-    .toHaveAccessibleName('Filter City')
+    .toHaveAccessibleName('Filter Severity')
   expect(document.activeElement).toBe(sheet()?.querySelector('input'))
   expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(375)
 })
@@ -61,7 +63,7 @@ test('Apply commits once, goes to page 1 and returns focus', async () => {
   await userEvent.click(page.getByCSS('.next-page'))
   await expect.element(pageInfo()).toHaveTextContent('Page 2 of 14')
 
-  await userEvent.click(funnel('age'))
+  await userEvent.click(funnel('hits'))
   const select = page.getByRole('combobox', { name: 'Condition' })
   await userEvent.selectOptions(select, 'GreaterThan')
   const value = page.getByRole('textbox', { name: 'Value' })
@@ -71,26 +73,28 @@ test('Apply commits once, goes to page 1 and returns focus', async () => {
   await userEvent.keyboard('{Enter}')
 
   expect(sheetOpen()).toBe(false)
-  await expect.element(pageInfo()).toHaveTextContent('Page 1 of 4')
-  expect(chipTexts()).toEqual(['Age greater than 44'])
-  expect(document.activeElement).toBe(funnel('age').element())
-  await expect.element(funnel('age')).toHaveAccessibleName('Filter Age, active')
+  await expect.element(pageInfo()).toHaveTextContent('Page 1 of 8')
+  expect(chipTexts()).toEqual(['Hits greater than 44'])
+  expect(document.activeElement).toBe(funnel('hits').element())
+  await expect
+    .element(funnel('hits'))
+    .toHaveAccessibleName('Filter Hits, active')
 })
 
 test('Escape discards the draft and restores focus', async () => {
   await render(Overview)
-  await userEvent.click(funnel('name'))
+  await userEvent.click(funnel('user'))
   await userEvent.type(page.getByRole('textbox', { name: 'Value' }), 'zzz')
   await userEvent.keyboard('{Escape}')
   await expect.poll(() => sheetOpen()).toBe(false)
   expect(chipTexts()).toEqual([])
   await expect.element(pageInfo()).toHaveTextContent('Page 1 of 14')
-  expect(document.activeElement).toBe(funnel('name').element())
+  expect(document.activeElement).toBe(funnel('user').element())
 })
 
 test('invalid numbers are rejected with a message, not cleared', async () => {
   await render(Overview)
-  await userEvent.click(funnel('salary'))
+  await userEvent.click(funnel('bytes'))
   await userEvent.type(page.getByRole('textbox', { name: 'Value' }), '3x')
   await userEvent.click(page.getByRole('button', { name: 'Apply' }))
   expect(sheetOpen()).toBe(true)
@@ -104,25 +108,25 @@ test('chips edit and remove; the add-filter picker reaches any column', async ()
   await render(Overview)
   await userEvent.selectOptions(
     page.getByRole('combobox', { name: 'Add filter' }),
-    'city'
+    'severity'
   )
-  await userEvent.type(page.getByRole('textbox', { name: 'Value' }), 'ank')
+  await userEvent.type(page.getByRole('textbox', { name: 'Value' }), 'high')
   await userEvent.click(page.getByRole('button', { name: 'Apply' }))
-  expect(chipTexts()).toEqual(['City contains ank'])
+  expect(chipTexts()).toEqual(['Severity contains high'])
   await expect.element(pageInfo()).toHaveTextContent('Page 1 of 3')
 
   // Editing reopens the sheet with the committed rule as its draft.
   await userEvent.click(
-    page.getByRole('button', { name: 'Edit filter: City contains ank' })
+    page.getByRole('button', { name: 'Edit filter: Severity contains high' })
   )
   await expect
     .element(page.getByRole('textbox', { name: 'Value' }))
-    .toHaveValue('ank')
+    .toHaveValue('high')
   await userEvent.keyboard('{Escape}')
   await expect.poll(() => sheetOpen()).toBe(false)
 
   await userEvent.click(
-    page.getByRole('button', { name: 'Remove filter: City contains ank' })
+    page.getByRole('button', { name: 'Remove filter: Severity contains high' })
   )
   expect(chipTexts()).toEqual([])
   await expect.element(pageInfo()).toHaveTextContent('Page 1 of 14')

@@ -28,7 +28,12 @@ import {
 } from '@/ui/table'
 import type { Query } from '@dolusoft/query-table'
 
-import { createDemoRows, type DemoRow, useFakeServer } from '../scenarios'
+import {
+  columnOf,
+  currentDataset,
+  type DemoRow,
+  useFakeServer
+} from '../scenarios'
 
 // No QueryTable here: shadcn-vue's Table drawn from a TanStack table that
 // carries the two plugins of `@dolusoft/query-table-core`. serverQueryFeature
@@ -38,7 +43,10 @@ import { createDemoRows, type DemoRow, useFakeServer } from '../scenarios'
 // markup, and which TanStack features to
 // add, are the page's. `useQueryTable()` sits between the two paths: the
 // same table with every feature QueryTable uses, without the markup.
-const { query, result } = useFakeServer(createDemoRows(), { pageSize: 8 })
+const data = currentDataset()
+const { primary, category, count } = data.fields
+const titleOf = (field: string) => columnOf(data, field).title ?? field
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 8 })
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -61,9 +69,14 @@ const projection = computed(() =>
 const table = useTable<typeof features, DemoRow>({
   features,
   columns: [
-    { id: 'name', accessorKey: 'name', header: 'Name' },
-    { id: 'city', accessorKey: 'city', header: 'City' },
-    { id: 'age', accessorKey: 'age', header: 'Age', filterType: 'integer' }
+    { id: primary, accessorKey: primary, header: titleOf(primary) },
+    { id: category, accessorKey: category, header: titleOf(category) },
+    {
+      id: count,
+      accessorKey: count,
+      header: titleOf(count),
+      filterType: 'integer'
+    }
   ],
   get data() {
     return result.value.rows

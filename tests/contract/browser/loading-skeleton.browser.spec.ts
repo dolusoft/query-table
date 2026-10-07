@@ -31,7 +31,7 @@ const fast = async () => {
   await userEvent.click(page.getByRole('button', { name: 'Load from empty' }))
 }
 
-test('the first load shows one skeleton row per row of the page, as tall as the people that replace them', async () => {
+test('the first load shows one skeleton row per row of the page, as tall as the rows that replace them', async () => {
   await render(LoadingSkeleton)
   await fast()
   expect(root('First load').hasAttribute('data-loading')).toBe(true)
@@ -48,13 +48,13 @@ test('the first load shows one skeleton row per row of the page, as tall as the 
   await expect.poll(() => bars('First load'), { timeout: 3000 }).toBe(0)
   expect(root('First load').hasAttribute('data-loading')).toBe(false)
   expect(names('First load')).toEqual([
-    'Charlie',
-    'Alice',
-    'Bob',
-    'Dave',
-    'Eve'
+    'svc-deploy',
+    'Elif Arslan',
+    'Elif Arslan',
+    'Ömer Kaya',
+    'Burak Koç'
   ])
-  // Nothing moves when the people arrive.
+  // Nothing moves when the rows arrive.
   expect(heights()).toEqual(skeleton)
 })
 

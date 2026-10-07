@@ -7,19 +7,17 @@ import type {
   TableQuery
 } from '@dolusoft/query-table'
 
-import {
-  type createDemoRows,
-  cursorDemoPage,
-  filterDemoRows,
-  queryDemoRows
-} from './fake-server'
+import type { Dataset, DemoRow } from './dataset'
+import { cursorDemoPage, filterDemoRows, queryDemoRows } from './fake-server'
 
 // Scenario factories of the playground pages (the browser tests use their own
 // fixtures in tests/support). Every call returns new objects: there is no
-// module-level state, so two tables never share a query or a row list.
+// module-level state, so two tables never share a query or a row list. The
+// rows and columns come from the dataset the header selects.
 
-export { createDemoRows, queryDemoRows } from './fake-server'
-export type { DemoRow } from './fake-server'
+export { queryDemoRows } from './fake-server'
+export { currentDataset } from './datasets'
+export type { Dataset, DemoRow, DemoValue } from './dataset'
 
 export const makeQuery = (overrides: Partial<TableQuery> = {}): TableQuery => ({
   page: 1,
@@ -29,79 +27,89 @@ export const makeQuery = (overrides: Partial<TableQuery> = {}): TableQuery => ({
   ...overrides
 })
 
-/** The people list: one column per row field, no special flags. */
-export const peopleColumns = (): Column[] => [
-  { field: 'id', title: 'ID', type: 'number', width: '90px' },
-  { field: 'name', title: 'Name' },
-  { field: 'city', title: 'City' },
-  { field: 'age', title: 'Age', type: 'number' },
-  { field: 'salary', title: 'Salary', type: 'number' },
-  { field: 'joined', title: 'Joined', type: 'date' }
-]
+/** The title and type of one field, without its showcase width. */
+export const columnOf = (data: Dataset, field: string): Column => {
+  const column = { ...data.columns[field] }
+  delete column.width
+  return column
+}
+
+/** The plain list: one column per field, no special flags. */
+export const listColumns = (data: Dataset): Column[] =>
+  data.list.map(field =>
+    field === 'id'
+      ? { ...columnOf(data, field), width: '90px' }
+      : columnOf(data, field)
+  )
 
 /**
- * A list wider than the page: ID and Name pinned to the left, the rest with
- * widths that make the table scroll sideways.
+ * A list wider than the page: ID and the primary field pinned to the left,
+ * the rest with widths that make the table scroll sideways.
  */
-export const wideColumns = (): Column[] => [
-  { field: 'id', title: 'ID', type: 'number', width: '80px', pinned: 'left' },
-  { field: 'name', title: 'Name', width: '160px', pinned: 'left' },
-  { field: 'city', title: 'City', width: '220px' },
-  { field: 'age', title: 'Age', type: 'number', width: '200px' },
-  { field: 'salary', title: 'Salary', type: 'number', width: '220px' },
-  { field: 'joined', title: 'Joined', type: 'date', width: '220px' },
-  { field: 'active', title: 'Active', type: 'bool', width: '200px' }
-]
+export const wideColumns = (data: Dataset): Column[] =>
+  data.wide.map((field, index) => {
+    const column = columnOf(data, field)
+    if (index < 2) {
+      return {
+        ...column,
+        width: index === 0 ? '80px' : '160px',
+        pinned: 'left'
+      }
+    }
+    const narrow = column.type === 'integer' || column.type === 'bool'
+    return { ...column, width: narrow ? '200px' : '220px' }
+  })
 
 /** One column of every filter type, and a hidden column. */
-export const typedColumns = (): Column[] => [
-  { field: 'id', title: 'ID', type: 'integer', width: '90px' },
-  { field: 'name', title: 'Name (string)' },
-  { field: 'age', title: 'Age (integer)', type: 'integer' },
-  { field: 'salary', title: 'Salary (number)', type: 'number' },
-  { field: 'joined', title: 'Joined (date)', type: 'date' },
-  { field: 'active', title: 'Active (bool)', type: 'bool' },
-  { field: 'city', title: 'City', hide: true }
-]
-
-/** Orders of one person: the rows of the nested table. */
-export const ordersOf = (personId: number) =>
-  Array.from({ length: 2 + (personId % 4) }, (_, i) => ({
-    orderId: personId * 100 + i + 1,
-    product: ['Desk', 'Chair', 'Lamp', 'Shelf', 'Monitor'][(personId + i) % 5],
-    quantity: 1 + ((personId * (i + 3)) % 5),
-    total: 50 + ((personId * 37 + i * 91) % 900)
-  }))
-
-export const orderColumns = (): Column[] => [
-  { field: 'orderId', title: 'Order', type: 'integer' },
-  { field: 'product', title: 'Product' },
-  { field: 'quantity', title: 'Qty', type: 'integer' },
-  { field: 'total', title: 'Total', type: 'number' }
-]
+export const typedColumns = (data: Dataset): Column[] => {
+  const { fields } = data
+  const typed = (field: string) => {
+    const column = columnOf(data, field)
+    return {
+      ...column,
+      title: `${column.title} (${column.type ?? 'string'})`
+    }
+  }
+  return [
+    { field: 'id', title: 'ID', type: 'integer', width: '90px' },
+    typed(fields.primary),
+    typed(fields.count),
+    typed(fields.amount),
+    typed(fields.date),
+    typed(fields.datetime),
+    typed(fields.flag),
+    { ...columnOf(data, fields.category), hide: true }
+  ]
+}
 
 /**
- * The footer of the people list: the count and the salary total over every
+ * The footer of a list: the count and the total of `fields.sum` over every
  * row that passes the filters (all pages, not only the one shown).
  */
-export const peopleFooter = (
-  allRows: ReturnType<typeof createDemoRows>,
+export const footerOf = (
+  data: Dataset,
+  allRows: readonly DemoRow[],
   query: TableQuery
 ): FooterRow[] => {
   const matching = filterDemoRows(allRows, query)
-  const salary = matching.reduce((sum, row) => sum + row.salary, 0)
-  const average = matching.length ? Math.round(salary / matching.length) : 0
+  const field = data.fields.sum
+  const total = matching.reduce((sum, row) => sum + Number(row[field]), 0)
+  const average = matching.length ? Math.round(total / matching.length) : 0
+  const { primary } = data.fields
   return [
     {
       cells: [
-        { field: 'name', text: `${matching.length} people` },
-        { field: 'salary', text: salary }
+        {
+          field: primary,
+          text: `${matching.length} ${matching.length === 1 ? data.noun.one : data.noun.many}`
+        },
+        { field, text: Math.round(total * 100) / 100 }
       ]
     },
     {
       cells: [
-        { field: 'name', text: 'Average' },
-        { field: 'salary', text: average }
+        { field: primary, text: 'Average' },
+        { field, text: average }
       ]
     }
   ]
@@ -179,13 +187,17 @@ const makeCursorQuery = (
 
 /**
  * A consumer page backed by a cursor server (C-56): it owns the query and
- * passes the cursors of each answer back to the table.
+ * passes the cursors of each answer back to the table. The search matches
+ * `searchFields`.
  */
 export const useCursorServer = <R extends object>(
   allRows: readonly R[],
+  searchFields: readonly string[],
   initial: Partial<CursorQuery> = {}
 ) => {
   const query = ref<CursorQuery>(makeCursorQuery(initial))
-  const result = computed(() => cursorDemoPage(allRows, query.value))
+  const result = computed(() =>
+    cursorDemoPage(allRows, query.value, searchFields)
+  )
   return { query, result }
 }
