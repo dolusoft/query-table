@@ -36,3 +36,22 @@ export const focusFilterOf = (
   }
   return false
 }
+
+/**
+ * Focuses the first filter of this table's header that takes the focus, in
+ * column order (C-22). Returns whether one did.
+ */
+export const focusFirstFilter = (table: HTMLTableElement | null): boolean => {
+  const head = [...(table?.children ?? [])].find(
+    child => child.tagName === 'THEAD'
+  )
+  for (const row of head?.children ?? []) {
+    for (const cell of row.children) {
+      const field = cell.getAttribute('data-field')
+      if (field !== null && focusFilterOf(table, field)) {
+        return true
+      }
+    }
+  }
+  return false
+}
