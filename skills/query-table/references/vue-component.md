@@ -19,12 +19,14 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `hasSubtable`, `hasRightPanel` | Expand button with the `subtable` slot; a button that emits `rowRightPanelClick`. |
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. |
+| `virtual` | `true` or `{ rowHeight, estimateRowHeight, overscan, scrollElement }`: draw only the rows in view of the scroll container (C-83). |
+| `infinite` | `true` or `{ threshold }`: emit the next page action as the end of `rows` comes near; you append the rows (C-88). Needs `rowKey`. |
 
 Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
-Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
+Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `load-more`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
 
-Template ref methods: `focusFilter(field)`, `expandAll()`, `collapseAll()`, `flushPendingFilters()`.
+Template ref methods: `focusFilter(field)`, `expandAll()`, `collapseAll()`, `flushPendingFilters()`, `scrollToIndex(index, { align })`, `loadMore()`.
 
 ## Column layout
 
@@ -113,6 +115,24 @@ const cursors = ref<PageCursors>({ next: null, prev: null })
 - With an unknown total (`totalRows: null`) such an added row counts for `canNext` (C-23): a page that is full only because of it shows a next page.
 - The rows stay in the flow; sticky top or bottom rows are your CSS.
 
+## Virtual and infinite scroll
+
+```vue
+<div style="max-height: 28rem; overflow-y: auto">
+  <QueryTable v-model:query="query" :rows="rows" row-key="id" virtual infinite @update:query="onQuery" ...>
+    <template #load-more="{ loadMore, canLoadMore }">
+      <button v-if="canLoadMore" type="button" @click="loadMore()">Load more</button>
+    </template>
+  </QueryTable>
+</div>
+```
+
+- `virtual` draws the rows in view and `overscan` more (default 10) between two `tr.qt-virtual-spacer` rows that carry an inline `height`. A row and its open subtable row are one item. `data-row-index` and the slots' `rowIndex` stay the index in `rows`. Pinned rows are always drawn (C-83).
+- Heights are measured per key unless `rowHeight` is given; the table moves the scroll position so rows in view do not jump (C-84).
+- The scroll container is `scrollElement()`, else the nearest scrolling ancestor, else the window. Set `table-layout: fixed` or widths on every column; a development build warns otherwise (C-85).
+- `aria-rowcount`/`aria-rowindex` are written; a focused row stays drawn; printing draws every row (C-86, C-87).
+- `infinite` emits `update:query` with reason `page` once per query and row count. Append on `page`, replace on every other reason. On an error keep the rows and put back the old query; `loadMore()` retries (C-88, C-89). More to load: `cursors.next`, or `page < pageCount`, or a full last page with an unknown total (C-90).
+
 ## useQueryTable()
 
 `QueryTable` is a thin view over it. Options take refs or getters; `onQueryChange(query, reason)` is called once per user action.
@@ -146,7 +166,7 @@ Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `
 
 ## Styling
 
-No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Three inline styles exist: `width` on a header cell, `--qt-pin-left` on cells pinned to the left and `--qt-pin-right` on cells pinned to the right (`data-pinned="right"`); sticky positioning is your CSS. One rule serves both sides, since the unset property leaves the other side `auto` (LTR layout): `.qt-table [data-pinned] { position: sticky; left: var(--qt-pin-left); right: var(--qt-pin-right) }`. The utility cells are pinned only with a column pinned to the left. Every header, body and footer cell of a column carries `data-type` (`string`, `number`, `integer`, `date`, `datetime`, `bool`; C-82); alignment is yours, by it: `.qt-table :is([data-type='number'], [data-type='integer']) { text-align: end; font-variant-numeric: tabular-nums }`. For large tables set `table-layout: fixed` and give every column a `width`.
+No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Four inline styles exist: `width` on a header cell, `--qt-pin-left` on cells pinned to the left, `--qt-pin-right` on cells pinned to the right (`data-pinned="right"`) and `height` on a `tr.qt-virtual-spacer` (give its cell `padding: 0; border: 0`); sticky positioning is your CSS. One rule serves both sides, since the unset property leaves the other side `auto` (LTR layout): `.qt-table [data-pinned] { position: sticky; left: var(--qt-pin-left); right: var(--qt-pin-right) }`. The utility cells are pinned only with a column pinned to the left. Every header, body and footer cell of a column carries `data-type` (`string`, `number`, `integer`, `date`, `datetime`, `bool`; C-82); alignment is yours, by it: `.qt-table :is([data-type='number'], [data-type='integer']) { text-align: end; font-variant-numeric: tabular-nums }`. For large tables set `table-layout: fixed` and give every column a `width`.
 
 ## Rules to remember
 

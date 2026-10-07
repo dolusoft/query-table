@@ -278,18 +278,31 @@ export const features: Feature[] = [
     tanstackPath: 'no',
     mode: 'client'
   },
+  // D: only ours
   {
     id: 'virtualization',
-    group: 'client',
+    group: 'own',
     title: 'Virtual scrolling',
     summary:
-      'Draw only the rows in view. It will be a separate package, later.',
-    tanstack: 'virtualization',
-    component: 'later',
-    tanstackPath: 'later',
-    mode: 'client'
+      'Draw only the rows in view between two spacer rows, with measured heights, a kept focus and printing of every row. Our own windowing code, not TanStack Virtual (ADR 0010); the rows may come from the server or from the browser.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: 'server',
+    example: 'virtual-scroll'
   },
-  // D: only ours
+  {
+    id: 'infinite-scroll',
+    group: 'own',
+    title: 'Infinite scroll',
+    summary:
+      'Ask for the next page as the end of the rows comes near and append it; a sort or a filter starts over. Page or cursor mode, with a `load-more` row for a retry.',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: 'server',
+    example: 'infinite-scroll'
+  },
   {
     id: 'filter-grammar',
     group: 'own',
