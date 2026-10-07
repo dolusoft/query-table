@@ -6,6 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import { defineConfig, mergeConfig } from 'vitest/config'
 
 import viteConfig from './packages/vue/vite.config.ts'
+import { mediaCommands } from './tests/support/media-commands.ts'
 import { touchCommands } from './tests/support/touch-commands.ts'
 
 // `vitest --mode inspect` (see the `test:browser:inspect` script) keeps a
@@ -130,7 +131,7 @@ export default defineConfig(({ mode }) => {
           !inspect &&
           (process.env.CI === 'true' || process.env.HEADLESS === '1'),
         ui: false,
-        commands: touchCommands,
+        commands: { ...touchCommands, ...mediaCommands },
         screenshotDirectory: 'tests/contract/browser/__screenshots__',
         // A desktop-sized viewport: the default is phone-sized, which
         // squeezes the table and distorts geometry assertions.

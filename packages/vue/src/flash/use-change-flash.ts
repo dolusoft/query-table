@@ -7,6 +7,7 @@ import {
   effectScope,
   getCurrentInstance,
   getCurrentScope,
+  nextTick,
   onActivated,
   onDeactivated,
   onMounted,
@@ -69,6 +70,8 @@ export interface FlashView<T> {
 
 interface Controller<T> {
   view: FlashView<T>
+  /** Remove the elapsed times written on the body (`flash` turned off). */
+  unbind: () => void
   update: () => void
   deactivate: () => void
   activate: () => void
@@ -120,6 +123,11 @@ const startFlash = <T extends object>(
   /** The duration read in this frame (valid while a frame is requested). */
   let duration = 0
   let timer: ReturnType<typeof setTimeout> | undefined
+  /**
+   * The first generation started in the update being drawn: an element
+   * bound to it in the same render gets no elapsed time.
+   */
+  let freshFrom = Infinity
 
   /** A frame went by: the next change flips the phase, the duration is read again. */
   const requestFrame = () => {
@@ -233,6 +241,7 @@ const startFlash = <T extends object>(
       // against moved all the same (K33-5).
       if (length > 0) {
         const at = performance.now()
+        const firstGen = marks.gen + 1
         for (const key of added) {
           marks.flashRow(key, at, length, frame)
         }
@@ -242,6 +251,14 @@ const startFlash = <T extends object>(
           }
         })
         changed = true
+        // Flashes started now are bound in this update's render: no time
+        // has gone for them yet.
+        if (freshFrom === Infinity) {
+          freshFrom = firstGen
+          void nextTick(() => {
+            freshFrom = Infinity
+          })
+        }
         requestFrame()
         // Every mark lasts as long: a timer already set wakes first.
         if (timer === undefined) {
@@ -295,7 +312,7 @@ const startFlash = <T extends object>(
       }
       return
     }
-    const elapsed = now - mark.start
+    const elapsed = mark.gen >= freshFrom ? 0 : now - mark.start
     // A cell's own fresh flash must not inherit the row's elapsed time.
     const value =
       elapsed >= 1 ? `${Math.round(elapsed)}ms` : blockInherited ? '0ms' : ''
@@ -364,13 +381,12 @@ const startFlash = <T extends object>(
     }
   }
 
-  onScopeDispose(() => {
-    stopClock()
-    unbindAll()
-  })
+  // On unmount the elements go with the table: only the clock is stopped.
+  onScopeDispose(stopClock)
 
   return {
     view,
+    unbind: unbindAll,
     update,
     // KeepAlive: nothing runs while away; back, the rows are a baseline.
     deactivate: () => {
@@ -415,6 +431,7 @@ export const useChangeFlash = <T extends object>(
     }
   }
   const stop = () => {
+    controller?.unbind()
     scope?.stop()
     scope = null
     controller = null

@@ -182,6 +182,10 @@ export const createMarks = () => {
     get size() {
       return byKey.size
     },
+    /** The generation of the last start. */
+    get gen() {
+      return gen
+    },
     flashRow,
     flashCell,
     clearRows,
