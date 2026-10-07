@@ -106,6 +106,9 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/accessibility.browser.spec.ts > C-74 accessibility scan',
   // `moveColumn` is its own test, so the other C-44 tests still compare.
   'tests/contract/unit/labels.spec.ts > C-44 Labels names the reorder handles by moveColumn',
+  // `filterCondition` (3.2) is its own test for the same reason.
+  'tests/contract/unit/labels.spec.ts > C-44 Labels takes the condition label from filterCondition',
+  'tests/contract/unit/labels.spec.ts > C-44 Labels rewrites the condition label when labels change',
   // 3.2 addition (C-82): `data-type` on the cells of a column.
   'tests/contract/unit/column-type.spec.ts > C-82 Column type on cells [own]',
   'tests/contract/browser/dom-contract-column-type.browser.spec.ts > C-82 the column type is on every cell of a column, as the DOM contract lists it [own]',

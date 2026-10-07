@@ -378,6 +378,7 @@ export interface TableLabels {
     boolTrue: string;
     clearAllFilters: string;
     expandRow: string;
+    filterCondition: (condition: FilterCondition, type: ColumnType) => string;
     filterInput: (column: string) => string;
     filterOptions: (column: string) => string;
     moveColumn: (column: string) => string;

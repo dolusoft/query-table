@@ -5,6 +5,7 @@ import type { FilterMenuSlotProps } from '@dolusoft/query-table'
 
 import {
   makeColumns,
+  makeQuery,
   mountTable,
   type Mounted
 } from '../../support/mount-table'
@@ -123,6 +124,165 @@ describe('C-44 Labels', () => {
         })
       )
     ).toEqual(['Name sütununu taşı'])
+  })
+
+  const filtered = {
+    filterable: true,
+    columns: makeColumns(),
+    query: makeQuery({
+      filters: [
+        { field: 'name', condition: 'StartsWith', value: 'a' },
+        { field: 'age', condition: 'GreaterThan', value: 20 },
+        { field: 'age', condition: 'LessThan', value: 40 },
+        { field: 'joined', condition: 'GreaterThan', value: '2024-01-01' }
+      ]
+    })
+  }
+  const conditionTexts = (m: Mounted): Record<string, string> =>
+    Object.fromEntries(
+      m.wrapper
+        .findAll('th[data-field]')
+        .filter(th => th.find('.qt-filter-condition').exists())
+        .map((th): [string, string] => [
+          th.attributes('data-field') ?? '',
+          th.find('.qt-filter-condition').text()
+        ])
+    )
+  const menuSpy = () => {
+    const seen: Record<string, FilterMenuSlotProps['conditions']> = {}
+    return {
+      seen,
+      slots: {
+        'filter-menu': (p: FilterMenuSlotProps) => {
+          seen[p.column.field] = p.conditions
+          return h(p.trigger)
+        }
+      }
+    }
+  }
+
+  it('writes the condition label in English by default', () => {
+    const spy = menuSpy()
+    const m = mountIt(filtered, { slots: spy.slots })
+    expect(conditionTexts(m)).toEqual({
+      name: 'Starts With',
+      age: 'Greater Than (>) (2)',
+      joined: 'After (>)'
+    })
+    expect(spy.seen.name.map(o => o.label)).toEqual([
+      'Contains',
+      'Not Contains',
+      'Equal (=)',
+      'Not Equal (≠)',
+      'Starts With',
+      'Ends With'
+    ])
+    expect(spy.seen.joined.map(o => o.label)).toEqual([
+      'Equal (=)',
+      'Not Equal (≠)',
+      'After (>)',
+      'Before (<)'
+    ])
+  })
+
+  // 3.2: a separate test, so the ones above still compare with 3.1.0.
+  it('takes the condition label from filterCondition', () => {
+    const turkish: Record<string, string> = {
+      Contains: 'İçerir',
+      NotContains: 'İçermez',
+      Equal: 'Eşit',
+      NotEqual: 'Eşit değil',
+      StartsWith: 'İle başlar',
+      EndsWith: 'İle biter',
+      GreaterThan: 'Büyük',
+      LessThan: 'Küçük'
+    }
+    const calls: [string, string][] = []
+    const spy = menuSpy()
+    const m = mountIt(
+      {
+        ...filtered,
+        labels: {
+          filterCondition: (condition: string, type: string) => {
+            calls.push([condition, type])
+            if (type === 'date' && condition === 'GreaterThan') {
+              return 'Sonra'
+            }
+            return turkish[condition] ?? condition
+          }
+        }
+      },
+      { slots: spy.slots }
+    )
+    expect(conditionTexts(m)).toEqual({
+      name: 'İle başlar',
+      age: 'Büyük (2)',
+      joined: 'Sonra'
+    })
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        ['StartsWith', 'string'],
+        ['GreaterThan', 'number'],
+        ['GreaterThan', 'date']
+      ])
+    )
+    expect(spy.seen.name.map(o => o.label)).toEqual([
+      'İçerir',
+      'İçermez',
+      'Eşit',
+      'Eşit değil',
+      'İle başlar',
+      'İle biter'
+    ])
+    expect(spy.seen.joined).toEqual([
+      { value: 'Equal', label: 'Eşit' },
+      { value: 'NotEqual', label: 'Eşit değil' },
+      { value: 'GreaterThan', label: 'Sonra' },
+      { value: 'LessThan', label: 'Küçük' }
+    ])
+    expect(m.wrapper.text()).not.toMatch(/Starts With|Greater Than|After/)
+  })
+
+  // 3.2: a separate test, so the ones above still compare with 3.1.0.
+  it('rewrites the condition label when labels change', async () => {
+    const m = mountIt(filtered)
+    expect(conditionTexts(m).name).toBe('Starts With')
+    await m.wrapper.setProps({
+      labels: { filterCondition: () => 'Başlar' }
+    })
+    expect(conditionTexts(m)).toEqual({
+      name: 'Başlar',
+      age: 'Başlar (2)',
+      joined: 'Başlar'
+    })
+    await m.wrapper.setProps({ labels: {} })
+    expect(conditionTexts(m)).toEqual({
+      name: 'Starts With',
+      age: 'Greater Than (>) (2)',
+      joined: 'After (>)'
+    })
+  })
+
+  it('names the selection checkboxes by selectRow and selectAllRows', () => {
+    const checkboxNames = (m: Mounted) => [
+      m.wrapper.find('.qt-select-all').attributes('aria-label'),
+      ...m.wrapper
+        .findAll('.qt-select-row')
+        .map(el => el.attributes('aria-label'))
+    ]
+    const english = mountIt({ selection: {}, rowKey: 'id' })
+    expect(new Set(checkboxNames(english))).toEqual(
+      new Set(['Select all rows', 'Select row'])
+    )
+    english.wrapper.unmount()
+    const turkish = mountIt({
+      selection: {},
+      rowKey: 'id',
+      labels: { selectRow: 'Satırı seç', selectAllRows: 'Tüm satırları seç' }
+    })
+    expect(new Set(checkboxNames(turkish))).toEqual(
+      new Set(['Tüm satırları seç', 'Satırı seç'])
+    )
   })
 
   it('names a column without a title by its field', () => {

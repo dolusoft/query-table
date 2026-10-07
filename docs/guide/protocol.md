@@ -90,7 +90,7 @@ export const matches = (row: Person, filters: readonly FilterRule[]) =>
   })
 ```
 
-**Conditions and values per column type.** The table offers these in its filter menu, and the type decides the `value` type:
+**Conditions and values per column type.** The table offers these in its filter menu (the Vue component names them through `labels.filterCondition`), and the type decides the `value` type:
 
 | Column type         | `value` is | Conditions offered                                                                | Default      |
 | ------------------- | ---------- | --------------------------------------------------------------------------------- | ------------ |

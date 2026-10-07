@@ -1,3 +1,5 @@
+import { conditionLabel } from '@dolusoft/query-protocol'
+
 import type { Column, TableLabels } from '../contract'
 
 /** English defaults of the `labels` prop (C-44). */
@@ -9,6 +11,7 @@ const defaultLabels: TableLabels = {
   filterOptions: column => `Filter options for ${column}`,
   resizeColumn: column => `Resize ${column}`,
   moveColumn: column => `Move ${column}`,
+  filterCondition: (condition, type) => conditionLabel(type, condition),
   boolAll: 'All',
   boolTrue: 'True',
   boolFalse: 'False',
