@@ -96,8 +96,14 @@ const setShown = (field: string, on: boolean) => {
       </Label>
     </div>
     <!-- Consumer CSS of this page: the table takes its columns' widths and
-         scrolls sideways instead of squeezing them. -->
-    <div class="[&_.qt-table]:w-max [&_.qt-table]:min-w-full">
+         scrolls sideways instead of squeezing them, and the filter row wraps
+         so the column controls can take their own row. In a narrow column
+         the skin centres the filter button on the whole filter box; with the
+         controls under the input that put it between them, so it is centred
+         on the input's row instead (2rem tall, 2.5rem on a touch screen). -->
+    <div
+      class="[&_.qt-filter]:flex-wrap [&_.qt-filter-button]:top-4 max-lg:[&_.qt-filter-button]:top-5 [&_.qt-table]:w-max [&_.qt-table]:min-w-full"
+    >
       <QueryTable
         v-model:query="query"
         v-model:columns="columns"
@@ -112,65 +118,75 @@ const setShown = (field: string, on: boolean) => {
       >
         <template #filter-menu="menu">
           <FilterMenu :menu="menu" />
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            :aria-label="menu.control.pinned === 'left' ? 'Unpin' : 'Pin left'"
-            :title="menu.control.pinned === 'left' ? 'Unpin' : 'Pin left'"
-            :data-active="menu.control.pinned === 'left' ? '' : undefined"
-            class="data-active:bg-muted"
-            @click="
-              menu.control.pin(menu.control.pinned === 'left' ? false : 'left')
-            "
-          >
-            <ArrowLeftToLineIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            :aria-label="
-              menu.control.pinned === 'right' ? 'Unpin' : 'Pin right'
-            "
-            :title="menu.control.pinned === 'right' ? 'Unpin' : 'Pin right'"
-            :data-active="menu.control.pinned === 'right' ? '' : undefined"
-            class="data-active:bg-muted"
-            @click="
-              menu.control.pin(
-                menu.control.pinned === 'right' ? false : 'right'
-              )
-            "
-          >
-            <ArrowRightToLineIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Move left"
-            title="Move left"
-            :disabled="!menu.control.canMoveLeft"
-            @click="menu.control.move('left')"
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Move right"
-            title="Move right"
-            :disabled="!menu.control.canMoveRight"
-            @click="menu.control.move('right')"
-          >
-            <ChevronRightIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Hide"
-            title="Hide"
-            @click="menu.control.hide()"
-          >
-            <EyeOffIcon />
-          </Button>
+          <!-- The column controls take a row of their own under the filter
+               (`basis-full` in the wrapping filter row) and wrap inside it:
+               on one line they ran past a narrow column and lay over the
+               next header's filter. -->
+          <div class="flex basis-full flex-wrap gap-1">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              :aria-label="
+                menu.control.pinned === 'left' ? 'Unpin' : 'Pin left'
+              "
+              :title="menu.control.pinned === 'left' ? 'Unpin' : 'Pin left'"
+              :data-active="menu.control.pinned === 'left' ? '' : undefined"
+              class="data-active:bg-muted"
+              @click="
+                menu.control.pin(
+                  menu.control.pinned === 'left' ? false : 'left'
+                )
+              "
+            >
+              <ArrowLeftToLineIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              :aria-label="
+                menu.control.pinned === 'right' ? 'Unpin' : 'Pin right'
+              "
+              :title="menu.control.pinned === 'right' ? 'Unpin' : 'Pin right'"
+              :data-active="menu.control.pinned === 'right' ? '' : undefined"
+              class="data-active:bg-muted"
+              @click="
+                menu.control.pin(
+                  menu.control.pinned === 'right' ? false : 'right'
+                )
+              "
+            >
+              <ArrowRightToLineIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Move left"
+              title="Move left"
+              :disabled="!menu.control.canMoveLeft"
+              @click="menu.control.move('left')"
+            >
+              <ChevronLeftIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Move right"
+              title="Move right"
+              :disabled="!menu.control.canMoveRight"
+              @click="menu.control.move('right')"
+            >
+              <ChevronRightIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Hide"
+              title="Hide"
+              @click="menu.control.hide()"
+            >
+              <EyeOffIcon />
+            </Button>
+          </div>
         </template>
         <template #pagination="page">
           <TablePager :page="page" />

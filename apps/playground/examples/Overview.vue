@@ -19,9 +19,16 @@ import { createDemoRows, peopleColumns, useFakeServer } from '../scenarios'
 // sort button (`toggleSort`) and a funnel that opens a sheet for that column.
 // Chips above the table show the filters in `query.filters`.
 // Joined gets a width: a date input needs more room than an even share of
-// the fixed layout, which clipped its placeholder at 768px.
+// the fixed layout, which clipped its placeholder at 768px. ID gets 7rem: in
+// the compact header its sort button and funnel (2.5rem and 2.75rem on a
+// touch screen) did not fit the scenario's 90px, and the funnel lay under
+// the Name header.
 const columns = peopleColumns().map(column =>
-  column.field === 'joined' ? { ...column, width: '260px' } : column
+  column.field === 'joined'
+    ? { ...column, width: '260px' }
+    : column.field === 'id'
+      ? { ...column, width: '7rem' }
+      : column
 )
 const { query, result } = useFakeServer(createDemoRows(), {
   sort: { field: 'age', direction: 'asc' }

@@ -26,12 +26,14 @@ const pick = (value: unknown) => {
     :model-value="theme"
     @update:model-value="pick"
   >
-    <!-- Each item is a toggle button (`aria-pressed`); the group has a name. -->
+    <!-- Each item is a toggle button (`aria-pressed`); the group has a name.
+         The pressed item takes the foreground color: in the home footer the
+         group inherits muted text, which is 4.35:1 on the pressed bg-muted. -->
     <ToggleGroupItem
       v-for="option in themes"
       :key="option"
       :value="option"
-      class="min-h-11 px-3 capitalize lg:min-h-0"
+      class="min-h-11 px-3 capitalize data-[state=on]:text-foreground lg:min-h-0"
     >
       {{ option }}
     </ToggleGroupItem>
