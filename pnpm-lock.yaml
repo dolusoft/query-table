@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@vitest/browser@5.0.3': fd4c36fbbf856b4940ded42946fba9912619de2bf7fe5de93ee652f3252e952c
+
 importers:
 
   .:
@@ -5698,7 +5701,7 @@ snapshots:
 
   '@vitest/browser-playwright@5.0.3(playwright@1.63.0)(vite@8.3.2)(vitest@5.0.3)':
     dependencies:
-      '@vitest/browser': 5.0.3(vite@8.3.2)(vitest@5.0.3)
+      '@vitest/browser': 5.0.3(patch_hash=fd4c36fbbf856b4940ded42946fba9912619de2bf7fe5de93ee652f3252e952c)(vite@8.3.2)(vitest@5.0.3)
       '@vitest/mocker': 5.0.3(vite@8.3.2)
       playwright: 1.63.0
       tinyrainbow: 3.2.0
@@ -5709,7 +5712,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/browser@5.0.3(vite@8.3.2)(vitest@5.0.3)':
+  '@vitest/browser@5.0.3(patch_hash=fd4c36fbbf856b4940ded42946fba9912619de2bf7fe5de93ee652f3252e952c)(vite@8.3.2)(vitest@5.0.3)':
     dependencies:
       '@blazediff/core': 1.10.0
       '@vitest/mocker': 5.0.3(vite@8.3.2)
@@ -5739,7 +5742,7 @@ snapshots:
       tinyrainbow: 3.2.0
       vitest: 5.0.3(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(happy-dom@20.14.5)(vite@8.3.2)
     optionalDependencies:
-      '@vitest/browser': 5.0.3(vite@8.3.2)(vitest@5.0.3)
+      '@vitest/browser': 5.0.3(patch_hash=fd4c36fbbf856b4940ded42946fba9912619de2bf7fe5de93ee652f3252e952c)(vite@8.3.2)(vitest@5.0.3)
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
