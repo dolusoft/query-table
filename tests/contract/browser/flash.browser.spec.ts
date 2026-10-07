@@ -30,7 +30,12 @@ afterAll(() => restoreLayout())
 afterEach(async () => {
   cleanup()
   setTheme(null)
-  await commands.emulateMedia({ media: null, reducedMotion: null })
+  // Playwright's own defaults, not `null`: `null` hands the feature to the
+  // operating system, and a system with animations off reports `reduce`.
+  await commands.emulateMedia({
+    media: 'screen',
+    reducedMotion: 'no-preference'
+  })
 })
 
 const sleep = (ms: number) =>

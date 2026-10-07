@@ -138,7 +138,19 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/infinite.browser.spec.ts > C-88 Infinite scroll trigger, virtual true [own]',
   'tests/contract/browser/infinite.browser.spec.ts > C-89 Load-more slot and method in the browser [own]',
   'tests/contract/browser/dom-contract-3-2.browser.spec.ts > C-91 the DOM with 3.2 features matches the DOM contract',
-  'tests/contract/browser/accessibility.browser.spec.ts > C-86 accessibility scan'
+  'tests/contract/browser/accessibility.browser.spec.ts > C-86 accessibility scan',
+  // 3.3 additions (C-92 to C-95, ADR 0011): the change flash. The tracker of
+  // C-92 is the core's and has its own tests; these drive `flash` and
+  // `rowsUpdate`, which a 3.2 build does not have. With `flash` off the
+  // table is the one of 3.2; every other test compares that.
+  'tests/contract/unit/flash.spec.ts > C-93 Change flash: what flashes [own]',
+  'tests/contract/unit/flash.spec.ts > C-94 Change flash: marks and timing [own]',
+  'tests/contract/unit/flash.spec.ts > C-95 Change flash off and DOM contract of 3.3 [own]',
+  'tests/contract/browser/flash.browser.spec.ts > C-93 Change flash: what flashes [own]',
+  'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: marks and timing [own]',
+  'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: the skin [own]',
+  'tests/contract/browser/flash.browser.spec.ts > C-95 Change flash off and DOM contract of 3.3 [own]',
+  'tests/contract/browser/dom-contract-3-3.browser.spec.ts > C-95 the DOM with the change flash matches the DOM contract'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

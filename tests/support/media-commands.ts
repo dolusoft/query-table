@@ -2,7 +2,9 @@ import type { BrowserCommand } from 'vitest/node'
 
 // Browser commands that emulate a media feature on the Playwright page, for
 // the specs of a skin's `prefers-reduced-motion` and `print` rules (C-94).
-// They run in Node; `null` puts the feature back to the browser's own.
+// They run in Node; `null` hands the feature to the operating system (a
+// system with animations off reports `reduce`), so a spec puts back
+// Playwright's defaults, `screen` and `no-preference`, instead.
 
 interface MediaOptions {
   media?: 'screen' | 'print' | null
