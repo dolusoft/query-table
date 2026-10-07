@@ -18,10 +18,10 @@ import {
   type ScenarioUpdate
 } from '../support/scenario-host'
 
-// The playground's three demo datasets (Security alerts, Market quotes, Store orders) have
-// different columns and types. The user picks one in the dataset menu, then
-// runs the short form of the server scenario on it: filter, sort, next
-// page, clear. On each, the skin aligns the cells by `data-type` (C-82).
+// The playground's three demo datasets (Security alerts, Market quotes,
+// Store orders) have different columns and types. The user picks one in the
+// dataset menu, then runs the short form of the server scenario on it:
+// filter, sort, next page, clear. On each, the skin aligns the cells by `data-type` (C-82).
 // The host has `filterDebounce: 0`, so the filter applies at once (C-12).
 // tests/support/setup.ts puts the default dataset back before each test.
 

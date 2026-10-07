@@ -57,10 +57,8 @@ const visibleMenu = () => {
 
 const pick = async (name: string) => {
   await userEvent.click(visibleMenu())
-  // An item reads as its name ("Store orders").
-  await userEvent.click(
-    page.getByRole('menuitemradio', { name: new RegExp(`^${name}`) })
-  )
+  // An item reads as its name alone ("Store orders").
+  await userEvent.click(page.getByRole('menuitemradio', { name, exact: true }))
 }
 
 const headerFields = (root: ParentNode = document) =>

@@ -108,10 +108,13 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
           <!-- Text keeps the 40rem measure of the shadcn-vue docs. A part
                marked `data-wide` (an example's preview) starts on the same
                left edge and widens to the right, up to 64rem: in 40rem a
-               table example drops to its phone layout. Where the column is
-               wider than that, the 64rem block is centered in it. -->
+               table example drops to its phone layout. With "On This Page"
+               on screen (84rem up), a column wider than that centers the
+               64rem block between the two rails. Without the rail the block
+               stays at the column's start: centering it there would push it
+               right up to 1343px and make it jump back when the rail shows. -->
           <div
-            class="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
+            class="flex min-[84rem]:mx-auto w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
           >
             <!-- A new page instance per route: each page mounts its own example. -->
             <RouterView :key="$route.path" />

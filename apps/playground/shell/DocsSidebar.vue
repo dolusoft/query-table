@@ -27,7 +27,9 @@ import { aiNav } from '../guides/guides'
 // On a desktop the shadcn-vue `Sidebar` is `fixed` to the window's left
 // edge. The docs layout is a frame centered in the window (App.vue), so the
 // sidebar is `sticky` instead: it stays in the frame's first column and
-// still holds still below the header while the page scrolls.
+// still holds still below the header while the page scrolls. A sticky box
+// does not move with `left`, so closing the sidebar (Ctrl+B) hides it
+// instead of sliding it out; its gap goes to 0 and the page takes the room.
 const route = useRoute()
 const { isMobile, setOpenMobile } = useSidebar()
 
@@ -52,7 +54,7 @@ const link =
 <template>
   <Sidebar
     collapsible="offcanvas"
-    class="sticky top-16 bottom-auto h-[calc(100svh-4rem)]! border-r-0! *:data-[slot=sidebar-inner]:bg-background"
+    class="sticky top-16 bottom-auto h-[calc(100svh-4rem)]! border-r-0! group-data-[collapsible=offcanvas]:hidden *:data-[slot=sidebar-inner]:bg-background"
   >
     <SidebarContent class="pt-4">
       <!-- In the Sheet the header's menu button opens, the demo data switch

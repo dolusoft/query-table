@@ -1,8 +1,8 @@
 import type { Dataset, DemoRow } from './dataset'
 import { day, isoDate, isoDateTime, seeded } from './random'
 
-// Security alerts: the alert log of a security monitoring service. One row is one
-// alert a detection rule raised, in time order.
+// Security alerts: the alert log of a security monitoring service. One row
+// is one alert a detection rule raised, in time order.
 
 const users = [
   'Işık Demir',
