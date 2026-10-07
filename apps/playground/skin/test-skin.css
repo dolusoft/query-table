@@ -608,6 +608,12 @@ th:is([data-type='number'], [data-type='integer']) > .qt-sort {
 th:is([data-type='number'], [data-type='integer']) .qt-filter-input {
   text-align: end;
 }
+/* own: the filter row of a number header keeps its controls at the end too:
+   in a narrow column, where only the button is left, it stood at the start
+   under a title that ends on the column's edge. */
+th:is([data-type='number'], [data-type='integer']) .qt-filter {
+  justify-content: flex-end;
+}
 /* own: a filtered column's input shows a stronger border. */
 th[data-filtered] .qt-filter-input {
   border-color: color-mix(in oklab, var(--foreground) 40%, transparent);

@@ -237,6 +237,25 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
     await shot('layout-column-type-resizable-before-pinned')
   })
 
+  test('C-82 a narrow number header keeps its filter button at the end [own]', async () => {
+    // 88px with the resize handles' padding leaves the filter row under 4rem:
+    // the input is gone and only the button is left.
+    await renderTable({
+      resizable: true,
+      columns: [
+        { field: 'id', title: 'ID', type: 'number', width: '88px' },
+        { field: 'name', title: 'Name' }
+      ]
+    })
+    expect(
+      getComputedStyle(el('th[data-field="id"] .qt-filter-input')).display
+    ).toBe('none')
+    const sort = box('th[data-field="id"] > .qt-sort')
+    const button = box('th[data-field="id"] .qt-filter-button')
+    expect(Math.abs(button.right - sort.right)).toBeLessThanOrEqual(0.5)
+    await shot('layout-column-type-narrow-number-filter')
+  })
+
   test.each(['light', 'dark'] as const)(
     'typing a filter moves nothing while the condition label shows up (%s)',
     async theme => {
