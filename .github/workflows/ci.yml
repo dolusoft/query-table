@@ -82,7 +82,8 @@ jobs:
 
   package:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Room for the Chromium install retries (up to about 8 minutes).
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -121,10 +122,10 @@ jobs:
 
   verify:
     needs: [checks, browser, package]
-    # Runs even when a job before it failed, so the required check reports
-    # the failure instead of staying "skipped"; a cancelled run stays
-    # cancelled.
-    if: ${{ !cancelled() }}
+    # Runs even when a job before it failed or the run was cancelled, so the
+    # required check reports a failure: branch protection counts a skipped
+    # required check as passed.
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
