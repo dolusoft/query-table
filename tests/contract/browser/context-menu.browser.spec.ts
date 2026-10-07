@@ -152,15 +152,22 @@ const renderListening = async (
   return { payloads, observed }
 }
 
-test('C-28 a real right-click on a utility cell emits nothing and keeps the native menu', async () => {
-  const flow = await renderListening({ rows: rows(2), hasSubtable: true })
-  await userEvent.click(page.getByCSS('tr[data-row-index="0"] .qt-expand'), {
-    button: 'right'
-  })
-  expect(flow.observed).toHaveLength(1)
-  expect(flow.observed[0].defaultPrevented).toBe(false)
-  expect(flow.payloads).toHaveLength(0)
-})
+test.each([
+  ['subtable toggle', { hasSubtable: true }, '.qt-expand'],
+  ['selection checkbox', { selection: {}, rowKey: 'id' }, '.qt-select-row'],
+  ['right panel button', { hasRightPanel: true }, '.qt-right-panel-button']
+] as const)(
+  'C-28 a real right-click on the %s utility cell emits nothing and keeps the native menu',
+  async (_name, props, selector) => {
+    const flow = await renderListening({ rows: rows(2), ...props })
+    await userEvent.click(page.getByCSS(`tr[data-row-index="0"] ${selector}`), {
+      button: 'right'
+    })
+    expect(flow.observed).toHaveLength(1)
+    expect(flow.observed[0].defaultPrevented).toBe(false)
+    expect(flow.payloads).toHaveLength(0)
+  }
+)
 
 test('C-28 a real right-click in the subtable row emits nothing for the outer table', async () => {
   const flow = await renderListening(

@@ -152,13 +152,19 @@ test('C-54 focusFilter returns false and moves no focus when there is no filter 
   const outside = document.createElement('button')
   document.body.append(outside)
   outside.focus()
+  // The bool select is disabled while several rules sit on its field.
+  expect(el<HTMLSelectElement>('th[data-field="active"] select').disabled).toBe(
+    true
+  )
   // not filterable, hidden, unknown, disabled bool select (several rules)
   for (const field of ['id', 'name', 'nope', 'active']) {
     expect(table.value!.focusFilter(field)).toBe(false)
     expect(document.activeElement).toBe(outside)
   }
   expect(table.value!.focusFilter('age')).toBe(true)
-  expect(document.activeElement).not.toBe(outside)
+  expect(document.activeElement).toBe(
+    el('th[data-field="age"] .qt-filter-input')
+  )
   outside.focus()
   filterable.value = false
   await expect.poll(() => document.querySelector('.qt-filter-input')).toBeNull()

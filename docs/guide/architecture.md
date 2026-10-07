@@ -75,7 +75,7 @@ Every package has a size budget, measured the way a consumer pays for it: a buil
 
 The policy (K7): size is not a goal, and a useful library may grow. A budget is the last measurement plus 5%, and a fixture may also have a ceiling. Both are there to catch **silent** drift, not to stop growth. A deliberate growth raises the budget, and the ceiling when needed, **in the same pull request**, with a one-line reason in the budget's history. It needs no separate approval.
 
-At the time of writing, for `3.1.0` (gzip, `scripts/package-size-budget.json`):
+At the time of writing, for `3.1.0` (gzip). Measured is the output of `pnpm measure:package-size` on 3.1.0; Budget and Ceiling are read from `scripts/package-size-budget.json`, whose own `measuredGzipBytes` is the value when the budget was last set (a measurement that may be older):
 
 | Fixture          | Measured | Budget   | Ceiling  |
 | ---------------- | -------- | -------- | -------- |

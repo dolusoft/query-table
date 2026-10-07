@@ -44,7 +44,7 @@ const local = useLocalQuery({
 </template>
 ```
 
-`defineDataset` copies, validates and freezes an explicit schema. Field types must match the raw values: no conversion is implicit. Supply a unique `integer` or `string` key; rows whose sort values are equal come out in that key's ascending order. Equal means the same value; for text, texts that differ only in case are ordered first by the ordinal tertiary level (`Ali` before `ali`), so the key breaks a tie only between texts that compose to the same text. Column configuration and dataset fields are separate; keep their types aligned. The required profile `tr-1` is specified in [semantics.md](../../../docs/guide/semantics.md).
+`defineDataset` copies, validates and freezes an explicit schema. Field types must match the raw values: no conversion is implicit. Supply a unique `integer` or `string` key; rows whose sort values are equal come out in that key's ascending order. Equal means the same value; for text, texts equal at the primary level (`S(C(·))`, for example `Ali` and `ali`) are ordered by the ordinal tertiary level, and the key breaks a tie only between texts that compose to the same text (`I` U+0049 followed by U+0307 and `pek`, and `İpek`). Column configuration and dataset fields are separate; keep their types aligned. The required profile `tr-1` is specified in [semantics.md](../../../docs/guide/semantics.md).
 
 `paginate: false` returns every matching row in the chosen order for printing or export. Hide the pagination slot in that view. Page values are still validated. A page beyond the end stays empty; the consumer decides when to reset it. Page-only, page-size-only and pagination-mode changes reuse filtering, search and sorting.
 
