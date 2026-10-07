@@ -8,7 +8,8 @@ import { router } from '../../../apps/playground/router'
 import {
   datasetId,
   resetDataset,
-  savedDatasetId
+  savedDatasetId,
+  selectDataset
 } from '../../../apps/playground/scenarios/datasets'
 
 // The demo data menu of the playground: one choice in the shell switches the
@@ -16,8 +17,8 @@ import {
 
 afterEach(() => resetDataset())
 
-// The shell draws the menu in the top bar and in the docs sidebar; at a
-// given width and route only some of them are on screen.
+// The top bar draws the menu twice: in the bar from sm up and in the
+// phone menu sheet below it; only one is on screen.
 const visibleMenu = () => {
   const menu = [
     ...document.querySelectorAll<HTMLElement>('[data-testid="dataset-menu"]')
@@ -65,8 +66,8 @@ test('the menu switches the showcase and an example page, and the choice is kept
   await router.push('/overview')
   await expect.poll(() => headerFields()).toContain('customer')
 
-  // A change on an example page remounts it on the new data.
-  await pick('Ticker')
+  // A change while an example page is open remounts it on the new data.
+  selectDataset('ticker')
   await expect.poll(() => headerFields()).toContain('symbol')
   expect(headerFields()).not.toContain('customer')
 
