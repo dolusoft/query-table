@@ -32,8 +32,11 @@ const run = spawnSync(
   process.execPath,
   [
     join(import.meta.dirname, 'test-browser.mjs'),
+    // dot shows a failing test, and gives the wrapper's idle limit
+    // progress to watch; the numbers come from the json report.
+    '--reporter=dot',
     '--reporter=json',
-    `--outputFile=${rawFile}`
+    `--outputFile.json=${rawFile}`
   ],
   {
     stdio: 'inherit',

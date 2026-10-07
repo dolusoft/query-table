@@ -95,10 +95,9 @@ export default defineConfig(({ mode }) => {
       name,
       include,
       // One page at a time. Several pages opening at once burst ~30
-      // loopback WebSocket connections within 130ms; on Windows the first
-      // SYN of some get dropped, the client reconnects too late and the
-      // run hangs ("Failed to connect to the browser session"). It also
-      // keeps the debounce-timing tests from competing for CPU.
+      // loopback connections within 130ms, which made the dropped-SYN hang
+      // described at `api` below more likely. It also keeps the
+      // debounce-timing tests from competing for CPU.
       maxWorkers: 1,
       testTimeout: 15_000,
       hookTimeout: 15_000,
@@ -108,7 +107,15 @@ export default defineConfig(({ mode }) => {
       // a range Windows reserves for Hyper-V on some machines, and a fixed
       // port gives the inspect mode a stable URL.
       // VITEST_BROWSER_PORT lets two clones run browser tests at once.
+      // It listens on 127.0.0.1, not localhost. On Windows a loopback SYN
+      // is now and then left unanswered for a second (os error 10060). The
+      // server bound to localhost listened on [::1] only, so the backup
+      // connection Chromium opens for a slow one went to 127.0.0.1, was
+      // refused, and a test module failed to load. On one address the backup
+      // reaches the server. A WebSocket has no backup connection: a dropped
+      // one is reconnected (patches/@vitest__browser@*.patch).
       api: {
+        host: '127.0.0.1',
         port: Number(process.env.VITEST_BROWSER_PORT ?? 51315),
         strictPort: true
       },
