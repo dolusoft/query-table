@@ -112,7 +112,24 @@ const ADDED_AFTER_BASELINE = [
   // The test skin aligns by `data-type`, which a 3.1 table does not write.
   'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 the skin aligns the cells of a column by its type [own]',
   // The skin puts a number header's filter button at the end by `data-type`.
-  'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 a narrow number header keeps its filter button at the end [own]'
+  'tests/contract/browser/layout.browser.spec.ts > C-31 geometry of the plain markup with the test skin C-82 a narrow number header keeps its filter button at the end [own]',
+  // 3.2 additions (C-83 to C-91, ADR 0010): virtual rows and infinite
+  // scroll. With both off the table is the one of 3.1; every other test
+  // compares that.
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface > C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else',
+  'tests/contract/unit/infinite.spec.ts > C-89 Load-more slot and method [own]',
+  'tests/contract/unit/infinite.spec.ts > C-90 End of an infinite list [own]',
+  'tests/contract/unit/infinite.spec.ts > C-88 Infinite scroll trigger [own]',
+  'tests/contract/browser/virtual.browser.spec.ts > C-83 Virtual rows [own]',
+  'tests/contract/browser/virtual.browser.spec.ts > C-84 Row heights [own]',
+  'tests/contract/browser/virtual.browser.spec.ts > C-85 Scroll element [own]',
+  'tests/contract/browser/virtual.browser.spec.ts > C-86 Virtual accessibility [own]',
+  'tests/contract/browser/virtual.browser.spec.ts > C-87 Print and scrollToIndex [own]',
+  'tests/contract/browser/infinite.browser.spec.ts > C-88 Infinite scroll trigger, virtual false [own]',
+  'tests/contract/browser/infinite.browser.spec.ts > C-88 Infinite scroll trigger, virtual true [own]',
+  'tests/contract/browser/infinite.browser.spec.ts > C-89 Load-more slot and method in the browser [own]',
+  'tests/contract/browser/dom-contract-3-2.browser.spec.ts > C-91 the DOM with 3.2 features matches the DOM contract',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-86 accessibility scan'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
