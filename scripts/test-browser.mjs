@@ -18,11 +18,16 @@
 //                            2026-10-07 (53 files, 313 tests, Windows): ~80 s
 //                            headless, over 200 s headed. The old 120 s limit
 //                            cut healthy headed runs and retried them.
-//   BROWSER_TEST_IDLE_MS     a run whose reporter streams progress (a
-//                            terminal, or dot) and stays silent this long is
+//   BROWSER_TEST_IDLE_MS     a run that reports every test (--reporter=dot,
+//                            verbose or tap) and stays silent this long is
 //                            taken as hung, default 60000. A hang shows as
-//                            dots that stop; the slowest test takes ~2 s, so
-//                            waiting out the whole limit wasted minutes.
+//                            dots that stop; the slowest test takes ~2 s and
+//                            a failing one at most its 15 s timeout, so
+//                            waiting out the whole limit wasted minutes. Other
+//                            reporters write per file or at the end (the
+//                            default one does too, as its output is piped),
+//                            so a slow failing file would look hung: they get
+//                            only the per-attempt limit.
 //   BROWSER_TEST_ATTEMPTS    default 2
 //   BROWSER_TEST_PROJECT     Vitest projects to run, comma-separated, default
 //                            "browser,browser-touch" (the touch instance of the
@@ -47,9 +52,7 @@ const reporters = args.filter(arg => arg.startsWith('--reporter'))
 if (!process.stdout.isTTY && reporters.length === 0) {
   args.push('--reporter=dot')
 }
-const streams =
-  process.stdout.isTTY ||
-  args.some(arg => /^--reporter=(dot|default|verbose|tap)$/.test(arg))
+const streams = args.some(arg => /^--reporter=(dot|verbose|tap)$/.test(arg))
 const maxAttempts = Number(process.env.BROWSER_TEST_ATTEMPTS) || 2
 const projects = (process.env.BROWSER_TEST_PROJECT || 'browser,browser-touch')
   .split(',')

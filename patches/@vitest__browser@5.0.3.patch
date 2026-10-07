@@ -1,8 +1,8 @@
 diff --git a/dist/client.js b/dist/client.js
-index 36a12dcc4bd3afc1b7af2571e32a87487c442892..8bd975d67951c9b9330cd4f35bdbad61bc8b70b6 100644
+index 36a12dcc4bd3afc1b7af2571e32a87487c442892..d47d63339252a8daaae86d0390738f4e5a7aaae5 100644
 --- a/dist/client.js
 +++ b/dist/client.js
-@@ -430,6 +430,18 @@ function createClient() {
+@@ -430,6 +430,22 @@ function createClient() {
  		timeout: -1
  	});
  	let openPromise;
@@ -16,12 +16,16 @@ index 36a12dcc4bd3afc1b7af2571e32a87487c442892..8bd975d67951c9b9330cd4f35bdbad61
 +			clearTimeout(pendingOpen.timeout);
 +			pendingOpen.resolve();
 +			pendingOpen = null;
++		} else {
++			// The wait timed out while this socket was still connecting:
++			// it is open now, so later waiters must not get the rejection.
++			openPromise = Promise.resolve();
 +		}
 +	}
  	function reconnect(reset = false) {
  		if (reset) {
  			tries = reconnectTries;
-@@ -438,19 +450,25 @@ function createClient() {
+@@ -438,19 +454,25 @@ function createClient() {
  		registerWS();
  	}
  	function registerWS() {
