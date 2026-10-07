@@ -813,6 +813,18 @@ export interface PageCursors {
 }
 ```
 
+The type below is declared by the row-change module of `@dolusoft/query-table-core` (`packages/query-table-core/src/row-changes/tracker.ts`, C-92); `contract.ts` exports it again.
+
+```ts
+/**
+ * What produced the rows given with it (C-93): `live` is a change of the
+ * data under the same query and flashes; `append` adds a page and
+ * flashes nothing; `snapshot` (an answer to a query) and `reset` (another
+ * source) start over.
+ */
+export type RowsUpdate = 'snapshot' | 'append' | 'live' | 'reset'
+```
+
 ## Behavior rules
 
 Each rule has a stable ID. Every ID is covered by at least one test whose name contains it, and a test that names an unknown ID fails the build (`tests/repo/contract-traceability.spec.ts`).

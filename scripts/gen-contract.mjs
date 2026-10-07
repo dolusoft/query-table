@@ -82,34 +82,51 @@ const protocolTypesPath = at(
   'protocol',
   'types.ts'
 )
-const protocolTypesFile = ts.createSourceFile(
-  protocolTypesPath,
-  read(protocolTypesPath),
-  ts.ScriptTarget.ES2022,
-  true
+// `RowsUpdate` is the core's row-change module's (C-92), exported again the
+// same way.
+const rowChangesTypesPath = at(
+  'packages',
+  'query-table-core',
+  'src',
+  'row-changes',
+  'tracker.ts'
 )
-const reexportedNames = contractFile.statements
-  .filter(
-    statement =>
-      ts.isExportDeclaration(statement) &&
-      statement.moduleSpecifier?.text === '@dolusoft/query-protocol' &&
-      statement.exportClause &&
-      ts.isNamedExports(statement.exportClause)
+const reexportsOf = (module, path) => {
+  const file = ts.createSourceFile(
+    path,
+    read(path),
+    ts.ScriptTarget.ES2022,
+    true
   )
-  .flatMap(statement =>
-    statement.exportClause.elements.map(element => element.name.text)
-  )
-const reexported = protocolTypesFile.statements.filter(
-  statement =>
-    isDeclaredType(statement) && reexportedNames.includes(statement.name.text)
-)
-for (const name of reexportedNames) {
-  if (!reexported.some(statement => statement.name.text === name)) {
-    throw new Error(
-      `contract.ts re-exports ${name}, which ${relative(root, protocolTypesPath)} does not declare`
+  const names = contractFile.statements
+    .filter(
+      statement =>
+        ts.isExportDeclaration(statement) &&
+        statement.moduleSpecifier?.text === module &&
+        statement.exportClause &&
+        ts.isNamedExports(statement.exportClause)
     )
+    .flatMap(statement =>
+      statement.exportClause.elements.map(element => element.name.text)
+    )
+  const found = file.statements.filter(
+    statement =>
+      isDeclaredType(statement) && names.includes(statement.name.text)
+  )
+  for (const name of names) {
+    if (!found.some(statement => statement.name.text === name)) {
+      throw new Error(
+        `contract.ts re-exports ${name}, which ${relative(root, path)} does not declare`
+      )
+    }
   }
+  return found
 }
+const reexported = reexportsOf('@dolusoft/query-protocol', protocolTypesPath)
+const reexportedCore = reexportsOf(
+  '@dolusoft/query-table-core/row-changes',
+  rowChangesTypesPath
+)
 
 const declaration = name => {
   const found = contractFile.statements.find(
@@ -422,6 +439,12 @@ const sections = [
   '```ts\n' +
     reexported.map(statement => statement.getFullText().trim()).join('\n\n') +
     '\n```',
+  'The type below is declared by the row-change module of `@dolusoft/query-table-core` (`packages/query-table-core/src/row-changes/tracker.ts`, C-92); `contract.ts` exports it again.',
+  '```ts\n' +
+    reexportedCore
+      .map(statement => statement.getFullText().trim())
+      .join('\n\n') +
+    '\n```',
   '## Behavior rules',
   rules.replace(/^### /gm, '#### '),
   '## DOM contract',
@@ -498,6 +521,7 @@ if (headingCount !== ruleEntries.length) {
 // The exported types of src/contract.ts, with their JSDoc summary.
 const types = [
   ...reexported.map(typeEntry),
+  ...reexportedCore.map(typeEntry),
   ...contractFile.statements
     .filter(
       statement =>

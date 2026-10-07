@@ -304,6 +304,18 @@ export const features: Feature[] = [
     example: 'infinite-scroll'
   },
   {
+    id: 'change-flash',
+    group: 'own',
+    title: 'Change flash',
+    summary:
+      'Flash a new row and a changed cell while the query stays the same; a sort, a filter or an answer never flashes. The table finds the change by row key and marks it, the skin draws it, and a row that scrolls back into view flashes for the time it has left. Off by default and free while off (ADR 0011).',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: 'server',
+    example: 'change-flash'
+  },
+  {
     id: 'filter-grammar',
     group: 'own',
     title: 'Filter text grammar, condition menu, debounce, echo guard',
