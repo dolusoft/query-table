@@ -423,6 +423,7 @@ const base = import.meta.env.BASE_URL
              too), so the page adds only the card's ring and radius around
              it: a padded frame on top of that showed a card inside a card. -->
         <img
+          v-show="diagramLoaded"
           :src="diagramUrl"
           alt="Architecture diagram: the page, the table and the server around v-model:query"
           class="mt-3 w-full rounded-xl ring-1 ring-foreground/10"
