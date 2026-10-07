@@ -50,7 +50,7 @@ const around = computed(() => neighbours(route.path))
           as-child
           variant="secondary"
           size="icon"
-          class="size-11 lg:size-8"
+          class="size-11 lg:pointer-fine:size-8"
         >
           <RouterLink
             :to="`/${around.previous.id}`"
@@ -64,7 +64,7 @@ const around = computed(() => neighbours(route.path))
           as-child
           variant="secondary"
           size="icon"
-          class="size-11 lg:size-8"
+          class="size-11 lg:pointer-fine:size-8"
         >
           <RouterLink
             :to="`/${around.next.id}`"

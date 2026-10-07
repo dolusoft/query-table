@@ -59,7 +59,7 @@ const onQuery = (next: CursorQuery, reason: QueryChangeReason) => {
       <template #toolbar="bar">
         <div class="flex flex-wrap items-center gap-2 pb-2">
           <Input
-            class="search-input h-11 w-full sm:w-64 lg:h-8"
+            class="search-input h-11 w-full sm:w-64 lg:pointer-fine:h-8"
             type="search"
             :aria-label="searchLabel"
             :placeholder="searchLabel"
@@ -70,7 +70,7 @@ const onQuery = (next: CursorQuery, reason: QueryChangeReason) => {
           <Button
             variant="outline"
             size="sm"
-            class="min-h-11 lg:min-h-0"
+            class="min-h-11 lg:pointer-fine:min-h-0"
             :disabled="selected.length === 0"
             @click="selection = {}"
           >

@@ -41,7 +41,7 @@ const follow = (
 }
 
 const link =
-  'min-h-11 text-[0.8rem] font-medium lg:min-h-0 lg:h-[30px] data-active:text-sidebar-accent-foreground'
+  'min-h-11 text-[0.8rem] font-medium lg:pointer-fine:min-h-0 lg:pointer-fine:h-[30px] data-active:text-sidebar-accent-foreground'
 </script>
 
 <template>

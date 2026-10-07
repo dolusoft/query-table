@@ -108,13 +108,18 @@ const base = import.meta.env.BASE_URL
         {{ pitch }}
       </p>
       <div class="flex flex-wrap justify-center gap-2 pt-2">
-        <Button as-child size="sm" class="min-h-11 sm:min-h-0">
+        <Button as-child size="sm" class="min-h-11 sm:pointer-fine:min-h-0">
           <RouterLink to="/overview">
             Read the docs
             <ArrowRightIcon data-icon="inline-end" />
           </RouterLink>
         </Button>
-        <Button as-child size="sm" variant="ghost" class="min-h-11 sm:min-h-0">
+        <Button
+          as-child
+          size="sm"
+          variant="ghost"
+          class="min-h-11 sm:pointer-fine:min-h-0"
+        >
           <a
             :href="repositoryUrl"
             target="_blank"
@@ -149,14 +154,14 @@ const base = import.meta.env.BASE_URL
                 v-for="entry in installCommands"
                 :key="entry.manager"
                 :value="entry.manager"
-                class="h-11 px-2 data-active:border-input data-active:shadow-none lg:h-7"
+                class="h-11 px-2 data-active:border-input data-active:shadow-none lg:pointer-fine:h-7"
               >
                 {{ entry.manager }}
               </TabsTrigger>
             </TabsList>
             <InputGroupButton
               size="icon-sm"
-              class="ml-auto size-11 lg:size-7"
+              class="ml-auto size-11 lg:pointer-fine:size-7"
               :aria-label="copied ? 'Copied' : 'Copy install command'"
               data-testid="copy-install"
               @click="copy(command)"
@@ -272,13 +277,21 @@ const base = import.meta.env.BASE_URL
             <CardDescription>{{ onTopOfTanstack.text }}</CardDescription>
           </CardHeader>
           <CardFooter class="mt-auto flex-wrap gap-2">
-            <Button as-child variant="outline" class="min-h-11 sm:min-h-0">
+            <Button
+              as-child
+              variant="outline"
+              class="min-h-11 sm:pointer-fine:min-h-0"
+            >
               <RouterLink to="/features">
                 Feature matrix
                 <ArrowRightIcon data-icon="inline-end" />
               </RouterLink>
             </Button>
-            <Button as-child variant="ghost" class="min-h-11 sm:min-h-0">
+            <Button
+              as-child
+              variant="ghost"
+              class="min-h-11 sm:pointer-fine:min-h-0"
+            >
               <RouterLink to="/tanstack">TanStack Table</RouterLink>
             </Button>
           </CardFooter>
@@ -302,10 +315,18 @@ const base = import.meta.env.BASE_URL
             </CardDescription>
           </CardHeader>
           <CardFooter class="mt-auto flex-wrap gap-2">
-            <Button as-child variant="outline" class="min-h-11 sm:min-h-0">
+            <Button
+              as-child
+              variant="outline"
+              class="min-h-11 sm:pointer-fine:min-h-0"
+            >
               <RouterLink to="/ai#ai-skill">Claude Code skill</RouterLink>
             </Button>
-            <Button as-child variant="outline" class="min-h-11 sm:min-h-0">
+            <Button
+              as-child
+              variant="outline"
+              class="min-h-11 sm:pointer-fine:min-h-0"
+            >
               <a
                 :href="`${base}llms.txt`"
                 target="_blank"
@@ -316,7 +337,11 @@ const base = import.meta.env.BASE_URL
                 llms.txt
               </a>
             </Button>
-            <Button as-child variant="ghost" class="min-h-11 sm:min-h-0">
+            <Button
+              as-child
+              variant="ghost"
+              class="min-h-11 sm:pointer-fine:min-h-0"
+            >
               <RouterLink to="/ai">
                 Use with AI
                 <ArrowRightIcon data-icon="inline-end" />

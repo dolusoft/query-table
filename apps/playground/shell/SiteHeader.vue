@@ -93,7 +93,7 @@ const menuOpen = ref(false)
       </Sheet>
       <RouterLink
         to="/"
-        class="flex min-h-11 items-center gap-2 rounded-md px-1 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:min-h-0 md:mr-2"
+        class="flex min-h-11 items-center gap-2 rounded-md px-1 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:pointer-fine:min-h-0 md:mr-2"
       >
         <Table2Icon aria-hidden="true" class="size-4" />
         Query Table
@@ -113,7 +113,9 @@ const menuOpen = ref(false)
               <NavigationMenuLink
                 :href="href"
                 :active="isActive"
-                :class="navigationMenuTriggerStyle({ class: 'h-8' })"
+                :class="
+                  navigationMenuTriggerStyle({ class: 'h-11 pointer-fine:h-8' })
+                "
                 @click="navigate"
               >
                 {{ link.label }}
@@ -128,7 +130,7 @@ const menuOpen = ref(false)
           type="button"
           variant="secondary"
           data-testid="doc-search-button"
-          class="min-h-11 min-w-11 gap-2 font-normal text-muted-foreground sm:min-h-8 sm:w-56 sm:justify-start sm:pr-1 lg:w-64"
+          class="min-h-11 min-w-11 gap-2 font-normal text-muted-foreground sm:pointer-fine:min-h-8 sm:w-56 sm:justify-start sm:pr-1 lg:w-64"
           @click="emit('search')"
         >
           <SearchIcon class="sm:hidden" />
@@ -143,7 +145,12 @@ const menuOpen = ref(false)
           orientation="vertical"
           class="mx-1 hidden h-4! self-center! sm:block"
         />
-        <Button as-child variant="ghost" size="icon" class="size-11 sm:size-8">
+        <Button
+          as-child
+          variant="ghost"
+          size="icon"
+          class="size-11 sm:pointer-fine:size-8"
+        >
           <a
             :href="repositoryUrl"
             target="_blank"

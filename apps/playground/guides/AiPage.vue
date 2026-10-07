@@ -47,7 +47,7 @@ const base = import.meta.env.BASE_URL
           type="button"
           variant="outline"
           size="sm"
-          class="min-h-11 self-start sm:min-h-7"
+          class="min-h-11 self-start sm:pointer-fine:min-h-7"
           @click="copy(skillInstall)"
         >
           <component :is="copied ? CheckIcon : CopyIcon" />

@@ -54,10 +54,16 @@ watch(
           variant="line"
           class="justify-start group-data-horizontal/tabs:h-11 lg:group-data-horizontal/tabs:h-8"
         >
-          <TabsTrigger value="preview" class="h-11 flex-none px-2 lg:h-7">
+          <TabsTrigger
+            value="preview"
+            class="h-11 flex-none px-2 lg:pointer-fine:h-7"
+          >
             Preview
           </TabsTrigger>
-          <TabsTrigger value="code" class="h-11 flex-none px-2 lg:h-7">
+          <TabsTrigger
+            value="code"
+            class="h-11 flex-none px-2 lg:pointer-fine:h-7"
+          >
             Code
           </TabsTrigger>
         </TabsList>

@@ -37,7 +37,7 @@ const pick = (value: unknown) => {
         variant="ghost"
         size="icon"
         aria-label="Theme"
-        class="size-11 sm:size-8"
+        class="size-11 sm:pointer-fine:size-8"
       >
         <SunIcon class="dark:hidden" />
         <MoonIcon class="hidden dark:block" />
@@ -49,7 +49,7 @@ const pick = (value: unknown) => {
           v-for="option in options"
           :key="option.value"
           :value="option.value"
-          class="min-h-11 sm:min-h-0"
+          class="min-h-11 sm:pointer-fine:min-h-0"
         >
           <component :is="option.icon" aria-hidden="true" />
           {{ option.label }}

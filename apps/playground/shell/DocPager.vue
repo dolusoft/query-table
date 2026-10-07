@@ -22,7 +22,7 @@ const around = computed(() => neighbours(route.path))
       v-if="around.previous"
       as-child
       variant="secondary"
-      class="min-h-11 lg:min-h-8"
+      class="min-h-11 lg:pointer-fine:min-h-8"
     >
       <RouterLink :to="`/${around.previous.id}`">
         <ArrowLeftIcon />
@@ -33,7 +33,7 @@ const around = computed(() => neighbours(route.path))
       v-if="around.next"
       as-child
       variant="secondary"
-      class="ml-auto min-h-11 lg:min-h-8"
+      class="ml-auto min-h-11 lg:pointer-fine:min-h-8"
     >
       <RouterLink :to="`/${around.next.id}`">
         {{ around.next.title }}

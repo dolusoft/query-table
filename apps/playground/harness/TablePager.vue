@@ -52,7 +52,7 @@ const sizeId = useId()
       <Button
         variant="outline"
         size="sm"
-        class="previous-page min-h-11 lg:min-h-0"
+        class="previous-page min-h-11 lg:pointer-fine:min-h-0"
         :disabled="!page.canPrevious"
         @click="page.previousPage()"
       >
@@ -61,7 +61,7 @@ const sizeId = useId()
       <Button
         variant="outline"
         size="sm"
-        class="next-page min-h-11 lg:min-h-0"
+        class="next-page min-h-11 lg:pointer-fine:min-h-0"
         :disabled="!page.canNext"
         @click="page.nextPage()"
       >
