@@ -26,7 +26,12 @@ import DocHeader from '../shell/DocHeader.vue'
 import InlineCode from '../shell/InlineCode.vue'
 
 // The feature matrix page: one table per group, all drawn from
-// feature-matrix.ts.
+// feature-matrix.ts. A group is a wide part of the page (`data-wide`), as an
+// example's preview is: its table takes the column's width, up to 64rem,
+// while the group's heading and note keep the 40rem reading measure. In the
+// 40rem measure every table scrolled sideways even on a wide screen. Where
+// the column is narrower than a table (a phone, a tablet), only the table's
+// own bordered box scrolls, never the page.
 const page = guidePages.find(guide => guide.id === 'features')!
 
 const pageTitle = (id: string) => pages.find(entry => entry.id === id)?.title
@@ -47,9 +52,10 @@ const modeVariant = (value: ServerMode) =>
       :id="`group-${group}`"
       :key="group"
       :aria-labelledby="`group-${group}-title`"
+      data-wide
       class="flex scroll-m-28 flex-col gap-3"
     >
-      <div>
+      <div class="max-w-160">
         <h2
           :id="`group-${group}-title`"
           class="flex items-center gap-2 text-xl font-medium tracking-tight"
@@ -63,11 +69,20 @@ const modeVariant = (value: ServerMode) =>
           <InlineCode :text="groupNotes[group]" />
         </p>
       </div>
-      <div class="overflow-x-auto rounded-md border">
+      <!-- The table's own container scrolls; this box only draws the border
+           and clips the rows to its rounded corners. -->
+      <div class="@container overflow-hidden rounded-md border">
+        <!-- In a box narrower than 53rem (the widest table with one-line
+             headings) a heading may break onto two lines, and a repository
+             path may break anywhere: the narrowest table then needs about
+             41rem, so it fits a tablet's column and scrolls on a phone only.
+             From 53rem the headings stay on one line. -->
         <Table>
           <TableHeader>
-            <TableRow class="hover:bg-transparent">
-              <TableHead class="min-w-56">Feature</TableHead>
+            <TableRow
+              class="hover:bg-transparent [&>th]:py-2 [&>th]:whitespace-normal @min-[53rem]:[&>th]:whitespace-nowrap"
+            >
+              <TableHead class="min-w-44">Feature</TableHead>
               <TableHead>In TanStack</TableHead>
               <TableHead>QueryTable</TableHead>
               <TableHead>TanStack path</TableHead>
@@ -132,7 +147,7 @@ const modeVariant = (value: ServerMode) =>
                   :href="blobUrl(feature.repoPath)"
                   target="_blank"
                   rel="noopener"
-                  class="underline underline-offset-4"
+                  class="underline underline-offset-4 wrap-anywhere"
                   >{{ feature.repoPath }}</a
                 >
                 <span v-else class="text-muted-foreground"
