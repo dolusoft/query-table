@@ -18,8 +18,10 @@ const props = withDefaults(
     applied: number[]
     /** Reorder handles (the `move` scenario); the others keep them off. */
     reorderable?: boolean
+    /** `flash` with `rowKey` (the `flash` scenario); the others keep it off. */
+    flash?: boolean
   }>(),
-  { reorderable: false }
+  { reorderable: false, flash: false }
 )
 
 // The consumer owns the layout too (`v-model:columns`).
@@ -61,6 +63,20 @@ const total = ref(first.total)
 // Flipped by the `.toggle-loading` button (the `loading` scenario).
 const loading = ref(false)
 
+// A live change under the same query (the `flash` scenario): a new row at
+// the top and a new object with a new `age` for the first three rows.
+let added = 0
+const liveChange = () => {
+  added++
+  const fresh = { ...rows.value[0], id: -added, name: `New ${added}` }
+  rows.value = [
+    fresh,
+    ...rows.value.map((row, index) =>
+      index < 3 ? { ...row, age: Number(row.age) + 1 } : row
+    )
+  ]
+}
+
 const update = (next: TableQuery) => {
   const started = performance.now()
   query.value = next
@@ -81,31 +97,37 @@ const update = (next: TableQuery) => {
   <button type="button" class="toggle-loading" @click="loading = !loading">
     Loading
   </button>
-  <QueryTable
-    v-model:columns="layout"
-    :query="query"
-    :rows="rows"
-    :total-rows="total"
-    :loading="loading"
-    sortable
-    filterable
-    :reorderable="reorderable"
-    :filter-debounce="filterDebounce"
-    @update:query="update"
-  >
-    <template #pagination="page">
-      <span class="page-info"
-        >Page {{ page.page }} of {{ page.pageCount }}</span
-      >
-      <button
-        type="button"
-        class="next-page"
-        :disabled="!page.canNext"
-        @click="page.nextPage()"
-      >
-        Next
-      </button>
-    </template>
-    <template #loading>Loading</template>
-  </QueryTable>
+  <button type="button" class="live-change" @click="liveChange">Change</button>
+  <!-- A long flash: no flash ends while the scenario counts. -->
+  <div :style="flash ? { '--qt-flash-duration': '60s' } : undefined">
+    <QueryTable
+      v-model:columns="layout"
+      :query="query"
+      :rows="rows"
+      :total-rows="total"
+      :loading="loading"
+      sortable
+      filterable
+      :reorderable="reorderable"
+      :filter-debounce="filterDebounce"
+      :flash="flash"
+      :row-key="flash ? 'id' : undefined"
+      @update:query="update"
+    >
+      <template #pagination="page">
+        <span class="page-info"
+          >Page {{ page.page }} of {{ page.pageCount }}</span
+        >
+        <button
+          type="button"
+          class="next-page"
+          :disabled="!page.canNext"
+          @click="page.nextPage()"
+        >
+          Next
+        </button>
+      </template>
+      <template #loading>Loading</template>
+    </QueryTable>
+  </div>
 </template>

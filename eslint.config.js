@@ -320,5 +320,29 @@ export default defineConfig([
       ],
       'no-restricted-syntax': ['error', ...localSyntax]
     }
+  },
+  {
+    // C-92: the row-change tracker has no DOM, no clock and no timer; the
+    // Vue side reads them. It repeats the P1 entries, as above.
+    files: ['packages/query-table-core/src/row-changes/**/*.ts'],
+    ignores: ['packages/query-table-core/src/row-changes/**/*.spec.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...p1Globals,
+        ...[
+          'document',
+          'window',
+          'performance',
+          'setTimeout',
+          'setInterval',
+          'requestAnimationFrame',
+          'queueMicrotask'
+        ].map(name => ({
+          name,
+          message: 'The row-change tracker has no DOM, clock or timer (C-92).'
+        }))
+      ]
+    }
   }
 ])

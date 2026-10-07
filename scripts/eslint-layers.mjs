@@ -12,6 +12,7 @@
 //   core      packages/query-table-core/src        the protocol and @tanstack/table-core only
 //     shared/                                      shared/ only (and the two packages)
 //     features/<a>/                                features/<a>/ and shared/, never features/<b>/
+//     row-changes/                                 itself and the protocol only (P14, ADR 0011)
 //     the entry files (src/*.ts)                   anything in core
 //   vue       packages/vue/src                     the protocol, the core, @tanstack/vue-table and vue
 //     local/                                       itself, vue and the two protocol entries only (C-75)
@@ -91,6 +92,9 @@ export const layerOf = file => {
   if (/^shared(\/|$)/.test(rest)) {
     return { pkg, rest, part: 'shared' }
   }
+  if (/^row-changes(\/|$)/.test(rest)) {
+    return { pkg, rest, part: 'row-changes' }
+  }
   const feature = /^features\/([^/]+)(\/|$)/.exec(rest)
   if (feature) {
     return { pkg, rest, part: `feature:${feature[1]}` }
@@ -106,6 +110,10 @@ export const violation = (file, specifier) => {
   const from = layerOf(file)
   if (!from) {
     return null
+  }
+  const rowChanges = `the row-change module may not import "${specifier}": it imports only the protocol and itself (P14)`
+  if (from.part === 'row-changes' && isBare(specifier)) {
+    return specifier === '@dolusoft/query-protocol' ? null : rowChanges
   }
   if (isBare(specifier)) {
     const local = from.part === 'local'
@@ -141,6 +149,12 @@ export const violation = (file, specifier) => {
   }
   if (from.part === 'all' || from.part === 'entry') {
     return null
+  }
+  if (from.part === 'row-changes') {
+    return target.part === 'row-changes' ? null : rowChanges
+  }
+  if (target.part === 'row-changes') {
+    return `the ${from.part.replace('feature:', '')} part may not import "${specifier}": the row-change module stands apart (ADR 0011)`
   }
   if (target.part === 'shared') {
     return null

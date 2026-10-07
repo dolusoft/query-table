@@ -147,7 +147,13 @@ const localModulesOf = async (name, directory) => {
     .filter(id => localOnly.has(id))
 }
 
-const fixtures = ['protocol', 'server-query', 'filter-input', 'core']
+const fixtures = [
+  'protocol',
+  'server-query',
+  'filter-input',
+  'row-changes',
+  'core'
+]
 for (const name of fixtures) {
   for (const id of await localModulesOf(name)) {
     problems.push(`fixture ${name} bundles ${rel(id)}`)

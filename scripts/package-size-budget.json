@@ -5,7 +5,8 @@
     "3.0.0-next.0 (PR-B review): core 17564 B (+94 B: same-text search, cursor-mode setPageIndex, per-emit microtask reset). K7 (Zahid, 2026-10-06): size is not a blocker; the core ceiling is 18500 B and the budget is the measure plus 5%.",
     "3.1.0 (PR-L1, 2026-10-06): protocol-local fixture added for the /local entry (C-75), measured 29 B with only the `profiles` skeleton; ceiling 500 B until PR-L1 measures a real evaluation. protocol unchanged at 1052 B.",
     "3.1.0 (PR-L1, 2026-10-06): protocol-local 4027 B. The local evaluator: parsing, ordering and paging; rules and search arrive in PR-L2. The fixture now defines a dataset and runs applyQuery; budget 31 B -> 4229 B (measured + 5%), ceiling 500 B -> 5000 B (the 500 B guess predates any evaluator code; measured x 1.2, rounded up to 500).",
-    "3.1.0 (PR-L2, 2026-10-06): protocol-local 5069 B (+1042 B). The condition x type matrix, rule values, composition and the search; budget 4229 B -> 5322 B (measured + 5%), ceiling 5000 B -> 6500 B (measured x 1.2, rounded up to 500). The other fixtures do not import /local and stay in their budgets."
+    "3.1.0 (PR-L2, 2026-10-06): protocol-local 5069 B (+1042 B). The condition x type matrix, rule values, composition and the search; budget 4229 B -> 5322 B (measured + 5%), ceiling 5000 B -> 6500 B (measured x 1.2, rounded up to 500). The other fixtures do not import /local and stay in their budgets.",
+    "3.3.0 (change flash, 2026-10-07): row-changes 1550 B, the row-change tracker alone (/row-changes entry, ADR 0011). First measured at 1466 B; +84 B for the bounded cycle tracking of sameValue and the query reset that waits for its answer (append keeps the running flashes). Budget 1628 B (measured + 5%), ceiling 2000 B. The other fixtures do not use it and stay in their budgets."
   ],
   "fixtures": {
     "protocol": {
@@ -25,6 +26,11 @@
     "filter-input": {
       "measuredGzipBytes": 11254,
       "maxGzipBytes": 11817
+    },
+    "row-changes": {
+      "measuredGzipBytes": 1550,
+      "maxGzipBytes": 1628,
+      "ceilingGzipBytes": 2000
     },
     "core": {
       "measuredGzipBytes": 17564,

@@ -1,6 +1,6 @@
 # 0011 Change flash (3.3)
 
-Status: Accepted (2026-10-07), with the amendments of P2, P5, P8, P9, P10, P14 and P15. Zahid decided the scope (row and cell flash), automatic detection, the look in the skin, a true remaining time off screen, and no side effects with zero cost when off (K33-12); he left the default to the main session. The other decisions (K33-1 to K33-11) were taken by the main session after an independent review of the plan.
+Status: Accepted (2026-10-07), with the amendments of P2, P5, P8, P9, P10, P14 and P15. Zahid decided the scope (row and cell flash), automatic detection, the look in the skin, a true remaining time off screen, and no side effects with zero cost when off (K33-12); he left the default to the main session. The other decisions (K33-1 to K33-11) were taken by the main session after an independent review of the plan. The query clause of K33-3 is superseded, and K33-9 extended, by [ADR 0012](0012-change-flash-boundaries.md).
 
 ## Context
 

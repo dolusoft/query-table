@@ -22,6 +22,10 @@
     "./filter-input": {
       "types": "./dist/types/features/filter-input/index.d.ts",
       "default": "./dist/filter-input.js"
+    },
+    "./row-changes": {
+      "types": "./dist/types/row-changes/index.d.ts",
+      "default": "./dist/row-changes.js"
     }
   },
   "engines": {

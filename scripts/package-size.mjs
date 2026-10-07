@@ -31,6 +31,7 @@ const names = [
   'protocol-local',
   'server-query',
   'filter-input',
+  'row-changes',
   'core'
 ]
 const empty = await buildApp('empty')
