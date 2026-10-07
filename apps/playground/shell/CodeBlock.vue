@@ -12,14 +12,23 @@ import { highlightVue } from './highlight'
 // the colors have loaded (or if they fail to) the plain text shows.
 const props = defineProps<{ source: string; file: string }>()
 
+// A highlight that finishes after the source has changed again is dropped:
+// otherwise a slow first load could write the old code over the new one.
 const html = ref('')
 watch(
   () => props.source,
-  async source => {
+  async (source, _previous, onCleanup) => {
+    let stale = false
+    onCleanup(() => {
+      stale = true
+    })
     html.value = ''
     if (source) {
       try {
-        html.value = await highlightVue(source)
+        const highlighted = await highlightVue(source)
+        if (!stale) {
+          html.value = highlighted
+        }
       } catch {
         // The plain text stays.
       }
@@ -42,7 +51,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 1500 })
         variant="ghost"
         size="icon"
         :aria-label="copied ? 'Copied' : 'Copy the source'"
-        class="-mr-2 size-11 lg:size-7"
+        class="-mr-2 size-11 lg:pointer-fine:size-7"
         @click="copy(source)"
       >
         <component :is="copied ? CheckIcon : CopyIcon" />

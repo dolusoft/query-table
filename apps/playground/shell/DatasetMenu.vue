@@ -17,6 +17,9 @@ import { currentDataset, datasets, selectDataset } from '../scenarios/datasets'
 // dataset. Every example page and the home page table draw the one picked
 // here; the choice is kept in the browser.
 // Classes given by the shell go to the trigger button, not the menu root.
+// The trigger and the items are 2.75rem touch targets; they take the compact
+// shadcn height only on a wide screen with a fine pointer (a mouse), so a
+// touch screen of any width keeps 2.75rem.
 defineOptions({ inheritAttrs: false })
 // `collapse`: only the icon below `lg`, where the top bar has no room for
 // the name.
@@ -43,7 +46,7 @@ const pick = (value: unknown) => {
         size="sm"
         :aria-label="`Demo data: ${selected.name}`"
         data-testid="dataset-menu"
-        class="min-h-11 gap-1.5 font-normal sm:min-h-8"
+        class="min-h-11 gap-1.5 font-normal sm:pointer-fine:min-h-8"
         v-bind="$attrs"
       >
         <DatabaseIcon aria-hidden="true" class="text-muted-foreground" />
@@ -69,7 +72,7 @@ const pick = (value: unknown) => {
           :key="dataset.id"
           :value="dataset.id"
           :data-dataset="dataset.id"
-          class="min-h-11 sm:min-h-0"
+          class="min-h-11 sm:pointer-fine:min-h-0"
         >
           <span class="flex flex-col">
             <span>{{ dataset.name }}</span>
