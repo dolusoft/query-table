@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.2.1
+pnpm add @dolusoft/query-table@3.3.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
