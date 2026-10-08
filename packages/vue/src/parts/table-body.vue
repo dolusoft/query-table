@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends object">
-import { useSlots } from 'vue'
+import { onBeforeUpdate, useSlots } from 'vue'
 
 import { useCellView } from '../body/use-cell-view'
 import type {
@@ -84,10 +84,50 @@ const isSpacer = (item: DrawnRow<T> | SpacerRow): item is SpacerRow =>
 /** `aria-rowindex` of the subtable row under a drawn row (C-86). */
 const nextIndex = (aria: number | undefined) =>
   aria === undefined ? undefined : aria + 1
+
+/*
+  Snapshot expansion once per body render (not a live computed). The main `tr`
+  props are evaluated before cell slots; a consumer slot that writes reactive
+  state mid-render can clear TanStack's `expanded` atom before the subtable
+  `v-if` runs — chevron flips, detail row never mounts. A computed would
+  re-read the cleared atom; this map is filled on first use in the render and
+  kept until the next update.
+*/
+let expandedSnapshot: Map<string, boolean> | null = null
+onBeforeUpdate(() => {
+  expandedSnapshot = null
+})
+const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
+  if (isSpacer(item)) {
+    return false
+  }
+  if (!expandedSnapshot) {
+    const open = new Map<string, boolean>()
+    if (props.hasSubtable) {
+      for (const row of props.bodyRows) {
+        if (!isSpacer(row)) {
+          open.set(
+            String(props.keyOf(row.row, row.index)),
+            props.isExpanded(row.row, row.index)
+          )
+        }
+      }
+    }
+    expandedSnapshot = open
+  }
+  return (
+    expandedSnapshot.get(String(props.keyOf(item.row, item.index))) === true
+  )
+}
 </script>
 
 <template>
   <tbody @contextmenu="onContextMenu">
+    <!--
+      Flat `template v-for` children (no nested `<template v-else>` Fragment).
+      A nested Fragment left the subtable `tr` vnode created but not inserted
+      into `tbody` — chevron flipped, detail row never appeared in the DOM.
+    -->
     <template
       v-for="item in bodyRows"
       :key="isSpacer(item) ? item.key : keyOf(item.row, item.index)"
@@ -100,118 +140,117 @@ const nextIndex = (aria: number | undefined) =>
       >
         <td :colspan="columnCount" />
       </tr>
-      <template v-else>
-        <tr
-          :data-row-index="item.index"
-          :aria-rowindex="item.aria"
-          :data-pinned-row="item.pinned || undefined"
-          :data-expanded="isExpanded(item.row, item.index) ? '' : undefined"
-          :data-selected="
-            hasSelection && isSelected(item.row, item.index) ? '' : undefined
-          "
-          :data-flash="flash ? flash.row(item.row, item.index) : undefined"
-          :onVnodeBeforeMount="flash ? flash.bind : undefined"
-          :onVnodeUpdated="flash ? flash.bind : undefined"
-        >
-          <td v-if="hasRightPanel" v-bind="rightPanelAttrs()">
-            <button
-              type="button"
-              class="qt-right-panel-button"
-              :aria-label="labels.openRightPanel"
-              @click.stop="emit('rowRightPanelClick', item.row)"
+      <tr
+        v-else
+        :data-row-index="item.index"
+        :aria-rowindex="item.aria"
+        :data-pinned-row="item.pinned || undefined"
+        :data-expanded="isRowExpanded(item) ? '' : undefined"
+        :data-selected="
+          hasSelection && isSelected(item.row, item.index) ? '' : undefined
+        "
+        :data-flash="flash ? flash.row(item.row, item.index) : undefined"
+        :onVnodeBeforeMount="flash ? flash.bind : undefined"
+        :onVnodeUpdated="flash ? flash.bind : undefined"
+      >
+        <td v-if="hasRightPanel" v-bind="rightPanelAttrs()">
+          <button
+            type="button"
+            class="qt-right-panel-button"
+            :aria-label="labels.openRightPanel"
+            @click.stop="emit('rowRightPanelClick', item.row)"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-          </td>
-          <td v-if="hasSubtable" v-bind="expandAttrs()">
-            <button
-              type="button"
-              class="qt-expand"
-              :aria-expanded="isExpanded(item.row, item.index)"
-              :aria-label="labels.expandRow"
-              @click="toggle(item.row, item.index)"
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </td>
+        <td v-if="hasSubtable" v-bind="expandAttrs()">
+          <button
+            type="button"
+            class="qt-expand"
+            :aria-expanded="isRowExpanded(item)"
+            :aria-label="labels.expandRow"
+            @click="toggle(item.row, item.index)"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <polyline
-                  v-if="isExpanded(item.row, item.index)"
-                  points="6 9 12 15 18 9"
-                />
-                <polyline v-else points="9 6 15 12 9 18" />
-              </svg>
-            </button>
-          </td>
-          <td v-if="hasSelection" v-bind="selectAttrs()">
-            <input
-              type="checkbox"
-              class="qt-select-row"
-              :aria-label="labels.selectRow"
-              :checked="isSelected(item.row, item.index)"
-              @change="toggleSelected(item.row, item.index)"
+              <polyline
+                v-if="isRowExpanded(item)"
+                points="6 9 12 15 18 9"
+              />
+              <polyline v-else points="9 6 15 12 9 18" />
+            </svg>
+          </button>
+        </td>
+        <td v-if="hasSelection" v-bind="selectAttrs()">
+          <input
+            type="checkbox"
+            class="qt-select-row"
+            :aria-label="labels.selectRow"
+            :checked="isSelected(item.row, item.index)"
+            @change="toggleSelected(item.row, item.index)"
+          />
+        </td>
+        <template v-for="entry in entries" :key="entry.column.field">
+          <td
+            v-if="hasCellSlot(entry.column)"
+            v-bind="cellAttrs(entry)"
+            :data-flash="
+              flash
+                ? flash.cell(item.row, item.index, entry.column.field)
+                : undefined
+            "
+          >
+            <slot
+              :name="`cell-${entry.column.field}`"
+              v-bind="
+                slotProps(item.row, entry.column, item.index, item.pinned)
+              "
             />
           </td>
-          <template v-for="entry in entries" :key="entry.column.field">
-            <td
-              v-if="hasCellSlot(entry.column)"
-              v-bind="cellAttrs(entry)"
-              :data-flash="
-                flash
-                  ? flash.cell(item.row, item.index, entry.column.field)
-                  : undefined
-              "
-            >
-              <slot
-                :name="`cell-${entry.column.field}`"
-                v-bind="
-                  slotProps(item.row, entry.column, item.index, item.pinned)
-                "
-              />
-            </td>
-            <td
-              v-else
-              v-bind="cellAttrs(entry)"
-              :data-flash="
-                flash
-                  ? flash.cell(item.row, item.index, entry.column.field)
-                  : undefined
-              "
-            >
-              {{ cellText(item.row, entry.column) }}
-            </td>
-          </template>
-        </tr>
-        <tr
-          v-if="isExpanded(item.row, item.index)"
-          class="qt-subtable-row"
-          :aria-rowindex="nextIndex(item.aria)"
-          :data-pinned-row="item.pinned || undefined"
-        >
-          <td :colspan="columnCount">
-            <slot name="subtable" :row="item.row" :row-index="item.index" />
+          <td
+            v-else
+            v-bind="cellAttrs(entry)"
+            :data-flash="
+              flash
+                ? flash.cell(item.row, item.index, entry.column.field)
+                : undefined
+            "
+          >
+            {{ cellText(item.row, entry.column) }}
           </td>
-        </tr>
-      </template>
+        </template>
+      </tr>
+      <tr
+        v-if="!isSpacer(item) && isRowExpanded(item)"
+        class="qt-subtable-row"
+        :aria-rowindex="nextIndex(item.aria)"
+        :data-pinned-row="item.pinned || undefined"
+      >
+        <td :colspan="columnCount">
+          <slot name="subtable" :row="item.row" :row-index="item.index" />
+        </td>
+      </tr>
     </template>
     <tr v-if="loading && slots.loading" class="qt-loading-row">
       <td :colspan="columnCount"><slot name="loading" /></td>
