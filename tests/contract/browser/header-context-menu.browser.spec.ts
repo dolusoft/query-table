@@ -128,7 +128,7 @@ test.each([
       hasRightPanel: true,
       // The button is disabled with no filter; a disabled control rejects click.
       query: makeQuery({
-        filters: [{ field: 'name', condition: 'contains', value: 'x' }]
+        filters: [{ field: 'name', condition: 'Contains', value: 'x' }]
       })
     },
     '.qt-clear-all-button'
