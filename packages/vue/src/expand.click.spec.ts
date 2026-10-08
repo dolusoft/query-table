@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { nextTick, type Component } from 'vue'
+
 import QueryTable from './query-table.vue'
 
 const Table = QueryTable as unknown as Component
@@ -27,8 +28,6 @@ describe('expand', () => {
     await wrapper.findAll('.qt-expand')[0].trigger('click')
     await nextTick()
     await nextTick()
-    console.log('data-expanded', wrapper.findAll('tr').map(tr => tr.attributes('data-expanded')))
-    console.log('has sub', wrapper.html().includes('class="sub"'))
     expect(wrapper.find('tr[data-expanded]').exists()).toBe(true)
     expect(wrapper.find('.sub').exists()).toBe(true)
   })

@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { computed, nextTick, ref, type Component } from 'vue'
+
 import QueryTable from './query-table.vue'
 
 const Table = QueryTable as unknown as Component
@@ -12,7 +13,8 @@ describe('expand churn', () => {
     const reportRowKey = computed(() => {
       const values = rows.value.map(r => r.app)
       const unique = new Set(values).size === values.length
-      return (row: { app: string }, index: number) => (unique ? row.app : String(index))
+      return (row: { app: string }, index: number) =>
+        unique ? row.app : String(index)
     })
     const wrapper = mount({
       components: { QueryTable: Table },
@@ -37,7 +39,6 @@ describe('expand churn', () => {
     await nextTick()
     expect(wrapper.find('.sub').exists()).toBe(true)
 
-    // Simulate parent recomputing rows with new array identity (same content)
     rows.value = rows.value.map(r => ({ ...r }))
     await nextTick()
     await nextTick()
@@ -48,13 +49,19 @@ describe('expand churn', () => {
     const rows = ref([{ app: 'SSL' }, { app: 'QUIC' }])
     const tick = ref(0)
     const reportRowKey = computed(() => {
-      tick.value // force new function each tick
+      void tick.value
       return (row: { app: string }) => row.app
     })
     const wrapper = mount({
       components: { QueryTable: Table },
       setup() {
-        return { rows, reportRowKey, bump: () => { tick.value++ } }
+        return {
+          rows,
+          reportRowKey,
+          bump: () => {
+            tick.value++
+          }
+        }
       },
       template: `
         <QueryTable
@@ -73,7 +80,7 @@ describe('expand churn', () => {
     await wrapper.findAll('.qt-expand')[0].trigger('click')
     await nextTick()
     expect(wrapper.find('.sub').exists()).toBe(true)
-    ;(wrapper.vm as any).bump()
+    tick.value++
     await nextTick()
     expect(wrapper.find('.sub').exists()).toBe(true)
   })

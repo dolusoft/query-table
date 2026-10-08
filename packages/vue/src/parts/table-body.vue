@@ -194,10 +194,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
               stroke-linejoin="round"
               aria-hidden="true"
             >
-              <polyline
-                v-if="isRowExpanded(item)"
-                points="6 9 12 15 18 9"
-              />
+              <polyline v-if="isRowExpanded(item)" points="6 9 12 15 18 9" />
               <polyline v-else points="9 6 15 12 9 18" />
             </svg>
           </button>

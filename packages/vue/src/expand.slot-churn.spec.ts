@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { nextTick, ref, type Component } from 'vue'
+
 import QueryTable from './query-table.vue'
 
 const Table = QueryTable as unknown as Component
@@ -13,7 +14,6 @@ describe('expand with disruptive cell slot', () => {
       components: { QueryTable: Table },
       setup() {
         const bump = () => {
-          // New array identity during the same render pass that paints the open row.
           rows.value = rows.value.map(r => ({ ...r }))
         }
         return { rows, bump }
