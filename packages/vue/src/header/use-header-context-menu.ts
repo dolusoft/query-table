@@ -36,7 +36,10 @@ export const useHeaderContextMenu = (options: HeaderContextMenuOptions) => {
     }
     // Filter inputs keep the native menu (paste, spell check).
     const target = event.target as Element | null
-    if (target?.closest('.qt-filter') && cell.contains(target.closest('.qt-filter'))) {
+    if (
+      target?.closest('.qt-filter') &&
+      cell.contains(target.closest('.qt-filter'))
+    ) {
       return
     }
     const column = options.columns().find(c => c.field === field)

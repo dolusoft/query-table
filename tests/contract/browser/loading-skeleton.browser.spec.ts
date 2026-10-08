@@ -98,7 +98,8 @@ test('keep loading on holds the skeleton of both tables', async () => {
   // Rows of the second table stay, dimmed, in the default refetch style.
   expect(names('Refetch')).toHaveLength(5)
   await userEvent.click(page.getByRole('checkbox', { name: 'Keep loading on' }))
-  expect(bars('First load')).toBe(0)
+  // The checkbox update and the skeleton rows clear on the next paint.
+  await expect.poll(() => bars('First load')).toBe(0)
   expect(root('First load').hasAttribute('data-loading')).toBe(false)
 })
 

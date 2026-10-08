@@ -3,7 +3,9 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-vue'
 import { defineComponent, h } from 'vue'
 
-import QueryTable, { type HeaderContextMenuPayload } from '@dolusoft/query-table'
+import QueryTable, {
+  type HeaderContextMenuPayload
+} from '@dolusoft/query-table'
 
 import { columns, makeQuery, rows, sleep } from '../../support/fixtures'
 

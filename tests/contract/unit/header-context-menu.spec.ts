@@ -3,7 +3,12 @@ import { h } from 'vue'
 
 import type { Column, HeaderContextMenuPayload } from '@dolusoft/query-table'
 
-import { makeColumns, mountTable, propsOf, type Mounted } from '../../support/mount-table'
+import {
+  makeColumns,
+  mountTable,
+  propsOf,
+  type Mounted
+} from '../../support/mount-table'
 
 let mounted: Mounted | null = null
 const mountIt = (...args: Parameters<typeof mountTable>) => {
@@ -80,9 +85,7 @@ describe('C-96 Header context menu', () => {
 
   it('emits nothing and keeps the browser menu on the filter row', () => {
     const m = mountIt({ filterable: true, ...listen })
-    const input = m.wrapper.find(
-      'thead th[data-field="name"] .qt-filter-input'
-    )
+    const input = m.wrapper.find('thead th[data-field="name"] .qt-filter-input')
     expect(input.exists()).toBe(true)
     const event = rightClick(input.element)
     expect(event.defaultPrevented).toBe(false)
