@@ -42,9 +42,10 @@ export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
       return Number.isFinite(value) ? [{ condition, value }] : []
     }
     case 'integer': {
-      // A whole number only: `2.5` is no rule (C-16).
+      // A whole number in the safe range only: `2.5` is no rule, and neither
+      // is `2^53`, which a number cannot hold exactly (C-16).
       const value = Number(text)
-      return Number.isInteger(value) ? [{ condition, value }] : []
+      return Number.isSafeInteger(value) ? [{ condition, value }] : []
     }
     case 'bool':
       return text === 'true' || text === 'false'

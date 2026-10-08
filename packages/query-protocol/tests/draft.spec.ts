@@ -71,6 +71,26 @@ describe('C-16 Value types: a draft parses into rules', () => {
     ])
   })
 
+  it('an integer column rejects a whole number beyond the safe range', () => {
+    const integer = column('integer')
+    expect(parseDraft(integer, draft('9007199254740991'))).toEqual([
+      { condition: 'Equal', value: Number.MAX_SAFE_INTEGER }
+    ])
+    expect(parseDraft(integer, draft('-9007199254740991'))).toEqual([
+      { condition: 'Equal', value: Number.MIN_SAFE_INTEGER }
+    ])
+    // 2^53, 2^53 + 1 (which a number rounds to 2^53) and their negatives.
+    for (const text of [
+      '9007199254740992',
+      '9007199254740993',
+      '-9007199254740992',
+      '-9007199254740993',
+      '1e16'
+    ]) {
+      expect(parseDraft(integer, draft(text))).toEqual([])
+    }
+  })
+
   it('bool columns give boolean values and nothing else', () => {
     expect(parseDraft(column('bool'), draft('true'))).toEqual([
       { condition: 'Equal', value: true }

@@ -10,7 +10,8 @@ import type { Column, FilterCondition, FilterRule } from '../contract'
  *   a segment without an operator uses `condition`.
  * - `number`: one rule with a number value; text that is not a finite number
  *   gives `[]`.
- * - `integer`: the same, but only a whole number; `2.5` gives `[]`.
+ * - `integer`: the same, but only a whole number in the safe range; `2.5`
+ *   and `9007199254740993` give `[]`.
  * - `bool`: `'true'` or `'false'` gives one rule with a boolean value;
  *   anything else gives `[]`.
  * - `date` and `datetime`: one rule with the trimmed text as its value; the
