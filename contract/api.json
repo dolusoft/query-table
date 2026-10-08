@@ -192,6 +192,11 @@
       "description": "A cell was right-clicked. With a listener the browser menu is\nsuppressed; without one the table emits nothing and keeps it."
     },
     {
+      "name": "headerContextMenu",
+      "type": "[payload: HeaderContextMenuPayload]",
+      "description": "A data-column header was right-clicked (C-96). With a listener the\nbrowser menu is suppressed; without one the table emits nothing and\nkeeps it. The filter row and utility headers keep the browser menu."
+    },
+    {
       "name": "columnResize",
       "type": "[payload: ColumnResizePayload]",
       "description": "The user resized a column: on release of a drag, on an arrow key or on\nautofit. Write `width` back to the column (`Column.width`), or the column\nkeeps its old width."
@@ -438,6 +443,11 @@
       "name": "CellContextMenuPayload",
       "kind": "interface",
       "description": "Payload of the `cellContextMenu` event."
+    },
+    {
+      "name": "HeaderContextMenuPayload",
+      "kind": "interface",
+      "description": "Payload of the `headerContextMenu` event (C-96)."
     },
     {
       "name": "ColumnResizePayload",
@@ -985,6 +995,11 @@
       "id": "C-95",
       "title": "Change flash off and DOM contract of 3.3",
       "text": "With `flash` absent or `false` the table sets up one watcher of `flash` and nothing else: no tracker, comparison, timer, animation frame, listener, style read or clock read, no memory per row, and the DOM is the one C-40, C-72 and C-91 check. With `flash` on the table adds no listener anywhere and keeps no module-level state, and the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract; the entries the contract marks `addedBy: 'C-94'` (`data-flash` on a row and on a data cell, `--qt-flash-elapsed`) are rendered, each on its element, by the state that adds them. An unmount and a `KeepAlive` deactivation leave no timer and no animation frame. Source: own"
+    },
+    {
+      "id": "C-96",
+      "title": "Header context menu",
+      "text": "When the consumer listens to `headerContextMenu` (with or without the `.once` modifier, which Vue passes as `onHeaderContextMenuOnce`), right-clicking a data-column header emits it with `event`, `column` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `thead` serves every header cell, so `event.currentTarget` is the `thead`. Only a header cell with `data-field` counts; the utility headers (clear-all, selection) emit nothing and keep the browser menu. A right-click inside the filter row (`.qt-filter`) emits nothing and keeps the browser menu, so paste and spell-check stay. The event does not replace `header-<field>` (C-51): that slot still draws the label. Source: own"
     }
   ]
 }

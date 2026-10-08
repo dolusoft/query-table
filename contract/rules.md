@@ -528,3 +528,9 @@ Source: own
 With `flash` absent or `false` the table sets up one watcher of `flash` and nothing else: no tracker, comparison, timer, animation frame, listener, style read or clock read, no memory per row, and the DOM is the one C-40, C-72 and C-91 check. With `flash` on the table adds no listener anywhere and keeps no module-level state, and the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract; the entries the contract marks `addedBy: 'C-94'` (`data-flash` on a row and on a data cell, `--qt-flash-elapsed`) are rendered, each on its element, by the state that adds them. An unmount and a `KeepAlive` deactivation leave no timer and no animation frame.
 
 Source: own
+
+### C-96 Header context menu
+
+When the consumer listens to `headerContextMenu` (with or without the `.once` modifier, which Vue passes as `onHeaderContextMenuOnce`), right-clicking a data-column header emits it with `event`, `column` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `thead` serves every header cell, so `event.currentTarget` is the `thead`. Only a header cell with `data-field` counts; the utility headers (clear-all, selection) emit nothing and keep the browser menu. A right-click inside the filter row (`.qt-filter`) emits nothing and keeps the browser menu, so paste and spell-check stay. The event does not replace `header-<field>` (C-51): that slot still draws the label.
+
+Source: own
