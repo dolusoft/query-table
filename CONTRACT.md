@@ -79,7 +79,7 @@ Exported from the package entry point next to the component.
 
 | Name | Signature | Description |
 | --- | --- | --- |
-| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
+| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number in the safe range; `2.5` and `9007199254740993` give `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
 | `useQueryTable` | `(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>` | The state and actions of a server-side table: TanStack Table with `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed with the scope (C-62). |
 
 ### Local evaluation (`@dolusoft/query-table/local`)
@@ -940,7 +940,7 @@ Source: own
 
 #### C-16 Value types
 
-Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`); `2.0` is the whole number `2`.
+Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`) or a whole number beyond the safe range, ±(2⁵³ − 1), which a JavaScript number cannot hold exactly (`9007199254740993` would become `9007199254740992`); `2.0` is the whole number `2`.
 
 Source: own
 
@@ -1104,7 +1104,7 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 #### C-53 Filter parser
 
-`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
+`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number in the safe range, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
 
 Source: own
 
