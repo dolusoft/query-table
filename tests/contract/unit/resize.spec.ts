@@ -275,10 +275,16 @@ describe('C-50 Keyboard and autofit', () => {
   })
 
   it('fits the column to its widest content on Enter and on a double click', async () => {
-    headerWidth(100)
-    // The content of the header label and of every body cell: 123.4 px.
-    vi.spyOn(Range.prototype, 'getBoundingClientRect').mockImplementation(
-      () => ({ width: 123.4 }) as DOMRect
+    // The header cell is 100 px as drawn, and `content` px while the table
+    // is laid out for a measure (C-96): the width its content needs.
+    let content = 123.4
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        const measuring =
+          this.closest('table')?.style.tableLayout === 'auto' &&
+          this.matches('th[data-field]')
+        return { width: measuring ? content : 100 } as DOMRect
+      }
     )
     const m = mountIt({
       columns: columns(),
@@ -292,15 +298,15 @@ describe('C-50 Keyboard and autofit', () => {
     await handle(m, 'age').trigger('keydown', { key: 'Enter' })
     await handle(m, 'age').trigger('dblclick')
     // Clamped to maxWidth for Name.
-    vi.spyOn(Range.prototype, 'getBoundingClientRect').mockImplementation(
-      () => ({ width: 500 }) as DOMRect
-    )
+    content = 500
     await handle(m, 'name').trigger('dblclick')
     expect(resized(m)).toEqual([
       { field: 'age', width: 124 },
       { field: 'age', width: 124 },
       { field: 'name', width: 300 }
     ])
+    // The measure put the table's styles back (C-31).
+    expect(m.wrapper.find('table').attributes('style')).toBeUndefined()
   })
 
   it('ignores other keys and draws aria-valuemax from the table width without maxWidth', async () => {
