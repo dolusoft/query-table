@@ -72,6 +72,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `flushPendingFilters` | `() => void` | Apply typed-but-not-yet-applied filter text now, in one `update:query` that has been emitted when the call returns. |
 | `scrollToIndex` | `(index: number, options?: ScrollToIndexOptions) => void` | Scroll the row with this index in `rows` into view (C-87). Emits nothing; an index outside `rows` does nothing. |
 | `loadMore` | `() => void` | With `infinite`: ask for the next page now (C-89), as a retry after an error. Nothing while `loading` or when there is no next page. |
+| `measureColumnWidths` | `(fields?: readonly string[]) => Record<string, number>` | The width each drawn column needs for its content (C-96), by `field`: the header label and the cells of the drawn data rows, padding and border included, in whole pixels rounded up, as the browser lays them out without widths. The filter row and the resize handle do not count. Not clamped to `minWidth` and `maxWidth`. Only `fields`, when given; a hidden column, or a table that is not displayed, is left out. Emits nothing and keeps no width: writing one back as `Column.width` is the consumer's. |
 
 ### Functions
 
@@ -716,6 +717,17 @@ export interface QueryTableExpose {
    * error. Nothing while `loading` or when there is no next page.
    */
   loadMore(): void
+  /**
+   * The width each drawn column needs for its content (C-96), by `field`:
+   * the header label and the cells of the drawn data rows, padding and
+   * border included, in whole pixels rounded up, as the browser lays them
+   * out without widths. The filter row and the resize handle do not count.
+   * Not clamped to `minWidth` and `maxWidth`. Only `fields`, when given; a
+   * hidden column, or a table that is not displayed, is left out. Emits
+   * nothing and keeps no width: writing one back as `Column.width` is the
+   * consumer's.
+   */
+  measureColumnWidths(fields?: readonly string[]): Record<string, number>
 }
 ```
 
@@ -1016,7 +1028,7 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 #### C-31 No styling
 
-The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS.
+The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-96) is the one moment the table writes other declarations: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin.
 
 #### C-32 State attributes
 
@@ -1024,7 +1036,7 @@ State is exposed as `data-*` attributes (the full list is in the DOM contract be
 
 #### C-33 Exposed surface
 
-A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54), `flushPendingFilters` (C-13), `scrollToIndex` (C-87) and `loadMore` (C-89) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed, and `loadMore`, which asks for the next page.
+A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54), `flushPendingFilters` (C-13), `scrollToIndex` (C-87), `loadMore` (C-89) and `measureColumnWidths` (C-96) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed, and `loadMore`, which asks for the next page.
 
 #### C-34 Filter menu slot
 
@@ -1092,7 +1104,7 @@ Pressing the primary button on a handle focuses it and captures the pointer. Whi
 
 #### C-50 Keyboard and autofit
 
-On a focused handle, ArrowRight and ArrowLeft emit `columnResize` with the rendered width plus or minus 10 pixels, 50 with Shift, clamped as in C-49; on a right-pinned column the two keys swap (C-71). Enter and a double click emit the autofit width: the widest rendered content of the column among the header label and its cells in the rows given (not the server's other rows), with the cell's padding and border, rounded up and clamped. A width equal to the rendered one emits nothing. Enter departs from the WAI-ARIA window splitter pattern, where Enter collapses the pane and restores it: a column has no collapsed state to restore (hiding is `Column.hide`, the consumer's), and fitting to content is what a double click on a column edge does in spreadsheets, so Enter is its keyboard equivalent. The table recommends `table-layout: fixed` with a table width (for example `width: max-content; min-width: 100%`): with the automatic layout the browser may draw a column wider than its header width.
+On a focused handle, ArrowRight and ArrowLeft emit `columnResize` with the rendered width plus or minus 10 pixels, 50 with Shift, clamped as in C-49; on a right-pinned column the two keys swap (C-71). Enter and a double click emit the autofit width: the column's width as `measureColumnWidths` measures it (C-96), the header label and its cells in the rows drawn (not the server's other rows), with the cell's padding and border, rounded up and clamped. A width equal to the rendered one emits nothing, and so does a column that measures nothing (the table not displayed). Enter departs from the WAI-ARIA window splitter pattern, where Enter collapses the pane and restores it: a column has no collapsed state to restore (hiding is `Column.hide`, the consumer's), and fitting to content is what a double click on a column edge does in spreadsheets, so Enter is its keyboard equivalent. The table recommends `table-layout: fixed` with a table width (for example `width: max-content; min-width: 100%`): with the automatic layout the browser may draw a column wider than its header width.
 
 #### C-51 Header slot
 
@@ -1355,6 +1367,12 @@ Source: own
 #### C-95 Change flash off and DOM contract of 3.3
 
 With `flash` absent or `false` the table sets up one watcher of `flash` and nothing else: no tracker, comparison, timer, animation frame, listener, style read or clock read, no memory per row, and the DOM is the one C-40, C-72 and C-91 check. With `flash` on the table adds no listener anywhere and keeps no module-level state, and the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract; the entries the contract marks `addedBy: 'C-94'` (`data-flash` on a row and on a data cell, `--qt-flash-elapsed`) are rendered, each on its element, by the state that adds them. An unmount and a `KeepAlive` deactivation leave no timer and no animation frame.
+
+Source: own
+
+#### C-96 Measuring column widths
+
+`measureColumnWidths(fields?)` on the template ref returns, by `field`, the width each drawn column needs for its content: the browser's max-content width of the column with its header label (what comes before the filter row and the resize handle) and its cells in the drawn data rows (`tr[data-row-index]`, pinned rows included), padding and border included, in whole pixels rounded up. The filter row, the resize handle, the footer and the other body rows (subtable, virtual spacer, loading, empty, load-more) do not count, nor do `Column.width` and a width or a fixed layout the consumer's CSS gives the table. Content is measured as drawn, slot content included: a `header-<field>` or `cell-<field>` slot that draws a block or a flex box counts with the width its content needs, not the width its cell gives it. For the read the table lays itself out once with the automatic layout and no widths, and puts every style back before returning (C-31): nothing is painted, nothing is emitted and no width is kept (P15). The widths are not clamped to `minWidth` and `maxWidth`: what to write back as `Column.width`, and when, is the consumer's. With `fields` only those columns are in the result; a hidden column, an unknown field and a table that is not displayed (a column with no box) are left out. With `virtual` only the drawn rows count. Autofit (C-50) uses the same measure.
 
 Source: own
 

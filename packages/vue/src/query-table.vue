@@ -29,6 +29,7 @@ import TablePagination from './parts/table-pagination.vue'
 import { utilityKey, type Utility } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
 import { useColumnReorder } from './reorder/use-column-reorder'
+import { measureColumnWidths } from './resize/measure-widths'
 import { useColumnResize } from './resize/use-column-resize'
 import { useQueryTable } from './use-query-table'
 import { useLoadMore } from './virtual/use-load-more'
@@ -291,7 +292,8 @@ const exposed: QueryTableExpose = {
     filters.flushAll()
   },
   scrollToIndex: rowWindow.scrollToIndex,
-  loadMore: infinite.loadMore
+  loadMore: infinite.loadMore,
+  measureColumnWidths: fields => measureColumnWidths(tableEl.value, fields)
 }
 defineExpose(exposed)
 </script>

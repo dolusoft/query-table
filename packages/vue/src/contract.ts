@@ -619,4 +619,15 @@ export interface QueryTableExpose {
    * error. Nothing while `loading` or when there is no next page.
    */
   loadMore(): void
+  /**
+   * The width each drawn column needs for its content (C-96), by `field`:
+   * the header label and the cells of the drawn data rows, padding and
+   * border included, in whole pixels rounded up, as the browser lays them
+   * out without widths. The filter row and the resize handle do not count.
+   * Not clamped to `minWidth` and `maxWidth`. Only `fields`, when given; a
+   * hidden column, or a table that is not displayed, is left out. Emits
+   * nothing and keeps no width: writing one back as `Column.width` is the
+   * consumer's.
+   */
+  measureColumnWidths(fields?: readonly string[]): Record<string, number>
 }
