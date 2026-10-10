@@ -790,10 +790,12 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   // ---- expansion (C-26, C-55) -----------------------------------------------
 
-  const expanded = (): Record<string, boolean> => {
+  // Vue computed around the atom: `atoms.*.get()` alone is not a tracked read
+  // for every consumer path (TanStack vue-table: use a computed or Subscribe).
+  const expandedState = computed(() => {
     const state = table.atoms.expanded.get()
     return state === true ? {} : state
-  }
+  })
   const setExpanded = (
     update: (state: Record<string, boolean>) => Record<string, boolean>
   ) => {
@@ -802,7 +804,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   const expansion: QueryTableExpansion<T> = {
     keyOf,
-    isExpanded: (row, index) => hasSubtable() && !!expanded()[idOf(row, index)],
+    isExpanded: (row, index) =>
+      hasSubtable() && !!expandedState.value[idOf(row, index)],
     toggle: (row, index) => {
       const id = idOf(row, index)
       setExpanded(state => {
