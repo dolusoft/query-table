@@ -81,6 +81,13 @@ export const filterInputCases: FilterInputCase[] = [
   },
   { type: 'number', text: 'abc', expected: [] },
   { type: 'integer', text: '2.5', expected: [] },
+  // The safe range: 2^53 - 1 is the largest; 2^53 + 1 would round to 2^53.
+  {
+    type: 'integer',
+    text: '9007199254740991',
+    expected: [['Equal', 9007199254740991]]
+  },
+  { type: 'integer', text: '9007199254740993', expected: [] },
   // Bool: the select's values.
   { type: 'bool', text: 'true', expected: [['Equal', true]] },
   { type: 'bool', text: 'false', expected: [['Equal', false]] },
