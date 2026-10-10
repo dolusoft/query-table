@@ -150,7 +150,14 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: marks and timing [own]',
   'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: the skin [own]',
   'tests/contract/browser/flash.browser.spec.ts > C-95 Change flash off and DOM contract of 3.3 [own]',
-  'tests/contract/browser/dom-contract-3-3.browser.spec.ts > C-95 the DOM with the change flash matches the DOM contract'
+  'tests/contract/browser/dom-contract-3-3.browser.spec.ts > C-95 the DOM with the change flash matches the DOM contract',
+  // 3.5 additions (C-97, C-98): `rowKind` and `rowExpandable`, which a 3.4
+  // build does not have. Without them the table is the one of 3.4.
+  'tests/contract/unit/row-kind.spec.ts > C-97 Row kind [own]',
+  'tests/contract/unit/row-expandable.spec.ts > C-98 Rows that cannot expand [tanstack] [own]',
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-97 the row kind is on its row, as the DOM contract lists it [own]',
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-97 a virtual body writes the kind on the rows it draws, a pinned row included [own]',
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-98 a virtual body draws no expand button on a row that cannot expand, a pinned one included [tanstack] [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

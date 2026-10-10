@@ -167,7 +167,7 @@ The `qt-pagination` block is drawn when the `pagination` slot is given and there
 
 ### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. With `virtual` (C-83) a row that leaves the drawn window unmounts the content of its `subtable` slot; its expansion state stays, by key. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. With `virtual` (C-83) a row that leaves the drawn window unmounts the content of its `subtable` slot; its expansion state stays, by key. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row that can expand (every row without `rowExpandable`, C-98); the row needs no `id`.
 
 ### C-27 Cell slots
 
@@ -191,7 +191,7 @@ The table ships no CSS and takes no styling props. It writes five inline styles 
 
 ### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-row-kind` on a body row with a kind (C-97); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header.
 
 ### C-33 Exposed surface
 
@@ -223,7 +223,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 ### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72), a 3.2 feature (checked by C-91) or the change flash of 3.3 (`C-94`, checked by C-95), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72), a 3.2 feature (checked by C-91) or the change flash of 3.3 (`C-94`, checked by C-95), `data-type` is checked by C-82 and `data-row-kind` by C-97. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 ### C-41 Skin selectors
 
@@ -285,7 +285,7 @@ Source: own
 
 ### C-55 expandAll
 
-`expandAll()` opens the rows currently in `rows`, by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
+`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
 
 ### C-56 Cursor paging
 
@@ -534,3 +534,15 @@ Source: own
 When the consumer listens to `headerContextMenu` (with or without the `.once` modifier, which Vue passes as `onHeaderContextMenuOnce`), right-clicking a data-column header emits it with `event`, `column` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `thead` serves every header cell, so `event.currentTarget` is the `thead`. Only a header cell with `data-field` counts; the utility headers (clear-all, selection) emit nothing and keep the browser menu. A right-click inside the filter row (`.qt-filter`) emits nothing and keeps the browser menu, so paste and spell-check stay. The event does not replace `header-<field>` (C-51): that slot still draws the label.
 
 Source: own
+
+### C-97 Row kind
+
+With `rowKind` the table calls it with each drawn row and its index in `rows`, and writes the string it returns as `data-row-kind` on that row's `tr` (a pinned row included, C-74, and a row of a virtual body when it is drawn, C-83). An empty string, `null` or `undefined` writes no attribute; without `rowKind` no row carries it. The kind is data: the table draws nothing by it and its value changes nothing else, so a skin gives a row of a kind its look (`tr[data-row-kind="total"]`). The subtable row of a row does not carry it. The table takes no class or style per row (P5); this attribute is the hook.
+
+Source: own
+
+### C-98 Rows that cannot expand
+
+With `hasSubtable` and `rowExpandable`, a row for which `rowExpandable(row, index)` (its index in `rows`) returns `false` cannot expand: its expand cell is drawn empty, without a `qt-expand` button, so the columns stay aligned; the `subtable` slot is never drawn under it and it never carries `data-expanded`. `expandAll()` skips it (C-55), an `isExpanded: true` field does not open it (C-26) and a key it held is dropped the next time `rows` changes. This holds for a pinned row (C-74) and in a virtual body (C-83). Without `rowExpandable` every row can expand; without `hasSubtable` the function is not called. In the composable, `expansion.canExpand(row, index)` answers the same question, `expansion.toggle` does nothing for such a row, and TanStack's `getRowCanExpand` gives the same answer.
+
+Source: tanstack, own

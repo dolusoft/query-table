@@ -130,6 +130,12 @@ export interface UseQueryTableOptions<
   rowKey?: MaybeRefOrGetter<RowKey<T>>
   /** Rows can expand (the `subtable` column). Defaults to `false`. */
   hasSubtable?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * Which rows can expand, with `hasSubtable` (C-98); without it every row
+   * can. Give a getter or a ref that holds the function (`() => fn`): a bare
+   * function is read as a getter.
+   */
+  rowExpandable?: MaybeRefOrGetter<TableProps<T>['rowExpandable']>
   /** Page sizes offered. Defaults to `[10, 20, 30, 50, 100]`. */
   pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>
   /** Called once per user action that changes the query, with a new object. */
@@ -223,10 +229,13 @@ export interface QueryTableSearch {
 export interface QueryTableExpansion<T extends object> {
   /** Identity of a row: `rowKey`, else its index. */
   keyOf: (row: T, index: number) => string | number
+  /** `hasSubtable` is on and `rowExpandable` lets the row expand (C-98). */
+  canExpand: (row: T, index: number) => boolean
   isExpanded: (row: T, index: number) => boolean
+  /** Opens or closes the row; nothing for a row that cannot expand (C-98). */
   toggle: (row: T, index: number) => void
   collapseAll: () => void
-  /** Opens every row given; nothing is fetched. */
+  /** Opens every row given that can expand; nothing is fetched. */
   expandAll: () => void
 }
 
@@ -315,6 +324,14 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   const columns = () => toValue(options.columns)
   const rowKey = () => toValue(options.rowKey)
   const hasSubtable = () => toValue(options.hasSubtable) ?? false
+  // C-98: with `hasSubtable`, a row expands unless `rowExpandable` says no.
+  const canExpand = (row: T, index: number) => {
+    if (!hasSubtable()) {
+      return false
+    }
+    const expandable = toValue(options.rowExpandable)
+    return expandable === undefined || expandable(row, index)
+  }
   const pinnedRows = () => toValue(options.rowPinning)
   // C-74: without a row identity an index would pin another row on the next
   // page, so the map needs `rowKey`.
@@ -418,7 +435,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     enableRowSelection: true,
     // P15: the expansion is TanStack's; the table resets it itself (C-26).
     manualExpanding: true,
-    getRowCanExpand: () => hasSubtable(),
+    getRowCanExpand: (row: Row<QueryTableFeatures, T>) =>
+      canExpand(row.original, row.index),
     onRowSelectionChange: (updater: Updater<RowSelection>) => {
       const current = toValue(options.selection) ?? {}
       options.onSelectionChange?.(
@@ -804,9 +822,13 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   const expansion: QueryTableExpansion<T> = {
     keyOf,
+    canExpand,
     isExpanded: (row, index) =>
-      hasSubtable() && !!expandedState.value[idOf(row, index)],
+      !!expandedState.value[idOf(row, index)] && canExpand(row, index),
     toggle: (row, index) => {
+      if (!canExpand(row, index)) {
+        return
+      }
       const id = idOf(row, index)
       setExpanded(state => {
         if (state[id]) {
@@ -822,7 +844,9 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       if (hasSubtable()) {
         setExpanded(state => {
           rows().forEach((row, index) => {
-            state[idOf(row, index)] = true
+            if (canExpand(row, index)) {
+              state[idOf(row, index)] = true
+            }
           })
           return state
         })
@@ -850,7 +874,10 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
         if (hasSubtable()) {
           current.forEach((row, index) => {
             const seeded = (row as { isExpanded?: unknown }).isExpanded
-            if (seeded === true) {
+            if (!canExpand(row, index)) {
+              // C-98: a row that cannot expand keeps no state.
+              delete state[idOf(row, index)]
+            } else if (seeded === true) {
               state[idOf(row, index)] = true
             } else if (seeded === false) {
               delete state[idOf(row, index)]

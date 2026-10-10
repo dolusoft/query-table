@@ -39,8 +39,12 @@ const props = defineProps<{
   /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: Readonly<Record<string, number>>
   keyOf: (row: T, index: number) => string | number
+  /** The row can expand: no expand button otherwise (C-98). */
+  canExpand: (row: T, index: number) => boolean
   isExpanded: (row: T, index: number) => boolean
   toggle: (row: T, index: number) => void
+  /** `data-row-kind` of a row (C-97); absent, no row carries it. */
+  rowKind?: (row: T, index: number) => string | null | undefined
   labels: TableLabels
   /** The consumer listens to `cellContextMenu` (C-28); read at event time. */
   hasContextMenuListener: () => boolean
@@ -81,6 +85,9 @@ const selectAttrs = () => utilityAttrs('select')
 
 const isSpacer = (item: DrawnRow<T> | SpacerRow): item is SpacerRow =>
   'spacer' in item
+/** `data-row-kind` of a drawn row (C-97): no attribute for an empty kind. */
+const kindOf = (item: DrawnRow<T>) =>
+  props.rowKind ? props.rowKind(item.row, item.index) || undefined : undefined
 /** `aria-rowindex` of the subtable row under a drawn row (C-86). */
 const nextIndex = (aria: number | undefined) =>
   aria === undefined ? undefined : aria + 1
@@ -145,6 +152,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
         :data-row-index="item.index"
         :aria-rowindex="item.aria"
         :data-pinned-row="item.pinned || undefined"
+        :data-row-kind="kindOf(item)"
         :data-expanded="isRowExpanded(item) ? '' : undefined"
         :data-selected="
           hasSelection && isSelected(item.row, item.index) ? '' : undefined
@@ -177,6 +185,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
         </td>
         <td v-if="hasSubtable" v-bind="expandAttrs()">
           <button
+            v-if="canExpand(item.row, item.index)"
             type="button"
             class="qt-expand"
             :aria-expanded="isRowExpanded(item)"
