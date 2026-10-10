@@ -43,6 +43,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `update:selection` | `[selection: RowSelection]` | The user changed the selection: a new object holding the `true` entries (C-59). Apply it with `v-model:selection`. |
 | `rowRightPanelClick` | `[row: T]` | The right-panel button of a row was clicked. |
 | `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
+| `headerContextMenu` | `[payload: HeaderContextMenuPayload]` | A data-column header was right-clicked (C-96). With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. The filter row and utility headers keep the browser menu. |
 | `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
 | `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
 | `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
@@ -458,6 +459,15 @@ export interface CellContextMenuPayload<T> {
   columnIndex: number
 }
 
+/** Payload of the `headerContextMenu` event (C-96). */
+export interface HeaderContextMenuPayload {
+  event: MouseEvent
+  /** The column definition the consumer passed. */
+  column: Column
+  /** Index into `columns`, hidden columns included. */
+  columnIndex: number
+}
+
 /** Payload of the `columnResize` event. */
 export interface ColumnResizePayload {
   /** `field` of the resized column. */
@@ -511,6 +521,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * suppressed; without one the table emits nothing and keeps it.
    */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
+  /**
+   * A data-column header was right-clicked (C-96). With a listener the
+   * browser menu is suppressed; without one the table emits nothing and
+   * keeps it. The filter row and utility headers keep the browser menu.
+   */
+  headerContextMenu: [payload: HeaderContextMenuPayload]
   /**
    * The user resized a column: on release of a drag, on an arrow key or on
    * autofit. Write `width` back to the column (`Column.width`), or the column
@@ -1355,6 +1371,12 @@ Source: own
 #### C-95 Change flash off and DOM contract of 3.3
 
 With `flash` absent or `false` the table sets up one watcher of `flash` and nothing else: no tracker, comparison, timer, animation frame, listener, style read or clock read, no memory per row, and the DOM is the one C-40, C-72 and C-91 check. With `flash` on the table adds no listener anywhere and keeps no module-level state, and the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract; the entries the contract marks `addedBy: 'C-94'` (`data-flash` on a row and on a data cell, `--qt-flash-elapsed`) are rendered, each on its element, by the state that adds them. An unmount and a `KeepAlive` deactivation leave no timer and no animation frame.
+
+Source: own
+
+#### C-96 Header context menu
+
+When the consumer listens to `headerContextMenu` (with or without the `.once` modifier, which Vue passes as `onHeaderContextMenuOnce`), right-clicking a data-column header emits it with `event`, `column` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `thead` serves every header cell, so `event.currentTarget` is the `thead`. Only a header cell with `data-field` counts; the utility headers (clear-all, selection) emit nothing and keep the browser menu. A right-click inside the filter row (`.qt-filter`) emits nothing and keeps the browser menu, so paste and spell-check stay. The event does not replace `header-<field>` (C-51): that slot still draws the label.
 
 Source: own
 

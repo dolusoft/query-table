@@ -263,6 +263,18 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-51']
   },
   {
+    id: 'header-context-menu',
+    title: 'Header context menu',
+    summary:
+      'Right-click a data-column header to receive `headerContextMenu`; the filter row and utility headers keep the browser menu.',
+    example: 'HeaderContextMenu',
+    api: {
+      emits: ['headerContextMenu'],
+      types: ['HeaderContextMenuPayload']
+    },
+    rules: ['C-96']
+  },
+  {
     id: 'custom-cells',
     title: 'Slots & custom cells',
     summary:
