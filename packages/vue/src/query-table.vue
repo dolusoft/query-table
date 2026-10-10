@@ -52,6 +52,8 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   reorderable: false,
   filterDebounce: 100,
   hasSubtable: false,
+  rowExpandable: undefined,
+  rowKind: undefined,
   hasRightPanel: false,
   rowKey: undefined,
   labels: undefined,
@@ -81,6 +83,7 @@ const state = useQueryTable<T, Q>({
   rowPinning: () => props.rowPinning,
   rowKey: () => props.rowKey,
   hasSubtable: () => props.hasSubtable,
+  rowExpandable: () => props.rowExpandable,
   pageSizeOptions: () => props.pagination?.pageSizeOptions,
   onQueryChange: (query, reason) => emit('update:query', query, reason),
   onSelectionChange: selection => emit('update:selection', selection),
@@ -364,8 +367,10 @@ defineExpose(exposed)
           :has-pinned="hasPinned"
           :offsets="offsets"
           :key-of="expansion.keyOf"
+          :can-expand="expansion.canExpand"
           :is-expanded="expansion.isExpanded"
           :toggle="expansion.toggle"
+          :row-kind="rowKind"
           :labels="labels"
           :has-context-menu-listener="hasContextMenuListener"
           :load-more="loadMoreProps"

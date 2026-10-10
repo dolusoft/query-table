@@ -150,6 +150,17 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-26']
   },
   {
+    id: 'row-kind',
+    title: 'Row kinds & rows that cannot expand',
+    summary:
+      'A grouped report with an "Others" row: `rowKind` writes `data-row-kind` on a row so the page CSS gives it its look, and `rowExpandable` keeps it closed, with no expand button.',
+    example: 'RowKind',
+    api: {
+      props: ['rowKind', 'rowExpandable', 'hasSubtable']
+    },
+    rules: ['C-97', 'C-98']
+  },
+  {
     id: 'row-pinning',
     title: 'Row pinning',
     summary:
