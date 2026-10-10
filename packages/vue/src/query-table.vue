@@ -22,6 +22,7 @@ import { resolveLabels } from './core/labels'
 import { provideTableContext } from './core/table-context'
 import { focusFilterOf } from './filter/focus-filter'
 import { useChangeFlash } from './flash/use-change-flash'
+import { useHeaderContextMenu } from './header/use-header-context-menu'
 import TableBody from './parts/table-body.vue'
 import TableFooter from './parts/table-footer.vue'
 import TableHeader from './parts/table-header.vue'
@@ -92,18 +93,31 @@ const paginationProps = state.pagination
 
 const labels = computed(() => resolveLabels(props.labels))
 
-// C-28: the browser menu is suppressed only for a consumer that listens. The
-// check runs when the event fires: a listener is not a prop, so adding one
+// C-28 / C-96: the browser menu is suppressed only for a consumer that listens.
+// The check runs when the event fires: a listener is not a prop, so adding one
 // later does not re-render the table.
 const instance = getCurrentInstance()
-// A `.once` listener arrives as `onCellContextMenuOnce`.
+// A `.once` listener arrives as `onCellContextMenuOnce` / `onHeaderContextMenuOnce`.
 const hasContextMenuListener = () => {
   const vnodeProps = instance?.vnode.props
   return !!(vnodeProps?.onCellContextMenu || vnodeProps?.onCellContextMenuOnce)
 }
+const hasHeaderContextMenuListener = () => {
+  const vnodeProps = instance?.vnode.props
+  return !!(
+    vnodeProps?.onHeaderContextMenu || vnodeProps?.onHeaderContextMenuOnce
+  )
+}
 
 const entries = state.columns
 const visibleColumns = computed(() => entries.value.map(e => e.column))
+
+const { onContextMenu: onHeaderContextMenu } = useHeaderContextMenu({
+  columns: () => visibleColumns.value,
+  indexOf: field => entries.value.find(e => e.column.field === field)?.index,
+  listening: () => hasHeaderContextMenuListener(),
+  onContextMenu: payload => emit('headerContextMenu', payload)
+})
 const hasPinned = state.hasPinned
 /** Right panel first, then subtable, then selection (C-22: the first hosts clear-all). */
 const utilities = computed(() =>
@@ -306,7 +320,7 @@ defineExpose(exposed)
     <slot name="toolbar" v-bind="toolbarProps()" />
     <div class="qt-table-responsive">
       <table ref="tableEl" class="qt-table" :aria-rowcount="ariaRowCount">
-        <thead>
+        <thead @contextmenu="onHeaderContextMenu">
           <table-header
             :columns="visibleColumns"
             :query="query"

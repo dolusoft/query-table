@@ -172,6 +172,14 @@ export interface FooterRow {
     }>;
 }
 
+// @public
+export interface HeaderContextMenuPayload {
+    column: Column;
+    columnIndex: number;
+    // (undocumented)
+    event: MouseEvent;
+}
+
 // @public (undocumented)
 export interface HeaderSlotProps {
     // (undocumented)
@@ -375,6 +383,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     'update:selection': [selection: RowSelection];
     rowRightPanelClick: [row: T];
     cellContextMenu: [payload: CellContextMenuPayload<T>];
+    headerContextMenu: [payload: HeaderContextMenuPayload];
     columnResize: [payload: ColumnResizePayload];
     'update:columns': [columns: Column[], reason: ColumnChangeReason];
     'update:rowPinning': [rowPinning: RowPinning];
