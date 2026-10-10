@@ -207,6 +207,13 @@ export const domAttributes: AttributeEntry[] = [
     addedBy: 'C-74'
   },
   {
+    name: 'data-row-kind',
+    on: 'tbody > tr[data-row-index]',
+    description:
+      'With `rowKind`: the kind it returns for the row, such as `total`, when not empty (C-97). Data, not styling: the table draws nothing by it; a skin selects `tr[data-row-kind="total"]`.',
+    addedBy: 'C-97'
+  },
+  {
     name: 'data-selected',
     on: 'tbody > tr',
     description: 'Present on a selected row (C-64).',
