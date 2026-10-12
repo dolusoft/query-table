@@ -1,27 +1,33 @@
 name: CI
 
 # `v3/**`: the v3 pull requests are stacked, each based on the one before.
+# release.yml calls this workflow on a tag, so a release runs the same checks.
 on:
   push:
     branches: [main, next, 'v3/**']
   pull_request:
     branches: [main, next, 'v3/**']
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # On a workflow_call the caller's workflow name keeps the group apart from
+  # the CI run of the same ref.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
+# Three jobs run side by side; the longest sets the wall time.
+# `verify` is the required status check: it passes only when all three pass.
 jobs:
-  verify:
+  checks:
     runs-on: ubuntu-latest
-    # The whole job takes a few minutes; a hung browser run must not hold a
-    # runner for the 6-hour default.
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # The pnpm version is the `packageManager` field of package.json.
       - uses: pnpm/action-setup@v4
@@ -42,24 +48,55 @@ jobs:
       - run: pnpm playground:build
       - run: pnpm test:coverage
 
-      - name: Resolve Playwright version
-        id: playwright
-        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v4
+      # The .NET sample of docs/guide/protocol.md: built and run against the
+      # JSON Schema (the TypeScript samples are checked by typecheck and vitest).
+      - uses: actions/setup-dotnet@v4
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+          dotnet-version: 8.x
+      - run: dotnet run --project docs/guide/examples/dotnet -- "$GITHUB_WORKSPACE"
 
-      # Downloads Chromium only on a cache miss; system libraries are always
-      # installed because the runner image does not keep them between jobs.
-      - run: pnpm exec playwright install --with-deps chromium
-        timeout-minutes: 5
+  browser:
+    runs-on: ubuntu-latest
+    # A hung browser run must not hold a runner for the 6-hour default.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/chromium
       - run: pnpm test:browser
         timeout-minutes: 5
       # Render counts against scripts/render-budget.json (PRINCIPLES.md P8).
       - run: pnpm check:renders
         timeout-minutes: 5
+
+  package:
+    runs-on: ubuntu-latest
+    # Room for the Chromium install retries (up to about 8 minutes).
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
       # One build of the dist/ of the three packages serves every check below.
       - run: pnpm build
       # Linted as packages (publint, attw); sources and dist/ against the
@@ -77,13 +114,28 @@ jobs:
       # The default entries never reach the local evaluator (C-75).
       - run: pnpm check:entry-graph
       # The three tarballs installed into an app outside the workspace, the
-      # way an npm install resolves them, then typechecked and built.
+      # way an npm install resolves them, then typechecked, built and loaded
+      # in Chromium.
+      - uses: ./.github/actions/chromium
       - run: pnpm pack-install
         timeout-minutes: 5
 
-      # The .NET sample of docs/guide/protocol.md: built and run against the
-      # JSON Schema (the TypeScript samples are checked by typecheck and vitest).
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.x
-      - run: dotnet run --project docs/guide/examples/dotnet -- "$GITHUB_WORKSPACE"
+  verify:
+    needs: [checks, browser, package]
+    # Runs even when a job before it failed or the run was cancelled, so the
+    # required check reports a failure: branch protection counts a skipped
+    # required check as passed.
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "checks, browser, package: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              exit 1
+            fi
+          done

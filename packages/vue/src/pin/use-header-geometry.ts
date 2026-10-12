@@ -55,7 +55,9 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     table.querySelectorAll(':scope > thead > tr > *')
 
   const measure = (table: HTMLTableElement) => {
-    tableWidth.value = table.getBoundingClientRect().width
+    // Whole pixels: sub-pixel rects from live content / scrollbars would
+    // otherwise rewrite `--qt-pin-*` every frame and the sticky columns dance.
+    tableWidth.value = Math.round(table.getBoundingClientRect().width)
     const cells = options.cells()
     const next: Record<string, number> = {}
     const nextOffsets: Record<string, number> = {}
@@ -64,7 +66,7 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     headerCells(table).forEach((cell, index) => {
       const drawn = cells[index]
       if (drawn) {
-        const width = cell.getBoundingClientRect().width
+        const width = Math.round(cell.getBoundingClientRect().width)
         next[drawn.key] = width
         if (drawn.side === 'left') {
           nextOffsets[drawn.key] = left

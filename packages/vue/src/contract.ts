@@ -217,6 +217,22 @@ export interface TableProps<
    * `rows`). Defaults to `false`.
    */
   hasSubtable?: boolean
+  /**
+   * Which rows can expand, with `hasSubtable` (C-98): called with the row and
+   * its index in `rows`. A row it returns `false` for gets an empty expand
+   * cell (no button), never draws the `subtable` slot, is skipped by
+   * `expandAll()` and ignores its `isExpanded` field. Absent, every row can
+   * expand.
+   */
+  rowExpandable?: (row: T, index: number) => boolean
+  /**
+   * A kind for a row, written as `data-row-kind` on its `tr` (C-97): called
+   * with the row and its index in `rows`. Data, not styling: the table draws
+   * nothing by it, and the consumer's CSS selects
+   * `tr[data-row-kind="total"]`. An empty string, `null` or `undefined`
+   * writes no attribute.
+   */
+  rowKind?: (row: T, index: number) => string | null | undefined
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
   /**
@@ -361,6 +377,15 @@ export interface CellContextMenuPayload<T> {
   columnIndex: number
 }
 
+/** Payload of the `headerContextMenu` event (C-96). */
+export interface HeaderContextMenuPayload {
+  event: MouseEvent
+  /** The column definition the consumer passed. */
+  column: Column
+  /** Index into `columns`, hidden columns included. */
+  columnIndex: number
+}
+
 /** Payload of the `columnResize` event. */
 export interface ColumnResizePayload {
   /** `field` of the resized column. */
@@ -414,6 +439,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * suppressed; without one the table emits nothing and keeps it.
    */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
+  /**
+   * A data-column header was right-clicked (C-96). With a listener the
+   * browser menu is suppressed; without one the table emits nothing and
+   * keeps it. The filter row and utility headers keep the browser menu.
+   */
+  headerContextMenu: [payload: HeaderContextMenuPayload]
   /**
    * The user resized a column: on release of a drag, on an arrow key or on
    * autofit. Write `width` back to the column (`Column.width`), or the column
