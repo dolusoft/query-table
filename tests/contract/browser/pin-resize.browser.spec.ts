@@ -149,6 +149,38 @@ describe('C-47 Pin offsets', () => {
     expect(top?.closest('td')?.getAttribute('data-field')).toBe('name')
   })
 
+  test('fractional widths: pinned cells meet exactly, with no gap or overlap, while scrolled', async () => {
+    // A collapsed border or a percentage draws cells at fractional widths;
+    // offsets summed from rounded widths left a sliver between the pinned
+    // cells that the scrolled content showed through.
+    await renderPinned({
+      columns: wide().map(column =>
+        column.field === 'id'
+          ? { ...column, width: '100.4px' }
+          : column.field === 'name'
+            ? { ...column, width: '160.3px' }
+            : column
+      )
+    })
+    const header = [...el('thead tr').querySelectorAll('[data-pinned]')]
+    const widths = header.map(cell => cell.getBoundingClientRect().width)
+    expect(widths.some(width => !Number.isInteger(width))).toBe(true)
+    const offsets = header.map(offsetOf)
+    expect(offsets[1]).toBeCloseTo(widths[0], 2)
+    expect(offsets[2]).toBeCloseTo(widths[0] + widths[1], 2)
+    scroller().scrollLeft = 300
+    await frames()
+    expect(scroller().scrollLeft).toBeGreaterThan(200)
+    for (const tr of el('.qt-table').querySelectorAll('tr')) {
+      const cells = [...tr.querySelectorAll(':scope > [data-pinned]')].map(
+        cell => cell.getBoundingClientRect()
+      )
+      for (let i = 1; i < cells.length; i++) {
+        expect(cells[i].left - cells[i - 1].right).toBeCloseTo(0, 2)
+      }
+    }
+  })
+
   test('measures again after a pinned column is resized', async () => {
     const { rerender } = await renderPinned()
     const name = () => el('thead th[data-field="name"]')
