@@ -113,7 +113,7 @@ describe('C-71 Right pinning [tanstack] [own]', () => {
     const joinedWidth = rect(header[1]).width
     expect(joinedWidth).toBeGreaterThan(0)
     expect(offsetOf(header[1])).toBe(0)
-    expect(offsetOf(header[0])).toBeCloseTo(joinedWidth, 0)
+    expect(offsetOf(header[0])).toBeCloseTo(joinedWidth, 2)
     // Every row's right-pinned cells carry the offsets of their header cells.
     for (const row of el('tbody').querySelectorAll('tr')) {
       const cells = [...row.querySelectorAll('[data-pinned="right"]')]
