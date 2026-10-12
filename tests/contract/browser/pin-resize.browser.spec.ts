@@ -164,21 +164,26 @@ describe('C-47 Pin offsets', () => {
     })
     const header = [...el('thead tr').querySelectorAll('[data-pinned]')]
     const widths = header.map(cell => cell.getBoundingClientRect().width)
-    expect(widths.some(width => !Number.isInteger(width))).toBe(true)
+    // `id` is the width the next offset adds up; it must stay fractional.
+    expect(Number.isInteger(widths[1])).toBe(false)
     const offsets = header.map(offsetOf)
     expect(offsets[1]).toBeCloseTo(widths[0], 2)
     expect(offsets[2]).toBeCloseTo(widths[0] + widths[1], 2)
     scroller().scrollLeft = 300
     await frames()
     expect(scroller().scrollLeft).toBeGreaterThan(200)
+    let pairs = 0
     for (const tr of el('.qt-table').querySelectorAll('tr')) {
       const cells = [...tr.querySelectorAll(':scope > [data-pinned]')].map(
         cell => cell.getBoundingClientRect()
       )
       for (let i = 1; i < cells.length; i++) {
         expect(cells[i].left - cells[i - 1].right).toBeCloseTo(0, 2)
+        pairs++
       }
     }
+    // Header and five body rows each have three pinned cells.
+    expect(pairs).toBeGreaterThanOrEqual(12)
   })
 
   test('measures again after a pinned column is resized', async () => {
