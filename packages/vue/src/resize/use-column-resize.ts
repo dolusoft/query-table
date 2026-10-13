@@ -1,6 +1,7 @@
 import { onBeforeUnmount, shallowRef } from 'vue'
 
 import type { Column, ColumnResizePayload } from '../contract'
+import { measureColumnWidths } from './measure-widths'
 
 /** Default `Column.minWidth`, in pixels. */
 const defaultMinWidth = 40
@@ -46,45 +47,6 @@ export const clampWidth = (column: Column, width: number) =>
       Math.max(minWidthOf(column), width)
     )
   )
-
-/** Width of the content of a cell up to `until` (exclusive), padding and border included. */
-const contentWidth = (cell: Element, until?: Element | null) => {
-  const range = document.createRange()
-  range.selectNodeContents(cell)
-  if (until) {
-    range.setEndBefore(until)
-  }
-  const style = getComputedStyle(cell)
-  return [
-    style.paddingLeft,
-    style.paddingRight,
-    style.borderLeftWidth,
-    style.borderRightWidth
-  ].reduce(
-    (sum, value) => sum + (parseFloat(value) || 0),
-    range.getBoundingClientRect().width
-  )
-}
-
-/**
- * The widest rendered content of a column: the header label (the part before
- * the filter row and the handle) and the column's cells in this table's own
- * body rows. Only the rows given are measured (C-50).
- */
-const autofitWidth = (th: HTMLTableCellElement, field: string) => {
-  let widest = contentWidth(
-    th,
-    th.querySelector(':scope > .qt-filter, :scope > .qt-resize-handle')
-  )
-  for (const cell of th
-    .closest('table')
-    ?.tBodies[0]?.querySelectorAll(
-      `:scope > tr[data-row-index] > td[data-field="${CSS.escape(field)}"]`
-    ) ?? []) {
-    widest = Math.max(widest, contentWidth(cell))
-  }
-  return Math.ceil(widest)
-}
 
 interface Drag {
   column: Column
@@ -209,13 +171,14 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     if (th && (sign || key === 'Enter' || event.type === 'dblclick')) {
       event.preventDefault()
       const from = th.getBoundingClientRect().width
-      commit(
-        column,
-        from,
-        sign
-          ? Math.round(from) + sign * (event.shiftKey ? 50 : 10)
-          : autofitWidth(th, column.field)
-      )
+      // Autofit is the width `measureColumnWidths` gives (C-50, C-96); a
+      // column that measures nothing (the table not displayed) stays.
+      const to = sign
+        ? Math.round(from) + sign * (event.shiftKey ? 50 : 10)
+        : measureColumnWidths(th.closest('table'), [column.field])[column.field]
+      if (to !== undefined) {
+        commit(column, from, to)
+      }
     }
   }
 

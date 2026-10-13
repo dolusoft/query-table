@@ -125,7 +125,7 @@ const ADDED_AFTER_BASELINE = [
   // 3.2 additions (C-83 to C-91, ADR 0010): virtual rows and infinite
   // scroll. With both off the table is the one of 3.1; every other test
   // compares that.
-  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else',
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-87 C-89 exposes scrollToIndex and loadMore too',
   'tests/contract/unit/infinite.spec.ts > C-89 Load-more slot and method [own]',
   'tests/contract/unit/infinite.spec.ts > C-90 End of an infinite list [own]',
   'tests/contract/unit/infinite.spec.ts > C-88 Infinite scroll trigger [own]',
@@ -150,7 +150,12 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: marks and timing [own]',
   'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: the skin [own]',
   'tests/contract/browser/flash.browser.spec.ts > C-95 Change flash off and DOM contract of 3.3 [own]',
-  'tests/contract/browser/dom-contract-3-3.browser.spec.ts > C-95 the DOM with the change flash matches the DOM contract'
+  'tests/contract/browser/dom-contract-3-3.browser.spec.ts > C-95 the DOM with the change flash matches the DOM contract',
+  // 3.4 addition (C-96, ADR 0013): measuring column widths, and the autofit
+  // of C-50 on slot content that a 3.3 build measures at its cell's width.
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-96 exposes measureColumnWidths too, and nothing else',
+  'tests/contract/browser/measure-widths.browser.spec.ts > C-96 Measuring column widths [own]',
+  'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

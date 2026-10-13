@@ -252,6 +252,7 @@ export interface QueryTableExpose {
     flushPendingFilters(): void;
     focusFilter(field: string): boolean;
     loadMore(): void;
+    measureColumnWidths(fields?: readonly string[]): Record<string, number>;
     scrollToIndex(index: number, options?: ScrollToIndexOptions): void;
 }
 

@@ -244,14 +244,15 @@ export const pages: PlaygroundPage[] = [
     id: 'column-resizing',
     title: 'Column resizing',
     summary:
-      'A resize handle per header: drag, arrow keys or autofit emit `columnResize`; the page stores the widths and writes them back to `Column.width`.',
+      'A resize handle per header: drag, arrow keys or autofit emit `columnResize`; the page stores the widths and writes them back to `Column.width`. `measureColumnWidths()` fits every column at once.',
     example: 'ColumnResizing',
     api: {
       props: ['resizable', 'columns', 'labels'],
       emits: ['columnResize'],
+      exposed: ['measureColumnWidths'],
       types: ['ColumnResizePayload']
     },
-    rules: ['C-48', 'C-49', 'C-50']
+    rules: ['C-48', 'C-49', 'C-50', 'C-96']
   },
   {
     id: 'header-slot',

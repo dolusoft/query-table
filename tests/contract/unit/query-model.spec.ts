@@ -206,7 +206,18 @@ describe('C-33 Exposed surface', () => {
   })
 
   // 3.2 (C-87, C-89): not in a 3.1 baseline (`ADDED_AFTER_BASELINE`).
-  it('C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else', () => {
+  it('C-87 C-89 exposes scrollToIndex and loadMore too', () => {
+    const m = mountIt()
+    const exposed = (
+      m.wrapper.vm.$ as unknown as { exposed: Record<string, unknown> }
+    ).exposed
+    expect(Object.keys(exposed)).toEqual(
+      expect.arrayContaining(['loadMore', 'scrollToIndex'])
+    )
+  })
+
+  // 3.4 (C-96): not in a 3.3 baseline (`ADDED_AFTER_BASELINE`).
+  it('C-96 exposes measureColumnWidths too, and nothing else', () => {
     const m = mountIt()
     const exposed = (
       m.wrapper.vm.$ as unknown as { exposed: Record<string, unknown> }
@@ -217,6 +228,7 @@ describe('C-33 Exposed surface', () => {
       'flushPendingFilters',
       'focusFilter',
       'loadMore',
+      'measureColumnWidths',
       'scrollToIndex'
     ])
   })

@@ -2,7 +2,11 @@
 import { computed, ref } from 'vue'
 
 import { Button } from '@/ui/button'
-import type { Column, ColumnResizePayload } from '@dolusoft/query-table'
+import type {
+  Column,
+  ColumnResizePayload,
+  QueryTableExpose
+} from '@dolusoft/query-table'
 import { QueryTable } from '@dolusoft/query-table'
 
 import FilterMenu from '../harness/FilterMenu.vue'
@@ -15,7 +19,9 @@ import { currentDataset, listColumns, useFakeServer } from '../scenarios'
 // `columnResize` and keeps no width: this page stores the widths (a real
 // consumer would save them with the user's view) and writes them back to
 // `Column.width`. ID cannot be resized; the count column stays between 60
-// and 160 px.
+// and 160 px. "Fit all to content" asks the table for the width each column
+// needs (`measureColumnWidths`, C-96) and stores it the same way, within the
+// page's own limits: the table measures, the page decides what to keep.
 //
 // `table-layout: fixed` (this page's utilities on the wrapper) makes the header width
 // the column width; with the automatic layout, content can override it.
@@ -39,6 +45,20 @@ const columns = computed<Column[]>(() =>
 const onResize = ({ field, width }: ColumnResizePayload) => {
   saved.value = { ...saved.value, [field]: width }
 }
+const table = ref<QueryTableExpose | null>(null)
+const fitAll = () => {
+  const next: Record<string, number> = {}
+  for (const [field, width] of Object.entries(
+    table.value?.measureColumnWidths() ?? {}
+  )) {
+    if (field === 'id') {
+      continue
+    }
+    next[field] =
+      field === data.fields.count ? Math.min(160, Math.max(60, width)) : width
+  }
+  saved.value = next
+}
 const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 </script>
 
@@ -47,6 +67,9 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
     <p class="text-sm text-muted-foreground">
       Saved widths:
       <code>{{ JSON.stringify(saved) }}</code>
+      <Button variant="outline" size="xs" class="ml-2" @click="fitAll">
+        Fit all to content
+      </Button>
       <Button variant="outline" size="xs" class="ml-2" @click="saved = {}">
         Reset
       </Button>
@@ -57,6 +80,7 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
       class="[&_.qt-table]:w-max [&_.qt-table]:min-w-full [&_.qt-table]:table-fixed"
     >
       <QueryTable
+        ref="table"
         v-model:query="query"
         :columns="columns"
         :rows="result.rows"
