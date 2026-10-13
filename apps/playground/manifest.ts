@@ -266,6 +266,17 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-48', 'C-49', 'C-50', 'C-99']
   },
   {
+    id: 'column-auto-width',
+    title: 'Automatic column widths',
+    summary:
+      '`autoWidth` draws every column without a width at the width its content needs, measured after each page arrives and never written back. Within one query the widths only grow; `autoWidthMax` caps a long text column.',
+    example: 'ColumnAutoWidth',
+    api: {
+      props: ['autoWidth', 'autoWidthMax']
+    },
+    rules: ['C-100']
+  },
+  {
     id: 'header-slot',
     title: 'Header slot',
     summary:

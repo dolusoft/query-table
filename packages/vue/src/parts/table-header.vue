@@ -31,6 +31,8 @@ const props = defineProps<{
   hasPinned: boolean
   /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
   offsets: Readonly<Record<string, number>>
+  /** Automatic width of each column without a width, by `field` (C-100). */
+  autoWidths: Readonly<Record<string, number>>
   /**
    * The header slots the consumer gave (`header-<field>`, `filter-datetime`,
    * `filter-menu`), space-separated. The slots below are always passed so
@@ -106,13 +108,22 @@ const utilityAttrs = (utility: Utility) =>
   pinAttrs(props.hasPinned ? 'left' : false, props.offsets[utilityKey(utility)])
 
 // The only inline styles of a header cell: the column width (or the drag
-// preview, C-49) and the pin offset (C-47, C-71), with `data-pinned`.
+// preview, C-49, or the automatic width, C-100) and the pin offset (C-47,
+// C-71), with `data-pinned`.
+const widthOf = (column: Column) => {
+  if (column.width) {
+    return column.width
+  }
+  const auto = props.autoWidths[column.field]
+  return auto === undefined ? undefined : `${auto}px`
+}
+
 const cellAttrs = (column: Column) => {
   const preview = resize.preview.value
   return pinAttrs(
     sideOf(column),
     props.offsets[column.field],
-    preview?.field === column.field ? `${preview.width}px` : column.width
+    preview?.field === column.field ? `${preview.width}px` : widthOf(column)
   )
 }
 
