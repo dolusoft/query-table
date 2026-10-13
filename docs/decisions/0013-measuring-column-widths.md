@@ -1,6 +1,6 @@
 # 0013 Measuring column widths (3.6)
 
-Status: Proposed (2026-10-09), for a decision by Zahid ([query-table#108](https://github.com/dolusoft/query-table/issues/108) S1). Amends P5; the rest of the principles stand.
+Status: Accepted (2026-10-13), decided by Zahid ([query-table#108](https://github.com/dolusoft/query-table/issues/108) S1; proposed 2026-10-09). Amends P5; the rest of the principles stand.
 
 ## Context
 
