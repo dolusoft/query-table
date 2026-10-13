@@ -125,7 +125,7 @@ const ADDED_AFTER_BASELINE = [
   // 3.2 additions (C-83 to C-91, ADR 0010): virtual rows and infinite
   // scroll. With both off the table is the one of 3.1; every other test
   // compares that.
-  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-87 C-89 exposes scrollToIndex and loadMore too, and nothing else',
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-87 C-89 exposes scrollToIndex and loadMore too',
   'tests/contract/unit/infinite.spec.ts > C-89 Load-more slot and method [own]',
   'tests/contract/unit/infinite.spec.ts > C-90 End of an infinite list [own]',
   'tests/contract/unit/infinite.spec.ts > C-88 Infinite scroll trigger [own]',
@@ -157,7 +157,12 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/row-expandable.spec.ts > C-98 Rows that cannot expand [tanstack] [own]',
   'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-97 the row kind is on its row, as the DOM contract lists it [own]',
   'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-97 a virtual body writes the kind on the rows it draws, a pinned row included [own]',
-  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-98 a virtual body draws no expand button on a row that cannot expand, a pinned one included [tanstack] [own]'
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-98 a virtual body draws no expand button on a row that cannot expand, a pinned one included [tanstack] [own]',
+  // 3.6 addition (C-99, ADR 0013): measuring column widths, and the autofit
+  // of C-50 on slot content that a 3.5 build measures at its cell's width.
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-99 exposes measureColumnWidths too, and nothing else',
+  'tests/contract/browser/measure-widths.browser.spec.ts > C-99 Measuring column widths [own]',
+  'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
