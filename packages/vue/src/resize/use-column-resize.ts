@@ -21,7 +21,7 @@ export interface ColumnResizeOptions {
  * types say `number`, but a loosely typed consumer can pass `''`, `NaN`,
  * `0` or a negative: those count as unset instead of clamping to 0.
  */
-const limitOf = (value: unknown) =>
+export const limitOf = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value) && value > 0
     ? value
     : undefined

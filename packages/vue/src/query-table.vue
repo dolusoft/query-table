@@ -31,6 +31,7 @@ import { utilityKey, type Utility } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
 import { useColumnReorder } from './reorder/use-column-reorder'
 import { measureColumnWidths } from './resize/measure-widths'
+import { useAutoWidth } from './resize/use-auto-width'
 import { useColumnResize } from './resize/use-column-resize'
 import { useQueryTable } from './use-query-table'
 import { useLoadMore } from './virtual/use-load-more'
@@ -50,6 +51,8 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   sortable: false,
   filterable: false,
   resizable: false,
+  autoWidth: false,
+  autoWidthMax: undefined,
   reorderable: false,
   filterDebounce: 100,
   hasSubtable: false,
@@ -166,6 +169,18 @@ const resize = useColumnResize({
       emit('update:columns', next, 'resize')
     }
   }
+})
+
+// Automatic widths of the columns without a width (C-100): drawn on the
+// header cells, never emitted.
+const autoWidth = useAutoWidth({
+  enabled: () => props.autoWidth,
+  max: () => props.autoWidthMax,
+  table: tableEl,
+  columns: () => visibleColumns.value,
+  rows: () => props.rows,
+  query: () => props.query,
+  rowsUpdate: () => props.rowsUpdate
 })
 
 // The virtual body (C-83 to C-87) and infinite scroll (C-88 to C-90).
@@ -333,6 +348,7 @@ defineExpose(exposed)
             :utilities="utilities"
             :has-pinned="hasPinned"
             :offsets="offsets"
+            :auto-widths="autoWidth.widths.value"
             :slot-names="headerSlotNames()"
             :aria-rowindex="rowWindow.enabled() ? 1 : undefined"
           >
