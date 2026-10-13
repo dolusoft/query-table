@@ -172,6 +172,14 @@ export interface FooterRow {
     }>;
 }
 
+// @public
+export interface HeaderContextMenuPayload {
+    column: Column;
+    columnIndex: number;
+    // (undocumented)
+    event: MouseEvent;
+}
+
 // @public (undocumented)
 export interface HeaderSlotProps {
     // (undocumented)
@@ -235,13 +243,13 @@ export { QueryChangeReason }
 
 // @public
 export interface QueryTableExpansion<T extends object> {
+    canExpand: (row: T, index: number) => boolean;
     // (undocumented)
     collapseAll: () => void;
     expandAll: () => void;
     // (undocumented)
     isExpanded: (row: T, index: number) => boolean;
     keyOf: (row: T, index: number) => string | number;
-    // (undocumented)
     toggle: (row: T, index: number) => void;
 }
 
@@ -376,6 +384,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     'update:selection': [selection: RowSelection];
     rowRightPanelClick: [row: T];
     cellContextMenu: [payload: CellContextMenuPayload<T>];
+    headerContextMenu: [payload: HeaderContextMenuPayload];
     columnResize: [payload: ColumnResizePayload];
     'update:columns': [columns: Column[], reason: ColumnChangeReason];
     'update:rowPinning': [rowPinning: RowPinning];
@@ -415,7 +424,9 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     query: Q;
     reorderable?: boolean;
     resizable?: boolean;
+    rowExpandable?: (row: T, index: number) => boolean;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
+    rowKind?: (row: T, index: number) => string | null | undefined;
     rowPinning?: RowPinning;
     rows?: T[];
     rowsUpdate?: RowsUpdate;
@@ -466,6 +477,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     onSelectionChange?: (selection: RowSelection) => void;
     pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>;
     query: MaybeRefOrGetter<Q>;
+    rowExpandable?: MaybeRefOrGetter<TableProps<T>['rowExpandable']>;
     rowKey?: MaybeRefOrGetter<RowKey<T>>;
     rowPinning?: MaybeRefOrGetter<RowPinning | undefined>;
     rows?: MaybeRefOrGetter<T[] | undefined>;

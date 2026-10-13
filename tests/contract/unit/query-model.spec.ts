@@ -216,8 +216,8 @@ describe('C-33 Exposed surface', () => {
     )
   })
 
-  // 3.4 (C-96): not in a 3.3 baseline (`ADDED_AFTER_BASELINE`).
-  it('C-96 exposes measureColumnWidths too, and nothing else', () => {
+  // 3.6 (C-99): not in a 3.5 baseline (`ADDED_AFTER_BASELINE`).
+  it('C-99 exposes measureColumnWidths too, and nothing else', () => {
     const m = mountIt()
     const exposed = (
       m.wrapper.vm.$ as unknown as { exposed: Record<string, unknown> }

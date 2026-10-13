@@ -1,4 +1,4 @@
-# 0013 Measuring column widths (3.4)
+# 0013 Measuring column widths (3.6)
 
 Status: Proposed (2026-10-09), for a decision by Zahid ([query-table#108](https://github.com/dolusoft/query-table/issues/108) S1). Amends P5; the rest of the principles stand.
 
@@ -12,9 +12,9 @@ The only way to get the browser's max-content width of a column is to let it lay
 
 ## Decision
 
-- **A measure on the template ref (K34-1).** `measureColumnWidths(fields?)` returns, by `field`, the max-content width of each drawn column: header label and the cells of the drawn data rows, padding and border included, rounded up, not clamped. The filter row, the resize handle, the footer and the non-data body rows do not count. It emits nothing and keeps no width (P15): which width to write back as `Column.width`, and when, is the consumer's. It is an action that state cannot express (P10), like `scrollToIndex`. New rule C-96.
-- **Autofit uses it (K34-2).** C-50's autofit width is `measureColumnWidths` for that column, clamped; a column that measures nothing (the table not displayed) emits nothing. The `Range` measure goes.
-- **A measuring exception to P5 (K34-3).** For that one synchronous read the table sets, with `!important`, `table-layout: auto`, `width: max-content` and `min-width: 0` on the table, `width: auto` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before returning. The browser lays the table out for the read and paints nothing in between: no skin, animation or observer sees the declarations. C-31 names the exception; the C-96 test asserts that every `style` attribute and the table's markup are unchanged after the call.
+- **A measure on the template ref (K36-1).** `measureColumnWidths(fields?)` returns, by `field`, the max-content width of each drawn column: header label and the cells of the drawn data rows, padding and border included, rounded up, not clamped. The filter row, the resize handle, the footer and the non-data body rows do not count. It emits nothing and keeps no width (P15): which width to write back as `Column.width`, and when, is the consumer's. It is an action that state cannot express (P10), like `scrollToIndex`. New rule C-99.
+- **Autofit uses it (K36-2).** C-50's autofit width is `measureColumnWidths` for that column, clamped; a column that measures nothing (the table not displayed) emits nothing. The `Range` measure goes.
+- **A measuring exception to P5 (K36-3).** For that one synchronous read the table sets, with `!important`, `table-layout: auto`, `width: max-content` and `min-width: 0` on the table, `width: auto` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before returning. The browser lays the table out for the read and paints nothing in between: no skin, animation or observer sees the declarations. C-31 names the exception; the C-99 test asserts that every `style` attribute and the table's markup are unchanged after the call.
 
 ## Options considered
 
@@ -25,8 +25,8 @@ The only way to get the browser's max-content width of a column is to let it lay
 
 ## Consequences
 
-- C-31, C-33 and C-50 change, C-96 is new; `QueryTableExpose` gains one member (`contract/api.json`, `CONTRACT.md`).
-- P5 lists the exception next to the inline styles and its `Check:` line names the C-96 test.
+- C-31, C-33 and C-50 change, C-99 is new; `QueryTableExpose` gains one member (`contract/api.json`, `CONTRACT.md`).
+- P5 lists the exception next to the inline styles and its `Check:` line names the C-99 test.
 - The measure forces one synchronous layout per call; a consumer that refits on every change of `rows` pays one layout per change. Autofit pays it once per Enter or double click, as the `Range` measure did.
 - With `virtual` only the drawn rows count, as for autofit before.
 - A consumer whose skin selects `[style]` or watches the table with a `MutationObserver` on `style` sees the attribute change and change back within one task. Neither is a listed hook (P6).

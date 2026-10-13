@@ -171,7 +171,7 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     if (th && (sign || key === 'Enter' || event.type === 'dblclick')) {
       event.preventDefault()
       const from = th.getBoundingClientRect().width
-      // Autofit is the width `measureColumnWidths` gives (C-50, C-96); a
+      // Autofit is the width `measureColumnWidths` gives (C-50, C-99); a
       // column that measures nothing (the table not displayed) stays.
       const to = sign
         ? Math.round(from) + sign * (event.shiftKey ? 50 : 10)

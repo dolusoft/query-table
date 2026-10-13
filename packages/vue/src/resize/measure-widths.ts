@@ -1,4 +1,4 @@
-// The width each drawn column needs for its content (C-96, ADR 0013).
+// The width each drawn column needs for its content (C-99, ADR 0013).
 
 /**
  * What must not count, inside the table: the filter row and the resize handle

@@ -55,7 +55,10 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     table.querySelectorAll(':scope > thead > tr > *')
 
   const measure = (table: HTMLTableElement) => {
-    tableWidth.value = table.getBoundingClientRect().width
+    // `widths` and `tableWidth` are whole pixels: they are reported (resize
+    // handle, `aria-valuenow`) and compared, and sub-pixel noise from live
+    // content would rewrite them for nothing.
+    tableWidth.value = Math.round(table.getBoundingClientRect().width)
     const cells = options.cells()
     const next: Record<string, number> = {}
     const nextOffsets: Record<string, number> = {}
@@ -64,13 +67,17 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     headerCells(table).forEach((cell, index) => {
       const drawn = cells[index]
       if (drawn) {
-        const width = cell.getBoundingClientRect().width
-        next[drawn.key] = width
+        const exact = cell.getBoundingClientRect().width
+        next[drawn.key] = Math.round(exact)
+        // The offsets add up the exact widths. A cell is drawn at a fractional
+        // width (a percentage, a collapsed border), so summing rounded widths
+        // drifts: a pinned cell then stops short of its neighbour (a gap the
+        // scrolled content shows through) or over it.
         if (drawn.side === 'left') {
           nextOffsets[drawn.key] = left
-          left += width
+          left += exact
         } else if (drawn.side === 'right') {
-          rights.push([drawn.key, width])
+          rights.push([drawn.key, exact])
         }
       }
     })

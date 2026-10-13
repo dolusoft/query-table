@@ -11,7 +11,7 @@ import QueryTable, {
 
 import { el, makeQuery } from '../../support/fixtures'
 
-// Measuring column widths (C-96) and the autofit that uses it (C-50), with
+// Measuring column widths (C-99) and the autofit that uses it (C-50), with
 // the slot content a product draws: a flex header (label, then a button
 // pushed to the end) and cells that are a block box. Both stretch to their
 // cell, so a measure of the drawn box returns the cell's width, whatever the
@@ -165,7 +165,7 @@ const fitted = (widths: Record<string, number>) =>
     width: `${widths[column.field]}px`
   }))
 
-describe('C-96 Measuring column widths [own]', () => {
+describe('C-99 Measuring column widths [own]', () => {
   test('measures the content of block and flex slots, not the width of their cells', async () => {
     const { api, rerender } = await mount()
     const widths = api.table().measureColumnWidths()

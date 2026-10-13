@@ -151,10 +151,17 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/flash.browser.spec.ts > C-94 Change flash: the skin [own]',
   'tests/contract/browser/flash.browser.spec.ts > C-95 Change flash off and DOM contract of 3.3 [own]',
   'tests/contract/browser/dom-contract-3-3.browser.spec.ts > C-95 the DOM with the change flash matches the DOM contract',
-  // 3.4 addition (C-96, ADR 0013): measuring column widths, and the autofit
-  // of C-50 on slot content that a 3.3 build measures at its cell's width.
-  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-96 exposes measureColumnWidths too, and nothing else',
-  'tests/contract/browser/measure-widths.browser.spec.ts > C-96 Measuring column widths [own]',
+  // 3.5 additions (C-97, C-98): `rowKind` and `rowExpandable`, which a 3.4
+  // build does not have. Without them the table is the one of 3.4.
+  'tests/contract/unit/row-kind.spec.ts > C-97 Row kind [own]',
+  'tests/contract/unit/row-expandable.spec.ts > C-98 Rows that cannot expand [tanstack] [own]',
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-97 the row kind is on its row, as the DOM contract lists it [own]',
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-97 a virtual body writes the kind on the rows it draws, a pinned row included [own]',
+  'tests/contract/browser/dom-contract-row-kind.browser.spec.ts > C-98 a virtual body draws no expand button on a row that cannot expand, a pinned one included [tanstack] [own]',
+  // 3.6 addition (C-99, ADR 0013): measuring column widths, and the autofit
+  // of C-50 on slot content that a 3.5 build measures at its cell's width.
+  'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-99 exposes measureColumnWidths too, and nothing else',
+  'tests/contract/browser/measure-widths.browser.spec.ts > C-99 Measuring column widths [own]',
   'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]'
 ]
 const isAdded = name =>

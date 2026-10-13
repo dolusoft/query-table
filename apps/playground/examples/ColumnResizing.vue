@@ -20,7 +20,7 @@ import { currentDataset, listColumns, useFakeServer } from '../scenarios'
 // consumer would save them with the user's view) and writes them back to
 // `Column.width`. ID cannot be resized; the count column stays between 60
 // and 160 px. "Fit all to content" asks the table for the width each column
-// needs (`measureColumnWidths`, C-96) and stores it the same way, within the
+// needs (`measureColumnWidths`, C-99) and stores it the same way, within the
 // page's own limits: the table measures, the page decides what to keep.
 //
 // `table-layout: fixed` (this page's utilities on the wrapper) makes the header width

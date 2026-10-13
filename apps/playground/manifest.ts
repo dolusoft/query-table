@@ -150,6 +150,17 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-26']
   },
   {
+    id: 'row-kind',
+    title: 'Row kinds & rows that cannot expand',
+    summary:
+      'A grouped report with an "Others" row: `rowKind` writes `data-row-kind` on a row so the page CSS gives it its look, and `rowExpandable` keeps it closed, with no expand button.',
+    example: 'RowKind',
+    api: {
+      props: ['rowKind', 'rowExpandable', 'hasSubtable']
+    },
+    rules: ['C-97', 'C-98']
+  },
+  {
     id: 'row-pinning',
     title: 'Row pinning',
     summary:
@@ -252,7 +263,7 @@ export const pages: PlaygroundPage[] = [
       exposed: ['measureColumnWidths'],
       types: ['ColumnResizePayload']
     },
-    rules: ['C-48', 'C-49', 'C-50', 'C-96']
+    rules: ['C-48', 'C-49', 'C-50', 'C-99']
   },
   {
     id: 'header-slot',
@@ -262,6 +273,18 @@ export const pages: PlaygroundPage[] = [
     example: 'HeaderSlot',
     api: { slots: ['header-<field>'], types: ['HeaderSlotProps'] },
     rules: ['C-51']
+  },
+  {
+    id: 'header-context-menu',
+    title: 'Header context menu',
+    summary:
+      'Right-click a data-column header to receive `headerContextMenu`; the filter row and utility headers keep the browser menu.',
+    example: 'HeaderContextMenu',
+    api: {
+      emits: ['headerContextMenu'],
+      types: ['HeaderContextMenuPayload']
+    },
+    rules: ['C-96']
   },
   {
     id: 'custom-cells',

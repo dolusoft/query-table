@@ -276,7 +276,7 @@ describe('C-50 Keyboard and autofit', () => {
 
   it('fits the column to its widest content on Enter and on a double click', async () => {
     // The header cell is 100 px as drawn, and `content` px while the table
-    // is laid out for a measure (C-96): the width its content needs.
+    // is laid out for a measure (C-99): the width its content needs.
     let content = 123.4
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
       function (this: HTMLElement) {

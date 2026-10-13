@@ -2,17 +2,17 @@
 # protection ("Require review from Code Owners") on `main` and `next`, they
 # keep the boundaries of the package from moving without a decision.
 
-/PRINCIPLES.md              @zahidzorbaz
-/docs/decisions/            @zahidzorbaz
-/contract/rules.md          @zahidzorbaz
-/eslint.config.js           @zahidzorbaz
-/scripts/*budget*           @zahidzorbaz
-/scripts/check-deps.mjs     @zahidzorbaz
-/scripts/eslint-layers.mjs  @zahidzorbaz
-/.github/                   @zahidzorbaz
-/AGENTS.md                  @zahidzorbaz
-/CLAUDE.md                  @zahidzorbaz
-/scripts/equivalence.mjs    @zahidzorbaz
-/tests/repo/                @zahidzorbaz
-/knip.json                  @zahidzorbaz
-/vitest.config.ts           @zahidzorbaz
+/PRINCIPLES.md              @zahidzorbaz @ozerenes @batuhanozhan
+/docs/decisions/            @zahidzorbaz @ozerenes @batuhanozhan
+/contract/rules.md          @zahidzorbaz @ozerenes @batuhanozhan
+/eslint.config.js           @zahidzorbaz @ozerenes @batuhanozhan
+/scripts/*budget*           @zahidzorbaz @ozerenes @batuhanozhan
+/scripts/check-deps.mjs     @zahidzorbaz @ozerenes @batuhanozhan
+/scripts/eslint-layers.mjs  @zahidzorbaz @ozerenes @batuhanozhan
+/.github/                   @zahidzorbaz @ozerenes @batuhanozhan
+/AGENTS.md                  @zahidzorbaz @ozerenes @batuhanozhan
+/CLAUDE.md                  @zahidzorbaz @ozerenes @batuhanozhan
+/scripts/equivalence.mjs    @zahidzorbaz @ozerenes @batuhanozhan
+/tests/repo/                @zahidzorbaz @ozerenes @batuhanozhan
+/knip.json                  @zahidzorbaz @ozerenes @batuhanozhan
+/vitest.config.ts           @zahidzorbaz @ozerenes @batuhanozhan

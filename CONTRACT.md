@@ -27,6 +27,8 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. A row can start expanded with its `isExpanded` field (see `rows`). Defaults to `false`. |
+| `rowExpandable` | `((row: T, index: number) => boolean)` |  | `undefined` | Which rows can expand, with `hasSubtable` (C-98): called with the row and its index in `rows`. A row it returns `false` for gets an empty expand cell (no button), never draws the `subtable` slot, is skipped by `expandAll()` and ignores its `isExpanded` field. Absent, every row can expand. |
+| `rowKind` | `((row: T, index: number) => string \| null \| undefined)` |  | `undefined` | A kind for a row, written as `data-row-kind` on its `tr` (C-97): called with the row and its index in `rows`. Data, not styling: the table draws nothing by it, and the consumer's CSS selects `tr[data-row-kind="total"]`. An empty string, `null` or `undefined` writes no attribute. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
 | `labels` | `Partial<TableLabels>` |  | `undefined` | Text the table writes for people: accessible names and the options of a bool filter. Give only the entries you want to change; the rest keep their English defaults. |
@@ -43,6 +45,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `update:selection` | `[selection: RowSelection]` | The user changed the selection: a new object holding the `true` entries (C-59). Apply it with `v-model:selection`. |
 | `rowRightPanelClick` | `[row: T]` | The right-panel button of a row was clicked. |
 | `cellContextMenu` | `[payload: CellContextMenuPayload<T>]` | A cell was right-clicked. With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. |
+| `headerContextMenu` | `[payload: HeaderContextMenuPayload]` | A data-column header was right-clicked (C-96). With a listener the browser menu is suppressed; without one the table emits nothing and keeps it. The filter row and utility headers keep the browser menu. |
 | `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
 | `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
 | `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
@@ -72,7 +75,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `flushPendingFilters` | `() => void` | Apply typed-but-not-yet-applied filter text now, in one `update:query` that has been emitted when the call returns. |
 | `scrollToIndex` | `(index: number, options?: ScrollToIndexOptions) => void` | Scroll the row with this index in `rows` into view (C-87). Emits nothing; an index outside `rows` does nothing. |
 | `loadMore` | `() => void` | With `infinite`: ask for the next page now (C-89), as a retry after an error. Nothing while `loading` or when there is no next page. |
-| `measureColumnWidths` | `(fields?: readonly string[]) => Record<string, number>` | The width each drawn column needs for its content (C-96), by `field`: the header label and the cells of the drawn data rows, padding and border included, in whole pixels rounded up, as the browser lays them out without widths. The filter row and the resize handle do not count. Not clamped to `minWidth` and `maxWidth`. Only `fields`, when given; a hidden column, or a table that is not displayed, is left out. Emits nothing and keeps no width: writing one back as `Column.width` is the consumer's. |
+| `measureColumnWidths` | `(fields?: readonly string[]) => Record<string, number>` | The width each drawn column needs for its content (C-99), by `field`: the header label and the cells of the drawn data rows, padding and border included, in whole pixels rounded up, as the browser lays them out without widths. The filter row and the resize handle do not count. Not clamped to `minWidth` and `maxWidth`. Only `fields`, when given; a hidden column, or a table that is not displayed, is left out. Emits nothing and keeps no width: writing one back as `Column.width` is the consumer's. |
 
 ### Functions
 
@@ -80,7 +83,7 @@ Exported from the package entry point next to the component.
 
 | Name | Signature | Description |
 | --- | --- | --- |
-| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number; `2.5` gives `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
+| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule with a number value; text that is not a finite number gives `[]`. - `integer`: the same, but only a whole number in the safe range; `2.5` and `9007199254740993` give `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
 | `useQueryTable` | `(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>` | The state and actions of a server-side table: TanStack Table with `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed with the scope (C-62). |
 
 ### Local evaluation (`@dolusoft/query-table/local`)
@@ -315,6 +318,22 @@ export interface TableProps<
    * `rows`). Defaults to `false`.
    */
   hasSubtable?: boolean
+  /**
+   * Which rows can expand, with `hasSubtable` (C-98): called with the row and
+   * its index in `rows`. A row it returns `false` for gets an empty expand
+   * cell (no button), never draws the `subtable` slot, is skipped by
+   * `expandAll()` and ignores its `isExpanded` field. Absent, every row can
+   * expand.
+   */
+  rowExpandable?: (row: T, index: number) => boolean
+  /**
+   * A kind for a row, written as `data-row-kind` on its `tr` (C-97): called
+   * with the row and its index in `rows`. Data, not styling: the table draws
+   * nothing by it, and the consumer's CSS selects
+   * `tr[data-row-kind="total"]`. An empty string, `null` or `undefined`
+   * writes no attribute.
+   */
+  rowKind?: (row: T, index: number) => string | null | undefined
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
   /**
@@ -459,6 +478,15 @@ export interface CellContextMenuPayload<T> {
   columnIndex: number
 }
 
+/** Payload of the `headerContextMenu` event (C-96). */
+export interface HeaderContextMenuPayload {
+  event: MouseEvent
+  /** The column definition the consumer passed. */
+  column: Column
+  /** Index into `columns`, hidden columns included. */
+  columnIndex: number
+}
+
 /** Payload of the `columnResize` event. */
 export interface ColumnResizePayload {
   /** `field` of the resized column. */
@@ -512,6 +540,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * suppressed; without one the table emits nothing and keeps it.
    */
   cellContextMenu: [payload: CellContextMenuPayload<T>]
+  /**
+   * A data-column header was right-clicked (C-96). With a listener the
+   * browser menu is suppressed; without one the table emits nothing and
+   * keeps it. The filter row and utility headers keep the browser menu.
+   */
+  headerContextMenu: [payload: HeaderContextMenuPayload]
   /**
    * The user resized a column: on release of a drag, on an arrow key or on
    * autofit. Write `width` back to the column (`Column.width`), or the column
@@ -718,7 +752,7 @@ export interface QueryTableExpose {
    */
   loadMore(): void
   /**
-   * The width each drawn column needs for its content (C-96), by `field`:
+   * The width each drawn column needs for its content (C-99), by `field`:
    * the header label and the cells of the drawn data rows, padding and
    * border included, in whole pixels rounded up, as the browser lays them
    * out without widths. The filter row and the resize handle do not count.
@@ -952,7 +986,7 @@ Source: own
 
 #### C-16 Value types
 
-Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`); `2.0` is the whole number `2`.
+Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`) or a whole number beyond the safe range, ±(2⁵³ − 1), which a JavaScript number cannot hold exactly (`9007199254740993` would become `9007199254740992`); `2.0` is the whole number `2`.
 
 Source: own
 
@@ -1008,7 +1042,7 @@ The `qt-pagination` block is drawn when the `pagination` slot is given and there
 
 #### C-26 Row expansion
 
-With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. With `virtual` (C-83) a row that leaves the drawn window unmounts the content of its `subtable` slot; its expansion state stays, by key. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row; the row needs no `id`.
+With `hasSubtable` a button per row shows the `subtable` slot under it. The state is keyed by `rowKey`, or by row index when there is none, and then resets when `rows` changes. With `rowKey`, only keys of the rows currently in `rows` are kept: a row that leaves `rows` (another page) and comes back is closed. The same key identifies the row in the DOM, so with `rowKey` a row keeps the state of the components in its `subtable` slot when `rows` reorder; without it rows are matched by index. With `virtual` (C-83) a row that leaves the drawn window unmounts the content of its `subtable` slot; its expansion state stays, by key. A string `rowKey` is a direct property read (`row[rowKey]`), not a dotted path: use the function form for a nested value. Keys must be unique among the rows. A row may carry an optional boolean `isExpanded` field (documented on `rows` in `TableProps`) that seeds the state every time `rows` changes, on mount included: `true` opens the row, `false` closes it, and a row without the field, or with a value that is not a boolean, keeps its state. The table never writes the field and never reads it again until `rows` changes; the user's toggles stand in between. The seed applies only with `hasSubtable`, and is read after the pruning above, so a row that leaves `rows` and comes back with `isExpanded: true` is open. `collapseAll()` closes every row and `expandAll()` opens the rows given (C-55). The button works for every row that can expand (every row without `rowExpandable`, C-98); the row needs no `id`.
 
 #### C-27 Cell slots
 
@@ -1028,15 +1062,15 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 #### C-31 No styling
 
-The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-96) is the one moment the table writes other declarations: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin.
+The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-99) is the one moment the table writes other declarations: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin.
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-row-kind` on a body row with a kind (C-97); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
-A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54), `flushPendingFilters` (C-13), `scrollToIndex` (C-87), `loadMore` (C-89) and `measureColumnWidths` (C-96) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed, and `loadMore`, which asks for the next page.
+A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54), `flushPendingFilters` (C-13), `scrollToIndex` (C-87), `loadMore` (C-89) and `measureColumnWidths` (C-99) and nothing else. Each one is an action that state cannot express (P10): none of them emits `update:query`, except `flushPendingFilters`, which applies what was typed, and `loadMore`, which asks for the next page.
 
 #### C-34 Filter menu slot
 
@@ -1064,7 +1098,7 @@ The empty state (`data-empty` on the root, the `empty` slot in a `tr.qt-empty-ro
 
 #### C-40 DOM contract
 
-Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72), a 3.2 feature (checked by C-91) or the change flash of 3.3 (`C-94`, checked by C-95), and `data-type` is checked by C-82. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
+Every class the table renders and every `data-*` attribute, `aria-sort`, `aria-rowcount` and `aria-rowindex` it sets is listed in the DOM contract below, and each listed entry is rendered by some state of the table; the entries marked `addedBy` in the list need the `selection` prop (`C-64`, checked by C-66), a 3.1 feature (checked by C-72), a 3.2 feature (checked by C-91) or the change flash of 3.3 (`C-94`, checked by C-95), `data-type` is checked by C-82 and `data-row-kind` by C-97. Plain HTML and ARIA attributes (`type`, `scope`, `colspan`, `disabled`, `aria-label`, `aria-expanded`) are not part of the list: a skin must not select them.
 
 #### C-41 Skin selectors
 
@@ -1092,7 +1126,7 @@ A visible column with `pinned: 'left'` is drawn before the columns that are not 
 
 #### C-47 Pin offsets
 
-Every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, every utility cell (the footer's cell that spans them included) carries `data-pinned` and the inline custom property `--qt-pin-left`: the sum, in pixels, of the rendered widths of the pinned header cells before it, so the first is `0px`. The widths are measured, not read from `Column.width`. They are measured again, in one batch after layout, whenever a header cell changes size (a resize, a font that loads, a container that narrows) and after the drawn columns change (order, visibility, pinning on either side, utilities). The table measures nothing while no column is pinned (either side) or resizable, and stops on unmount. It writes no `position`, `left`, `z-index` or background: with `position: sticky; left: var(--qt-pin-left)` in the consumer's CSS the pinned cells of header, body and footer stay in line while the table scrolls sideways.
+Every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, every utility cell (the footer's cell that spans them included) carries `data-pinned` and the inline custom property `--qt-pin-left`: the sum, in pixels, of the rendered widths of the pinned header cells before it, so the first is `0px`. The sum is not rounded: a cell drawn at a fractional width (a percentage, a collapsed border) moves the cells after it by that fraction, so neighbouring pinned cells meet with no gap or overlap. The widths are measured, not read from `Column.width`. They are measured again, in one batch after layout, whenever a header cell changes size (a resize, a font that loads, a container that narrows) and after the drawn columns change (order, visibility, pinning on either side, utilities). The table measures nothing while no column is pinned (either side) or resizable, and stops on unmount. It writes no `position`, `left`, `z-index` or background: with `position: sticky; left: var(--qt-pin-left)` in the consumer's CSS the pinned cells of header, body and footer stay in line while the table scrolls sideways.
 
 #### C-48 Resize handle
 
@@ -1104,7 +1138,7 @@ Pressing the primary button on a handle focuses it and captures the pointer. Whi
 
 #### C-50 Keyboard and autofit
 
-On a focused handle, ArrowRight and ArrowLeft emit `columnResize` with the rendered width plus or minus 10 pixels, 50 with Shift, clamped as in C-49; on a right-pinned column the two keys swap (C-71). Enter and a double click emit the autofit width: the column's width as `measureColumnWidths` measures it (C-96), the header label and its cells in the rows drawn (not the server's other rows), with the cell's padding and border, rounded up and clamped. A width equal to the rendered one emits nothing, and so does a column that measures nothing (the table not displayed). Enter departs from the WAI-ARIA window splitter pattern, where Enter collapses the pane and restores it: a column has no collapsed state to restore (hiding is `Column.hide`, the consumer's), and fitting to content is what a double click on a column edge does in spreadsheets, so Enter is its keyboard equivalent. The table recommends `table-layout: fixed` with a table width (for example `width: max-content; min-width: 100%`): with the automatic layout the browser may draw a column wider than its header width.
+On a focused handle, ArrowRight and ArrowLeft emit `columnResize` with the rendered width plus or minus 10 pixels, 50 with Shift, clamped as in C-49; on a right-pinned column the two keys swap (C-71). Enter and a double click emit the autofit width: the column's width as `measureColumnWidths` measures it (C-99), the header label and its cells in the rows drawn (not the server's other rows), with the cell's padding and border, rounded up and clamped. A width equal to the rendered one emits nothing, and so does a column that measures nothing (the table not displayed). Enter departs from the WAI-ARIA window splitter pattern, where Enter collapses the pane and restores it: a column has no collapsed state to restore (hiding is `Column.hide`, the consumer's), and fitting to content is what a double click on a column edge does in spreadsheets, so Enter is its keyboard equivalent. The table recommends `table-layout: fixed` with a table width (for example `width: max-content; min-width: 100%`): with the automatic layout the browser may draw a column wider than its header width.
 
 #### C-51 Header slot
 
@@ -1116,7 +1150,7 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 #### C-53 Filter parser
 
-`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
+`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number in the safe range, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
 
 Source: own
 
@@ -1126,7 +1160,7 @@ Source: own
 
 #### C-55 expandAll
 
-`expandAll()` opens the rows currently in `rows`, by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
+`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
 
 #### C-56 Cursor paging
 
@@ -1220,7 +1254,7 @@ Source: tanstack, own
 
 #### C-71 Right pinning
 
-A visible column with `pinned: 'right'` is drawn after every other column, in the header, the body and the footer, in the order of `columns` (C-69). Every cell of it carries `data-pinned="right"` and the inline custom property `--qt-pin-right`: the sum, in pixels, of the rendered widths of the right-pinned header cells after it, so the last is `0px`. The widths are measured as in C-47, by the same observer. The utility cells are pinned only while some visible column is pinned to the left; with only right-pinned columns they stay in the flow. `control.pin('right')` pins a column (C-70). With `position: sticky; right: var(--qt-pin-right)` in the consumer's CSS the right-pinned cells stay at the right edge while the table scrolls sideways; one rule `[data-pinned] { left: var(--qt-pin-left); right: var(--qt-pin-right) }` serves both sides, since an unset custom property leaves the other side `auto`. A right-pinned column stays at the right edge, so it grows to the left: its resize handle (C-48) stands for its left edge. Moving the pointer to the left widens it (C-49), ArrowLeft widens and ArrowRight narrows it (C-50), as a window splitter moves. The handle stays the last child of the header cell; the consumer's CSS draws it over the cell's left edge. An LTR layout is assumed.
+A visible column with `pinned: 'right'` is drawn after every other column, in the header, the body and the footer, in the order of `columns` (C-69). Every cell of it carries `data-pinned="right"` and the inline custom property `--qt-pin-right`: the sum, in pixels, of the rendered widths of the right-pinned header cells after it, so the last is `0px`. The widths are measured as in C-47, by the same observer, and the sum is not rounded either. The utility cells are pinned only while some visible column is pinned to the left; with only right-pinned columns they stay in the flow. `control.pin('right')` pins a column (C-70). With `position: sticky; right: var(--qt-pin-right)` in the consumer's CSS the right-pinned cells stay at the right edge while the table scrolls sideways; one rule `[data-pinned] { left: var(--qt-pin-left); right: var(--qt-pin-right) }` serves both sides, since an unset custom property leaves the other side `auto`. A right-pinned column stays at the right edge, so it grows to the left: its resize handle (C-48) stands for its left edge. Moving the pointer to the left widens it (C-49), ArrowLeft widens and ArrowRight narrows it (C-50), as a window splitter moves. The handle stays the last child of the header cell; the consumer's CSS draws it over the cell's left edge. An LTR layout is assumed.
 
 Source: tanstack, own
 
@@ -1370,7 +1404,25 @@ With `flash` absent or `false` the table sets up one watcher of `flash` and noth
 
 Source: own
 
-#### C-96 Measuring column widths
+#### C-96 Header context menu
+
+When the consumer listens to `headerContextMenu` (with or without the `.once` modifier, which Vue passes as `onHeaderContextMenuOnce`), right-clicking a data-column header emits it with `event`, `column` and `columnIndex` (an index into `columns`), and suppresses the browser menu. Without a listener the table emits nothing and the browser menu opens. One listener on the `thead` serves every header cell, so `event.currentTarget` is the `thead`. Only a header cell with `data-field` counts; the utility headers (clear-all, selection) emit nothing and keep the browser menu. A right-click inside the filter row (`.qt-filter`) emits nothing and keeps the browser menu, so paste and spell-check stay. The event does not replace `header-<field>` (C-51): that slot still draws the label.
+
+Source: own
+
+#### C-97 Row kind
+
+With `rowKind` the table calls it with each drawn row and its index in `rows`, and writes the string it returns as `data-row-kind` on that row's `tr` (a pinned row included, C-74, and a row of a virtual body when it is drawn, C-83). An empty string, `null` or `undefined` writes no attribute; without `rowKind` no row carries it. The kind is data: the table draws nothing by it and its value changes nothing else, so a skin gives a row of a kind its look (`tr[data-row-kind="total"]`). The subtable row of a row does not carry it. The table takes no class or style per row (P5); this attribute is the hook.
+
+Source: own
+
+#### C-98 Rows that cannot expand
+
+With `hasSubtable` and `rowExpandable`, a row for which `rowExpandable(row, index)` (its index in `rows`) returns `false` cannot expand: its expand cell is drawn empty, without a `qt-expand` button, so the columns stay aligned; the `subtable` slot is never drawn under it and it never carries `data-expanded`. `expandAll()` skips it (C-55), an `isExpanded: true` field does not open it (C-26) and a key it held is dropped the next time `rows` changes. This holds for a pinned row (C-74) and in a virtual body (C-83). Without `rowExpandable` every row can expand; without `hasSubtable` the function is not called. In the composable, `expansion.canExpand(row, index)` answers the same question, `expansion.toggle` does nothing for such a row, and TanStack's `getRowCanExpand` gives the same answer.
+
+Source: tanstack, own
+
+#### C-99 Measuring column widths
 
 `measureColumnWidths(fields?)` on the template ref returns, by `field`, the width each drawn column needs for its content: the browser's max-content width of the column with its header label (what comes before the filter row and the resize handle) and its cells in the drawn data rows (`tr[data-row-index]`, pinned rows included), padding and border included, in whole pixels rounded up. The filter row, the resize handle, the footer and the other body rows (subtable, virtual spacer, loading, empty, load-more) do not count, nor do `Column.width` and a width or a fixed layout the consumer's CSS gives the table. Content is measured as drawn, slot content included: a `header-<field>` or `cell-<field>` slot that draws a block or a flex box counts with the width its content needs, not the width its cell gives it. For the read the table lays itself out once with the automatic layout and no widths, and puts every style back before returning (C-31): nothing is painted, nothing is emitted and no width is kept (P15). The widths are not clamped to `minWidth` and `maxWidth`: what to write back as `Column.width`, and when, is the consumer's. With `fields` only those columns are in the result; a hidden column, an unknown field and a table that is not displayed (a column with no box) are left out. With `virtual` only the drawn rows count. Autofit (C-50) uses the same measure.
 
@@ -1422,6 +1474,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-row-index` | `tbody > tr` | Index of the row in `rows`. The table reads it to tell which row was right-clicked. |
 | `data-expanded` | `tbody > tr` | Present on an expanded row. |
 | `data-pinned-row` | `tbody > tr` | `top` or `bottom` on a pinned row and on its subtable row (C-74). |
+| `data-row-kind` | `tbody > tr[data-row-index]` | With `rowKind`: the kind it returns for the row, such as `total`, when not empty (C-97). Data, not styling: the table draws nothing by it; a skin selects `tr[data-row-kind="total"]`. |
 | `data-selected` | `tbody > tr` | Present on a selected row (C-64). |
 | `data-pinned` | `th, td` | Empty on every cell of a column pinned to the left (header, body, footer) and, while some column is pinned to the left, on the utility cells; the cell also carries `--qt-pin-left`. `right` on a column pinned to the right (C-71). |
 | `data-pinned` | `th[data-pinned="right"], td[data-pinned="right"]` | Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71). |
