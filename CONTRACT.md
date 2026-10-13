@@ -23,6 +23,8 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `sortable` | `boolean` |  | `false` | Allow sorting from the headers (needs column `sortable`). Defaults to `false`. |
 | `filterable` | `boolean` |  | `false` | Show the filter row. Defaults to `false`. |
 | `resizable` | `boolean` |  | `false` | Draw a resize handle in the header cells (needs column `resizable`). Defaults to `false`. The table emits `columnResize`; the consumer writes the width back to `Column.width`. |
+| `autoWidth` | `boolean` |  | `false` | Draw each visible column without `Column.width` at the width its content needs (C-100): `measureColumnWidths` after the drawn rows change, clamped as a resize is. The width is drawn, not emitted or written to `columns`; a column with a `width` keeps it. Within one query (paging position, page size and sort aside) the widths only grow. Defaults to `false`. |
+| `autoWidthMax` | `number` |  | `undefined` | With `autoWidth`, the widest automatic width of a column without `maxWidth`, in pixels (C-100). Absent, there is no limit. |
 | `reorderable` | `boolean` |  | `false` | Draw a reorder handle at the start of the header cells (needs column `reorderable`): dragging it, or the arrow keys, Home and End on it, move a column within its region and emit `update:columns`. Defaults to `false`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
@@ -302,6 +304,19 @@ export interface TableProps<
    * the width back to `Column.width`.
    */
   resizable?: boolean
+  /**
+   * Draw each visible column without `Column.width` at the width its content
+   * needs (C-100): `measureColumnWidths` after the drawn rows change, clamped
+   * as a resize is. The width is drawn, not emitted or written to `columns`;
+   * a column with a `width` keeps it. Within one query (paging position,
+   * page size and sort aside) the widths only grow. Defaults to `false`.
+   */
+  autoWidth?: boolean
+  /**
+   * With `autoWidth`, the widest automatic width of a column without
+   * `maxWidth`, in pixels (C-100). Absent, there is no limit.
+   */
+  autoWidthMax?: number
   /**
    * Draw a reorder handle at the start of the header cells (needs column
    * `reorderable`): dragging it, or the arrow keys, Home and End on it, move
@@ -1062,7 +1077,7 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 #### C-31 No styling
 
-The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-99) is the one moment the table writes other declarations: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin.
+The table ships no CSS and takes no styling props. It writes five inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49, or of a column drawn at its automatic width, C-100), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83) and `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94). The pin offsets carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-99) is the one moment the table writes other declarations: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count, and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin.
 
 #### C-32 State attributes
 
@@ -1424,7 +1439,13 @@ Source: tanstack, own
 
 #### C-99 Measuring column widths
 
-`measureColumnWidths(fields?)` on the template ref returns, by `field`, the width each drawn column needs for its content: the browser's max-content width of the column with its header label (what comes before the filter row and the resize handle) and its cells in the drawn data rows (`tr[data-row-index]`, pinned rows included), padding and border included, in whole pixels rounded up. The filter row, the resize handle, the footer and the other body rows (subtable, virtual spacer, loading, empty, load-more) do not count, nor do `Column.width` and a width or a fixed layout the consumer's CSS gives the table. Content is measured as drawn, slot content included: a `header-<field>` or `cell-<field>` slot that draws a block or a flex box counts with the width its content needs, not the width its cell gives it. For the read the table lays itself out once with the automatic layout and no widths, and puts every style back before returning (C-31): nothing is painted, nothing is emitted and no width is kept (P15). The widths are not clamped to `minWidth` and `maxWidth`: what to write back as `Column.width`, and when, is the consumer's. With `fields` only those columns are in the result; a hidden column, an unknown field and a table that is not displayed (a column with no box) are left out. With `virtual` only the drawn rows count. Autofit (C-50) uses the same measure.
+`measureColumnWidths(fields?)` on the template ref returns, by `field`, the width each drawn column needs for its content: the browser's max-content width of the column with its header label (what comes before the filter row and the resize handle) and its cells in the drawn data rows (`tr[data-row-index]`, pinned rows included), padding and border included, in whole pixels rounded up. The filter row, the resize handle, the footer and the other body rows (subtable, virtual spacer, loading, empty, load-more) do not count, nor do `Column.width` and a width or a fixed layout the consumer's CSS gives the table. Content is measured as drawn, slot content included: a `header-<field>` or `cell-<field>` slot that draws a block or a flex box counts with the width its content needs, not the width its cell gives it. For the read the table lays itself out once with the automatic layout and no widths, and puts every style back before returning (C-31): nothing is painted, nothing is emitted and no width is kept (P15). The widths are not clamped to `minWidth` and `maxWidth`: what to write back as `Column.width`, and when, is the consumer's; `autoWidth` (C-100) draws them without writing them. With `fields` only those columns are in the result; a hidden column, an unknown field and a table that is not displayed (a column with no box) are left out. With `virtual` only the drawn rows count. Autofit (C-50) uses the same measure.
+
+Source: own
+
+#### C-100 Automatic column widths
+
+With `autoWidth`, a visible column without `Column.width` is drawn at its automatic width: what `measureColumnWidths` measures for it (C-99), clamped as a resize is (C-49), with `autoWidthMax` standing in for a missing `maxWidth`. The width is the header cell's inline `width` (C-31), as a `Column.width` would be. It is not emitted and not written to `columns`; the slot props carry the column as given. A column with a `width` keeps it, so a column the user resized (C-49, C-50) leaves the automatic width when the consumer writes the width back. The table measures after the drawn rows change (`rows`), after the set of visible columns without a width changes and once it is displayed, each time after the DOM update; with no data row it measures nothing and keeps the widths it has. A table that is not displayed keeps its widths and measures when it is displayed again. While the query stays the same apart from its paging position (`page` or `cursor`), `pageSize` and `sort`, the widths only grow: a page, a sort, `append` and `live` rows never make a column narrower. A query that differs in anything else, `rowsUpdate: 'reset'`, a new `autoWidthMax` and `autoWidth` turned on measure from scratch. Turned off, the automatic widths go. Off by default.
 
 Source: own
 

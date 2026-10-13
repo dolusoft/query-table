@@ -409,6 +409,8 @@ export interface TableLabels {
 
 // @public (undocumented)
 export interface TableProps<T extends object = Record<string, unknown>, Q extends Query = TableQuery> {
+    autoWidth?: boolean;
+    autoWidthMax?: number;
     columns: Column[];
     cursors?: PageCursors | null;
     filterable?: boolean;

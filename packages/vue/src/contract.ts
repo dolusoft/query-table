@@ -202,6 +202,19 @@ export interface TableProps<
    */
   resizable?: boolean
   /**
+   * Draw each visible column without `Column.width` at the width its content
+   * needs (C-100): `measureColumnWidths` after the drawn rows change, clamped
+   * as a resize is. The width is drawn, not emitted or written to `columns`;
+   * a column with a `width` keeps it. Within one query (paging position,
+   * page size and sort aside) the widths only grow. Defaults to `false`.
+   */
+  autoWidth?: boolean
+  /**
+   * With `autoWidth`, the widest automatic width of a column without
+   * `maxWidth`, in pixels (C-100). Absent, there is no limit.
+   */
+  autoWidthMax?: number
+  /**
    * Draw a reorder handle at the start of the header cells (needs column
    * `reorderable`): dragging it, or the arrow keys, Home and End on it, move
    * a column within its region and emit `update:columns`. Defaults to `false`.

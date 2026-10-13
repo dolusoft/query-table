@@ -162,7 +162,9 @@ const ADDED_AFTER_BASELINE = [
   // of C-50 on slot content that a 3.5 build measures at its cell's width.
   'tests/contract/unit/query-model.spec.ts > C-33 Exposed surface C-99 exposes measureColumnWidths too, and nothing else',
   'tests/contract/browser/measure-widths.browser.spec.ts > C-99 Measuring column widths [own]',
-  'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]'
+  'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]',
+  // 3.7 addition (C-100, ADR 0014): automatic column widths.
+  'tests/contract/browser/auto-width.browser.spec.ts > C-100 Automatic column widths [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
