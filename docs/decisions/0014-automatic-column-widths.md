@@ -1,6 +1,6 @@
 # 0014 Automatic column widths (3.7)
 
-Status: Proposed (2026-10-13), to be decided by Zahid ([query-table#124](https://github.com/dolusoft/query-table/issues/124) S1 and S2). Amends P2 and P5, and the part of ADR 0013 K36-1 that leaves every width to the consumer; the rest of the principles and of ADR 0013 stand.
+Status: Accepted (2026-10-13), decided by Enes ([query-table#124](https://github.com/dolusoft/query-table/issues/124) S1 (a) and S2 (b); proposed 2026-10-13). Amends P2 and P5, and the part of ADR 0013 K36-1 that leaves every width to the consumer; the rest of the principles and of ADR 0013 stand.
 
 ## Context
 

@@ -19,6 +19,6 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0011](0011-change-flash.md)                | Change flash (3.3)                                                              | Accepted |
 | [0012](0012-change-flash-boundaries.md)     | Change flash: the query boundary with a hint, and cells bound under a row (3.3) | Accepted |
 | [0013](0013-measuring-column-widths.md)     | Measuring column widths (3.6)                                                   | Accepted |
-| [0014](0014-automatic-column-widths.md)     | Automatic column widths (3.7)                                                   | Proposed |
+| [0014](0014-automatic-column-widths.md)     | Automatic column widths (3.7)                                                   | Accepted |
 
 Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014.
