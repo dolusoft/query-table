@@ -28,11 +28,14 @@ const handle = (m: Mounted, field: string) =>
 const resized = (m: Mounted) =>
   (m.wrapper.emitted('columnResize') ?? []).map(([payload]) => payload)
 
-// happy-dom lays nothing out: give every header cell a fixed width.
+// happy-dom lays nothing out: every element is `width` wide, or as wide as
+// its inline width in pixels says (a layout that never stretches a column).
 const headerWidth = (width: number) =>
   vi
     .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-    .mockImplementation(() => ({ width }) as DOMRect)
+    .mockImplementation(function (this: HTMLElement) {
+      return { width: parseFloat(this.style.width) || width } as DOMRect
+    })
 
 describe('C-48 Resize handle', () => {
   it('draws a handle only with table and column resizable', () => {
@@ -263,6 +266,36 @@ describe('C-50 Keyboard and autofit', () => {
       { field: 'name', width: 90 },
       { field: 'name', width: 150 },
       { field: 'name', width: 60 }
+    ])
+  })
+
+  it('a step moves at least one declared pixel in a heavily stretched table', async () => {
+    // Two columns declared 50 px in 2000 px: each is drawn 20 times wider, so
+    // 10 drawn pixels are half a declared one and would round away.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        const cells = Array.from(this.parentElement?.children ?? [])
+        const declared = cells.map(cell =>
+          parseFloat((cell as HTMLElement).style.width)
+        )
+        const total = declared.reduce((a, b) => a + b, 0)
+        const own = parseFloat(this.style.width)
+        const drawn = total < 2000 ? (own * 2000) / total : own
+        return { width: this.matches('th') ? drawn : 0 } as DOMRect
+      }
+    )
+    const m = mountIt({
+      columns: [
+        { field: 'a', title: 'A', width: '50px' },
+        { field: 'b', title: 'B', width: '50px' }
+      ],
+      resizable: true
+    })
+    await handle(m, 'a').trigger('keydown', { key: 'ArrowRight' })
+    await handle(m, 'a').trigger('keydown', { key: 'ArrowLeft' })
+    expect(resized(m)).toEqual([
+      { field: 'a', width: 51 },
+      { field: 'a', width: 49 }
     ])
   })
 
