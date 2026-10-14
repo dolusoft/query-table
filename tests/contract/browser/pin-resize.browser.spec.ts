@@ -312,6 +312,126 @@ describe('C-49 Dragging a handle', () => {
   })
 })
 
+/**
+ * The CSS C-50 recommends, in a 1000px container: with columns narrower than
+ * the container, the browser spreads the rest over them by their widths.
+ */
+const renderStretched = async (width: string) => {
+  const resized: ColumnResizePayload[] = []
+  const columns = (): Column[] =>
+    ['id', 'name', 'age'].map(field => ({ field, title: field, width }))
+  const table = await renderTable({
+    columns: columns(),
+    rows: rows(3),
+    resizable: true,
+    onColumnResize: (payload: ColumnResizePayload) => resized.push(payload)
+  })
+  scroller().style.width = '1000px'
+  Object.assign(el('.qt-table').style, {
+    tableLayout: 'fixed',
+    width: 'max-content',
+    minWidth: '100%'
+  })
+  await frames(3)
+  /** Writes the last emitted width back, as a `v-model` consumer does. */
+  const writeBack = async () => {
+    const last = resized.at(-1)!
+    await table.rerender({
+      columns: columns().map(column =>
+        column.field === last.field
+          ? { ...column, width: `${last.width}px` }
+          : column
+      )
+    })
+    await frames(3)
+  }
+  return { resized, writeBack }
+}
+
+const widthOf = (field: string) =>
+  el(`thead th[data-field="${field}"]`).getBoundingClientRect().width
+
+/**
+ * Within 2px: an emitted width is whole pixels, and a stretched table draws
+ * one declared pixel wider than one pixel (3.3 at 3 x 100px in 1000px).
+ */
+const expectNear = (actual: number, expected: number) => {
+  expect(Math.abs(actual - expected)).toBeLessThanOrEqual(2)
+}
+
+describe.each([
+  // Stretched, a column cannot be drawn much narrower: its header content
+  // keeps it near 90 declared pixels, about 300 drawn. The long step widens.
+  ['narrower than its container', '100px', 150],
+  // The long step leaves the columns narrower than the container.
+  ['wider than its container', '400px', -250]
+])('C-49 Dragging a handle: a table %s', (_name, width, long) => {
+  test.each([20, -20, long])(
+    'the rendered width follows the pointer (%ipx), with no jump on press or release',
+    async dx => {
+      const { resized, writeBack } = await renderStretched(width)
+      const handle = el('thead th[data-field="id"] .qt-resize-handle')
+      const start = widthOf('id')
+      const box = handle.getBoundingClientRect()
+      const x = box.left + box.width / 2
+      const init = {
+        bubbles: true,
+        clientY: box.top + box.height / 2,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: 1
+      }
+      const fire = (type: string, clientX: number) =>
+        handle.dispatchEvent(new PointerEvent(type, { ...init, clientX }))
+      fire('pointerdown', x)
+      fire('pointermove', x + 1)
+      await frames()
+      // No jump on the first move.
+      expectNear(widthOf('id'), start + 1)
+      fire('pointermove', x + dx)
+      await frames()
+      const preview = widthOf('id')
+      expectNear(preview, start + dx)
+      // The first column's handle stays under the pointer.
+      const moved = handle.getBoundingClientRect()
+      expectNear(moved.left + moved.width / 2, x + dx)
+      expectNear(Number(handle.getAttribute('aria-valuenow')), start + dx)
+      fire('pointerup', x + dx)
+      await frames()
+      expect(resized).toHaveLength(1)
+      // The written-back width draws what the preview drew.
+      await writeBack()
+      expectNear(widthOf('id'), preview)
+    }
+  )
+
+  test('a later column grows by what the pointer moved', async () => {
+    const { resized, writeBack } = await renderStretched(width)
+    const start = widthOf('name')
+    await drag(el('thead th[data-field="name"] .qt-resize-handle'), 20, 'up')
+    expect(resized).toHaveLength(1)
+    await writeBack()
+    expectNear(widthOf('name'), start + 20)
+  })
+
+  test('arrow keys step the rendered width by 10, 50 with Shift', async () => {
+    const { resized, writeBack } = await renderStretched(width)
+    const handle = el('thead th[data-field="name"] .qt-resize-handle')
+    const start = widthOf('name')
+    handle.focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await writeBack()
+    expectNear(widthOf('name'), start - 10)
+    handle.focus()
+    await userEvent.keyboard('{Shift>}{ArrowRight}{/Shift}')
+    await writeBack()
+    expectNear(widthOf('name'), start + 40)
+    expect(resized).toHaveLength(2)
+  })
+})
+
 /** Presses a handle and moves it, without releasing. */
 const press = async (handle: Element, dx: number) => {
   const box = handle.getBoundingClientRect()

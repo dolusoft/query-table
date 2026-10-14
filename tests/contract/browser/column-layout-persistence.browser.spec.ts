@@ -142,13 +142,17 @@ test('C-67 C-68 C-69 C-70 C-71 C-73 C-50 a stored column layout comes back as it
     .poll(() => drawnLayout().map(cell => cell.field))
     .toEqual(['id', 'name', 'joined', 'age'])
 
-  // Width: Name 10px wider by key.
+  // Width: Name drawn 10px wider by key. The table fills its container, so
+  // it draws the columns wider than declared and the declared step is less.
   const nameBefore = Math.round(header('name').getBoundingClientRect().width)
   header('name').querySelector<HTMLElement>('.qt-resize-handle')!.focus()
   await userEvent.keyboard('{ArrowRight}')
   await expect.poll(() => header('name').style.width).not.toBe('200px')
   const nameWidth = header('name').style.width
-  expect(Number.parseFloat(nameWidth)).toBeGreaterThan(nameBefore)
+  expect(Number.parseFloat(nameWidth)).toBeGreaterThan(200)
+  expect(
+    Math.abs(header('name').getBoundingClientRect().width - (nameBefore + 10))
+  ).toBeLessThanOrEqual(2)
 
   // Pinning: ID to the left, Age to the right.
   await userEvent.click(page.getByRole('button', { name: 'Pin ID left' }))

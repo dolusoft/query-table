@@ -20,7 +20,7 @@ const notCounted = [
  * the markup before it (C-31). `!important` so a consumer's `!important`
  * rule cannot keep the fixed layout during the read.
  */
-const styleSwap = () => {
+export const styleSwap = () => {
   const saved = new Map<HTMLElement, string | null>()
   return {
     set(element: HTMLElement, property: string, value: string) {
