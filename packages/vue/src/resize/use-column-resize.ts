@@ -2,6 +2,7 @@ import { onBeforeUnmount, shallowRef } from 'vue'
 
 import type { Column, ColumnResizePayload } from '../contract'
 import { measureColumnWidths } from './measure-widths'
+import { measureWidthScale, type WidthScale } from './width-scale'
 
 /** Default `Column.minWidth`, in pixels. */
 const defaultMinWidth = 40
@@ -52,7 +53,9 @@ interface Drag {
   column: Column
   pointerId: number
   startX: number
+  /** The width the column is drawn at when the drag starts. */
   startWidth: number
+  scale: WidthScale
   lastX: number
   frame: number
 }
@@ -69,14 +72,28 @@ const cellOf = (event: Event) =>
 const edgeOf = (column: Column) => (column.pinned === 'right' ? -1 : 1)
 
 /**
+ * The scale of a column's widths, read from the layout once per drag or key:
+ * a table stretched to its container draws a column wider than declared.
+ */
+const scaleOf = (th: HTMLElement, column: Column) =>
+  measureWidthScale(th, clampWidth(column, 0))
+
+/**
  * Resizing a column (C-48 to C-50). The table holds a width only while a
  * drag is under way (the preview, P2); every committed width goes out as a
  * `columnResize` event and comes back, if the consumer wants it, as
  * `Column.width`. The handle captures the pointer, so all drag events arrive
- * at the handle itself, and it has the focus, so Escape does too.
+ * at the handle itself, and it has the focus, so Escape does too. The pointer
+ * and the arrow keys move the drawn width; what the table writes and emits is
+ * the declared width that draws it (`measureWidthScale`).
  */
 export const useColumnResize = (options: ColumnResizeOptions) => {
-  const preview = shallowRef<{ field: string; width: number } | null>(null)
+  /** `width` is declared (the inline style), `rendered` drawn. */
+  const preview = shallowRef<{
+    field: string
+    width: number
+    rendered: number
+  } | null>(null)
   let drag: Drag | null = null
 
   const isResizable = (column: Column) =>
@@ -85,9 +102,10 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
   /** The width the header shows: the preview while dragging, else measured. */
   const widthOf = (column: Column) =>
     preview.value?.field === column.field
-      ? preview.value.width
+      ? preview.value.rendered
       : Math.round(options.measuredWidth(column.field) ?? 0)
 
+  /** Emits the declared width `width`, unless it is the declared `from`. */
   const commit = (column: Column, from: number, width: number) => {
     const next = clampWidth(column, width)
     if (next !== Math.round(from)) {
@@ -95,9 +113,12 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     }
   }
 
+  /** The declared width that draws the column where the pointer is. */
   const dragged = (current: Drag) =>
-    current.startWidth +
-    edgeOf(current.column) * (current.lastX - current.startX)
+    current.scale.declared(
+      current.startWidth +
+        edgeOf(current.column) * (current.lastX - current.startX)
+    )
 
   const end = (apply: boolean) => {
     const current = drag
@@ -106,7 +127,11 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
       cancelAnimationFrame(current.frame)
       preview.value = null
       if (apply) {
-        commit(current.column, current.startWidth, dragged(current))
+        commit(
+          current.column,
+          current.scale.declared(current.startWidth),
+          dragged(current)
+        )
       }
     }
   }
@@ -128,6 +153,7 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
         pointerId: event.pointerId,
         startX: event.clientX,
         startWidth: th.getBoundingClientRect().width,
+        scale: scaleOf(th, column),
         lastX: event.clientX,
         frame: 0
       }
@@ -142,9 +168,11 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
       drag.frame ||= requestAnimationFrame(() => {
         if (drag) {
           drag.frame = 0
+          const width = clampWidth(drag.column, dragged(drag))
           preview.value = {
             field: drag.column.field,
-            width: clampWidth(drag.column, dragged(drag))
+            width,
+            rendered: Math.round(drag.scale.rendered(width))
           }
         }
       })
@@ -154,7 +182,10 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     }
   }
 
-  /** Arrow keys step the width, Enter fits it; both from the rendered width. */
+  /**
+   * Arrow keys step the drawn width, Enter fits it to the content (the
+   * declared width `measureColumnWidths` gives, as it is).
+   */
   const onKey = (event: KeyboardEvent, column: Column) => {
     const { key } = event
     if (drag) {
@@ -170,11 +201,17 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
     const th = cellOf(event)
     if (th && (sign || key === 'Enter' || event.type === 'dblclick')) {
       event.preventDefault()
-      const from = th.getBoundingClientRect().width
-      // Autofit is the width `measureColumnWidths` gives (C-50, C-99); a
-      // column that measures nothing (the table not displayed) stays.
+      const drawn = th.getBoundingClientRect().width
+      const scale = scaleOf(th, column)
+      const from = scale.declared(drawn)
+      const step = scale.declared(
+        Math.round(drawn) + sign * (event.shiftKey ? 50 : 10)
+      )
+      // A step moves at least one declared pixel, however stretched the
+      // table. Autofit is the width `measureColumnWidths` gives (C-50, C-99);
+      // a column that measures nothing (the table not displayed) stays.
       const to = sign
-        ? Math.round(from) + sign * (event.shiftKey ? 50 : 10)
+        ? from + sign * Math.max(1, Math.abs(step - from))
         : measureColumnWidths(th.closest('table'), [column.field])[column.field]
       if (to !== undefined) {
         commit(column, from, to)
