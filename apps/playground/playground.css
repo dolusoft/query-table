@@ -238,3 +238,14 @@ html {
     box-shadow: 0 0 0 2px transparent;
   }
 }
+
+/* The layout C-50 recommends, for every table on the page: with the automatic
+   layout the browser takes a header cell's `width` as a hint only and squeezes
+   the columns to fit, so an automatic width (C-100), the filter floor with it,
+   and a resized width did not show. A table wider than its box scrolls in
+   `.qt-table-responsive`; one narrower spreads the rest over its columns. */
+.qt-table {
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
