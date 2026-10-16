@@ -131,7 +131,7 @@ describe.each<Theme>(['light', 'dark'])(
   }
 )
 
-// 3.8 (C-103, C-104): not in a 3.7 baseline (`ADDED_AFTER_BASELINE`).
+// 3.9 (C-103, C-104): not in a 3.8 baseline (`ADDED_AFTER_BASELINE`).
 describe.each<Theme>(['light', 'dark'])(
   'C-103 accessibility scan (axe) of grouped rows, %s theme',
   theme => {
