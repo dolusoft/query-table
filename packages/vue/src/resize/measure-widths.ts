@@ -7,12 +7,29 @@
  * load-more). A subtable or a spanning cell would otherwise widen the
  * columns it spans with content that is not theirs.
  */
-const notCounted = [
-  ':scope > thead > tr > th[data-field] > .qt-filter',
+const notCountedParts = [
   ':scope > thead > tr > th[data-field] > .qt-resize-handle',
   ':scope > tbody > tr:not([data-row-index])',
   ':scope > tfoot'
-].join(', ')
+]
+const filterRow = ':scope > thead > tr > th[data-field] > .qt-filter'
+const notCounted = [filterRow, ...notCountedParts].join(', ')
+const notCountedWithFilters = notCountedParts.join(', ')
+
+/**
+ * The room a text, number or date filter input keeps for its text when the
+ * filter row counts (C-100): six characters of the input's own font.
+ */
+const filterText = '6ch'
+
+interface MeasureOptions {
+  /**
+   * The filter row counts as a floor (C-100): laid out at the width it
+   * needs, its controls side by side and six characters of text in each
+   * input, so a column is never drawn narrower than its filter.
+   */
+  filters?: boolean
+}
 
 /**
  * Sets inline declarations for one read and puts every `style` attribute
@@ -62,7 +79,8 @@ export const styleSwap = () => {
 export const measureColumnWidths = (
   table: HTMLTableElement | null | undefined,
   fields?: readonly string[],
-  body?: HTMLTableElement | null
+  body?: HTMLTableElement | null,
+  options: MeasureOptions = {}
 ): Record<string, number> => {
   const widths: Record<string, number> = {}
   if (!table?.tHead) {
@@ -83,9 +101,14 @@ export const measureColumnWidths = (
       swap.set(th, 'width', 'auto')
     }
     for (const part of Array.from(
-      table.querySelectorAll<HTMLElement>(notCounted)
+      table.querySelectorAll<HTMLElement>(
+        options.filters ? notCountedWithFilters : notCounted
+      )
     )) {
       swap.set(part, 'display', 'none')
+    }
+    if (options.filters) {
+      countFilters(table, swap)
     }
     const split = body && body !== table ? body : null
     if (split) {
@@ -116,7 +139,8 @@ export const measureColumnWidths = (
         `:scope > td[data-field="${CSS.escape(field)}"]`
       )
       const width = Math.max(
-        th.getBoundingClientRect().width,
+        th.getBoundingClientRect().width +
+          (options.filters ? filterOverflow(th) : 0),
         cell?.getBoundingClientRect().width ?? 0
       )
       if (width > 0) {
@@ -127,4 +151,58 @@ export const measureColumnWidths = (
     swap.restore()
   }
   return widths
+}
+
+/**
+ * Lays the filter rows out at the width they need (C-100). A size container
+ * a skin makes of the row counts as zero wide and switches the row to its
+ * narrow form, and an input that grows from zero width counts nothing: for
+ * the read the row is no container and each filter input stops growing, a
+ * text, number or date input six characters wide (padding and border on
+ * top), a select as wide as its longest option. Slot content counts as drawn.
+ */
+const countFilters = (
+  table: HTMLTableElement,
+  swap: ReturnType<typeof styleSwap>
+) => {
+  for (const row of Array.from(
+    table.querySelectorAll<HTMLElement>(filterRow)
+  )) {
+    swap.set(row, 'container-type', 'normal')
+    swap.set(row, 'contain', 'none')
+    for (const input of Array.from(
+      row.querySelectorAll<HTMLElement>(':scope > .qt-filter-input')
+    )) {
+      swap.set(input, 'flex', 'none')
+      swap.set(input, 'min-width', '0')
+      if (input instanceof HTMLInputElement) {
+        swap.set(input, 'box-sizing', 'content-box')
+        swap.set(input, 'width', filterText)
+      } else {
+        swap.set(input, 'width', 'auto')
+      }
+    }
+  }
+}
+
+/**
+ * How far the filter row's controls reach past the header cell's content
+ * box in the read: what the cell's max-content width leaves out, such as a
+ * percentage padding, which counts as zero there.
+ */
+const filterOverflow = (th: HTMLTableCellElement) => {
+  const row = th.querySelector<HTMLElement>(':scope > .qt-filter')
+  if (!row) {
+    return 0
+  }
+  const style = getComputedStyle(th)
+  const end =
+    th.getBoundingClientRect().right -
+    (parseFloat(style.paddingRight) || 0) -
+    (parseFloat(style.borderRightWidth) || 0)
+  let reach = row.getBoundingClientRect().right
+  for (const child of Array.from(row.children)) {
+    reach = Math.max(reach, child.getBoundingClientRect().right)
+  }
+  return Math.max(0, reach - end)
 }

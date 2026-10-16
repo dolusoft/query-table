@@ -14,11 +14,23 @@ interface MeasureStub {
   widths: Record<string, number>
   /** The fields of every call. */
   calls: string[][]
+  /** The options of every call. */
+  options: ({ filters?: boolean } | undefined)[]
 }
-const measure = vi.hoisted((): MeasureStub => ({ widths: {}, calls: [] }))
+const measure = vi.hoisted((): MeasureStub => ({
+  widths: {},
+  calls: [],
+  options: []
+}))
 vi.mock('./measure-widths', () => ({
-  measureColumnWidths: (_table: unknown, fields: string[]) => {
+  measureColumnWidths: (
+    _table: unknown,
+    fields: string[],
+    _body: unknown,
+    options?: { filters?: boolean }
+  ) => {
     measure.calls.push(fields)
+    measure.options.push(options)
     return Object.fromEntries(
       fields
         .filter(field => measure.widths[field] !== undefined)
@@ -105,6 +117,7 @@ const arrive = async (
 beforeEach(() => {
   measure.widths = { name: 120, code: 50 }
   measure.calls = []
+  measure.options = []
   FakeObserver.last = null
   vi.stubGlobal('ResizeObserver', FakeObserver)
 })
@@ -128,6 +141,15 @@ describe('C-100 use-auto-width', () => {
     expect(measure.calls.at(-1)).toEqual(['name', 'tiny'])
     // The default minimum of a resize (40) holds.
     expect(state.api.widths.value).toEqual({ name: 120, tiny: 40 })
+  })
+
+  it('counts the filter row as a floor in every measure', async () => {
+    const state = setup()
+    await arrive(state)
+    expect(measure.options.length).toBeGreaterThan(0)
+    expect(measure.options.every(options => options?.filters === true)).toBe(
+      true
+    )
   })
 
   it('caps a column without maxWidth at autoWidthMax, and lets its own maxWidth win', async () => {

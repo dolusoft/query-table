@@ -178,7 +178,9 @@ describe('C-100 Automatic column widths [own]', () => {
     )
     const { api } = await mount({ columns })
     const measured = api.table().measureColumnWidths()
-    expect(drawn('id')).toBe(`${Math.max(40, measured.id)}px`)
+    // The filter row is a floor: the short ID column is drawn wider than its
+    // content, the long name column at its content.
+    expect(drawnPx('id')).toBeGreaterThan(Math.max(40, measured.id))
     expect(drawn('name')).toBe(`${measured.name}px`)
     // A column with a width keeps it.
     expect(drawn('code')).toBe('300px')
@@ -192,6 +194,49 @@ describe('C-100 Automatic column widths [own]', () => {
       '.qt-table .measure-text'
     )) {
       expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth)
+    }
+  })
+
+  test('without a filter row a column is drawn at what measureColumnWidths measures', async () => {
+    const { api } = await mount({
+      tableProps: { autoWidth: true, filterable: false }
+    })
+    const measured = api.table().measureColumnWidths()
+    expect(drawn('id')).toBe(`${Math.max(40, measured.id)}px`)
+    expect(drawn('name')).toBe(`${measured.name}px`)
+  })
+
+  test('the filter row is a floor: a skin that grows the input from zero keeps about six characters of text', async () => {
+    // A skin like the playground's: the row is a size container, the input
+    // grows from zero width and keeps a percentage padding at its end.
+    const style = document.createElement('style')
+    style.textContent = `.qt-filter { display: flex; gap: 4px;
+        container: qt-filter / inline-size; }
+      .qt-filter-input { flex: 1 1 0%; width: 0; min-width: 0;
+        box-sizing: border-box; border: 1px solid;
+        padding: 0 calc(30% + 4px) 0 10px; font: 14px monospace; }`
+    document.head.append(style)
+    const probe = document.createElement('span')
+    probe.style.cssText =
+      'display: inline-block; width: 6ch; font: 14px monospace'
+    document.body.append(probe)
+    try {
+      const { api } = await mount()
+      const measured = api.table().measureColumnWidths()
+      expect(drawnPx('id')).toBeGreaterThan(measured.id)
+      const input = el('thead th[data-field="id"] .qt-filter-input')
+      const inputStyle = getComputedStyle(input)
+      const text =
+        input.clientWidth -
+        parseFloat(inputStyle.paddingLeft) -
+        parseFloat(inputStyle.paddingRight)
+      const ch = probe.getBoundingClientRect().width / 6
+      expect(text).toBeGreaterThanOrEqual(5 * ch)
+      // Every style the read set is back: the skin's own layout is drawn.
+      expect(input.getAttribute('style')).toBeNull()
+    } finally {
+      style.remove()
+      probe.remove()
     }
   })
 

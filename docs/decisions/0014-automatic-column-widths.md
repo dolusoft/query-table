@@ -34,3 +34,7 @@ DataTables ships this as `autoWidth`, on by default. Its calculation was compare
 ## Trade-off
 
 The table keeps a width it was not given, for as long as no width is given. In exchange the rules that fit columns to their content live once, next to the measure, and every product gets the same stable behavior with one prop.
+
+## Amendment: the filter row is a floor (2026-10-16)
+
+C-99 leaves the filter row out of the measure, so a short column (an ID) was drawn at its label's width and its filter input kept about two characters: in the playground's `column-layout` and `filtering` pages the ID column was 88px with a 27px text box. The automatic width now counts the filter row as a floor (C-100): laid out with its controls side by side and six characters of text in each input, the row no size container for the read. `measureColumnWidths` and autofit (C-50) are unchanged: they measure content, and a width the user chose stays the user's. The floor is not an option: a column drawn too narrow for its filter is a defect, not a preference, and a table without filters is measured as before. Options considered: a prop `autoWidthIncludeFilters` (rejected: one more prop for the only sensible value, P9), a floor computed from the controls' current boxes (rejected: a skin's narrow form, a container query, changes those boxes with the width being chosen).
