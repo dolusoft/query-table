@@ -55,7 +55,7 @@ const follow = (
 }
 
 const link =
-  'min-h-11 whitespace-nowrap px-0 text-[0.8rem] font-medium lg:pointer-fine:min-h-0 lg:pointer-fine:h-[30px] data-active:text-sidebar-accent-foreground'
+  '-mx-2 w-[calc(100%+1rem)] min-h-11 whitespace-nowrap px-2 text-[0.8rem] font-medium lg:pointer-fine:min-h-0 lg:pointer-fine:h-[30px] data-active:text-sidebar-accent-foreground'
 </script>
 
 <template>
