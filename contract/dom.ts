@@ -173,6 +173,13 @@ export const domClasses: ClassEntry[] = [
       'With `infinite` and a `load-more` slot: the last row of the body while `loading` is off, holding the slot in one cell that spans every column (C-89).',
     addedBy: 'C-89'
   },
+  {
+    name: 'qt-group-row',
+    on: 'tbody > tr',
+    description:
+      'With `groupBy`: the row above the first row of a group, one `th scope="row"` that spans every column and holds the `group` slot (C-103). It is not a row of `rows`: no `data-row-index`. Make it sticky in your CSS (`tr.qt-group-row > th { position: sticky; top: <the height of your sticky header> }`), on the cell, not on the `tr`; with `virtual` the group row of the top group stays drawn (C-104). Without `virtual` the stuck cell of the last group stays over ungrouped rows after it until the `tbody` ends. The slot content is for reading; no focus is kept in it.',
+    addedBy: 'C-103'
+  },
   { name: 'qt-footer', on: 'tfoot', description: 'Totals block.' },
   {
     name: 'qt-pagination',

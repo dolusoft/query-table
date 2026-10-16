@@ -20,9 +20,15 @@ const props = withDefaults(
     reorderable?: boolean
     /** `flash` with `rowKey` (the `flash` scenario); the others keep it off. */
     flash?: boolean
+    /** Groups the rows in runs of 13 (the `grouped` scenario, C-103). */
+    grouped?: boolean
   }>(),
-  { reorderable: false, flash: false }
+  { reorderable: false, flash: false, grouped: false }
 )
+
+// New rows (negative ids) join the first group.
+const groupBy = (row: Record<string, unknown>) =>
+  Math.max(0, Math.floor((Number(row.id) - 1) / 13))
 
 // The consumer owns the layout too (`v-model:columns`).
 const layout = shallowRef(props.columns)
@@ -112,6 +118,7 @@ const update = (next: TableQuery) => {
       :filter-debounce="filterDebounce"
       :flash="flash"
       :row-key="flash ? 'id' : undefined"
+      :group-by="grouped ? groupBy : undefined"
       @update:query="update"
     >
       <template #pagination="page">

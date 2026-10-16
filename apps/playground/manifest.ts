@@ -200,6 +200,20 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-101', 'C-102']
   },
   {
+    id: 'grouped-rows',
+    title: 'Grouped rows',
+    summary:
+      'A live task monitor grouped by category: `groupBy` draws a group row above each run of one key, with the `group` slot for its name and count. The group rows are not rows: the selection, the indexes and `scrollToIndex` count tasks only. With `virtual` the group row of the top group stays drawn, so the page CSS can make it sticky.',
+    example: 'GroupedRows',
+    api: {
+      props: ['groupBy', 'virtual', 'flash', 'rowsUpdate', 'selection'],
+      slots: ['group'],
+      exposed: ['scrollToIndex'],
+      types: ['GroupSlotProps', 'VirtualOptions']
+    },
+    rules: ['C-103', 'C-104', 'C-105']
+  },
+  {
     id: 'infinite-scroll',
     title: 'Infinite scroll',
     summary:

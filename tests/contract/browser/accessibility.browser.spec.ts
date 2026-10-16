@@ -131,6 +131,34 @@ describe.each<Theme>(['light', 'dark'])(
   }
 )
 
+// 3.8 (C-103, C-104): not in a 3.7 baseline (`ADDED_AFTER_BASELINE`).
+describe.each<Theme>(['light', 'dark'])(
+  'C-103 accessibility scan (axe) of grouped rows, %s theme',
+  theme => {
+    const groupBy = (row: { id: number }) => `g${Math.floor(row.id / 40)}`
+    test('finds no violation with group rows in a plain body', async () => {
+      await renderTable({ ...everything, theme, rowKey: 'id', groupBy })
+      expect(document.querySelector('.qt-group-row')).not.toBeNull()
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+    })
+
+    test('finds no violation with group rows in a virtual body', async () => {
+      await renderTable({
+        ...everything,
+        theme,
+        rowKey: 'id',
+        rows: rows(300),
+        totalRows: 300,
+        query: makeQuery({ pageSize: 300 }),
+        virtual: { overscan: 5 },
+        groupBy
+      })
+      expect(document.querySelector('.qt-group-row')).not.toBeNull()
+      expect(await violationsIn('.qt-datatable')).toEqual([])
+    })
+  }
+)
+
 // 3.2 (C-83, C-86, C-89): not in a 3.1 baseline (`ADDED_AFTER_BASELINE`).
 describe.each<Theme>(['light', 'dark'])(
   'C-86 accessibility scan (axe) of a virtual infinite list, %s theme',

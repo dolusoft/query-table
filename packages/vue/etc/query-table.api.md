@@ -173,6 +173,14 @@ export interface FooterRow {
 }
 
 // @public
+export interface GroupSlotProps<T> {
+    count: number;
+    groupKey: string | number;
+    row: T;
+    rowIndex: number;
+}
+
+// @public
 export interface HeaderContextMenuPayload {
     column: Column;
     columnIndex: number;
@@ -417,6 +425,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     filterDebounce?: number;
     flash?: boolean | FlashOptions;
     footerRows?: FooterRow[];
+    groupBy?: (row: T, index: number) => string | number | null | undefined;
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
     infinite?: boolean | InfiniteOptions;
@@ -450,6 +459,7 @@ export interface TableSlots<T> {
     [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
     empty?(): unknown;
+    group?(props: GroupSlotProps<T>): unknown;
     loading?(): unknown;
     pagination?(props: PaginationSlotProps): unknown;
     subtable?(props: SubtableSlotProps<T>): unknown;
@@ -493,6 +503,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
 // @public
 export interface VirtualOptions {
     estimateRowHeight?: number;
+    groupRowHeight?: number;
     overscan?: number;
     rowHeight?: number;
     scrollElement?: () => HTMLElement | null;
