@@ -31,6 +31,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. A row can start expanded with its `isExpanded` field (see `rows`). Defaults to `false`. |
 | `rowExpandable` | `((row: T, index: number) => boolean)` |  | `undefined` | Which rows can expand, with `hasSubtable` (C-98): called with the row and its index in `rows`. A row it returns `false` for gets an empty expand cell (no button), never draws the `subtable` slot, is skipped by `expandAll()` and ignores its `isExpanded` field. Absent, every row can expand. |
 | `rowKind` | `((row: T, index: number) => string \| null \| undefined)` |  | `undefined` | A kind for a row, written as `data-row-kind` on its `tr` (C-97): called with the row and its index in `rows`. Data, not styling: the table draws nothing by it, and the consumer's CSS selects `tr[data-row-kind="total"]`. An empty string, `null` or `undefined` writes no attribute. |
+| `groupBy` | `((row: T, index: number) => string \| number \| null \| undefined)` |  | `undefined` | Group the rows (C-101): called with each row that is not pinned and its index in `rows`, it returns the row's group key. A run of consecutive rows with the same key is one group, drawn under one `tr.qt-group-row` that holds the `group` slot; the table never reorders, so sort the rows by group yourself. `null` or `undefined` puts a row in no group. Group rows are not rows of `rows`: indexes, the selection and `scrollToIndex` count only the rows given. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
 | `labels` | `Partial<TableLabels>` |  | `undefined` | Text the table writes for people: accessible names and the options of a bool filter. Give only the entries you want to change; the rest keep their English defaults. |
@@ -64,6 +65,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `loading` | `none` | Drawn while `loading` is on, in a `tr.qt-loading-row` that is the last row of the body. The rows stay; place the row over them in your CSS. |
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
 | `load-more` | `LoadMoreSlotProps` | With `infinite`: the last row of the body while `loading` is off, in a `tr.qt-load-more-row`, for a "load more" or "try again" control (C-89). |
+| `group` | `GroupSlotProps<T>` | With `groupBy`: the content of a group row, one `th` that spans every column above the rows of the group (C-101). Without it the cell shows the key. |
 | `header-<field>` | `((props: HeaderSlotProps) => unknown)` | Header content of one column: `header-${column.field}`. It replaces the sort button or the title only; the header cell, its filter row and its resize handle stay. Draw a sort control with `toggleSort` if you want one. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
@@ -349,6 +351,16 @@ export interface TableProps<
    * writes no attribute.
    */
   rowKind?: (row: T, index: number) => string | null | undefined
+  /**
+   * Group the rows (C-101): called with each row that is not pinned and its
+   * index in `rows`, it returns the row's group key. A run of consecutive
+   * rows with the same key is one group, drawn under one `tr.qt-group-row`
+   * that holds the `group` slot; the table never reorders, so sort the rows
+   * by group yourself. `null` or `undefined` puts a row in no group. Group
+   * rows are not rows of `rows`: indexes, the selection and `scrollToIndex`
+   * count only the rows given.
+   */
+  groupBy?: (row: T, index: number) => string | number | null | undefined
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
   /**
@@ -411,6 +423,11 @@ export interface VirtualOptions {
   rowHeight?: number
   /** Height counted for a row not measured yet. Defaults to the first measured row, else `32`. */
   estimateRowHeight?: number
+  /**
+   * With `rowHeight` and `groupBy`: height of a group row in pixels (C-102).
+   * Defaults to `rowHeight`.
+   */
+  groupRowHeight?: number
   /** Rows drawn beyond each edge of the view. Defaults to `10`. */
   overscan?: number
   /**
@@ -430,6 +447,21 @@ export interface InfiniteOptions {
 export interface ScrollToIndexOptions {
   /** Where the row ends up in the container. Defaults to `'auto'`: the nearest edge, nothing when in view. */
   align?: 'start' | 'center' | 'end' | 'auto'
+}
+
+/** What the `group` slot receives (C-101). */
+export interface GroupSlotProps<T> {
+  /**
+   * The group key `groupBy` returned (not `key`: Vue keeps `key` off slot
+   * props).
+   */
+  groupKey: string | number
+  /** The rows in the group. */
+  count: number
+  /** The first row of the group. */
+  row: T
+  /** Index of the first row in `rows`. */
+  index: number
 }
 
 /** What the `load-more` slot receives (C-89). */
@@ -727,6 +759,12 @@ export interface TableSlots<T> {
    */
   'load-more'?(props: LoadMoreSlotProps): unknown
   /**
+   * With `groupBy`: the content of a group row, one `th` that spans every
+   * column above the rows of the group (C-101). Without it the cell shows
+   * the key.
+   */
+  group?(props: GroupSlotProps<T>): unknown
+  /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its
    * resize handle stay. Draw a sort control with `toggleSort` if you want one.
@@ -894,20 +932,20 @@ Each rule has a stable ID. Every ID is covered by at least one test whose name c
 
 A `Source:` line under a rule says where its behavior comes from in v3 (ADR 0004): `tanstack` when TanStack Table does it through its options, `own` when the core plugins or the Vue layer do it, both when an override adjusts TanStack. A test may carry the matching `[tanstack]` or `[own]` tag. Where TanStack's default differs from a rule, the override is:
 
-| Rule | TanStack default | Override |
-| --- | --- | --- |
-| C-05 paging | 0-based `pageIndex`; next page allowed when the row count is unknown | 1-based `page` ↔ 0-based index; `pageCount` from the total, or from a full page when it is unknown (C-23) |
-| C-06 page size | `setPageSize` keeps the top row and lifts sizes below 1 to 1 | the plugin's action sets `pageSize` and `page: 1` and ignores sizes that are not whole; the Vue layer validates `setPageSize(n)` before calling TanStack |
-| C-07 header sort | `sortDescFirst` can start descending; `toggleSorting` reads the next direction from the drawn state | `sortDescFirst: false`, single sort; `column.toggleQuerySorting()` steps asc → desc → none from the base query, so two toggles in a tick are two steps |
-| C-03, C-10, C-17 rule order | one value per column | the filter value is the field's `FilterRule[]` with a no-op `filterFn`; `replaceRules` keeps rule order and unknown fields |
-| server data | client-side row models | `manualSorting`, `manualPagination`, `manualFiltering: true` (C-61) |
-| C-56 cursor paging | `pageIndex` and `pageCount` count pages | the position is always "here": `pageIndex` 1 or 0 by the previous cursor, `pageCount` one more by the next one; a ±1 step becomes a cursor request |
-| C-58 global search | the global filter filters rows on the client | `globalFilteringFeature` in manual mode; its slice is projected from `query.search` and a change emits the query |
-| C-59 row selection | the table keeps the selection | the slice is controlled: `state.rowSelection` is the consumer's, `onRowSelectionChange` tells the consumer |
-| C-67 column visibility | TanStack keeps `columnVisibility` | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns` |
-| C-69 column order | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins |
-| C-71 right pinning | `columnPinningFeature` computes offsets from `getSize()` | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3) |
-| C-74 row pinning | TanStack keeps `rowPinning`; `keepPinnedRows` shows pinned rows of other pages; `row.pin` moves a row already at that position to the end | the slice is controlled (`state.rowPinning` is the consumer's, `onRowPinningChange` tells it); in server mode the row models hold only `rows`, so a key outside `rows` is not drawn; pinning a row to the position it has emits nothing |
+| Rule                        | TanStack default                                                                                                                          | Override                                                                                                                                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C-05 paging                 | 0-based `pageIndex`; next page allowed when the row count is unknown                                                                      | 1-based `page` ↔ 0-based index; `pageCount` from the total, or from a full page when it is unknown (C-23)                                                                                                                               |
+| C-06 page size              | `setPageSize` keeps the top row and lifts sizes below 1 to 1                                                                              | the plugin's action sets `pageSize` and `page: 1` and ignores sizes that are not whole; the Vue layer validates `setPageSize(n)` before calling TanStack                                                                                |
+| C-07 header sort            | `sortDescFirst` can start descending; `toggleSorting` reads the next direction from the drawn state                                       | `sortDescFirst: false`, single sort; `column.toggleQuerySorting()` steps asc → desc → none from the base query, so two toggles in a tick are two steps                                                                                  |
+| C-03, C-10, C-17 rule order | one value per column                                                                                                                      | the filter value is the field's `FilterRule[]` with a no-op `filterFn`; `replaceRules` keeps rule order and unknown fields                                                                                                              |
+| server data                 | client-side row models                                                                                                                    | `manualSorting`, `manualPagination`, `manualFiltering: true` (C-61)                                                                                                                                                                     |
+| C-56 cursor paging          | `pageIndex` and `pageCount` count pages                                                                                                   | the position is always "here": `pageIndex` 1 or 0 by the previous cursor, `pageCount` one more by the next one; a ±1 step becomes a cursor request                                                                                      |
+| C-58 global search          | the global filter filters rows on the client                                                                                              | `globalFilteringFeature` in manual mode; its slice is projected from `query.search` and a change emits the query                                                                                                                        |
+| C-59 row selection          | the table keeps the selection                                                                                                             | the slice is controlled: `state.rowSelection` is the consumer's, `onRowSelectionChange` tells the consumer                                                                                                                              |
+| C-67 column visibility      | TanStack keeps `columnVisibility`                                                                                                         | the slice is `{ [field]: !hide }` of `columns`; `onColumnVisibilityChange` emits `update:columns`                                                                                                                                       |
+| C-69 column order           | TanStack keeps `columnOrder`; `column.pin('end')` appends to the region                                                                   | the slices are projected from `columns` (order, `pinned`); `onColumnOrderChange` / `onColumnPinningChange` emit `update:columns`; inside a region the array order wins                                                                  |
+| C-71 right pinning          | `columnPinningFeature` computes offsets from `getSize()`                                                                                  | the `end` region gives the order only; `--qt-pin-right` is measured like `--qt-pin-left` (ADR 0004, D3)                                                                                                                                 |
+| C-74 row pinning            | TanStack keeps `rowPinning`; `keepPinnedRows` shows pinned rows of other pages; `row.pin` moves a row already at that position to the end | the slice is controlled (`state.rowPinning` is the consumer's, `onRowPinningChange` tells it); in server mode the row models hold only `rows`, so a key outside `rows` is not drawn; pinning a row to the position it has emits nothing |
 
 #### C-01 The table is controlled
 
@@ -1449,6 +1487,24 @@ With `autoWidth`, a visible column without `Column.width` is drawn at its automa
 
 Source: own
 
+#### C-101 Grouped rows
+
+With `groupBy` the table calls it with every row that is not pinned (C-74) and its index in `rows`; a run of consecutive rows for which it returns the same key (`string` or `number`, compared with `===`) is one group, and `null` or `undefined` puts a row in no group. The table never reorders the rows (P1): a key that comes back after another key starts a new group, and sorting the rows by group is the consumer's. Above the first row of each group the body draws one `tr.qt-group-row` with one `th scope="row"` that spans every column (the utility columns included) and holds the `group` slot, which receives `groupKey`, `count` (the rows of the group), `row` (its first row) and `index` (that row's index in `rows`); without the slot the cell shows the key. A group row is not a row of `rows`: it has no `data-row-index`, `data-row-kind`, `data-selected`, `data-expanded` or `data-flash`, no utility cell, no checkbox and no expand button, and `rows.length`, the `rowIndex` of every slot and event, the selection (C-64), `expandAll`, `rowKind` (C-97), the change flash (C-93) and the infinite trigger (C-88) count only the rows given. Pinned rows are drawn without a group row. Without `groupBy` no group row is drawn.
+
+Source: own
+
+#### C-102 Grouped rows in a virtual body
+
+With `virtual` and `groupBy` a group row is part of the item of the first row of its group (C-83): the spacers count it. Without `virtual.rowHeight` it is measured, and every group row counts as tall as the last group row measured (the estimate of C-84 until one is); with `rowHeight` nothing is measured and a group row is `virtual.groupRowHeight` tall, `rowHeight` when that is not given. When the first row drawn after a spacer is not the first row of its group and no row of its group is drawn before it, the group row of its group is drawn right before it and its height is taken from that spacer, so the scroll height does not change and a group row made sticky by the consumer's CSS stays while its group is in view; a group never has two group rows in the DOM. While the page prints every group row is drawn above its first row. `aria-rowcount` counts the group rows and a group row carries `aria-rowindex`, its position among all rows (C-86): it comes right before the first row of its group, also when it is drawn above a later row; with `infinite` while there is more to load the count is `-1` when there is a group, since the group rows of the pages to come are unknown. `scrollToIndex` (C-87) shows the first row of a group with its group row above it, and aligns any other row below a group row the consumer's CSS made sticky (`position: sticky` on the row or its cell), as it does below a sticky header.
+
+Source: own
+
+#### C-103 Grouping off and DOM contract of 3.8
+
+With `groupBy` absent the body is the one of 3.7: no group row, no extra measure, and the DOM is the one C-40, C-72, C-91 and C-95 check. With `groupBy` the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entry the contract marks `addedBy: 'C-101'` (`qt-group-row`) is rendered by the state that adds it.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1479,6 +1535,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-reorder-handle` | `th > button` | Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS. |
 | `qt-virtual-spacer` | `tbody > tr` | With `virtual`: the row above or below the drawn rows that holds the height of the rows left out, as an inline `height` (C-83). `aria-hidden`, one empty cell. Give its cell `padding: 0; border: 0` in your CSS. |
 | `qt-load-more-row` | `tbody > tr` | With `infinite` and a `load-more` slot: the last row of the body while `loading` is off, holding the slot in one cell that spans every column (C-89). |
+| `qt-group-row` | `tbody > tr` | With `groupBy`: the row above the first row of a group, one `th scope="row"` that spans every column and holds the `group` slot (C-101). It is not a row of `rows`: no `data-row-index`. Make it sticky in your CSS (`tr.qt-group-row > th { position: sticky; top: <the height of your sticky header> }`); with `virtual` the group row of the top group stays drawn (C-102). |
 | `qt-footer` | `tfoot` | Totals block. |
 | `qt-pagination` | `div` | Block around the `pagination` slot. |
 

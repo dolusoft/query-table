@@ -6,6 +6,7 @@ import {
   type ShallowRef
 } from 'vue'
 
+import { groupRuns, type GroupKey, type GroupRun } from '../body/group-runs'
 import type { ScrollToIndexOptions, VirtualOptions } from '../contract'
 import type { BodyRow } from '../use-query-table'
 import {
@@ -35,6 +36,14 @@ export interface SpacerRow {
   spacer: number
   key: symbol
 }
+/** The header row of a group (C-101), with its `aria-rowindex` when virtual. */
+export interface GroupRow<T> {
+  group: GroupRun<T>
+  key: string
+  aria?: number
+}
+/** An item of the body: a data row, a spacer or a group row. */
+export type BodyItem<T> = DrawnRow<T> | SpacerRow | GroupRow<T>
 
 export interface RowWindowOptions<T> {
   virtual: () => boolean | VirtualOptions | undefined
@@ -43,6 +52,9 @@ export interface RowWindowOptions<T> {
   bodyRows: () => BodyRow<T>[]
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
+  /** The `groupBy` prop (C-101); absent, no group is drawn. */
+  groupBy?: () =>
+    ((row: T, index: number) => GroupKey | null | undefined) | undefined
 }
 
 type Align = NonNullable<ScrollToIndexOptions['align']>
@@ -68,6 +80,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       previous.overscan === next.overscan &&
       previous.rowHeight === next.rowHeight &&
       previous.estimateRowHeight === next.estimateRowHeight &&
+      previous.groupRowHeight === next.groupRowHeight &&
       previous.scrollElement === next.scrollElement
       ? previous
       : next
@@ -95,6 +108,26 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   })
   const center = () => parts.value.center
 
+  /** The groups of the center rows (C-101), or `null` without `groupBy`. */
+  const groups = computed(() => {
+    const groupBy = o.groupBy?.()
+    return groupBy ? groupRuns(center(), groupBy) : null
+  })
+  /** The center position starts a group: its group row is drawn above it. */
+  const startsGroup = (position: number) => {
+    const g = groups.value
+    if (!g) {
+      return false
+    }
+    const at = g.groupOf[position]
+    return at >= 0 && g.runs[at].start === position
+  }
+  const groupRowOf = (run: GroupRun<T>, aria?: number): GroupRow<T> => ({
+    group: run,
+    key: `\u0000group:${run.id}`,
+    aria
+  })
+
   /** Position of a row index among the center rows (ascending), or -1. */
   const positionOf = (index: number): number => {
     const rows = center()
@@ -121,7 +154,11 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   // ---- heights (C-84) -------------------------------------------------------
 
   let heights = new Float64Array(0)
+  /** Item heights without the group row above an item (C-102). */
+  let base = new Float64Array(0)
   let measured = new Uint8Array(0)
+  /** The measured height of a group row, `0` until one is measured. */
+  let groupMeasured = 0
   let offsets = new Float64Array(1)
   let byKey = new Map<string | number, number>()
   /** The first measured height, the estimate when none is given. */
@@ -130,27 +167,40 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   const version = shallowRef(0)
   const estimate = () =>
     fixed() ?? settings.value?.estimateRowHeight ?? (firstMeasured || 32)
+  /** Height counted for a group row (C-102). */
+  const groupHeight = () => {
+    const height = fixed()
+    if (height !== undefined) {
+      return settings.value?.groupRowHeight ?? height
+    }
+    return groupMeasured || estimate()
+  }
+  /** An item's height: its row and, above it, its group row. */
+  const withGroup = (position: number) =>
+    base[position] + (startsGroup(position) ? groupHeight() : 0)
 
   const rebuild = () => {
     const rows = enabled() ? center() : []
     const height = fixed()
     heights = new Float64Array(rows.length)
+    base = new Float64Array(rows.length)
     measured = new Uint8Array(rows.length)
     const kept = new Map<string | number, number>()
     for (let i = 0; i < rows.length; i++) {
       if (height !== undefined) {
-        heights[i] = height
-        continue
-      }
-      const key = o.keyOf(rows[i].row, rows[i].index)
-      const known = byKey.get(key)
-      if (known === undefined) {
-        heights[i] = estimate()
+        base[i] = height
       } else {
-        kept.set(key, known)
-        heights[i] = known
-        measured[i] = 1
+        const key = o.keyOf(rows[i].row, rows[i].index)
+        const known = byKey.get(key)
+        if (known === undefined) {
+          base[i] = estimate()
+        } else {
+          kept.set(key, known)
+          base[i] = known
+          measured[i] = 1
+        }
       }
+      heights[i] = withGroup(i)
     }
     // Keys that left `rows` are dropped (C-84).
     byKey = kept
@@ -192,6 +242,15 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     const rows = center()
     let from = -1
     for (const tr of tbody.children) {
+      if (groups.value && tr.classList.contains('qt-group-row')) {
+        // Every group row counts as tall as the last one measured (C-102).
+        const height = tr.getBoundingClientRect().height
+        if (height > 0 && Math.abs(height - groupMeasured) > 0.5) {
+          groupMeasured = height
+          from = 0
+        }
+        continue
+      }
       const at = tr.getAttribute('data-row-index')
       if (at === null || tr.hasAttribute('data-pinned-row')) {
         continue
@@ -208,21 +267,24 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       ) {
         // The first measured item becomes the estimate of the others.
         firstMeasured = height
-        for (let i = 0; i < heights.length; i++) {
+        for (let i = 0; i < base.length; i++) {
           if (!measured[i]) {
-            heights[i] = height
+            base[i] = height
           }
         }
         from = 0
       }
-      if (!measured[position] || Math.abs(heights[position] - height) > 0.5) {
-        heights[position] = height
+      if (!measured[position] || Math.abs(base[position] - height) > 0.5) {
+        base[position] = height
         measured[position] = 1
         byKey.set(o.keyOf(rows[position].row, rows[position].index), height)
         from = from < 0 ? position : Math.min(from, position)
       }
     }
     if (from >= 0) {
+      for (let i = from; i < heights.length; i++) {
+        heights[i] = withGroup(i)
+      }
       fillOffsets(heights, offsets, from)
       version.value++
       return true
@@ -291,16 +353,22 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   }
 
   /** How far to scroll to show an item at `top` (client) with `height`. */
-  const alignDelta = (top: number, height: number, align: Align) => {
+  const alignDelta = (
+    top: number,
+    height: number,
+    align: Align,
+    groupCover = 0
+  ) => {
     const view = viewport()
     // A sticky header that covers the top of the container hides a row
-    // aligned to the top; the row goes below it.
+    // aligned to the top; the row goes below it, and below a sticky group
+    // row that covers it too (C-102).
     const head = o.table.value?.tHead?.getBoundingClientRect()
     const cover =
       head && head.top <= view.top + 1 && head.bottom > view.top
         ? head.bottom - view.top
         : 0
-    const viewTop = view.top + cover
+    const viewTop = view.top + cover + groupCover
     const viewBottom = view.top + view.height
     const bottom = top + height
     switch (align) {
@@ -319,6 +387,22 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     }
   }
 
+  /**
+   * Height of a group row the consumer's CSS made sticky, which covers a
+   * row aligned to the top of its group (C-102); `0` without one.
+   */
+  const stickyGroupCover = (tbody: HTMLElement) => {
+    if (!groups.value) {
+      return 0
+    }
+    const row = tbody.querySelector<HTMLElement>(':scope > tr.qt-group-row')
+    const sticky = (element: Element | null | undefined) =>
+      !!element && getComputedStyle(element).position === 'sticky'
+    return row && (sticky(row) || sticky(row.firstElementChild))
+      ? row.getBoundingClientRect().height
+      : 0
+  }
+
   /** After a render: correct the drift (C-84) or a `scrollToIndex` (C-87). */
   const settle = () => {
     const tbody = body()
@@ -334,10 +418,18 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     if (pending) {
       const tr = rowElement(tbody, pending.position)
       if (tr) {
-        const { align } = pending
+        const { align, position } = pending
         pending = null
+        // The first row of a group is shown with its group row above it.
+        const above = startsGroup(position) ? tr.previousElementSibling : null
+        const head = above?.classList.contains('qt-group-row') ? above : null
         scrollBy(
-          alignDelta(tr.getBoundingClientRect().top, itemHeight(tr), align)
+          alignDelta(
+            (head ?? tr).getBoundingClientRect().top,
+            itemHeight(tr) + (head ? head.getBoundingClientRect().height : 0),
+            align,
+            head ? 0 : stickyGroupCover(tbody)
+          )
         )
         return
       }
@@ -486,27 +578,74 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     return counts
   })
 
-  const drawn = computed<Array<DrawnRow<T> | SpacerRow>>(() => {
+  /** Group rows drawn up to and with the center position (C-102). */
+  const groupsThrough = (position: number) =>
+    groups.value ? groups.value.headersThrough[position] : 0
+  const groupCount = () => groups.value?.runs.length ?? 0
+
+  const drawn = computed<Array<BodyItem<T>>>(() => {
     const { all, top } = parts.value
+    const g = groups.value
     if (!enabled()) {
-      return all
+      if (!g) {
+        return all
+      }
+      // Without `virtual` every group row is drawn above its first row.
+      const out: Array<BodyItem<T>> = []
+      for (let q = 0; q < all.length; q++) {
+        const p = q - top
+        if (p >= 0 && p < g.groupOf.length && startsGroup(p)) {
+          out.push(groupRowOf(g.runs[g.groupOf[p]]))
+        }
+        out.push(all[q])
+      }
+      return out
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     version.value
     const rows = center()
     const before = expandedBefore.value
-    // The header row is 1, the first body row 2.
-    const at = (q: number): DrawnRow<T> => ({
-      ...all[q],
-      aria: q + before[q] + 2
-    })
-    const out: Array<DrawnRow<T> | SpacerRow> = []
+    // The header row is 1, the first body row 2; a group row counts as a
+    // row, before the first row of its group (C-102).
+    const headersBefore = (q: number) =>
+      q < top
+        ? 0
+        : q < top + rows.length
+          ? groupsThrough(q - top)
+          : groupCount()
+    const ariaOf = (q: number) => q + before[q] + headersBefore(q) + 2
+    const at = (q: number): DrawnRow<T> => ({ ...all[q], aria: ariaOf(q) })
+    const out: Array<BodyItem<T>> = []
+    /** The group whose row was drawn last, or -1. */
+    let drawnGroup = -1
+    /** The center row at `p`, after its group row when it needs one. */
+    const push = (p: number, carry: boolean) => {
+      const group = g ? g.groupOf[p] : -1
+      if (g && group >= 0 && group !== drawnGroup) {
+        const run = g.runs[group]
+        if (run.start === p) {
+          out.push(groupRowOf(run, ariaOf(top + p) - 1))
+        } else if (carry) {
+          // The first row of the group is not drawn: its group row is drawn
+          // here, with its height taken from the spacer above, so a sticky
+          // group row stays while its group is in view (C-102).
+          const last = out[out.length - 1]
+          if (last && 'spacer' in last) {
+            const height = Math.max(0, last.spacer - groupHeight())
+            out[out.length - 1] = { spacer: height, key: last.key }
+          }
+          out.push(groupRowOf(run, ariaOf(top + run.start) - 1))
+        }
+      }
+      drawnGroup = group
+      out.push(at(top + p))
+    }
     for (let q = 0; q < top; q++) {
       out.push(at(q))
     }
     if (printing.value) {
       for (let p = 0; p < rows.length; p++) {
-        out.push(at(top + p))
+        push(p, false)
       }
     } else {
       const end = Math.min(range.value.end, rows.length)
@@ -516,7 +655,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
           out.push({ spacer: segment.spacer, key: spacerKeys[segment.slot] })
         } else {
           for (let p = segment.from; p < segment.to; p++) {
-            out.push(at(top + p))
+            push(p, p === segment.from)
           }
         }
       }
@@ -524,7 +663,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     for (let q = top + rows.length; q < all.length; q++) {
       out.push(at(q))
     }
-    return out
+    // A spacer whose height went to a group row is not drawn.
+    return g ? out.filter(item => !('spacer' in item) || item.spacer > 0) : out
   })
 
   // ---- the container and its listeners (C-85) -------------------------------
@@ -660,6 +800,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       () => parts.value.center,
       () => settings.value?.rowHeight,
       () => settings.value?.estimateRowHeight,
+      () => settings.value?.groupRowHeight,
+      () => groups.value,
       enabled
     ],
     rebuild,
@@ -737,7 +879,12 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     anchor = null
     pending = { position, align, tries: 0 }
     scrollBy(
-      alignDelta(itemsTop(tbody) + offsets[position], heights[position], align)
+      alignDelta(
+        itemsTop(tbody) + offsets[position],
+        heights[position],
+        align,
+        startsGroup(position) ? 0 : stickyGroupCover(tbody)
+      )
     )
     schedule()
   }
@@ -749,6 +896,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     ready,
     centerCount: () => center().length,
     expandedCount: () => expandedBefore.value[expandedBefore.value.length - 1],
+    /** Group rows of the body, drawn or not (C-102). */
+    groupCount,
     scrollToIndex,
     onFocusIn,
     onFocusOut

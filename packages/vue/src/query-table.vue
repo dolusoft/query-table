@@ -58,6 +58,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   hasSubtable: false,
   rowExpandable: undefined,
   rowKind: undefined,
+  groupBy: undefined,
   hasRightPanel: false,
   rowKey: undefined,
   labels: undefined,
@@ -191,7 +192,8 @@ const rowWindow = useRowWindow<T>({
   table: tableEl,
   bodyRows: () => state.rowPinning.rows.value,
   keyOf: expansion.keyOf,
-  isExpanded: expansion.isExpanded
+  isExpanded: expansion.isExpanded,
+  groupBy: () => props.groupBy
 })
 const infinite = useLoadMore({
   infinite: () => props.infinite,
@@ -226,17 +228,24 @@ const ariaRowCount = computed(() => {
     return undefined
   }
   const total = props.totalRows
-  if (growing() && total === null) {
+  // The group rows of the pages still to load are unknown (C-102).
+  if (growing() && (total === null || rowWindow.groupCount() > 0)) {
     return -1
   }
   const rows = growing() && total !== null ? total : props.rows.length
-  return 1 + rows + rowWindow.expandedCount() + footerCount.value
+  return (
+    1 +
+    rows +
+    rowWindow.expandedCount() +
+    rowWindow.groupCount() +
+    footerCount.value
+  )
 })
 /** `aria-rowindex` of the first footer row, or `undefined` (C-86). */
 const footerRowIndex = computed(() =>
   !rowWindow.enabled() || growing()
     ? undefined
-    : 2 + props.rows.length + rowWindow.expandedCount()
+    : 2 + props.rows.length + rowWindow.expandedCount() + rowWindow.groupCount()
 )
 
 // The change flash (C-93 to C-95). Off, one watcher of `flash` and nothing
@@ -302,7 +311,8 @@ const bodySlotNames = () =>
       name === 'subtable' ||
       name === 'empty' ||
       name === 'loading' ||
-      name === 'load-more'
+      name === 'load-more' ||
+      name === 'group'
   )
 // A string, so the header sees a changed prop only when the set changes.
 const headerSlotNames = () =>
