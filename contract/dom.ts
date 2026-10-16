@@ -15,7 +15,8 @@ export interface ClassEntry {
    * not render it. C-40 checks the entries without it; C-66 the ones the
    * selection adds (`C-64`), C-72 the ones of the 3.1 features, C-82 the
    * column type, C-91 the ones of the 3.2 features and C-95 the ones of
-   * the change flash of 3.3 (`C-94`).
+   * the change flash of 3.3 (`C-94`). C-102 checks the ones of
+   * `scrollBody` (`C-101`, `C-102`).
    */
   addedBy?: string
 }
@@ -36,7 +37,33 @@ export const domClasses: ClassEntry[] = [
     on: 'div',
     description: 'Scroll container around the table.'
   },
-  { name: 'qt-table', on: 'table', description: 'The table.' },
+  {
+    name: 'qt-table-head',
+    on: '.qt-table-responsive > div',
+    description:
+      'With `scrollBody`: the wrapper of the header table, the first child of `qt-table-responsive` (C-101). Give it `overflow-x: hidden; overflow-y: scroll` and a transparent `scrollbar-color` in your CSS, so it is as wide as the body and scrolls sideways as far; the table keeps its sideways position at that of the body.',
+    addedBy: 'C-101'
+  },
+  {
+    name: 'qt-table-body',
+    on: '.qt-table-responsive > div',
+    description:
+      'With `scrollBody`: the wrapper of the body table, the one to make scroll in your CSS (`overflow-x: auto; overflow-y: scroll` and a height, C-101). It is the scroll container a virtual body finds (C-85).',
+    addedBy: 'C-101'
+  },
+  {
+    name: 'qt-table-foot',
+    on: '.qt-table-responsive > div',
+    description:
+      'With `scrollBody` and footer rows: the wrapper of the footer table, the last child of `qt-table-responsive` (C-101). Give it the CSS of `qt-table-head`.',
+    addedBy: 'C-101'
+  },
+  {
+    name: 'qt-table',
+    on: 'table',
+    description:
+      'The table. With `scrollBody` each of the three tables carries it (C-101).'
+  },
   {
     name: 'qt-sort',
     on: 'th > button',
@@ -272,6 +299,13 @@ export const domAttributes: AttributeEntry[] = [
     addedBy: 'C-86'
   },
   {
+    name: 'aria-rowcount',
+    on: '.qt-table-responsive[role="table"]',
+    description:
+      'With `scrollBody` and `virtual`: the count of C-86, on the element that is the table for assistive technology (C-102).',
+    addedBy: 'C-102'
+  },
+  {
     name: 'aria-rowindex',
     on: 'tr',
     description:
@@ -316,6 +350,13 @@ export const domInlineStyles: InlineStyleEntry[] = [
     description:
       'With `virtual`: the height of the rows a spacer stands for, in pixels (C-83).',
     addedBy: 'C-83'
+  },
+  {
+    property: 'width',
+    on: '.qt-table-body > table > colgroup > col, .qt-table-foot > table > colgroup > col',
+    description:
+      'With `scrollBody`: the rendered width of the header cell above the column, in pixels, fractions kept (C-101). With `table-layout: fixed` on the body and footer tables their columns are as wide as the header cells.',
+    addedBy: 'C-101'
   },
   {
     property: '--qt-flash-elapsed',

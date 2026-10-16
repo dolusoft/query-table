@@ -189,6 +189,17 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-83', 'C-84', 'C-85', 'C-86', 'C-87', 'C-91']
   },
   {
+    id: 'scroll-body',
+    title: 'Scrolling body',
+    summary:
+      '`scrollBody` draws the header, the body and the footer as three tables, so the body scrolls under a header that stays outside it and the vertical scrollbar starts below the header. The columns keep the header widths and the three scroll sideways together; pinning, resizing and `virtual` work as in one table.',
+    example: 'ScrollBody',
+    api: {
+      props: ['scrollBody']
+    },
+    rules: ['C-101', 'C-102']
+  },
+  {
     id: 'infinite-scroll',
     title: 'Infinite scroll',
     summary:

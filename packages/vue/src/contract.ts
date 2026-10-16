@@ -270,6 +270,17 @@ export interface TableProps<
    */
   virtual?: boolean | VirtualOptions
   /**
+   * Draw the header, the body and the footer as three tables in
+   * `.qt-table-head`, `.qt-table-body` and `.qt-table-foot`, so the body
+   * scrolls under a header that stays outside it (C-101, C-102). The columns
+   * of the body and footer take the widths of the header cells, and the
+   * three scroll sideways together. In your CSS give the three wrappers
+   * `overflow-y: scroll`, the body a height and `overflow-x: auto`, the
+   * header and footer `overflow-x: hidden` and a transparent scrollbar, and
+   * the body and footer tables `table-layout: fixed`. Defaults to `false`.
+   */
+  scrollBody?: boolean
+  /**
    * Ask for the next page (`update:query`, reason `page`) when the end of
    * `rows` comes into view (C-88); append the rows of a `page` answer and
    * replace them for any other reason. Needs `rowKey`. `true` takes the

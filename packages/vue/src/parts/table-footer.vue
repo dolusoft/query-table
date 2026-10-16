@@ -16,6 +16,8 @@ defineProps<{
   offsets: Readonly<Record<string, number>>
   /** With `virtual`: `aria-rowindex` of the first footer row (C-86). */
   firstRowIndex?: number
+  /** With `scrollBody`: the ARIA table roles of C-102. */
+  roles?: boolean
 }>()
 
 const footerText = (row: FooterRow, column: Column) =>
@@ -23,10 +25,11 @@ const footerText = (row: FooterRow, column: Column) =>
 </script>
 
 <template>
-  <tfoot class="qt-footer">
+  <tfoot class="qt-footer" :role="roles ? 'rowgroup' : undefined">
     <tr
       v-for="(footerRow, i) in footerRows"
       :key="i"
+      :role="roles ? 'row' : undefined"
       :aria-rowindex="
         firstRowIndex === undefined ? undefined : firstRowIndex + i
       "
@@ -35,6 +38,8 @@ const footerText = (row: FooterRow, column: Column) =>
       <td
         v-if="utilityCount > 0"
         :colspan="utilityCount"
+        :role="roles ? 'cell' : undefined"
+        :aria-colspan="roles ? utilityCount : undefined"
         v-bind="pinAttrs(hasPinned ? 'left' : false, 0)"
       />
       <td
@@ -42,6 +47,7 @@ const footerText = (row: FooterRow, column: Column) =>
         :key="entry.column.field"
         :data-field="entry.column.field"
         :data-type="columnTypeOf(entry.column)"
+        :role="roles ? 'cell' : undefined"
         v-bind="pinAttrs(sideOf(entry.column), offsets[entry.column.field])"
       >
         {{ footerText(footerRow, entry.column) }}
