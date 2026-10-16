@@ -169,7 +169,9 @@ const ADDED_AFTER_BASELINE = [
   // does not have. Without it the table is the one of 3.7.
   'tests/contract/browser/scroll-body.browser.spec.ts > C-101 Scrolling body [own]',
   'tests/contract/browser/scroll-body.browser.spec.ts > C-102 Scrolling body: one table for assistive technology [own]',
-  'tests/contract/browser/dom-contract-scroll-body.browser.spec.ts > C-102 the DOM with `scrollBody` matches the DOM contract'
+  'tests/contract/browser/dom-contract-scroll-body.browser.spec.ts > C-102 the DOM with `scrollBody` matches the DOM contract',
+  'tests/contract/unit/scroll-body.spec.ts > C-101 Scrolling body (unit) [own]',
+  'tests/contract/unit/scroll-body.spec.ts > C-102 Scrolling body: roles (unit) [own]'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
