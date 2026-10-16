@@ -1,3 +1,4 @@
+import { sourceBranch } from '../channel'
 import { repositoryUrl } from '../home/home-content'
 
 // The playground pages that are not an API example: they have no entry in
@@ -32,14 +33,12 @@ export const guidePages: GuidePage[] = [
   }
 ]
 
-/**
- * Raw files of `main` on GitHub: what an agent downloads. `main` holds the
- * latest release, and the Pages site that links here is built from it.
- */
-const rawBase = 'https://raw.githubusercontent.com/dolusoft/query-table/main'
+/** Raw files from the branch of the current playground channel. */
+const rawBase = `https://raw.githubusercontent.com/dolusoft/query-table/${sourceBranch}`
 
 /** A file of the repository, shown on GitHub. */
-export const blobUrl = (path: string) => `${repositoryUrl}/blob/main/${path}`
+export const blobUrl = (path: string) =>
+  `${repositoryUrl}/blob/${sourceBranch}/${path}`
 
 /** The files of the Claude Code skill, relative to the repository root. */
 export const skillFiles = [

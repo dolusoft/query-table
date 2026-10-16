@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
-import { aiNav, aiSections, guidePages } from './guides'
+import { aiNav, aiSections, blobUrl, guidePages, rawUrl } from './guides'
 import { externalLinks, hrefOf } from '../shell/external-links'
 
 describe('AI sidebar group', () => {
@@ -29,8 +29,20 @@ describe('external links', () => {
     }
   })
 
-  it('resolves a local file against the site base', () => {
-    const llms = externalLinks.find(link => link.id === 'llms')!
-    expect(hrefOf(llms, '/query-table/')).toBe('/query-table/llms.txt')
+  it.each(['/query-table/', '/query-table/next/'])(
+    'resolves a local file against the site base %s',
+    base => {
+      const llms = externalLinks.find(link => link.id === 'llms')!
+      expect(hrefOf(llms, base)).toBe(`${base}llms.txt`)
+    }
+  )
+
+  it('defaults repository documentation links to the release branch', () => {
+    expect(rawUrl('README.md')).toBe(
+      'https://raw.githubusercontent.com/dolusoft/query-table/main/README.md'
+    )
+    expect(blobUrl('README.md')).toBe(
+      'https://github.com/dolusoft/query-table/blob/main/README.md'
+    )
   })
 })
