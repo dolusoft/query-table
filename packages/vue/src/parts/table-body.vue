@@ -177,9 +177,15 @@ const isRowExpanded = (item: BodyItem<T>) => {
       <tr
         v-else-if="isGroup(item)"
         class="qt-group-row"
+        :role="rowRole()"
         :aria-rowindex="item.aria"
       >
-        <th scope="row" :colspan="columnCount">
+        <th
+          scope="row"
+          :colspan="columnCount"
+          :role="roles ? 'rowheader' : undefined"
+          :aria-colspan="roles ? columnCount : undefined"
+        >
           <slot
             name="group"
             :group-key="item.group.key"
