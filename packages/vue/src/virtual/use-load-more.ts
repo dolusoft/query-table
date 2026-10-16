@@ -9,7 +9,7 @@ import {
   shallowRef,
   watch,
   watchEffect,
-  type ShallowRef
+  type Ref
 } from 'vue'
 
 import type { InfiniteOptions } from '../contract'
@@ -27,7 +27,7 @@ export interface LoadMoreOptions {
   loading: () => boolean
   /** The next page action (C-05, C-56). */
   nextPage: () => void
-  table: ShallowRef<HTMLTableElement | null>
+  table: Readonly<Ref<HTMLTableElement | null>>
   /** The body is virtual (C-83). */
   virtual: () => boolean
   /**

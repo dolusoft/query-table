@@ -16,6 +16,7 @@ import {
   watch,
   type ComponentInternalInstance,
   type EffectScope,
+  type Ref,
   type ShallowRef,
   type VNode
 } from 'vue'
@@ -51,7 +52,7 @@ export interface ChangeFlashOptions<T extends object> {
   /** The fields of the drawn columns. */
   fields: () => readonly string[]
   rowKey: () => RowKey<T>
-  table: ShallowRef<HTMLTableElement | null>
+  table: Readonly<Ref<HTMLTableElement | null>>
 }
 
 /** What the body draws with: the marks and the binding hook (C-94). */

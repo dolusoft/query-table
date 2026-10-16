@@ -14,6 +14,8 @@ export interface ColumnResizeOptions {
   measuredWidth: (field: string) => number | undefined
   /** Measured width of the table. */
   tableWidth: () => number
+  /** With `scrollBody`: the table of the body rows (C-101), else `null`. */
+  body: () => HTMLTableElement | null
   emit: (payload: ColumnResizePayload) => void
 }
 
@@ -212,7 +214,11 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
       // a column that measures nothing (the table not displayed) stays.
       const to = sign
         ? from + sign * Math.max(1, Math.abs(step - from))
-        : measureColumnWidths(th.closest('table'), [column.field])[column.field]
+        : measureColumnWidths(
+            th.closest('table'),
+            [column.field],
+            options.body()
+          )[column.field]
       if (to !== undefined) {
         commit(column, from, to)
       }

@@ -17,6 +17,8 @@ export interface AutoWidthOptions {
   /** The `autoWidthMax` prop: the limit of a column without `maxWidth`. */
   max: () => number | undefined
   table: ShallowRef<HTMLTableElement | null>
+  /** With `scrollBody`: the table of the body rows (C-101), else `null`. */
+  body: () => HTMLTableElement | null
   /** The visible columns, as given. */
   columns: () => Column[]
   rows: () => readonly unknown[]
@@ -97,7 +99,8 @@ export const useAutoWidth = (options: AutoWidthOptions) => {
     }
     const measured = measureColumnWidths(
       table,
-      columns.map(column => column.field)
+      columns.map(column => column.field),
+      options.body()
     )
     if (Object.keys(measured).length === 0) {
       // Not displayed: nothing has a box. Keep what is drawn.
