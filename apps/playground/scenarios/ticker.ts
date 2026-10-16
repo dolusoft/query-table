@@ -126,7 +126,7 @@ export const ticker: Dataset = {
     },
     active: { field: 'active', title: 'Trading', type: 'bool', width: '120px' }
   },
-  list: ['id', 'symbol', 'sector', 'price', 'change', 'volume', 'tradeDate'],
+  list: ['tradeDate', 'id', 'symbol', 'sector', 'price', 'change', 'volume'],
   wide: ['id', 'symbol', 'sector', 'company', 'price', 'volume', 'active'],
   showcase: [
     'id',

@@ -121,16 +121,16 @@ export const harbor: Dataset = {
       width: '130px'
     }
   },
-  list: ['id', 'customer', 'city', 'product', 'quantity', 'total', 'ordered'],
-  wide: ['id', 'customer', 'city', 'product', 'total', 'ordered', 'shipped'],
+  list: ['ordered', 'id', 'customer', 'city', 'product', 'quantity', 'total'],
+  wide: ['ordered', 'id', 'customer', 'city', 'product', 'total', 'shipped'],
   showcase: [
+    'ordered',
     'id',
     'customer',
     'city',
     'product',
     'quantity',
     'total',
-    'ordered',
     'shipped'
   ],
   searchFields: ['customer', 'city'],

@@ -116,16 +116,16 @@ export const vigil: Dataset = {
       width: '130px'
     }
   },
-  list: ['id', 'user', 'severity', 'hits', 'bytes', 'time'],
+  list: ['time', 'id', 'user', 'severity', 'hits', 'bytes'],
   wide: ['id', 'user', 'severity', 'rule', 'hits', 'bytes', 'acknowledged'],
   showcase: [
+    'time',
     'id',
     'user',
     'severity',
     'sourceIp',
     'hits',
     'bytes',
-    'time',
     'acknowledged'
   ],
   searchFields: ['user', 'rule'],

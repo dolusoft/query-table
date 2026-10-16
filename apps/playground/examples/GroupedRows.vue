@@ -139,7 +139,8 @@ const columns: Column[] = [
 
 const groupBy = (task: Task) => task.workCategory
 
-// The sticky group rows go below the sticky header: the page measures it.
+// Overlap the sticky header by one pixel, rounding down so a fractional
+// header height cannot leave an unpainted seam between the two surfaces.
 const box = useTemplateRef<HTMLElement>('box')
 const headHeight = ref(0)
 let headObserver: ResizeObserver | null = null
@@ -148,7 +149,10 @@ watch(box, element => {
   const head = element?.querySelector('thead')
   if (head) {
     headObserver = new ResizeObserver(() => {
-      headHeight.value = head.getBoundingClientRect().height
+      headHeight.value = Math.max(
+        0,
+        Math.floor(head.getBoundingClientRect().height) - 1
+      )
     })
     headObserver.observe(head)
   }

@@ -52,8 +52,9 @@ const onResize = ({ field, width }: ColumnResizePayload) => {
 }
 
 // Every column has a width: the fixed layout keeps them still while rows
-// change. ID and the primary column are pinned while there is room for more
-// than them; ID keeps its width, the count column stays within its limits.
+// change. The first two columns (time and ID, or ID and the primary field
+// without time) are pinned outside compact mode. ID keeps its width, and
+// the count column stays within its limits.
 const columns = computed<Column[]>(() => {
   const pin = compact.value ? {} : { pinned: 'left' as const }
   const base: Column[] = data.showcase.map((field, index): Column => {

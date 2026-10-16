@@ -15,9 +15,9 @@ import {
 // `footer-rows` are drawn in a `tfoot`, one cell per visible column. The
 // table does not add anything up: the server (here the fake one) sends the
 // totals over every row that matches the filters, not just this page.
-// The first two columns are pinned: the footer cells under them, and the one
-// cell that spans the expand column, stay with them when the table scrolls
-// sideways.
+// The first two columns (time and ID, or ID and the primary field without
+// time) are pinned: their footer cells, and the cell that spans the expand
+// column, stay with them when the table scrolls sideways.
 const data = currentDataset()
 const allRows = data.createRows()
 const columns = wideColumns(data)
