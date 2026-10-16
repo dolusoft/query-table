@@ -138,9 +138,14 @@ export const measureColumnWidths = (
       const cell = firstRow?.querySelector(
         `:scope > td[data-field="${CSS.escape(field)}"]`
       )
+      const own = th.getBoundingClientRect().width
+      if (own === 0) {
+        // No box: the table is not displayed.
+        continue
+      }
       const width = Math.max(
-        th.getBoundingClientRect().width +
-          (options.filters ? filterOverflow(th) : 0),
+        own,
+        options.filters ? filterFloor(th) : 0,
         cell?.getBoundingClientRect().width ?? 0
       )
       if (width > 0) {
@@ -154,12 +159,13 @@ export const measureColumnWidths = (
 }
 
 /**
- * Lays the filter rows out at the width they need (C-100). A size container
- * a skin makes of the row counts as zero wide and switches the row to its
- * narrow form, and an input that grows from zero width counts nothing: for
- * the read the row is no container and each filter input stops growing, a
- * text, number or date input six characters wide (padding and border on
- * top), a select as wide as its longest option. Slot content counts as drawn.
+ * Lays the filter rows out for the floor (C-100), out of the cell's flow so
+ * that nothing in them (slot content included) widens the column by being
+ * there: the row is taken out of the flow (`position: absolute`) and is no
+ * size container, which would count as zero wide and switch the row to its
+ * narrow form, and each filter input stops growing: a text, number or date
+ * input six characters wide (padding and border on top), a select as wide as
+ * its longest option.
  */
 const countFilters = (
   table: HTMLTableElement,
@@ -168,6 +174,7 @@ const countFilters = (
   for (const row of Array.from(
     table.querySelectorAll<HTMLElement>(filterRow)
   )) {
+    swap.set(row, 'position', 'absolute')
     swap.set(row, 'container-type', 'normal')
     swap.set(row, 'contain', 'none')
     for (const input of Array.from(
@@ -185,24 +192,48 @@ const countFilters = (
   }
 }
 
+const horizontal = (style: CSSStyleDeclaration) =>
+  (parseFloat(style.paddingLeft) || 0) +
+  (parseFloat(style.paddingRight) || 0) +
+  (parseFloat(style.borderLeftWidth) || 0) +
+  (parseFloat(style.borderRightWidth) || 0)
+
 /**
- * How far the filter row's controls reach past the header cell's content
- * box in the read: what the cell's max-content width leaves out, such as a
- * percentage padding, which counts as zero there.
+ * The width a header cell needs for its filter controls, read in the layout
+ * `countFilters` gives: its own inputs (`.qt-filter-input`) and filter
+ * buttons (`.qt-filter-button`) side by side with the row's gap between
+ * them, plus the cell's padding and border. Other slot content does not
+ * count, so a slot that draws more in a wide column cannot widen it.
  */
-const filterOverflow = (th: HTMLTableCellElement) => {
+const filterFloor = (th: HTMLTableCellElement) => {
   const row = th.querySelector<HTMLElement>(':scope > .qt-filter')
   if (!row) {
     return 0
   }
-  const style = getComputedStyle(th)
-  const end =
-    th.getBoundingClientRect().right -
-    (parseFloat(style.paddingRight) || 0) -
-    (parseFloat(style.borderRightWidth) || 0)
-  let reach = row.getBoundingClientRect().right
-  for (const child of Array.from(row.children)) {
-    reach = Math.max(reach, child.getBoundingClientRect().right)
+  const controls = [
+    ...Array.from(
+      row.querySelectorAll<HTMLElement>(':scope > .qt-filter-input')
+    ),
+    ...Array.from(row.querySelectorAll<HTMLElement>('.qt-filter-button'))
+  ]
+  let sum = 0
+  let count = 0
+  for (const control of controls) {
+    // A control laid out of the row's flow (a panel over the page) takes
+    // no room in the column.
+    const { position } = getComputedStyle(control)
+    if (position === 'fixed' || position === 'absolute') {
+      continue
+    }
+    const width = control.getBoundingClientRect().width
+    if (width > 0) {
+      sum += width
+      count++
+    }
   }
-  return Math.max(0, reach - end)
+  if (count === 0) {
+    return 0
+  }
+  const gap = parseFloat(getComputedStyle(row).columnGap) || 0
+  return sum + gap * (count - 1) + horizontal(getComputedStyle(th))
 }
