@@ -32,12 +32,12 @@ test('on a phone only the table box scrolls, not the page', async () => {
   for (const section of document.querySelectorAll('article > section')) {
     const box = section.querySelector('[data-feature-table]')!
     const scroller = section.querySelector<HTMLElement>(
-      '[data-slot="table-container"]'
+      '[data-slot="table-container"] [data-slot="scroll-area-viewport"]'
     )!
     expect(box.getBoundingClientRect().right).toBeLessThanOrEqual(
       window.innerWidth
     )
-    expect(getComputedStyle(scroller).overflowX).toBe('auto')
+    expect(getComputedStyle(scroller).overflowX).toBe('scroll')
     expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
     expect(scroller.getAttribute('tabindex')).toBe('0')
   }

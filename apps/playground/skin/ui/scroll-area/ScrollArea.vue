@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ScrollAreaRootProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { computed, useTemplateRef } from 'vue'
+import { computed, useTemplateRef, watchPostEffect } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaViewport } from 'reka-ui'
 import { cn } from '@/lib/utils'
@@ -11,7 +11,9 @@ const props = defineProps<
   ScrollAreaRootProps & {
     class?: HTMLAttributes['class']
     viewportClass?: HTMLAttributes['class']
-    viewportAttrs?: HTMLAttributes
+    viewportAttrs?: Omit<HTMLAttributes, 'tabindex'> & {
+      tabindex?: HTMLAttributes['tabindex'] | null
+    }
   }
 >()
 
@@ -23,6 +25,24 @@ const delegatedProps = reactiveOmit(
 )
 const viewport =
   useTemplateRef<InstanceType<typeof ScrollAreaViewport>>('viewport')
+// Reka sets tabindex="0" after $attrs. Apply the consumer's focus policy to
+// the actual viewport after rendering, including removing the Tab stop in menus.
+watchPostEffect(() => {
+  const element = viewport.value?.viewportElement
+  if (
+    !element ||
+    !props.viewportAttrs ||
+    !('tabindex' in props.viewportAttrs)
+  ) {
+    return
+  }
+  const tabindex = props.viewportAttrs.tabindex
+  if (tabindex == null) {
+    element.removeAttribute('tabindex')
+  } else {
+    element.setAttribute('tabindex', String(tabindex))
+  }
+})
 defineExpose({
   viewportElement: computed(() => viewport.value?.viewportElement)
 })

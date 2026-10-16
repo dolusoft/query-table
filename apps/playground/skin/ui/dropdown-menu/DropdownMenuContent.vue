@@ -45,6 +45,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     >
       <ScrollArea
         viewport-class="max-h-[calc(var(--reka-dropdown-menu-content-available-height)-0.5rem)] overscroll-contain"
+        :viewport-attrs="{ tabindex: null }"
       >
         <slot />
       </ScrollArea>

@@ -64,7 +64,7 @@ const link =
     class="sticky top-16 bottom-auto h-[calc(100svh-4rem)]! border-r-0! group-data-[collapsible=offcanvas]:hidden *:data-[slot=sidebar-inner]:bg-background"
   >
     <SidebarContent
-      class="pt-4 max-[769px]:px-4 [&_[data-slot=sidebar-group]]:px-0 [&_[data-slot=sidebar-group-label]]:px-0"
+      class="pt-4 max-[769px]:px-4 [&_[data-slot=sidebar-group]]:pl-2 [&_[data-slot=sidebar-group]]:pr-0 [&_[data-slot=sidebar-group-label]]:px-0"
     >
       <!-- In the Sheet the header's menu button opens, the demo data switch
            the header shows from `sm` up: on a phone the bar has no room. -->
