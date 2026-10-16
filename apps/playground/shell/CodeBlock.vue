@@ -4,6 +4,7 @@ import { useClipboard } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { Button } from '@/ui/button'
+import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 
 import { highlightVue } from './highlight'
 
@@ -57,18 +58,16 @@ const { copy, copied } = useClipboard({ copiedDuring: 1500 })
         <component :is="copied ? CheckIcon : CopyIcon" />
       </Button>
     </figcaption>
-    <!-- eslint-disable vue/no-v-html -- shiki's escaped output of our own example file -->
-    <div
-      v-if="html"
-      class="max-h-[32rem] overflow-auto font-mono text-sm leading-relaxed [&_pre]:w-max [&_pre]:min-w-full [&_pre]:bg-transparent! [&_pre]:px-4 [&_pre]:py-3.5"
-      tabindex="0"
-      v-html="html"
-    />
-    <!-- eslint-enable vue/no-v-html -->
-    <pre
-      v-else
-      class="max-h-[32rem] overflow-auto px-4 py-3.5 font-mono text-sm leading-relaxed"
-      tabindex="0"
-    ><code>{{ source }}</code></pre>
+    <ScrollArea
+      viewport-class="max-h-[32rem]"
+      :viewport-attrs="{ 'aria-label': `${file} source` }"
+      class="font-mono text-sm leading-relaxed [&_pre]:w-max [&_pre]:min-w-full [&_pre]:bg-transparent! [&_pre]:px-4 [&_pre]:py-3.5"
+    >
+      <!-- eslint-disable vue/no-v-html -- shiki's escaped output of our own example file -->
+      <div v-if="html" v-html="html" />
+      <!-- eslint-enable vue/no-v-html -->
+      <pre v-else><code>{{ source }}</code></pre>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   </figure>
 </template>

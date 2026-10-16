@@ -41,7 +41,9 @@ const around = computed(() => neighbours(route.path))
       </BreadcrumbList>
     </Breadcrumb>
     <div class="flex items-start justify-between gap-2">
-      <h1 class="scroll-m-24 text-3xl font-semibold tracking-tight">
+      <h1
+        class="min-w-0 scroll-m-24 text-3xl font-semibold tracking-tight break-words"
+      >
         {{ title }}
       </h1>
       <div class="flex shrink-0 items-center gap-2 pt-0.5">

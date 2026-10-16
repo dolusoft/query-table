@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEventListener, useMutationObserver } from '@vueuse/core'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 // "On This Page", after the shadcn-vue docs: the sections of the page in the
 // column next to it. A section is a `section[id]` directly in the page's
@@ -9,6 +10,7 @@ import { ref } from 'vue'
 // mounts later still, so the list is read again when the column changes.
 // The entry of the last section whose top has passed the header is active.
 const props = defineProps<{ root: HTMLElement | null }>()
+const route = useRoute()
 
 interface Entry {
   id: string
@@ -60,6 +62,9 @@ useMutationObserver(() => props.root, schedule, {
   childList: true,
   subtree: true
 })
+// Route sections exist after the DOM update, before the next paint. Read
+// them now instead of painting the previous page's TOC for one frame.
+watch([() => route.path, () => props.root], read, { flush: 'post' })
 useEventListener(window, 'scroll', spy, { passive: true })
 </script>
 
