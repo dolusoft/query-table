@@ -58,6 +58,8 @@ const loading = computed(() => hold.value || server.loading.value)
       :rows="rows"
       :total-rows="totalRows"
       :loading="loading"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       sortable
       filterable

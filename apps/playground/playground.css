@@ -1,26 +1,36 @@
 /* The playground page: the skin (generated, see skin/gen-skin.ts) plus the
    page chrome, which uses Tailwind utilities only. */
-@import "./skin/test-skin.css";
+@import './skin/test-skin.css';
 @source ".";
+
+/* Header and documentation rails share both the frame and its gutters. */
+@utility docs-frame {
+  @apply mx-auto w-full max-w-(--breakpoint-2xl) px-4 sm:px-6;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
 
 /* Code in Geist Mono (main.ts loads it), as on the shadcn-vue site. The
    theme the CLI writes has no mono font: the preset picks a sans only. */
 @theme {
-  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo,
-    Consolas, monospace;
+  --font-mono:
+    'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
 }
 
 /* The playground owns the touch targets around the unstyled table. Keep the
    desktop skin's compact controls, but give phone and tablet users room to tap:
    44px, the size the page's own controls take below `sm`. */
 @media (max-width: 1023px) {
-  main button:not([role="checkbox"]),
+  main button:not([role='checkbox']),
   main select,
-  main input:not([type="checkbox"]) {
+  main input:not([type='checkbox']) {
     min-height: 2.75rem;
   }
 
-  main button:not([role="checkbox"]) {
+  main button:not([role='checkbox']) {
     min-width: 2.75rem;
   }
 
@@ -30,7 +40,7 @@
      few pixels of text, so the button keeps the skin's width there; the
      height floor stays, it is the touch target. */
   @container qt-filter (width < 6rem) {
-    main button.qt-filter-button:not([role="checkbox"]) {
+    main button.qt-filter-button:not([role='checkbox']) {
       min-width: 0;
     }
   }
@@ -39,7 +49,7 @@
      `mm/dd/yyyy` next to its picker icon and the filter button; squeezed to
      an even share of a phone, it showed "mm/" under the button. A column
      whose width the page sets keeps that width. */
-  main .qt-table th:not([style*="width"]):has(.qt-filter-input[type="date"]) {
+  main .qt-table th:not([style*='width']):has(.qt-filter-input[type='date']) {
     min-width: 13rem;
   }
 
@@ -57,8 +67,8 @@
      draws the table's selection checkboxes at 2.75rem itself
      (skin/mapping.css), so this floor leaves them alone there. Every other
      primary pointer (a mouse, or none at all) keeps the floor. */
-  main input[type="checkbox"]:not(.qt-select-row, .qt-select-all),
-  main button[role="checkbox"] {
+  main input[type='checkbox']:not(.qt-select-row, .qt-select-all),
+  main button[role='checkbox'] {
     width: 1.25rem;
     height: 1.25rem;
   }
@@ -70,8 +80,136 @@
     }
   }
 
-  main label:has(> input[type="checkbox"], > button[role="checkbox"]) {
+  main label:has(> input[type='checkbox'], > button[role='checkbox']) {
     min-height: 2.75rem;
+  }
+}
+
+/* Narrow headers (harness/FilterMenu.vue). The header never wraps: a header
+   too narrow for its filter row folds it. FilterMenu marks the narrow state
+   with `data-narrow` when the filter row is narrower than its controls row
+   needs on one line (a width it measures); without controls, the header is
+   narrow where the skin drops the filter input, `width < 4rem` of the same
+   `qt-filter` container. Narrow, the row shows only the funnel and, with
+   controls, the "⋯" menu; the funnel opens a panel under the header with the
+   table's own input and condition button laid over it. */
+.qt-filter {
+  --filter-panel-width: 16rem;
+  --filter-panel-input: 2rem;
+}
+@media (max-width: 1023px) {
+  .qt-filter {
+    --filter-panel-input: 2.75rem;
+  }
+}
+[data-header-tools],
+[data-filter-panel] {
+  display: none;
+}
+.qt-filter:has(> [data-header-controls]) {
+  flex-wrap: wrap;
+}
+[data-header-controls] {
+  flex-basis: 100%;
+}
+.qt-table th[data-field]:has(> .qt-filter > [data-header-tools]) {
+  & > :is(.qt-sort, .qt-title) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.qt-filter:has(> [data-header-tools][data-narrow]) {
+  & > :not([data-header-tools], [data-filter-panel], [data-header-controls]) {
+    display: none;
+  }
+  /* Out of view but still laid out: its width is what FilterMenu measures. */
+  & > [data-header-controls] {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  & > [data-header-tools] {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: var(--filter-panel-input);
+  }
+}
+@container qt-filter (width < 4rem) {
+  .qt-filter:has(> [data-header-tools]) {
+    & > :not([data-header-tools], [data-filter-panel], [data-header-controls]) {
+      display: none;
+    }
+    & > [data-header-tools] {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      min-height: var(--filter-panel-input);
+    }
+  }
+}
+
+/* The open panel: a popover box under the filter row, the input (or a page's
+   date picker) over it at full width, the condition button inside the
+   input's end. It is `position: fixed` at the place FilterMenu sets
+   (`--filter-panel-x`, `--filter-panel-y`), so the table's scroll box never
+   clips it; the header cell is lifted over its neighbours while it is open,
+   for a pinned cell is a stacking context of its own. */
+.qt-table th:has(> .qt-filter > [data-header-tools][data-filter-open]) {
+  z-index: 50;
+}
+.qt-filter:has(> [data-header-tools][data-filter-open]) {
+  & > [data-filter-panel] {
+    position: fixed;
+    top: var(--filter-panel-y);
+    left: var(--filter-panel-x);
+    z-index: 50;
+    display: block;
+    width: var(--filter-panel-width);
+    height: calc(var(--filter-panel-input) + 1rem);
+    border-radius: var(--radius);
+    background-color: var(--popover);
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent),
+      0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+  &
+    > :not(
+      [data-header-tools],
+      [data-filter-panel],
+      [data-header-controls],
+      .qt-filter-button,
+      .qt-filter-condition
+    ) {
+    position: fixed;
+    top: calc(var(--filter-panel-y) + 0.5rem);
+    left: calc(var(--filter-panel-x) + 0.5rem);
+    z-index: 51;
+    display: flex;
+    width: calc(var(--filter-panel-width) - 1rem);
+    height: var(--filter-panel-input);
+  }
+  & > .qt-filter-input {
+    padding-right: 2.25rem;
+  }
+  & > .qt-filter-button {
+    position: fixed;
+    top: calc(
+      var(--filter-panel-y) + 0.5rem + (var(--filter-panel-input) - 1.75rem) / 2
+    );
+    left: calc(var(--filter-panel-x) + var(--filter-panel-width) - 2.375rem);
+    z-index: 52;
+    display: inline-flex;
+    width: 1.75rem;
+    min-width: 0;
+    height: 1.75rem;
+    min-height: 0;
+    border-color: transparent;
+    background-color: transparent;
+    transform: none;
   }
 }
 

@@ -1,14 +1,6 @@
 <script setup lang="ts">
-import {
-  ArrowLeftToLineIcon,
-  ArrowRightToLineIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  EyeOffIcon
-} from '@lucide/vue'
 import { shallowRef } from 'vue'
 
-import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
 import {
@@ -113,6 +105,8 @@ const setShown = (field: string, on: boolean) => {
         :rows="result.rows"
         :total-rows="result.totalRows"
         :pagination="{ pageSizeOptions: [20, 50, 200] }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable
@@ -120,76 +114,12 @@ const setShown = (field: string, on: boolean) => {
         @update:columns="announce"
       >
         <template #filter-menu="menu">
-          <FilterMenu :menu="menu" />
-          <!-- The column controls take a row of their own under the filter
-               (`basis-full` in the wrapping filter row) and wrap inside it:
-               on one line they ran past a narrow column and lay over the
-               next header's filter. -->
-          <div class="flex basis-full flex-wrap gap-1">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              :aria-label="
-                menu.control.pinned === 'left' ? 'Unpin' : 'Pin left'
-              "
-              :title="menu.control.pinned === 'left' ? 'Unpin' : 'Pin left'"
-              :data-active="menu.control.pinned === 'left' ? '' : undefined"
-              class="data-active:bg-muted"
-              @click="
-                menu.control.pin(
-                  menu.control.pinned === 'left' ? false : 'left'
-                )
-              "
-            >
-              <ArrowLeftToLineIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              :aria-label="
-                menu.control.pinned === 'right' ? 'Unpin' : 'Pin right'
-              "
-              :title="menu.control.pinned === 'right' ? 'Unpin' : 'Pin right'"
-              :data-active="menu.control.pinned === 'right' ? '' : undefined"
-              class="data-active:bg-muted"
-              @click="
-                menu.control.pin(
-                  menu.control.pinned === 'right' ? false : 'right'
-                )
-              "
-            >
-              <ArrowRightToLineIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Move left"
-              title="Move left"
-              :disabled="!menu.control.canMoveLeft"
-              @click="menu.control.move('left')"
-            >
-              <ChevronLeftIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Move right"
-              title="Move right"
-              :disabled="!menu.control.canMoveRight"
-              @click="menu.control.move('right')"
-            >
-              <ChevronRightIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Hide"
-              title="Hide"
-              @click="menu.control.hide()"
-            >
-              <EyeOffIcon />
-            </Button>
-          </div>
+          <!-- `controls`: the pin, move and hide buttons take a row of
+               their own under the filter (`basis-full` in the wrapping
+               filter row). A header too narrow for them on one line folds
+               them into one "⋯" menu and the input into a funnel
+               (harness/FilterMenu.vue). -->
+          <FilterMenu :menu="menu" controls />
         </template>
         <template #pagination="page">
           <TablePager :page="page" />

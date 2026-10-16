@@ -96,6 +96,8 @@ const pinnedText = computed(() => {
       :columns="columns"
       :rows="rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       sortable
     >

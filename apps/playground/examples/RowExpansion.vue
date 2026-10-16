@@ -38,6 +38,8 @@ const detailColumns = data.detail.columns()
       :columns="columns"
       :rows="result.rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       has-subtable
       sortable
@@ -51,6 +53,8 @@ const detailColumns = data.detail.columns()
             :query="detailQuery"
             :columns="detailColumns"
             :rows="data.detail.rows(row as DemoRow)"
+            auto-width
+            :auto-width-max="240"
             :row-key="data.detail.key"
           />
         </div>

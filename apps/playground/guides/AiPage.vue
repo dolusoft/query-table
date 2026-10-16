@@ -3,6 +3,7 @@ import { CheckIcon, CopyIcon } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
 
 import { Button } from '@/ui/button'
+import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 
 import {
   aiSections,
@@ -38,11 +39,14 @@ const base = import.meta.env.BASE_URL
         <InlineCode :text="section(id).text" />
       </p>
       <div v-if="id === 'ai-install'" class="flex flex-col gap-2">
-        <pre
-          class="overflow-x-auto rounded-xl border bg-muted/50 px-4 py-3.5 text-sm"
-          data-testid="skill-install"
-          tabindex="0"
-        ><code>{{ skillInstall }}</code></pre>
+        <ScrollArea class="rounded-xl border bg-muted/50">
+          <pre
+            class="w-max px-4 py-3.5 text-sm"
+            data-testid="skill-install"
+            tabindex="0"
+          ><code>{{ skillInstall }}</code></pre>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
         <Button
           type="button"
           variant="outline"

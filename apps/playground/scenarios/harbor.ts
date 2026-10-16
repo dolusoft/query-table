@@ -91,17 +91,16 @@ export const harbor: Dataset = {
     sum: 'total'
   },
   columns: {
-    id: { field: 'id', title: 'ID', type: 'integer', width: '72px' },
-    customer: { field: 'customer', title: 'Customer', width: '150px' },
-    city: { field: 'city', title: 'City', width: '130px' },
-    product: { field: 'product', title: 'Product', width: '170px' },
+    id: { field: 'id', title: 'ID', type: 'integer' },
+    customer: { field: 'customer', title: 'Customer' },
+    city: { field: 'city', title: 'City' },
+    product: { field: 'product', title: 'Product' },
     quantity: {
       field: 'quantity',
       title: 'Qty',
-      type: 'integer',
-      width: '120px'
+      type: 'integer'
     },
-    total: { field: 'total', title: 'Total', type: 'number', width: '140px' },
+    total: { field: 'total', title: 'Total', type: 'number' },
     ordered: {
       field: 'ordered',
       title: 'Ordered',
@@ -111,26 +110,24 @@ export const harbor: Dataset = {
     updatedAt: {
       field: 'updatedAt',
       title: 'Last update',
-      type: 'datetime',
-      width: '200px'
+      type: 'datetime'
     },
     shipped: {
       field: 'shipped',
       title: 'Shipped',
-      type: 'bool',
-      width: '130px'
+      type: 'bool'
     }
   },
-  list: ['id', 'customer', 'city', 'product', 'quantity', 'total', 'ordered'],
-  wide: ['id', 'customer', 'city', 'product', 'total', 'ordered', 'shipped'],
+  list: ['ordered', 'id', 'customer', 'city', 'product', 'quantity', 'total'],
+  wide: ['ordered', 'id', 'customer', 'city', 'product', 'total', 'shipped'],
   showcase: [
+    'ordered',
     'id',
     'customer',
     'city',
     'product',
     'quantity',
     'total',
-    'ordered',
     'shipped'
   ],
   searchFields: ['customer', 'city'],

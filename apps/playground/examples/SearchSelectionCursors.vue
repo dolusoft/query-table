@@ -51,6 +51,8 @@ const onQuery = (next: CursorQuery, reason: QueryChangeReason) => {
       :cursors="result.cursors"
       :search-debounce="300"
       :pagination="{ pageSizeOptions: [5, 10, 20] }"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       sortable
       filterable

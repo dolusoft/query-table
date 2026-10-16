@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch, type Component } from 'vue'
+import type { Component } from 'vue'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs'
 
@@ -15,29 +15,9 @@ import { sectionAnchors } from '../search/anchors'
 // as Preview and Code tabs, the API members it shows and the behavior rules
 // it covers. The preview stays mounted behind the Code tab, so the example
 // keeps its state when the reader looks at the code and back.
-const props = defineProps<{ page: PlaygroundPage }>()
-
-const examples = import.meta.glob<Component>('../examples/*.vue', {
-  import: 'default'
-})
-const sources = import.meta.glob<string>('../examples/*.vue', {
-  query: '?raw',
-  import: 'default'
-})
-const path = computed(() => `../examples/${props.page.example}.vue`)
-
-const example = computed(() =>
-  defineAsyncComponent(() => examples[path.value]())
-)
-const source = ref('')
-watch(
-  path,
-  async file => {
-    source.value = ''
-    source.value = await sources[file]()
-  },
-  { immediate: true }
-)
+// The router supplies resolved imports, so the header, preview and source
+// enter the DOM together. A dataset switch still remounts the live example.
+defineProps<{ page: PlaygroundPage; example: Component; source: string }>()
 </script>
 
 <template>

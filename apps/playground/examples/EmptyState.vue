@@ -47,6 +47,8 @@ const rows: Array<Record<string, unknown>> = []
       :rows="rows"
       :total-rows="totalRows"
       :loading="loading"
+      auto-width
+      :auto-width-max="240"
     >
       <!-- shadcn-vue Empty: the consumer draws the empty state. -->
       <template #empty>

@@ -12,10 +12,9 @@ import { router } from '../../apps/playground/router'
 // 41rem or more fits every table; in a narrower one only the table's own box
 // scrolls, never the page. features-layout.touch.spec.ts covers the phone.
 //
-// Headless Chromium draws no scrollbar, so a viewport here gives the column
-// 15px more than the same window in a desktop Chrome. The edge cases are
-// taken where that does not hide a regression: 1000px with the sidebar open
-// leaves a 694px box, a few pixels over the widest table's least width.
+// The stable scrollbar gutter reserves 15px even in headless Chromium.
+// With the frame gutters and sidebar, 1011px leaves a 642px box, just over
+// the widest table's 641px minimum. Keep this tight fit covered.
 
 const rect = (element: Element) => element.getBoundingClientRect()
 
@@ -42,13 +41,20 @@ const open = async (width: number, height = 900) => {
 
 const groups = () => [...document.querySelectorAll('article > section')]
 
+const viewportOf = (section: Element) =>
+  section.querySelector<HTMLElement>(
+    '[data-slot="table-container"] [data-slot="scroll-area-viewport"]'
+  )!
+
 const boxOf = (section: Element) =>
   section.querySelector<HTMLElement>('[data-feature-table]')!
 
-/** Every element of the group that scrolls sideways: the table's container only. */
+// The ScrollArea viewport owns scrolling; its table-container wrapper stays fitted.
 const scrollersOf = (section: Element) =>
-  [...section.querySelectorAll<HTMLElement>('*')].filter(element =>
-    ['auto', 'scroll'].includes(getComputedStyle(element).overflowX)
+  [...section.querySelectorAll<HTMLElement>('*')].filter(
+    element =>
+      ['auto', 'scroll'].includes(getComputedStyle(element).overflowX) &&
+      element.scrollWidth > element.clientWidth
   )
 
 // Below md the sidebar is a Sheet: no container until the menu opens it.
@@ -67,10 +73,13 @@ const expectInColumn = () => {
     // The note keeps the 40rem measure; the table box stays in its section.
     expect(note.width).toBeLessThanOrEqual(640.5)
     expect(box.right).toBeLessThanOrEqual(rect(section).right + 0.5)
-    // One sideways scroller per group: the table's container.
+    // Only the viewport may overflow sideways; the wrapper never does.
+    const viewport = viewportOf(section)
+    expect(viewport).not.toBeNull()
     const scrollers = scrollersOf(section)
-    expect(scrollers).toHaveLength(1)
-    expect(scrollers[0].dataset.slot).toBe('table-container')
+    expect(scrollers).toEqual(
+      viewport.scrollWidth > viewport.clientWidth ? [viewport] : []
+    )
   }
 }
 
@@ -80,7 +89,7 @@ const expectNoPageOverflow = (viewport: number) => {
 
 test.each([
   [768, false],
-  [1000, true],
+  [1011, true],
   [1024, true],
   [1280, true],
   [1440, true],
@@ -92,10 +101,10 @@ test.each([
     expect(sidebarOpen()).toBe(withSidebar)
     expectInColumn()
     for (const section of groups()) {
-      const [scroller] = scrollersOf(section)
+      const scroller = viewportOf(section)
       expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
       // A table that fits is no Tab stop.
-      expect(scroller.hasAttribute('tabindex')).toBe(false)
+      expect(scroller.tabIndex).toBe(-1)
     }
     expectNoPageOverflow(viewport)
   },
@@ -108,7 +117,7 @@ test('with the sidebar open at 820px the tables scroll in their boxes, not the p
   expectInColumn()
   expectNoPageOverflow(viewport)
   for (const section of groups()) {
-    const [scroller] = scrollersOf(section)
+    const scroller = viewportOf(section)
     expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
   }
 })
@@ -116,7 +125,7 @@ test('with the sidebar open at 820px the tables scroll in their boxes, not the p
 test('a table that scrolls is a named region a keyboard can scroll', async () => {
   await open(820)
   for (const section of groups()) {
-    const [scroller] = scrollersOf(section)
+    const scroller = viewportOf(section)
     expect(scroller.getAttribute('tabindex')).toBe('0')
     expect(scroller.getAttribute('role')).toBe('region')
     const name = document.getElementById(
@@ -124,7 +133,7 @@ test('a table that scrolls is a named region a keyboard can scroll', async () =>
     )
     expect(name).toBe(section.querySelector('h2'))
   }
-  const [scroller] = scrollersOf(groups()[0])
+  const scroller = viewportOf(groups()[0])
   scroller.focus()
   expect(document.activeElement).toBe(scroller)
   await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}')

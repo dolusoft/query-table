@@ -52,11 +52,11 @@ const labels: Partial<TableLabels> = {
 }
 
 const columns: Column[] = [
+  { field: fields.date, title: 'Tarih', type: 'date' },
   { field: fields.primary, title: turkish.primary },
   { field: fields.category },
   { field: fields.count, title: turkish.count, type: 'integer' },
-  { field: fields.flag, title: turkish.flag, type: 'bool' },
-  { field: fields.date, title: 'Tarih', type: 'date' }
+  { field: fields.flag, title: turkish.flag, type: 'bool' }
 ]
 
 // The menu is the page's own markup, so its texts are the page's too.
@@ -77,6 +77,8 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
     :rows="result.rows"
     :total-rows="result.totalRows"
     :labels="labels"
+    auto-width
+    :auto-width-max="240"
     row-key="id"
     sortable
     filterable

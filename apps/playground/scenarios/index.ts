@@ -36,15 +36,11 @@ export const columnOf = (data: Dataset, field: string): Column => {
 
 /** The plain list: one column per field, no special flags. */
 export const listColumns = (data: Dataset): Column[] =>
-  data.list.map(field =>
-    field === 'id'
-      ? { ...columnOf(data, field), width: '90px' }
-      : columnOf(data, field)
-  )
+  data.list.map(field => columnOf(data, field))
 
 /**
- * A list wider than the page: ID and the primary field pinned to the left,
- * the rest with widths that make the table scroll sideways.
+ * A list wider than the page: time and ID pinned to the left (ID and the
+ * primary field without time), with widths that make it scroll sideways.
  */
 export const wideColumns = (data: Dataset): Column[] =>
   data.wide.map((field, index) => {
@@ -52,12 +48,18 @@ export const wideColumns = (data: Dataset): Column[] =>
     if (index < 2) {
       return {
         ...column,
-        width: index === 0 ? '80px' : '160px',
+        ...(field === 'id'
+          ? {}
+          : { width: field === data.fields.when ? '220px' : '160px' }),
         pinned: 'left'
       }
     }
     const narrow = column.type === 'integer' || column.type === 'bool'
-    return { ...column, width: narrow ? '200px' : '220px' }
+    return {
+      ...column,
+      width:
+        field === data.fields.primary ? '160px' : narrow ? '200px' : '220px'
+    }
   })
 
 /** One column of every filter type, and a hidden column. */
@@ -71,12 +73,11 @@ export const typedColumns = (data: Dataset): Column[] => {
     }
   }
   return [
-    { field: 'id', title: 'ID', type: 'integer', width: '90px' },
+    ...[...new Set([fields.when, fields.date, fields.datetime])].map(typed),
+    { field: 'id', title: 'ID', type: 'integer' },
     typed(fields.primary),
     typed(fields.count),
     typed(fields.amount),
-    typed(fields.date),
-    typed(fields.datetime),
     typed(fields.flag),
     { ...columnOf(data, fields.category), hide: true }
   ]

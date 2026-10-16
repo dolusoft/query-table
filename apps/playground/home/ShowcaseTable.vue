@@ -51,9 +51,9 @@ const onResize = ({ field, width }: ColumnResizePayload) => {
   saved.value = { ...saved.value, [field]: width }
 }
 
-// Every column has a width: the fixed layout keeps them still while rows
-// change. ID and the primary column are pinned while there is room for more
-// than them; ID keeps its width, the count column stays within its limits.
+// The leading time or primary column keeps a width for pinning outside
+// compact mode. ID and the other columns measure their content until the
+// user resizes them; ID cannot be resized, and the count stays within limits.
 const columns = computed<Column[]>(() => {
   const pin = compact.value ? {} : { pinned: 'left' as const }
   const base: Column[] = data.showcase.map((field, index): Column => {
@@ -136,6 +136,8 @@ const edit = (field: string, trigger: HTMLElement) =>
       :loading="loading"
       :footer-rows="footerRows"
       :pagination="{ pageSizeOptions: [10, 25, 50], alwaysShow: true }"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       sortable
       :filterable="!compact"
@@ -217,6 +219,8 @@ const edit = (field: string, trigger: HTMLElement) =>
             :query="detailQuery"
             :columns="detailColumns"
             :rows="data.detail.rows(row as DemoRow)"
+            auto-width
+            :auto-width-max="240"
             :row-key="data.detail.key"
           />
         </div>

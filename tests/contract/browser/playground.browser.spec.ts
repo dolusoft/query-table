@@ -8,7 +8,7 @@ import { el } from '../../support/helpers'
 
 const rowIds = () =>
   [...document.querySelectorAll('.qt-table tbody tr')].map(row =>
-    Number(row.querySelector('td')?.textContent)
+    Number(row.querySelector('td[data-field="id"]')?.textContent)
   )
 const input = (field: string) =>
   page.getByCSS(`th[data-field="${field}"] .qt-filter-input`)
@@ -50,15 +50,30 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
       }
     )
   const initialGeometry = geometry()
+  const expectAlignedColumns = () => {
+    for (const header of document.querySelectorAll<HTMLElement>(
+      'th[data-field]'
+    )) {
+      const field = header.dataset.field
+      const cell = el(`.qt-table tbody tr td[data-field="${field}"]`)
+      const { x, width } = header.getBoundingClientRect()
+      const body = cell.getBoundingClientRect()
+      expect({ x: body.x, width: body.width }).toEqual({ x, width })
+    }
+  }
+  const userWidth = () =>
+    el('th[data-field="user"]').getBoundingClientRect().width
+  const initialUserWidth = userWidth()
+  expectAlignedColumns()
   await userEvent.fill(input('user'), 'admin,svc-backup')
   await userEvent.keyboard('{Enter}')
   await expect
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 2')
   expect(
-    [...document.querySelectorAll('.qt-table tbody tr td:nth-child(2)')].every(
-      cell => ['admin', 'svc-backup'].includes(cell.textContent ?? '')
-    )
+    [
+      ...document.querySelectorAll('.qt-table tbody tr td[data-field="user"]')
+    ].every(cell => ['admin', 'svc-backup'].includes(cell.textContent ?? ''))
   ).toBe(true)
   await userEvent.click(
     page.getByCSS('th[data-field="hits"] .qt-filter-button')
@@ -72,15 +87,23 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
     .element(page.getByCSS('.page-info'))
     .toHaveTextContent('Page 1 of 1')
   expect(rowIds()).toHaveLength(11)
-  expect(el('.qt-table tbody tr td:nth-child(2)').textContent).toBe(
+  expect(el('.qt-table tbody tr td[data-field="user"]').textContent).toBe(
     'svc-backup'
   )
-  expect(geometry()).toEqual(initialGeometry)
+  // A new filter resets auto widths (C-100): shorter names narrow the user
+  // column, while headers, filters and body cells keep their alignment.
+  expect(userWidth()).toBeLessThan(initialUserWidth)
+  expectAlignedColumns()
+  const filteredGeometry = geometry()
+  expect(filteredGeometry.map(({ y, height }) => ({ y, height }))).toEqual(
+    initialGeometry.map(({ y, height }) => ({ y, height }))
+  )
   await userEvent.fill(input('user'), 'zzz')
   await userEvent.keyboard('{Enter}')
   await expect.element(page.getByText('No results.')).toBeVisible()
   await expect.element(page.getByCSS('.next-page')).toBeDisabled()
-  expect(geometry()).toEqual(initialGeometry)
+  // No data rows means no new measure: the empty state keeps these widths.
+  expect(geometry()).toEqual(filteredGeometry)
   await userEvent.fill(input('user'), '')
   await userEvent.keyboard('{Enter}')
   await userEvent.fill(input('hits'), '')
@@ -90,6 +113,7 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
     .toHaveTextContent('Page 1 of 14')
   expect(rowIds()).toHaveLength(15)
   expect(geometry()).toEqual(initialGeometry)
+  expectAlignedColumns()
 })
 
 test('C-74 playground pin buttons stay enabled and focused after keyboard pinning', async () => {

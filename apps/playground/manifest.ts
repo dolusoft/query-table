@@ -19,6 +19,8 @@ export interface PlaygroundPage {
   /** Route path segment, also the page id. */
   id: string
   title: string
+  /** Short sidebar label; page, search and pager titles stay descriptive. */
+  navTitle?: string
   summary: string
   /** File name in apps/playground/examples, without `.vue`. */
   example: string
@@ -138,6 +140,7 @@ export const pages: PlaygroundPage[] = [
   {
     id: 'row-expansion',
     title: 'Row expansion & nested table',
+    navTitle: 'Row expansion',
     summary:
       'Expandable rows with a nested table in the `subtable` slot, kept by `rowKey`; `collapseAll()` closes them.',
     example: 'RowExpansion',
@@ -152,6 +155,7 @@ export const pages: PlaygroundPage[] = [
   {
     id: 'row-kind',
     title: 'Row kinds & rows that cannot expand',
+    navTitle: 'Row kinds',
     summary:
       'A grouped report with an "Others" row: `rowKind` writes `data-row-kind` on a row so the page CSS gives it its look, and `rowExpandable` keeps it closed, with no expand button.',
     example: 'RowKind',
@@ -293,6 +297,7 @@ export const pages: PlaygroundPage[] = [
   {
     id: 'column-auto-width',
     title: 'Automatic column widths',
+    navTitle: 'Automatic widths',
     summary:
       '`autoWidth` draws every column without a width at the width its content needs, measured after each page arrives and never written back. Within one query the widths only grow; `autoWidthMax` caps a long text column.',
     example: 'ColumnAutoWidth',
@@ -408,6 +413,7 @@ export const pages: PlaygroundPage[] = [
   {
     id: 'search-selection-cursors',
     title: 'Search, selection & cursor paging',
+    navTitle: 'Search & selection',
     summary:
       'A cursor-paged query (`cursor` key) with the server’s `cursors` passed back, a toolbar search applied after `searchDebounce`, and a checkbox column bound to `v-model:selection`.',
     example: 'SearchSelectionCursors',

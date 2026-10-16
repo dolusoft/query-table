@@ -28,7 +28,9 @@ const open = async (path: string, width: number) => {
     .poll(() => document.querySelector('h1'), { timeout: 5000 })
     .not.toBeNull()
   await frame()
-  return document.documentElement.clientWidth
+  // scrollbar-gutter reserves space even in headless Chromium. The root's
+  // rendered width excludes that gutter; clientWidth can still include it.
+  return rect('html').width
 }
 
 // 1535 to 1537: the edge where the frame stops growing with the window.
@@ -55,8 +57,8 @@ test.each([1280, 1343, 1344, 1440, 1535, 1536, 1537, 1920, 2560])(
     } else {
       expect(left).toBeGreaterThan(0)
     }
-    // The sidebar starts where the header's content frame starts.
-    expect(Math.abs(sidebar.left - header.left)).toBeLessThanOrEqual(1)
+    // The sidebar starts at the header content's 24px inner gutter.
+    expect(Math.abs(sidebar.left - (header.left + 24))).toBeLessThanOrEqual(1)
 
     // Title, text and preview keep one left edge.
     const title = rect('h1')
@@ -83,15 +85,24 @@ test.each([1280, 1343, 1344, 1440, 1535, 1536, 1537, 1920, 2560])(
     }
     if (tocShown) {
       expect(
-        Math.abs(toc.getBoundingClientRect().right - header.right)
+        Math.abs(toc.getBoundingClientRect().right - (header.right - 24))
       ).toBeLessThanOrEqual(1)
     }
 
-    // The Overview table fits its preview: no sideways scroll.
+    // The equal rails and frame gutters leave less than the Overview
+    // table's 48rem floor at 1344px. Only its own box may scroll there.
     const scroller = document.querySelector<HTMLElement>(
       '.qt-table-responsive'
     )!
-    expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
+    expect(scroller.getBoundingClientRect().width).toBeLessThanOrEqual(
+      preview.width
+    )
+    if (width === 1344) {
+      expect(scroller.scrollWidth).toBe(768)
+      expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
+    } else {
+      expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
+    }
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(viewport)
   },
   30_000
@@ -125,9 +136,9 @@ test('the sidebar stays in the frame, below the header, while the page scrolls',
   // Sticky in the frame, not fixed to the window's edge: at 1920 the frame
   // starts well right of the window's left edge.
   expect(after.left).toBe(before.left)
-  expect(Math.abs(after.left - rect('header > div').left)).toBeLessThanOrEqual(
-    1
-  )
+  expect(
+    Math.abs(after.left - (rect('header > div').left + 24))
+  ).toBeLessThanOrEqual(1)
   expect(after.left).toBeGreaterThan(100)
   window.scrollTo(0, 0)
 })
@@ -143,12 +154,19 @@ test('closing the sidebar (Ctrl+B) hides it and the page takes the room', async 
 
   await userEvent.keyboard('{Control>}b{/Control}')
   await expect.poll(() => sidebar().getClientRects().length).toBe(0)
-  // The page column now starts at the frame's start: once the sidebar's gap
-  // has closed (a 200ms transition), the page block sits 128px further left
-  // (half the 16rem sidebar, as it is centered between the rails).
+  // Once the sidebar gap closes, the page stays centered between the
+  // frame's inner left edge and the TOC; its max-width may now take effect.
+  const header = rect('header > div')
+  const end = rect('aside').left
   await expect
-    .poll(() => Math.round(expanded.page.left - block().left))
-    .toBe(128)
+    .poll(() =>
+      Math.abs(
+        (block().left + block().right) / 2 - (header.left + 24 + end) / 2
+      )
+    )
+    .toBeLessThanOrEqual(1)
+  expect(block().left).toBeLessThan(expanded.page.left)
+  expect(block().width).toBeGreaterThan(expanded.page.width)
 
   await userEvent.keyboard('{Control>}b{/Control}')
   await expect.poll(() => sidebar().getClientRects().length).toBeGreaterThan(0)
@@ -161,4 +179,31 @@ test('the home page header uses the same frame as the documentation', async () =
   const home = rect('header > div')
   expect(Math.abs(home.left - (viewport - home.right))).toBeLessThanOrEqual(1)
   expect(home.width).toBe(FRAME)
+})
+
+test('the active sidebar label aligns with its group and has visible inner padding', async () => {
+  await open('/overview', 1920)
+  const link = document.querySelector<HTMLElement>(
+    '[data-slot="sidebar-content"] a[aria-current="page"]'
+  )!
+  const group = link.closest('[data-slot="sidebar-group"]')!
+  const label = group.querySelector('[data-slot="sidebar-group-label"]')!
+  const viewport = link.closest('[data-slot="scroll-area-viewport"]')!
+  const textRect = (element: Element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    return range.getBoundingClientRect()
+  }
+  const text = textRect(link)
+  expect(Math.abs(text.left - textRect(label).left)).toBeLessThanOrEqual(1)
+  expect(
+    text.left -
+      Math.max(
+        link.getBoundingClientRect().left,
+        viewport.getBoundingClientRect().left
+      )
+  ).toBeGreaterThanOrEqual(8)
+  expect(
+    link.getBoundingClientRect().right - text.right
+  ).toBeGreaterThanOrEqual(8)
 })

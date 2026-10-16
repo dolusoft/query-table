@@ -52,7 +52,7 @@ test.each([
     expect(rect('h1').top).toBeLessThan(200)
     // Up to `md` the page list is a Sheet behind the header's menu button;
     // wider, the sidebar is on screen. Either way its links are 44px tall.
-    const links = 'nav[aria-label="Examples"] a'
+    const links = '[data-slot="sidebar-content"] nav a'
     if (width <= 768) {
       expect(document.querySelector(links)).toBeNull()
       await userEvent.click(
@@ -61,6 +61,7 @@ test.each([
       await expect.poll(() => document.querySelector(links)).not.toBeNull()
       expect(rect('[data-mobile="true"]').right).toBeLessThanOrEqual(width)
     }
+    expect(document.querySelectorAll(links).length).toBeGreaterThan(20)
     for (const link of document.querySelectorAll(links)) {
       expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
     }

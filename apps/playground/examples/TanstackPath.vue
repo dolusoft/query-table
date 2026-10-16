@@ -18,6 +18,7 @@ import { computed, onScopeDispose } from 'vue'
 
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
+import { ScrollArea, ScrollBar } from '@/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -120,7 +121,7 @@ const arrow = (direction: false | 'asc' | 'desc') =>
 
 <template>
   <div class="flex flex-col gap-3">
-    <div class="overflow-x-auto rounded-md border">
+    <div class="rounded-md border">
       <Table class="tanstack-table">
         <TableHeader>
           <TableRow
@@ -196,8 +197,11 @@ const arrow = (direction: false | 'asc' | 'desc') =>
         </Button>
       </div>
     </div>
-    <pre class="query-json overflow-x-auto rounded-md bg-muted p-3 text-xs">{{
-      JSON.stringify(query, null, 2)
-    }}</pre>
+    <ScrollArea class="rounded-md bg-muted">
+      <pre class="query-json w-max p-3 text-xs">{{
+        JSON.stringify(query, null, 2)
+      }}</pre>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   </div>
 </template>

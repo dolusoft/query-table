@@ -14,7 +14,7 @@ export type DemoRow = { id: number } & Record<string, DemoValue>
 
 /** The field that plays each part in the example pages. */
 interface DatasetRoles {
-  /** The text that names a row (pinned next to ID, filtered by text). */
+  /** The text that names a row (filtered by text). */
   primary: string
   /** A short text that repeats across rows (an equal-filter target). */
   category: string
@@ -52,9 +52,9 @@ export interface Dataset {
   fields: DatasetRoles
   /** Title, type and showcase width of every field. */
   columns: Record<string, Column>
-  /** Field order of the plain list pages (ID first). */
+  /** Field order of the plain list pages (time first, then ID). */
   list: string[]
-  /** Field order of the wide pages: ID and the primary field pinned. */
+  /** Time first when present; the first two fields are pinned. */
   wide: string[]
   /** Field order of the home page table. */
   showcase: string[]

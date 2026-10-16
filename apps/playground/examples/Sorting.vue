@@ -32,6 +32,8 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
       :columns="columns"
       :rows="result.rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       sortable
       filterable

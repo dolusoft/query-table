@@ -61,6 +61,8 @@ const focus = () => {
       :columns="columns"
       :rows="result.rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       has-subtable
       filterable

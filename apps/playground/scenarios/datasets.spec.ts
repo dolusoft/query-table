@@ -9,6 +9,7 @@ import {
   resetDataset,
   selectDataset
 } from './datasets'
+import { listColumns, typedColumns, wideColumns } from './index'
 
 const typeOf = (value: DemoValue, type: string | undefined) => {
   switch (type ?? 'string') {
@@ -85,6 +86,42 @@ describe.each(datasets.map(data => [data.name, data] as [string, Dataset]))(
         .flatMap(row => data.searchFields.map(field => String(row[field])))
         .join(' ')
       expect(text).toMatch(/[ıİşŞğĞçÇöÖüÜ]/)
+    })
+
+    test('keeps time columns before ID, including the pinned projection', () => {
+      const isTime = (field: string) =>
+        ['date', 'datetime'].includes(data.columns[field].type ?? '')
+      for (const fields of [data.list, data.wide, data.showcase]) {
+        if (fields.some(isTime)) {
+          expect(isTime(fields[0])).toBe(true)
+          expect(fields.indexOf('id')).toBeGreaterThan(0)
+        }
+      }
+      for (const columns of [
+        listColumns(data),
+        wideColumns(data),
+        typedColumns(data)
+      ]) {
+        const drawn = [
+          ...columns.filter(column => !column.hide && column.pinned === 'left'),
+          ...columns.filter(column => !column.hide && !column.pinned)
+        ]
+        if (drawn.some(column => isTime(column.field))) {
+          expect(isTime(drawn[0].field)).toBe(true)
+          expect(
+            drawn.findIndex(column => column.field === 'id')
+          ).toBeGreaterThan(0)
+        }
+        expect(new Set(columns.map(column => column.field)).size).toBe(
+          columns.length
+        )
+      }
+      const wide = wideColumns(data)
+      expect(wide.filter(column => column.pinned === 'left')).toHaveLength(2)
+      for (const column of wide.filter(candidate => isTime(candidate.field))) {
+        expect(column.pinned).toBe('left')
+        expect(parseInt(String(column.width))).toBeGreaterThanOrEqual(200)
+      }
     })
 
     test('the samples of the filtering page match rows', () => {
