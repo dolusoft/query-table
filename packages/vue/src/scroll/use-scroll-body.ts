@@ -39,6 +39,7 @@ export const useScrollBody = (options: ScrollBodyOptions) => {
   /** The `scrollLeft` this table wrote to a wrapper, until its event. */
   const written = new WeakMap<HTMLElement, number>()
   let warned = false
+  let clamped = false
 
   /** Every wrapper but `source` to `left`, remembering what was written. */
   const follow = (source: HTMLElement, left: number) => {
@@ -46,6 +47,19 @@ export const useScrollBody = (options: ScrollBodyOptions) => {
       if (element !== source && element.scrollLeft !== left) {
         element.scrollLeft = left
         written.set(element, element.scrollLeft)
+        // A header or footer that stops short of the body: its scroll range
+        // lacks the body's vertical scrollbar, and its columns end shifted.
+        if (
+          !clamped &&
+          source === options.wrappers().body &&
+          left - element.scrollLeft >= 1 &&
+          isDevelopment()
+        ) {
+          clamped = true
+          console.warn(
+            '[QueryTable] `scrollBody`: `.qt-table-head` or `.qt-table-foot` cannot scroll sideways as far as `.qt-table-body`, so its columns end shifted. Give it a vertical scrollbar as wide as that of the body (`overflow-y: scroll`; a transparent `scrollbar-color` hides it) (C-101).'
+          )
+        }
       }
     }
   }

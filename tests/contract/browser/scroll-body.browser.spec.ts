@@ -192,6 +192,50 @@ describe('C-101 Scrolling body [own]', () => {
     expect(pinned(footRow())).toBe(pinned(headRow()))
   })
 
+  test('at the right end the header and footer columns still end over the body columns', async () => {
+    await mount()
+    const body = part('body')
+    // Headed, the body has a vertical scrollbar the header and footer hide;
+    // headless Chromium hides every scrollbar (`--hide-scrollbars`).
+    expect(part('head').clientWidth).toBe(body.clientWidth)
+    body.scrollLeft = body.scrollWidth
+    await frames(2)
+    expect(body.scrollLeft).toBe(body.scrollWidth - body.clientWidth)
+    expect(part('head').scrollLeft).toBe(body.scrollLeft)
+    expect(part('foot').scrollLeft).toBe(body.scrollLeft)
+    expect(edges(bodyRow())).toEqual(edges(headRow()))
+    expect(edges(footRow())).toEqual(edges(headRow()))
+  })
+
+  test('warns once in development when the header cannot scroll as far as the body', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // A header wider than the body, as one with `overflow: hidden` next to
+    // a body with a scrollbar: it stops short of the body at the right end.
+    // Set as a width, since headless Chromium draws no scrollbar.
+    const hidden = document.createElement('style')
+    hidden.textContent =
+      '.qt-table-head.qt-table-head { overflow: hidden; width: calc(100% + 20px); }'
+    document.head.append(hidden)
+    try {
+      await mount()
+      const body = part('body')
+      body.scrollLeft = body.scrollWidth
+      await frames(2)
+      body.scrollLeft = 0
+      await frames(2)
+      body.scrollLeft = body.scrollWidth
+      await frames(2)
+      expect(part('head').scrollLeft).toBeLessThan(body.scrollLeft)
+      expect(
+        warn.mock.calls.filter(call =>
+          String(call[0]).includes('cannot scroll sideways as far')
+        )
+      ).toHaveLength(1)
+    } finally {
+      hidden.remove()
+    }
+  })
+
   test('a header scrolled by the focus takes the body with it', async () => {
     // The last filter input starts out of view.
     await mount({

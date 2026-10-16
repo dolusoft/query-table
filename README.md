@@ -128,22 +128,24 @@ With `width: 100%` the columns squeeze to fit and nothing scrolls; with `max-con
 
 ## Scrolling body
 
-A sticky header scrolls inside the same container as the rows, so the vertical scrollbar starts beside it. With `scroll-body` the table draws the header, the body and the footer as three tables, each in a wrapper of `.qt-table-responsive`: `.qt-table-head`, `.qt-table-body` and, with footer rows, `.qt-table-foot`. Make the body scroll in your CSS; the header and footer stay outside it:
+A sticky header scrolls inside the same container as the rows, so the vertical scrollbar starts beside it. With `scroll-body` the table draws the header, the body and the footer as three tables, each in a wrapper of `.qt-table-responsive`: `.qt-table-head`, `.qt-table-body` and, with footer rows, `.qt-table-foot`. Make the body scroll in your CSS; the header and footer stay outside it. Give all three a vertical scrollbar (the same `scrollbar-width`), and hide the header's and the footer's: with `overflow: hidden` they stop short of the body at the right end, a reserved `scrollbar-gutter` included, and their columns end shifted by the scrollbar's width.
 
 ```css
-.qt-table-body {
-  max-height: 28rem;
-  overflow: auto;
-}
-.qt-table-head,
-.qt-table-foot {
-  overflow: hidden;
-}
-/* The same gutter on all three keeps their tables equally wide. */
+/* Every wrapper has a vertical scrollbar: the three are equally wide and
+   scroll sideways equally far. Only the body's moves. */
 .qt-table-head,
 .qt-table-body,
 .qt-table-foot {
-  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+.qt-table-body {
+  max-height: 28rem;
+  overflow-x: auto;
+}
+.qt-table-head,
+.qt-table-foot {
+  overflow-x: hidden;
+  scrollbar-color: transparent transparent; /* never shows */
 }
 .qt-table-body > .qt-table,
 .qt-table-foot > .qt-table {

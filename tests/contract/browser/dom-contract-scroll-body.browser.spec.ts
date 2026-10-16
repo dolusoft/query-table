@@ -19,8 +19,8 @@ let style: HTMLStyleElement
 beforeAll(() => {
   style = document.createElement('style')
   style.textContent = [
-    '.qt-table-body { height: 300px; overflow: auto; }',
-    '.qt-table-head, .qt-table-foot { overflow: hidden; }',
+    '.qt-table-body { height: 300px; overflow-x: auto; overflow-y: scroll; }',
+    '.qt-table-head, .qt-table-foot { overflow-x: hidden; overflow-y: scroll; }',
     '.qt-table.qt-table { table-layout: fixed; }'
   ].join(' ')
   document.head.append(style)

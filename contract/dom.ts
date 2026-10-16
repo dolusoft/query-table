@@ -41,21 +41,21 @@ export const domClasses: ClassEntry[] = [
     name: 'qt-table-head',
     on: '.qt-table-responsive > div',
     description:
-      'With `scrollBody`: the wrapper of the header table, the first child of `qt-table-responsive` (C-101). Give it `overflow: hidden` in your CSS; the table keeps its sideways position at that of the body.',
+      'With `scrollBody`: the wrapper of the header table, the first child of `qt-table-responsive` (C-101). Give it `overflow-x: hidden; overflow-y: scroll` and a transparent `scrollbar-color` in your CSS, so it is as wide as the body and scrolls sideways as far; the table keeps its sideways position at that of the body.',
     addedBy: 'C-101'
   },
   {
     name: 'qt-table-body',
     on: '.qt-table-responsive > div',
     description:
-      'With `scrollBody`: the wrapper of the body table, the one to make scroll in your CSS (`overflow: auto` and a height, C-101). It is the scroll container a virtual body finds (C-85).',
+      'With `scrollBody`: the wrapper of the body table, the one to make scroll in your CSS (`overflow-x: auto; overflow-y: scroll` and a height, C-101). It is the scroll container a virtual body finds (C-85).',
     addedBy: 'C-101'
   },
   {
     name: 'qt-table-foot',
     on: '.qt-table-responsive > div',
     description:
-      'With `scrollBody` and footer rows: the wrapper of the footer table, the last child of `qt-table-responsive` (C-101). Give it `overflow: hidden` in your CSS.',
+      'With `scrollBody` and footer rows: the wrapper of the footer table, the last child of `qt-table-responsive` (C-101). Give it the CSS of `qt-table-head`.',
     addedBy: 'C-101'
   },
   {
