@@ -95,36 +95,32 @@ export const ticker: Dataset = {
     sum: 'volume'
   },
   columns: {
-    id: { field: 'id', title: 'ID', type: 'integer', width: '72px' },
+    id: { field: 'id', title: 'ID', type: 'integer' },
     symbol: { field: 'symbol', title: 'Symbol', width: '140px' },
-    company: { field: 'company', title: 'Company', width: '200px' },
-    sector: { field: 'sector', title: 'Sector', width: '140px' },
-    price: { field: 'price', title: 'Price', type: 'number', width: '120px' },
+    company: { field: 'company', title: 'Company' },
+    sector: { field: 'sector', title: 'Sector' },
+    price: { field: 'price', title: 'Price', type: 'number' },
     change: {
       field: 'change',
       title: 'Change %',
-      type: 'number',
-      width: '150px'
+      type: 'number'
     },
     volume: {
       field: 'volume',
       title: 'Volume',
-      type: 'integer',
-      width: '140px'
+      type: 'integer'
     },
     tradeDate: {
       field: 'tradeDate',
       title: 'Trade date',
-      type: 'date',
-      width: '200px'
+      type: 'date'
     },
     updated: {
       field: 'updated',
       title: 'Last quote',
-      type: 'datetime',
-      width: '200px'
+      type: 'datetime'
     },
-    active: { field: 'active', title: 'Trading', type: 'bool', width: '120px' }
+    active: { field: 'active', title: 'Trading', type: 'bool' }
   },
   list: ['tradeDate', 'id', 'symbol', 'sector', 'price', 'change', 'volume'],
   wide: ['id', 'symbol', 'sector', 'company', 'price', 'volume', 'active'],

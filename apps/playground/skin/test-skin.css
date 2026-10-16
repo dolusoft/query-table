@@ -358,6 +358,40 @@
   text-align: center;
 }
 
+/* own: selection utilities and boolean cell slots share centered controls.
+   A slotted checkbox may be a block-level flex box, so text-align alone
+   cannot center it. Keep native table-cell layout for vertical alignment. */
+.qt-table :is(th, td):has(> :is(.qt-select-all, .qt-select-row)),
+.qt-table :is(th, td)[data-type='bool'] {
+  text-align: center;
+  vertical-align: middle;
+}
+/* own: auto margins center block-level slotted controls as well as inputs. */
+.qt-table :is(.qt-select-all, .qt-select-row),
+.qt-table :is(th, td)[data-type='bool'] > * {
+  margin-inline: auto;
+  vertical-align: middle;
+}
+
+/* own: a native checkbox as a block avoids the text baseline offset. */
+.qt-table :is(.qt-select-all, .qt-select-row) {
+  display: block;
+}
+
+/* own: numeric filters keep number semantics and keyboard stepping without
+   native spinner buttons competing with the filter controls. */
+.qt-datatable input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+/* own: Chromium exposes spinner parts separately from the input. */
+.qt-datatable input[type='number']::-webkit-inner-spin-button,
+.qt-datatable input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
 /* shadcn: table/TableFooter.vue */
 .qt-footer {
   @apply bg-muted/50 border-t font-medium [&>tr]:last:border-b-0;

@@ -88,6 +88,8 @@ const local = useLocalQuery({
       :columns="columns"
       :rows="local.rows.value"
       :total-rows="local.totalRows.value"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       :pagination="{ pageSizeOptions: [5, 10, 20] }"
       sortable

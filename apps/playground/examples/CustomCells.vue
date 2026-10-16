@@ -22,7 +22,14 @@ import {
 const data = currentDataset()
 const { primary, flag } = data.fields
 const columns: Column[] = [
-  { field: 'pick', title: '', width: '40px', filterable: false },
+  {
+    field: 'pick',
+    title: '',
+    type: 'bool',
+    width: '40px',
+    filterable: false,
+    sortable: false
+  },
   ...listColumns(data),
   columnOf(data, flag)
 ]
@@ -54,6 +61,8 @@ const onRightPanel = (row: DemoRow) => {
       :columns="columns"
       :rows="result.rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       has-right-panel
       @cell-context-menu="onContextMenu"

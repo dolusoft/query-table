@@ -90,6 +90,8 @@ const onQuery = (next: TableQuery, reason: QueryChangeReason) => {
         :loading="loading"
         :virtual="virtual"
         :infinite="{ threshold: 5 }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable

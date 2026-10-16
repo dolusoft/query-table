@@ -113,6 +113,8 @@ const setShown = (field: string, on: boolean) => {
         :rows="result.rows"
         :total-rows="result.totalRows"
         :pagination="{ pageSizeOptions: [20, 50, 200] }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable

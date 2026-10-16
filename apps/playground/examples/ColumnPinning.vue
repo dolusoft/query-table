@@ -67,6 +67,8 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
         :rows="result.rows"
         :total-rows="result.totalRows"
         :pagination="{ pageSizeOptions: [20, 50, 200] }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable

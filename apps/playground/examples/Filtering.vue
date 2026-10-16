@@ -91,6 +91,8 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
       :columns="columns"
       :rows="result.rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       :filter-debounce="300"
       has-right-panel

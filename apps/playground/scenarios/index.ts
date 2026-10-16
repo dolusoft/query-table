@@ -36,11 +36,7 @@ export const columnOf = (data: Dataset, field: string): Column => {
 
 /** The plain list: one column per field, no special flags. */
 export const listColumns = (data: Dataset): Column[] =>
-  data.list.map(field =>
-    field === 'id'
-      ? { ...columnOf(data, field), width: '90px' }
-      : columnOf(data, field)
-  )
+  data.list.map(field => columnOf(data, field))
 
 /**
  * A list wider than the page: time and ID pinned to the left (ID and the
@@ -52,12 +48,9 @@ export const wideColumns = (data: Dataset): Column[] =>
     if (index < 2) {
       return {
         ...column,
-        width:
-          field === 'id'
-            ? '80px'
-            : field === data.fields.when
-              ? '220px'
-              : '160px',
+        ...(field === 'id'
+          ? {}
+          : { width: field === data.fields.when ? '220px' : '160px' }),
         pinned: 'left'
       }
     }
@@ -81,7 +74,7 @@ export const typedColumns = (data: Dataset): Column[] => {
   }
   return [
     ...[...new Set([fields.when, fields.date, fields.datetime])].map(typed),
-    { field: 'id', title: 'ID', type: 'integer', width: '90px' },
+    { field: 'id', title: 'ID', type: 'integer' },
     typed(fields.primary),
     typed(fields.count),
     typed(fields.amount),

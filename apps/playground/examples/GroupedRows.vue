@@ -238,6 +238,8 @@ const jump = (category: string) => {
         virtual
         flash
         rows-update="live"
+        auto-width
+        :auto-width-max="240"
         row-key="workId"
       >
         <template #group="{ groupKey, count: size }">

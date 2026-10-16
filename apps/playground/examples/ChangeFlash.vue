@@ -284,6 +284,8 @@ const rowsUpdate = computed(() => (hint.value ? update.value : undefined))
         :flash="flash"
         :rows-update="rowsUpdate"
         :virtual="{ overscan: 10 }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable

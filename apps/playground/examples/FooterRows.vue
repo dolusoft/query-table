@@ -35,6 +35,8 @@ const footerRows = computed(() => footerOf(data, allRows, query.value))
       :rows="result.rows"
       :total-rows="result.totalRows"
       :footer-rows="footerRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       filterable
       has-subtable
