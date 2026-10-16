@@ -124,7 +124,7 @@ watch(
 onBeforeUnmount(() => clearInterval(timer))
 
 const grouped = ref(true)
-const narrow = ref(true)
+const narrow = ref(false)
 const query = ref<TableQuery>(makeQuery({ pageSize: 100_000 }))
 const selection = ref<Record<string, boolean>>({})
 const selected = computed(
