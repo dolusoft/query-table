@@ -55,6 +55,8 @@ const props = defineProps<{
    * the body draws what it drew in 3.2 and calls nothing per row (C-95).
    */
   flash: FlashView<T> | null
+  /** With `scrollBody`: the ARIA table roles of C-102. */
+  roles?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -76,9 +78,24 @@ const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
     pinRow: (row, index, position) => props.pinRow(row, index, position)
   })
 
+/** `role` of a row and of a cell with `scrollBody` (C-102). */
+const rowRole = () => (props.roles ? 'row' : undefined)
+const cellRole = () => (props.roles ? 'cell' : undefined)
+/** A cell over every column; with `scrollBody` also its `aria-colspan`. */
+const spanAttrs = () => ({
+  colspan: props.columnCount,
+  role: cellRole(),
+  'aria-colspan': props.roles ? props.columnCount : undefined
+})
+
 // Utilities are pinned only with a left-pinned column (C-46, C-71).
-const utilityAttrs = (utility: string) =>
-  pinAttrs(props.hasPinned ? 'left' : false, props.offsets[utilityKey(utility)])
+const utilityAttrs = (utility: string) => ({
+  role: cellRole(),
+  ...pinAttrs(
+    props.hasPinned ? 'left' : false,
+    props.offsets[utilityKey(utility)]
+  )
+})
 const rightPanelAttrs = () => utilityAttrs('right-panel')
 const expandAttrs = () => utilityAttrs('subtable')
 const selectAttrs = () => utilityAttrs('select')
@@ -129,7 +146,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
 </script>
 
 <template>
-  <tbody @contextmenu="onContextMenu">
+  <tbody :role="roles ? 'rowgroup' : undefined" @contextmenu="onContextMenu">
     <!--
       Flat `template v-for` children (no nested `<template v-else>` Fragment).
       A nested Fragment left the subtable `tr` vnode created but not inserted
@@ -143,12 +160,14 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
         v-if="isSpacer(item)"
         class="qt-virtual-spacer"
         aria-hidden="true"
+        :role="rowRole()"
         :style="{ height: `${item.spacer}px` }"
       >
-        <td :colspan="columnCount" />
+        <td v-bind="spanAttrs()" />
       </tr>
       <tr
         v-else
+        :role="rowRole()"
         :data-row-index="item.index"
         :aria-rowindex="item.aria"
         :data-pinned-row="item.pinned || undefined"
@@ -220,6 +239,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
         <template v-for="entry in entries" :key="entry.column.field">
           <td
             v-if="hasCellSlot(entry.column)"
+            :role="cellRole()"
             v-bind="cellAttrs(entry)"
             :data-flash="
               flash
@@ -236,6 +256,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
           </td>
           <td
             v-else
+            :role="cellRole()"
             v-bind="cellAttrs(entry)"
             :data-flash="
               flash
@@ -250,28 +271,35 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
       <tr
         v-if="!isSpacer(item) && isRowExpanded(item)"
         class="qt-subtable-row"
+        :role="rowRole()"
         :aria-rowindex="nextIndex(item.aria)"
         :data-pinned-row="item.pinned || undefined"
       >
-        <td :colspan="columnCount">
+        <td v-bind="spanAttrs()">
           <slot name="subtable" :row="item.row" :row-index="item.index" />
         </td>
       </tr>
     </template>
-    <tr v-if="loading && slots.loading" class="qt-loading-row">
-      <td :colspan="columnCount"><slot name="loading" /></td>
+    <tr
+      v-if="loading && slots.loading"
+      class="qt-loading-row"
+      :role="rowRole()"
+    >
+      <td v-bind="spanAttrs()"><slot name="loading" /></td>
     </tr>
     <tr
       v-else-if="!loading && rows.length === 0 && slots.empty"
       class="qt-empty-row"
+      :role="rowRole()"
     >
-      <td :colspan="columnCount"><slot name="empty" /></td>
+      <td v-bind="spanAttrs()"><slot name="empty" /></td>
     </tr>
     <tr
       v-if="!loading && rows.length > 0 && loadMore && slots['load-more']"
       class="qt-load-more-row"
+      :role="rowRole()"
     >
-      <td :colspan="columnCount">
+      <td v-bind="spanAttrs()">
         <slot name="load-more" v-bind="loadMore" />
       </td>
     </tr>

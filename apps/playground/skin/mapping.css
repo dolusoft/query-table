@@ -53,6 +53,37 @@
      "Pinned columns": a subtable row stays in view while the table scrolls). */
   container-type: inline-size;
 }
+/* own: `scrollBody` (C-101). The body scrolls, under a header and a footer
+   that stay outside it and follow it sideways; the outer box only frames
+   them. The gutter is kept on all three, so their tables are as wide with or
+   without a vertical scrollbar, and the body and footer take the widths of
+   the header cells only with the fixed layout. The height is the page's. */
+.qt-table-responsive:has(> .qt-table-body) {
+  overflow: hidden;
+}
+/* own: the wrappers clip sideways; one gutter and one scrollbar look for all
+   three. */
+.qt-table-head,
+.qt-table-body,
+.qt-table-foot {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+/* own: only the body scrolls. */
+.qt-table-body {
+  overflow: auto;
+}
+/* own: the columns take the `col` widths of the header cells (C-101). */
+.qt-table-body > .qt-table,
+.qt-table-foot > .qt-table {
+  table-layout: fixed;
+}
+/* own: the line between the scrolled rows and the totals. */
+.qt-table-foot {
+  border-top: 1px solid var(--border);
+}
 
 /* shadcn: table/Table.vue */
 .qt-table {

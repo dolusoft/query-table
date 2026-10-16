@@ -39,6 +39,8 @@ const props = defineProps<{
    * that they stay stable; this says which ones to draw.
    */
   slotNames: string
+  /** With `scrollBody`: the ARIA table roles of C-102. */
+  roles?: boolean
 }>()
 
 defineSlots<{
@@ -139,13 +141,14 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
 </script>
 
 <template>
-  <tr>
+  <tr :role="roles ? 'row' : undefined">
     <!-- A utility header cell labels nothing; it is a `th` only when it holds
          the clear-all button, and an empty `td` otherwise (C-45). -->
     <template v-for="utility in utilities" :key="utility">
       <th
         v-if="utility === 'select'"
         scope="col"
+        :role="roles ? 'columnheader' : undefined"
         v-bind="utilityAttrs(utility)"
       >
         <input
@@ -159,8 +162,17 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           "
         />
       </th>
-      <td v-else-if="!hostsClearAll(utility)" v-bind="utilityAttrs(utility)" />
-      <th v-else scope="col" v-bind="utilityAttrs(utility)">
+      <td
+        v-else-if="!hostsClearAll(utility)"
+        :role="roles ? 'cell' : undefined"
+        v-bind="utilityAttrs(utility)"
+      />
+      <th
+        v-else
+        scope="col"
+        :role="roles ? 'columnheader' : undefined"
+        v-bind="utilityAttrs(utility)"
+      >
         <button
           type="button"
           class="qt-clear-all-button"
@@ -190,6 +202,7 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
       v-for="column in columns"
       :key="column.field"
       scope="col"
+      :role="roles ? 'columnheader' : undefined"
       :data-field="column.field"
       :data-type="columnTypeOf(column)"
       :data-sort="sort.sortOf(column) ?? undefined"

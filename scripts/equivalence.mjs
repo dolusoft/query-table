@@ -164,7 +164,12 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/measure-widths.browser.spec.ts > C-99 Measuring column widths [own]',
   'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]',
   // 3.7 addition (C-100, ADR 0014): automatic column widths.
-  'tests/contract/browser/auto-width.browser.spec.ts > C-100 Automatic column widths [own]'
+  'tests/contract/browser/auto-width.browser.spec.ts > C-100 Automatic column widths [own]',
+  // 3.8 addition (C-101, C-102, ADR 0015): `scrollBody`, which a 3.7 build
+  // does not have. Without it the table is the one of 3.7.
+  'tests/contract/browser/scroll-body.browser.spec.ts > C-101 Scrolling body [own]',
+  'tests/contract/browser/scroll-body.browser.spec.ts > C-102 Scrolling body: one table for assistive technology [own]',
+  'tests/contract/browser/dom-contract-scroll-body.browser.spec.ts > C-102 the DOM with `scrollBody` matches the DOM contract'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
@@ -272,6 +277,15 @@ const packGitRef = async ref => {
               {
                 find: /^@dolusoft\/query-table-core$/,
                 replacement: join(dir, 'packages/query-table-core/src/index.ts')
+              },
+              // The pure core modules sit beside the features, not in
+              // `features/` (P10: the row-change module, ADR 0011).
+              {
+                find: /^@dolusoft\/query-table-core\/row-changes$/,
+                replacement: join(
+                  dir,
+                  'packages/query-table-core/src/row-changes/index.ts'
+                )
               },
               {
                 find: /^@dolusoft\/query-table-core\/([\w-]+)$/,

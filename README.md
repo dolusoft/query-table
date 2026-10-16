@@ -126,6 +126,33 @@ The scroll container is `.qt-table-responsive`; to scroll sideways, let the tabl
 
 With `width: 100%` the columns squeeze to fit and nothing scrolls; with `max-content` alone a narrow table stops short of the container's right edge.
 
+## Scrolling body
+
+A sticky header scrolls inside the same container as the rows, so the vertical scrollbar starts beside it. With `scroll-body` the table draws the header, the body and the footer as three tables, each in a wrapper of `.qt-table-responsive`: `.qt-table-head`, `.qt-table-body` and, with footer rows, `.qt-table-foot`. Make the body scroll in your CSS; the header and footer stay outside it:
+
+```css
+.qt-table-body {
+  max-height: 28rem;
+  overflow: auto;
+}
+.qt-table-head,
+.qt-table-foot {
+  overflow: hidden;
+}
+/* The same gutter on all three keeps their tables equally wide. */
+.qt-table-head,
+.qt-table-body,
+.qt-table-foot {
+  scrollbar-gutter: stable;
+}
+.qt-table-body > .qt-table,
+.qt-table-foot > .qt-table {
+  table-layout: fixed;
+}
+```
+
+The body and footer tables get a `col` per header cell with the header cell's measured `width`, so with the fixed layout their columns are as wide as the header's. The three scroll sideways together: the table keeps the header and footer at the body's `scrollLeft`, and the body at the header's when a filter input out of view takes the focus. Pinned columns, resizing, `virtual`, `scrollToIndex` and infinite scroll work as in one table; `.qt-table-body` is the scroll container a virtual body finds. For assistive technology the three tables are one: `.qt-table-responsive` has `role="table"` and the rows and cells carry ARIA roles (C-101, C-102). The DOM without `scroll-body` is the same as before.
+
 ## Resizing columns
 
 With `resizable` the table draws a `qt-resize-handle` separator at the right edge of every header cell (opt a column out with `resizable: false`). Drag it, or focus it and use the arrow keys (10 px, 50 px with Shift); Enter or a double click fits the column to its widest rendered content, Escape cancels a drag. Widths stay between `minWidth` (default 40) and `maxWidth`. The table keeps no width: it emits `column-resize` with `{ field, width }` and you write it back:

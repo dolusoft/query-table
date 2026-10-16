@@ -19,14 +19,18 @@ export interface HeaderGeometryOptions {
   table: ShallowRef<HTMLTableElement | null>
   /** The header cells as drawn: utilities first, then the columns. */
   cells: () => HeaderCellKey[]
-  /** Some column is pinned on either side (C-46, C-71) or has a resize handle (C-48). */
+  /**
+   * Some column is pinned on either side (C-46, C-71) or has a resize handle
+   * (C-48), or the body is a table of its own (`scrollBody`, C-101).
+   */
   active: () => boolean
 }
 
 type Numbers = Readonly<Record<string, number>>
 
 /** One string per map: compares two maps in one step. */
-const signature = (numbers: Numbers) => JSON.stringify(numbers)
+const signature = (numbers: Numbers | readonly number[]) =>
+  JSON.stringify(numbers)
 
 /**
  * Measured header geometry (C-47, C-48, C-71): the rendered width of every
@@ -49,6 +53,11 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
    * right-pinned one, by key, in pixels.
    */
   const offsets = shallowRef<Numbers>({})
+  /**
+   * The exact width of every header cell, in drawing order: the `col` widths
+   * of the body and footer tables with `scrollBody` (C-101).
+   */
+  const columns = shallowRef<readonly number[]>([])
   let observer: ResizeObserver | null = null
 
   const headerCells = (table: HTMLTableElement) =>
@@ -63,11 +72,13 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     const next: Record<string, number> = {}
     const nextOffsets: Record<string, number> = {}
     const rights: Array<[string, number]> = []
+    const nextColumns: number[] = []
     let left = 0
     headerCells(table).forEach((cell, index) => {
       const drawn = cells[index]
       if (drawn) {
         const exact = cell.getBoundingClientRect().width
+        nextColumns.push(exact)
         next[drawn.key] = Math.round(exact)
         // The offsets add up the exact widths. A cell is drawn at a fractional
         // width (a percentage, a collapsed border), so summing rounded widths
@@ -95,6 +106,9 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     if (signature(nextOffsets) !== signature(offsets.value)) {
       offsets.value = nextOffsets
     }
+    if (signature(nextColumns) !== signature(columns.value)) {
+      columns.value = nextColumns
+    }
   }
 
   const observe = () => {
@@ -104,6 +118,9 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     if (!table || !options.active() || typeof ResizeObserver === 'undefined') {
       if (Object.keys(offsets.value).length > 0) {
         offsets.value = {}
+      }
+      if (columns.value.length > 0) {
+        columns.value = []
       }
       return
     }
@@ -150,5 +167,5 @@ export const useHeaderGeometry = (options: HeaderGeometryOptions) => {
     observer = null
   })
 
-  return { widths, tableWidth, offsets }
+  return { widths, tableWidth, offsets, columns }
 }

@@ -77,6 +77,7 @@ const setup = (given: { columns?: Column[]; max?: number } = {}) => {
           enabled: () => enabled.value,
           max: () => max.value,
           table,
+          body: () => null,
           columns: () => columns.value,
           rows: () => rows.value,
           query: () => q.value,
