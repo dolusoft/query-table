@@ -12,10 +12,6 @@ import { join, relative } from 'node:path'
 // output cannot. llms.spec.ts tests this function against the real
 // repository.
 
-// `main` holds the latest release; the site that serves these files is built
-// from it.
-const rawBase = 'https://raw.githubusercontent.com/dolusoft/query-table/main'
-
 interface LlmsSource {
   /** Path from the repository root, with forward slashes. */
   path: string
@@ -98,7 +94,11 @@ export interface Llms {
   sources: LlmsSource[]
 }
 
-export const buildLlms = (root: string): Llms => {
+export const buildLlms = (
+  root: string,
+  branch: 'main' | 'next' = 'main'
+): Llms => {
+  const rawBase = `https://raw.githubusercontent.com/dolusoft/query-table/${branch}`
   const sections = llmsSections(root).map(section => ({
     title: section.title,
     sources: section.paths.map(path => readSource(root, join(root, path)))

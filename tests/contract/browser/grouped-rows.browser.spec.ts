@@ -425,7 +425,7 @@ describe('C-104 Grouped rows in a virtual body [own]', () => {
   })
 })
 
-describe('C-105 Grouping off and DOM contract of 3.8 [own]', () => {
+describe('C-105 Grouping off and DOM contract of 3.9 [own]', () => {
   test('without groupBy no group row is drawn', async () => {
     await mountScroll({ groupBy: undefined })
     expect(groupRows()).toHaveLength(0)

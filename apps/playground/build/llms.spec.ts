@@ -48,6 +48,15 @@ describe('llms.txt generation', () => {
     }
   })
 
+  it('links next documentation to next while retaining its full source text', () => {
+    const next = buildLlms(root, 'next')
+    for (const source of next.sources) {
+      expect(next.llms, source.path).toContain(`/next/${source.path})`)
+    }
+    expect(next.llms).not.toContain('/main/')
+    expect(next.full).toBe(full)
+  })
+
   it('has a one-sentence summary for every source', () => {
     for (const source of sources) {
       expect(source.summary, source.path).not.toBe('')
