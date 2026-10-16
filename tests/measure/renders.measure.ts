@@ -169,6 +169,8 @@ interface Scenario {
   reorderable?: boolean
   /** Mounts with `flash` and `rowKey` (C-93); off by default. */
   flash?: boolean
+  /** Mounts with `groupBy` (C-103); off by default. */
+  grouped?: boolean
   act: (applied: number[]) => Promise<void>
 }
 
@@ -188,7 +190,8 @@ const once = async (scenario: Scenario): Promise<Run> => {
         filterDebounce: 5000,
         applied,
         reorderable: scenario.reorderable ?? false,
-        flash: scenario.flash ?? false
+        flash: scenario.flash ?? false,
+        grouped: scenario.grouped ?? false
       } as never
     })
 
@@ -365,6 +368,17 @@ const scenarios: Scenario[] = [
     pageSize: 100,
     expectedUpdates: 0,
     flash: true,
+    act: () => liveChanges(6)
+  },
+  {
+    // C-103, C-105: the `flash` scenario with the rows grouped in runs of
+    // 13 (eight group rows). The group rows add no re-render: the body draws
+    // them in its own render of the new rows.
+    name: 'grouped',
+    pageSize: 100,
+    expectedUpdates: 0,
+    flash: true,
+    grouped: true,
     act: () => liveChanges(6)
   }
 ]

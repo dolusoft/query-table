@@ -910,6 +910,22 @@ th[data-filtered] .qt-filter-input {
   color: var(--muted-foreground);
   text-align: center;
 }
+/* own: the group row of `groupBy` (C-103), a muted band with the group's
+   name. Sticking it to the top is the page's: it knows how tall its sticky
+   header is. */
+.qt-table tbody > tr.qt-group-row > th {
+  padding: 0.375rem 0.5rem;
+  background-color: var(--muted);
+  color: var(--foreground);
+  font-weight: 500;
+  text-align: left;
+}
+/* own: the row hover of TableRow does not reach a group row. */
+@media (hover: hover) {
+  .qt-table tbody > tr.qt-group-row:hover {
+    background-color: transparent;
+  }
+}
 
 /* own: loading. The table keeps the rows and adds `tr.qt-loading-row` as the
    last row of the body. The skin lays it over the body only (the `tbody` is

@@ -11,15 +11,21 @@ import type {
 import type { FlashView } from '../flash/use-change-flash'
 import { pinAttrs, utilityKey } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
-import type { DrawnRow, SpacerRow } from '../virtual/use-row-window'
+import type {
+  BodyItem,
+  DrawnRow,
+  GroupRow,
+  SpacerRow
+} from '../virtual/use-row-window'
 
 const props = defineProps<{
   rows: T[]
   /**
    * The rows in drawing order: pinned top, the others, pinned bottom (C-74);
-   * with `virtual` only the drawn ones, between spacers (C-83).
+   * with `virtual` only the drawn ones, between spacers (C-83); with
+   * `groupBy` a group row above the first row of each group (C-103).
    */
-  bodyRows: Array<DrawnRow<T> | SpacerRow>
+  bodyRows: Array<BodyItem<T>>
   /** Pin a row or unpin it (C-74). */
   pinRow: (row: T, index: number, position: 'top' | 'bottom' | false) => void
   /** The consumer is fetching: no empty row, the `loading` row instead (C-52). */
@@ -100,8 +106,14 @@ const rightPanelAttrs = () => utilityAttrs('right-panel')
 const expandAttrs = () => utilityAttrs('subtable')
 const selectAttrs = () => utilityAttrs('select')
 
-const isSpacer = (item: DrawnRow<T> | SpacerRow): item is SpacerRow =>
-  'spacer' in item
+const isSpacer = (item: BodyItem<T>): item is SpacerRow => 'spacer' in item
+const isGroup = (item: BodyItem<T>): item is GroupRow<T> => 'group' in item
+/** A data row: neither a spacer nor a group row. */
+const isRow = (item: BodyItem<T>): item is DrawnRow<T> =>
+  !isSpacer(item) && !isGroup(item)
+/** The identity of a body item in the `v-for`. */
+const itemKey = (item: BodyItem<T>) =>
+  isRow(item) ? props.keyOf(item.row, item.index) : item.key
 /** `data-row-kind` of a drawn row (C-97): no attribute for an empty kind. */
 const kindOf = (item: DrawnRow<T>) =>
   props.rowKind ? props.rowKind(item.row, item.index) || undefined : undefined
@@ -121,15 +133,15 @@ let expandedSnapshot: Map<string, boolean> | null = null
 onBeforeUpdate(() => {
   expandedSnapshot = null
 })
-const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
-  if (isSpacer(item)) {
+const isRowExpanded = (item: BodyItem<T>) => {
+  if (!isRow(item)) {
     return false
   }
   if (!expandedSnapshot) {
     const open = new Map<string, boolean>()
     if (props.hasSubtable) {
       for (const row of props.bodyRows) {
-        if (!isSpacer(row)) {
+        if (isRow(row)) {
           open.set(
             String(props.keyOf(row.row, row.index)),
             props.isExpanded(row.row, row.index)
@@ -152,10 +164,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
       A nested Fragment left the subtable `tr` vnode created but not inserted
       into `tbody` — chevron flipped, detail row never appeared in the DOM.
     -->
-    <template
-      v-for="item in bodyRows"
-      :key="isSpacer(item) ? item.key : keyOf(item.row, item.index)"
-    >
+    <template v-for="item in bodyRows" :key="itemKey(item)">
       <tr
         v-if="isSpacer(item)"
         class="qt-virtual-spacer"
@@ -164,6 +173,28 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
         :style="{ height: `${item.spacer}px` }"
       >
         <td v-bind="spanAttrs()" />
+      </tr>
+      <tr
+        v-else-if="isGroup(item)"
+        class="qt-group-row"
+        :role="rowRole()"
+        :aria-rowindex="item.aria"
+      >
+        <th
+          scope="row"
+          :colspan="columnCount"
+          :role="roles ? 'rowheader' : undefined"
+          :aria-colspan="roles ? columnCount : undefined"
+        >
+          <slot
+            name="group"
+            :group-key="item.group.key"
+            :count="item.group.count"
+            :row="item.group.row"
+            :row-index="item.group.index"
+            >{{ item.group.key }}</slot
+          >
+        </th>
       </tr>
       <tr
         v-else
@@ -269,7 +300,7 @@ const isRowExpanded = (item: DrawnRow<T> | SpacerRow) => {
         </template>
       </tr>
       <tr
-        v-if="!isSpacer(item) && isRowExpanded(item)"
+        v-if="isRow(item) && isRowExpanded(item)"
         class="qt-subtable-row"
         :role="rowRole()"
         :aria-rowindex="nextIndex(item.aria)"

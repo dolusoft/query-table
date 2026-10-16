@@ -246,6 +246,16 @@ export interface TableProps<
    * writes no attribute.
    */
   rowKind?: (row: T, index: number) => string | null | undefined
+  /**
+   * Group the rows (C-103): called with each row that is not pinned and its
+   * index in `rows`, it returns the row's group key. A run of consecutive
+   * rows with the same key is one group, drawn under one `tr.qt-group-row`
+   * that holds the `group` slot; the table never reorders, so sort the rows
+   * by group yourself. `null` or `undefined` puts a row in no group. Group
+   * rows are not rows of `rows`: indexes, the selection and `scrollToIndex`
+   * count only the rows given.
+   */
+  groupBy?: (row: T, index: number) => string | number | null | undefined
   /** Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. */
   hasRightPanel?: boolean
   /**
@@ -319,6 +329,11 @@ export interface VirtualOptions {
   rowHeight?: number
   /** Height counted for a row not measured yet. Defaults to the first measured row, else `32`. */
   estimateRowHeight?: number
+  /**
+   * With `rowHeight` and `groupBy`: height of a group row in pixels (C-104).
+   * Defaults to `rowHeight`.
+   */
+  groupRowHeight?: number
   /** Rows drawn beyond each edge of the view. Defaults to `10`. */
   overscan?: number
   /**
@@ -338,6 +353,21 @@ export interface InfiniteOptions {
 export interface ScrollToIndexOptions {
   /** Where the row ends up in the container. Defaults to `'auto'`: the nearest edge, nothing when in view. */
   align?: 'start' | 'center' | 'end' | 'auto'
+}
+
+/** What the `group` slot receives (C-103). */
+export interface GroupSlotProps<T> {
+  /**
+   * The group key `groupBy` returned (not `key`: Vue keeps `key` off slot
+   * props).
+   */
+  groupKey: string | number
+  /** The rows in the group. */
+  count: number
+  /** The first row of the group. */
+  row: T
+  /** Index of the first row in `rows` (named as in the cell slot). */
+  rowIndex: number
 }
 
 /** What the `load-more` slot receives (C-89). */
@@ -634,6 +664,12 @@ export interface TableSlots<T> {
    * `tr.qt-load-more-row`, for a "load more" or "try again" control (C-89).
    */
   'load-more'?(props: LoadMoreSlotProps): unknown
+  /**
+   * With `groupBy`: the content of a group row, one `th` that spans every
+   * column above the rows of the group (C-103). Without it the cell shows
+   * the key.
+   */
+  group?(props: GroupSlotProps<T>): unknown
   /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its

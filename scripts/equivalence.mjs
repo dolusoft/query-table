@@ -171,7 +171,14 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/scroll-body.browser.spec.ts > C-102 Scrolling body: one table for assistive technology [own]',
   'tests/contract/browser/dom-contract-scroll-body.browser.spec.ts > C-102 the DOM with `scrollBody` matches the DOM contract',
   'tests/contract/unit/scroll-body.spec.ts > C-101 Scrolling body (unit) [own]',
-  'tests/contract/unit/scroll-body.spec.ts > C-102 Scrolling body: roles (unit) [own]'
+  'tests/contract/unit/scroll-body.spec.ts > C-102 Scrolling body: roles (unit) [own]',
+  // 3.8 addition (C-103..C-105, ADR 0016): grouped rows.
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-103 Grouped rows [own]',
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-104 Grouped rows in a virtual body [own]',
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-105 Grouping off and DOM contract of 3.9 [own]',
+  'tests/contract/browser/grouped-scroll-body.browser.spec.ts',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, light theme',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, dark theme'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
