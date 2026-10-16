@@ -33,6 +33,7 @@ import { useColumnReorder } from './reorder/use-column-reorder'
 import { measureColumnWidths } from './resize/measure-widths'
 import { useAutoWidth } from './resize/use-auto-width'
 import { useColumnResize } from './resize/use-column-resize'
+import { useScrollBody } from './scroll/use-scroll-body'
 import { useQueryTable } from './use-query-table'
 import { useLoadMore } from './virtual/use-load-more'
 import { useRowWindow } from './virtual/use-row-window'
@@ -63,6 +64,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   rowKey: undefined,
   labels: undefined,
   virtual: false,
+  scrollBody: false,
   infinite: false,
   flash: false,
   rowsUpdate: undefined
@@ -140,8 +142,24 @@ const columnCount = computed(() => entries.value.length + utilityCount.value)
 
 /** Utilities are pinned only with a left-pinned column (C-46, C-71). */
 const utilitySide = (): PinSide => (hasPinned.value ? 'left' : false)
+/** The table of the header: with `scrollBody` the first of three (C-101). */
 const tableEl = shallowRef<HTMLTableElement | null>(null)
-const { widths, tableWidth, offsets } = useHeaderGeometry({
+// With `scrollBody` the body rows have a table of their own, and the three
+// tables a wrapper each; without it the one table holds every part.
+const bodyTableEl = shallowRef<HTMLTableElement | null>(null)
+const headWrap = shallowRef<HTMLElement | null>(null)
+const bodyWrap = shallowRef<HTMLElement | null>(null)
+const footWrap = shallowRef<HTMLElement | null>(null)
+/** The table of the body rows. */
+const bodyTable = computed(() => bodyTableEl.value ?? tableEl.value)
+/** With `scrollBody`, the body table to measure apart from the header. */
+const splitBody = () => (props.scrollBody ? bodyTableEl.value : null)
+const {
+  widths,
+  tableWidth,
+  offsets,
+  columns: cellWidths
+} = useHeaderGeometry({
   table: tableEl,
   cells: () => [
     ...utilities.value.map(utility => ({
@@ -154,14 +172,29 @@ const { widths, tableWidth, offsets } = useHeaderGeometry({
     }))
   ],
   active: () =>
+    props.scrollBody ||
     entries.value.some(entry => sideOf(entry.column) !== false) ||
     (props.resizable &&
       entries.value.some(entry => entry.column.resizable !== false))
+})
+/** The `col` widths of the body and footer tables (C-101), in pixels. */
+const colWidths = computed(() =>
+  Array.from({ length: columnCount.value }, (_, i) => cellWidths.value[i])
+)
+useScrollBody({
+  enabled: () => props.scrollBody,
+  wrappers: () => ({
+    head: headWrap.value,
+    body: bodyWrap.value,
+    foot: footWrap.value
+  }),
+  bodyTable: () => bodyTableEl.value
 })
 const resize = useColumnResize({
   resizable: () => props.resizable,
   measuredWidth: field => widths.value[field],
   tableWidth: () => tableWidth.value,
+  body: splitBody,
   // C-68: the width goes back as `columnResize`, then as the new `columns`.
   emit: payload => {
     emit('columnResize', payload)
@@ -178,6 +211,7 @@ const autoWidth = useAutoWidth({
   enabled: () => props.autoWidth,
   max: () => props.autoWidthMax,
   table: tableEl,
+  body: splitBody,
   columns: () => visibleColumns.value,
   rows: () => props.rows,
   query: () => props.query,
@@ -189,7 +223,7 @@ const autoWidth = useAutoWidth({
 // `infinite` nothing is asked for.
 const rowWindow = useRowWindow<T>({
   virtual: () => props.virtual,
-  table: tableEl,
+  table: bodyTable,
   bodyRows: () => state.rowPinning.rows.value,
   keyOf: expansion.keyOf,
   isExpanded: expansion.isExpanded,
@@ -204,7 +238,7 @@ const infinite = useLoadMore({
   cursors: () => props.cursors,
   loading: () => props.loading,
   nextPage: () => paginationProps.value.nextPage(),
-  table: tableEl,
+  table: bodyTable,
   virtual: rowWindow.enabled,
   window: () =>
     rowWindow.ready.value
@@ -258,7 +292,7 @@ const flashView = useChangeFlash<T>({
   loading: () => props.loading,
   fields: () => entries.value.map(entry => entry.column.field),
   rowKey: () => props.rowKey,
-  table: tableEl
+  table: bodyTable
 })
 
 const reorder = useColumnReorder({
@@ -335,7 +369,8 @@ const exposed: QueryTableExpose = {
   },
   scrollToIndex: rowWindow.scrollToIndex,
   loadMore: infinite.loadMore,
-  measureColumnWidths: fields => measureColumnWidths(tableEl.value, fields)
+  measureColumnWidths: fields =>
+    measureColumnWidths(tableEl.value, fields, splitBody())
 }
 defineExpose(exposed)
 </script>
@@ -348,8 +383,125 @@ defineExpose(exposed)
     :aria-busy="loading ? 'true' : undefined"
   >
     <slot name="toolbar" v-bind="toolbarProps()" />
-    <div class="qt-table-responsive">
-      <table ref="tableEl" class="qt-table" :aria-rowcount="ariaRowCount">
+    <div
+      class="qt-table-responsive"
+      :role="scrollBody ? 'table' : undefined"
+      :aria-rowcount="scrollBody ? ariaRowCount : undefined"
+    >
+      <!-- C-101: three tables, so the body scrolls under the header; the
+           body and footer columns take the widths of the header cells. -->
+      <template v-if="scrollBody">
+        <div ref="headWrap" class="qt-table-head">
+          <table ref="tableEl" class="qt-table" role="presentation">
+            <thead role="rowgroup" @contextmenu="onHeaderContextMenu">
+              <table-header
+                :columns="visibleColumns"
+                :query="query"
+                :filterable="filterable"
+                :utilities="utilities"
+                :has-pinned="hasPinned"
+                :offsets="offsets"
+                :auto-widths="autoWidth.widths.value"
+                :slot-names="headerSlotNames()"
+                :aria-rowindex="rowWindow.enabled() ? 1 : undefined"
+                roles
+              >
+                <!-- Stable slots: the header re-renders only when its props
+                     change, not with every render of the root (`loading`,
+                     `rows`). `slot-names` says which ones the consumer gave. -->
+                <template #header="p">
+                  <!-- Names are dynamic (header-<field>); the types only widen here. -->
+                  <slot
+                    :name="`header-${p.column.field}` as 'header-x'"
+                    v-bind="p as HeaderSlotProps"
+                  />
+                </template>
+                <template #filter-datetime="p">
+                  <slot name="filter-datetime" v-bind="p" />
+                </template>
+                <template #filter-menu="p">
+                  <slot name="filter-menu" v-bind="p" />
+                </template>
+              </table-header>
+            </thead>
+          </table>
+        </div>
+        <div ref="bodyWrap" class="qt-table-body">
+          <table ref="bodyTableEl" class="qt-table" role="presentation">
+            <colgroup>
+              <col
+                v-for="(width, i) in colWidths"
+                :key="i"
+                :style="
+                  width === undefined ? undefined : { width: `${width}px` }
+                "
+              />
+            </colgroup>
+            <table-body
+              :rows="rows"
+              :body-rows="rowWindow.drawn.value"
+              :pin-row="state.rowPinning.pin"
+              :loading="loading"
+              :entries="entries"
+              :column-count="columnCount"
+              :has-subtable="hasSubtable"
+              :has-right-panel="hasRightPanel"
+              :has-selection="rowSelection.enabled.value"
+              :is-selected="rowSelection.isSelected"
+              :toggle-selected="rowSelection.toggle"
+              :has-pinned="hasPinned"
+              :offsets="offsets"
+              :key-of="expansion.keyOf"
+              :can-expand="expansion.canExpand"
+              :is-expanded="expansion.isExpanded"
+              :toggle="expansion.toggle"
+              :row-kind="rowKind"
+              :labels="labels"
+              :has-context-menu-listener="hasContextMenuListener"
+              :load-more="loadMoreProps"
+              :flash="flashView"
+              roles
+              @row-right-panel-click="row => emit('rowRightPanelClick', row)"
+              @cell-context-menu="payload => emit('cellContextMenu', payload)"
+              @focusin="rowWindow.onFocusIn"
+              @focusout="rowWindow.onFocusOut"
+            >
+              <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
+                <!-- Names are dynamic (cell-<field>); the types only widen here. -->
+                <slot :name="name as 'cell-x'" v-bind="p as CellSlotProps<T>" />
+              </template>
+            </table-body>
+          </table>
+        </div>
+        <div v-if="footerRows.length > 0" ref="footWrap" class="qt-table-foot">
+          <table class="qt-table" role="presentation">
+            <colgroup>
+              <col
+                v-for="(width, i) in colWidths"
+                :key="i"
+                :style="
+                  width === undefined ? undefined : { width: `${width}px` }
+                "
+              />
+            </colgroup>
+            <table-footer
+              :footer-rows="footerRows"
+              :entries="entries"
+              :utility-count="utilityCount"
+              :has-pinned="hasPinned"
+              :offsets="offsets"
+              :first-row-index="footerRowIndex"
+              roles
+            />
+          </table>
+        </div>
+      </template>
+      <table
+        v-else
+        ref="tableEl"
+        class="qt-table"
+        :aria-rowcount="ariaRowCount"
+      >
         <thead @contextmenu="onHeaderContextMenu">
           <table-header
             :columns="visibleColumns"

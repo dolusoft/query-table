@@ -63,6 +63,7 @@ describe('feature matrix data', () => {
     ])
     expect(inGroup('own')).toEqual([
       'virtualization',
+      'scroll-body',
       'infinite-scroll',
       'change-flash',
       'filter-grammar',

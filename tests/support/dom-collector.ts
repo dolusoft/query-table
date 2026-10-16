@@ -121,16 +121,31 @@ export const createCollector = () => {
       const style = (element as HTMLElement).style
       for (let i = 0; i < style.length; i++) {
         const property = style.item(i)
-        const entry = domInlineStyles.find(e => e.property === property)
-        expect(entry, `inline ${property}`).toBeDefined()
-        expect(element.matches(entry!.on), `${property} on ${entry!.on}`).toBe(
-          true
-        )
+        const entries = domInlineStyles.filter(e => e.property === property)
+        expect(entries.length, `inline ${property}`).toBeGreaterThan(0)
+        expect(
+          entries.some(entry => element.matches(entry.on)),
+          `${property} on ${entries.map(entry => entry.on).join(' or ')}`
+        ).toBe(true)
         written.add(property)
       }
     }
-    const wanted = domInlineStyles.filter(include).map(entry => entry.property)
-    expect(wanted.filter(property => !written.has(property))).toEqual([])
+    const wanted = domInlineStyles.filter(include)
+    expect(
+      wanted
+        .filter(
+          entry =>
+            !styled.some(
+              element =>
+                element.matches(entry.on) &&
+                (element as HTMLElement).style.getPropertyValue(
+                  entry.property
+                ) !== ''
+            )
+        )
+        .map(entry => `${entry.property} on ${entry.on}`)
+    ).toEqual([])
+    expect(wanted.filter(entry => !written.has(entry.property))).toEqual([])
   }
 
   return {

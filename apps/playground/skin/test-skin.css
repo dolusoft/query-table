@@ -232,6 +232,49 @@
      "Pinned columns": a subtable row stays in view while the table scrolls). */
   container-type: inline-size;
 }
+/* own: `scrollBody` (C-101). The body scrolls, under a header and a footer
+   that stay outside it and follow it sideways; the outer box only frames
+   them. The height is the page's. */
+.qt-table-responsive:has(> .qt-table-body) {
+  overflow: hidden;
+}
+/* own: one scrollbar look for the three wrappers, so their scrollbars are
+   equally wide. */
+.qt-table-head,
+.qt-table-body,
+.qt-table-foot {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+/* own: every wrapper has a vertical scrollbar, so the three are equally
+   wide and scroll sideways equally far; only the body's moves. A reserved
+   `scrollbar-gutter` is not enough: Chrome leaves it out of the scroll range,
+   and the header would stop short of the body at the right end. */
+.qt-table-head,
+.qt-table-body,
+.qt-table-foot {
+  overflow-y: scroll;
+}
+/* own: the body scrolls both ways. */
+.qt-table-body {
+  overflow-x: auto;
+}
+/* own: the header and footer follow the body sideways; their scrollbar
+   never shows. */
+.qt-table-head,
+.qt-table-foot {
+  overflow-x: hidden;
+  scrollbar-color: transparent transparent;
+}
+/* own: the columns take the `col` widths of the header cells (C-101). */
+.qt-table-body > .qt-table,
+.qt-table-foot > .qt-table {
+  table-layout: fixed;
+}
+/* own: the line between the scrolled rows and the totals. */
+.qt-table-foot {
+  border-top: 1px solid var(--border);
+}
 
 /* shadcn: table/Table.vue */
 .qt-table {

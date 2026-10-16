@@ -55,10 +55,14 @@ export const styleSwap = () => {
  * between, and slot content that draws a block or a flex box counts with the
  * width its content needs, not the width its cell gives it. Only `fields`
  * when given; a column with no box (the table not displayed) is left out.
+ * With `scrollBody` the data rows are in a table of their own, `body`
+ * (C-101): it is laid out the same way, its `col` widths left out, and a
+ * column takes the wider of its header cell and its body cells.
  */
 export const measureColumnWidths = (
   table: HTMLTableElement | null | undefined,
-  fields?: readonly string[]
+  fields?: readonly string[],
+  body?: HTMLTableElement | null
 ): Record<string, number> => {
   const widths: Record<string, number> = {}
   if (!table?.tHead) {
@@ -83,12 +87,38 @@ export const measureColumnWidths = (
     )) {
       swap.set(part, 'display', 'none')
     }
+    const split = body && body !== table ? body : null
+    if (split) {
+      swap.set(split, 'table-layout', 'auto')
+      swap.set(split, 'width', 'max-content')
+      swap.set(split, 'min-width', '0')
+      for (const col of Array.from(
+        split.querySelectorAll<HTMLElement>(':scope > colgroup > col')
+      )) {
+        swap.set(col, 'width', 'auto')
+      }
+      for (const part of Array.from(
+        split.querySelectorAll<HTMLElement>(
+          ':scope > tbody > tr:not([data-row-index])'
+        )
+      )) {
+        swap.set(part, 'display', 'none')
+      }
+    }
+    // One data row is enough: the cells of a column share its width.
+    const firstRow = split?.querySelector(':scope > tbody > tr[data-row-index]')
     for (const th of headers) {
       const field = th.dataset.field
       if (field === undefined || (wanted && !wanted.has(field))) {
         continue
       }
-      const width = th.getBoundingClientRect().width
+      const cell = firstRow?.querySelector(
+        `:scope > td[data-field="${CSS.escape(field)}"]`
+      )
+      const width = Math.max(
+        th.getBoundingClientRect().width,
+        cell?.getBoundingClientRect().width ?? 0
+      )
       if (width > 0) {
         widths[field] = Math.ceil(width)
       }

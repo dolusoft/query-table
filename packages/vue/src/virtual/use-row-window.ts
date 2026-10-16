@@ -1,10 +1,4 @@
-import {
-  computed,
-  onBeforeUnmount,
-  shallowRef,
-  watch,
-  type ShallowRef
-} from 'vue'
+import { computed, onBeforeUnmount, shallowRef, watch, type Ref } from 'vue'
 
 import {
   groupRuns,
@@ -52,7 +46,7 @@ export type BodyItem<T> = DrawnRow<T> | SpacerRow | GroupRow<T>
 
 export interface RowWindowOptions<T> {
   virtual: () => boolean | VirtualOptions | undefined
-  table: ShallowRef<HTMLTableElement | null>
+  table: Readonly<Ref<HTMLTableElement | null>>
   /** The rows in drawing order: pinned top, the others, pinned bottom (C-74). */
   bodyRows: () => BodyRow<T>[]
   keyOf: (row: T, index: number) => string | number

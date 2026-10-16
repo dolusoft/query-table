@@ -441,6 +441,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     rowPinning?: RowPinning;
     rows?: T[];
     rowsUpdate?: RowsUpdate;
+    scrollBody?: boolean;
     searchDebounce?: number;
     selection?: RowSelection;
     sortable?: boolean;
