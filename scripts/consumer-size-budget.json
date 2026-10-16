@@ -13,7 +13,7 @@
     "3.2.0 (PR #79, 2026-10-07): component 36390 B (+130 B over next at 36260 B). C-22: a keyed clear all hands the focus to the first filter (focusFirstFilter, one nextTick after the click). Budget set to measure plus 5%; ceiling unchanged.",
     "3.3.0 (change flash, 2026-10-07): component 39088 B (+2698 B over the 36390 B budget measure; composable 22666 B, unchanged within noise). The flash controller and the core row-change tracker (C-92 to C-95, ADR 0011) are 2349 B of it, measured by building without the controller (36739 B); the rest is the off path (one watcher of `flash`) and the bindings in the body. A dynamic import of the controller would move those 2349 B to a second chunk loaded when `flash` turns on, but leaves a window after that where a change is not seen, adds a chunk to the package and makes the start asynchronous; kept static. Budget set to measure plus 5%, ceiling rounded up to the next 500 B.",
     "3.3.0 (change flash, review fixes, 2026-10-07): component 39223 B (+135 B). A cell mounted under a flashing row is bound to that row's flash, the clock is read only when a mark exists, a zero duration is read once a frame, and the timer is set again for an earlier end. Budget set to measure plus 5%; ceiling unchanged.",
-    "3.8.0 (scrollBody, 2026-10-16): component 41551 B (+883 B over next at 40668 B; composable unchanged). The three-table branch of the template, the `col` widths from the header geometry, the sideways scroll listeners and the ARIA roles (C-101, C-102, ADR 0015). Budget set to measure plus 5%, ceiling rounded up to the next 500 B."
+    "3.8.0 (scrollBody, 2026-10-16): component 41706 B (+1038 B over next at 40668 B; composable unchanged). The three-table branch of the template, the `col` widths from the header geometry, the sideways scroll listeners, the development warnings and the ARIA roles (C-101, C-102, ADR 0015). Budget set to measure plus 5%, ceiling rounded up to the next 500 B."
   ],
   "fixtures": {
     "composable": {
@@ -22,8 +22,8 @@
       "ceilingGzipBytes": 24000
     },
     "component": {
-      "measuredGzipBytes": 41551,
-      "maxGzipBytes": 43629,
+      "measuredGzipBytes": 41706,
+      "maxGzipBytes": 43792,
       "ceilingGzipBytes": 44000
     },
     "local-composable": {
