@@ -266,6 +266,51 @@
   overflow-x: hidden;
   scrollbar-color: transparent transparent;
 }
+/* own: the header takes the footer's colour, and both paint the strip over
+   the body's scrollbar, so they reach the right edge of the box. */
+.qt-table-head,
+.qt-table-head th,
+.qt-table-head .qt-table [data-pinned],
+.qt-table-foot {
+  background-color: color-mix(in oklab, var(--muted) 50%, var(--background));
+}
+/* own: the header's bottom line runs over the scrollbar strip too. */
+.qt-table-head {
+  box-shadow: inset 0 -1px var(--border);
+}
+/* own: where the browser styles scrollbar parts (Chrome, Edge, Safari), the
+   thumb sits 2px in from both sides of its track; the three wrappers keep
+   one width. `scrollbar-width`/`scrollbar-color` would switch these parts
+   off, so they are unset here; Firefox keeps the thin scrollbar above. */
+@supports selector(::-webkit-scrollbar) {
+  .qt-table-head,
+  .qt-table-body,
+  .qt-table-foot {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  .qt-table-head::-webkit-scrollbar,
+  .qt-table-body::-webkit-scrollbar,
+  .qt-table-foot::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background-color: transparent;
+  }
+  .qt-table-body::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+    background-color: var(--border);
+  }
+  .qt-table-body::-webkit-scrollbar-corner {
+    background-color: transparent;
+  }
+}
+/* own: the footer box carries the colour; its see-through row colour on top
+   would make the cells darker than the strip. */
+.qt-table-foot .qt-footer {
+  background-color: transparent;
+}
 /* own: the columns take the `col` widths of the header cells (C-101). */
 .qt-table-body > .qt-table,
 .qt-table-foot > .qt-table {
