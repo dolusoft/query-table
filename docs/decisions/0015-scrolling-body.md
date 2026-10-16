@@ -31,7 +31,7 @@ A table whose header is outside the body's scroll container is drawn as two tabl
 - C-31, C-40, C-85, C-86 and C-99 change, C-101 and C-102 are new; `TableProps` gains `scrollBody` (`contract/api.json`, `CONTRACT.md`). `contract/dom.ts` gains `qt-table-head`, `qt-table-body`, `qt-table-foot`, the `col` `width` and `aria-rowcount` on the `role="table"` element, each marked `addedBy`.
 - The three wrappers must be equally wide inside and scroll sideways equally far, so all three carry a vertical scrollbar and only the body's moves. With `overflow: hidden` on the header it has no scrollbar next to a body that has one: it is wider, stops short of the body at the right end and its columns end shifted by the scrollbar's width. A reserved `scrollbar-gutter: stable` does not help: Chrome leaves the gutter of an `overflow: hidden` box out of its scroll range (measured, [query-table#142](https://github.com/dolusoft/query-table/pull/142)). A development build warns once when the header or footer cannot follow the body.
 - The header geometry is measured whenever `scrollBody` is on, not only with a pinned or resizable column: one observer, as today.
-- The component grows by 883 B gzip (40668 B to 41551 B, measured on the implementation), in the `component` budget even when `scrollBody` is off; the composable does not change.
+- The component grows by 1038 B gzip (40668 B to 41706 B, measured on the implementation), in the `component` budget even when `scrollBody` is off; the composable does not change.
 - A printed page shows the header once, above the rows, not again on every page.
 - With `scrollBody` the content of a body cell no longer widens its column; `autoWidth` (C-100) and `measureColumnWidths` (C-99) still count it.
 
