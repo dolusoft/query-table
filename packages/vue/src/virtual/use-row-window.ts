@@ -6,7 +6,12 @@ import {
   type ShallowRef
 } from 'vue'
 
-import { groupRuns, type GroupKey, type GroupRun } from '../body/group-runs'
+import {
+  groupRuns,
+  groupShape,
+  type GroupKey,
+  type GroupRun
+} from '../body/group-runs'
 import type { ScrollToIndexOptions, VirtualOptions } from '../contract'
 import type { BodyRow } from '../use-query-table'
 import {
@@ -39,7 +44,7 @@ export interface SpacerRow {
 /** The header row of a group (C-101), with its `aria-rowindex` when virtual. */
 export interface GroupRow<T> {
   group: GroupRun<T>
-  key: string
+  key: symbol
   aria?: number
 }
 /** An item of the body: a data row, a spacer or a group row. */
@@ -122,9 +127,34 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     const at = g.groupOf[position]
     return at >= 0 && g.runs[at].start === position
   }
+  // A symbol per group id: a group row's `v-for` key can never equal a
+  // consumer's `rowKey`, whatever string that is. Ids that left are dropped.
+  let groupKeys = new Map<string, symbol>()
+  watch(groups, g => {
+    if (!g) {
+      groupKeys = new Map()
+      return
+    }
+    const kept = new Map<string, symbol>()
+    for (const run of g.runs) {
+      const known = groupKeys.get(run.id)
+      if (known) {
+        kept.set(run.id, known)
+      }
+    }
+    groupKeys = kept
+  })
+  const groupKey = (id: string) => {
+    let key = groupKeys.get(id)
+    if (!key) {
+      key = Symbol(id)
+      groupKeys.set(id, key)
+    }
+    return key
+  }
   const groupRowOf = (run: GroupRun<T>, aria?: number): GroupRow<T> => ({
     group: run,
-    key: `\u0000group:${run.id}`,
+    key: groupKey(run.id),
     aria
   })
 
@@ -183,7 +213,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     const rows = enabled() ? center() : []
     const height = fixed()
     heights = new Float64Array(rows.length)
-    base = new Float64Array(rows.length)
+    // Without groups an item is its row: one array serves both (P8).
+    base = groups.value ? new Float64Array(rows.length) : heights
     measured = new Uint8Array(rows.length)
     const kept = new Map<string | number, number>()
     for (let i = 0; i < rows.length; i++) {
@@ -395,11 +426,17 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     if (!groups.value) {
       return 0
     }
-    const row = tbody.querySelector<HTMLElement>(':scope > tr.qt-group-row')
-    const sticky = (element: Element | null | undefined) =>
-      !!element && getComputedStyle(element).position === 'sticky'
-    return row && (sticky(row) || sticky(row.firstElementChild))
-      ? row.getBoundingClientRect().height
+    // Sticky on the cell only: the window reads the row's place in the flow.
+    const cell = tbody.querySelector(':scope > tr.qt-group-row > th')
+    return cell && getComputedStyle(cell).position === 'sticky'
+      ? cell.getBoundingClientRect().height
+      : 0
+  }
+  /** The sticky cover over a row: only a grouped row that does not start its group. */
+  const coverOf = (position: number, tbody: HTMLElement) => {
+    const g = groups.value
+    return g && g.groupOf[position] >= 0 && !startsGroup(position)
+      ? stickyGroupCover(tbody)
       : 0
   }
 
@@ -428,7 +465,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
             (head ?? tr).getBoundingClientRect().top,
             itemHeight(tr) + (head ? head.getBoundingClientRect().height : 0),
             align,
-            head ? 0 : stickyGroupCover(tbody)
+            head ? 0 : coverOf(position, tbody)
           )
         )
         return
@@ -801,7 +838,9 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       () => settings.value?.rowHeight,
       () => settings.value?.estimateRowHeight,
       () => settings.value?.groupRowHeight,
-      () => groups.value,
+      // By shape, not identity: a `groupBy` given anew on each render with
+      // the same runs does not rebuild the heights.
+      () => groupShape(groups.value),
       enabled
     ],
     rebuild,
@@ -883,7 +922,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
         itemsTop(tbody) + offsets[position],
         heights[position],
         align,
-        startsGroup(position) ? 0 : stickyGroupCover(tbody)
+        coverOf(position, tbody)
       )
     )
     schedule()

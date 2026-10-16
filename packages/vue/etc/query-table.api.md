@@ -176,8 +176,8 @@ export interface FooterRow {
 export interface GroupSlotProps<T> {
     count: number;
     groupKey: string | number;
-    index: number;
     row: T;
+    rowIndex: number;
 }
 
 // @public

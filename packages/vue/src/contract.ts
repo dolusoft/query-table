@@ -355,8 +355,8 @@ export interface GroupSlotProps<T> {
   count: number
   /** The first row of the group. */
   row: T
-  /** Index of the first row in `rows`. */
-  index: number
+  /** Index of the first row in `rows` (named as in the cell slot). */
+  rowIndex: number
 }
 
 /** What the `load-more` slot receives (C-89). */

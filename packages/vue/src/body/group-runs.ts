@@ -26,6 +26,10 @@ export interface GroupRuns<T> {
   headersThrough: Int32Array
 }
 
+/** The runs as a string (start and count of each), or `null` without groups. */
+export const groupShape = <T>(groups: GroupRuns<T> | null): string | null =>
+  groups ? groups.runs.map(run => `${run.start}:${run.count}`).join(',') : null
+
 /**
  * Splits `rows` into runs of consecutive rows with the same `groupBy` key
  * (C-101). The rows are not reordered: a key that comes back after another
@@ -43,7 +47,8 @@ export const groupRuns = <T>(
   for (let p = 0; p < rows.length; p++) {
     const { row, index } = rows[p]
     const key = groupBy(row, index)
-    if (key === null || key === undefined) {
+    // NaN never equals itself: it is no group, not a group per row.
+    if (key === null || key === undefined || Number.isNaN(key)) {
       current = null
       groupOf[p] = -1
     } else if (current && current.key === key) {

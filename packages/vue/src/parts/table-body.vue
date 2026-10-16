@@ -167,7 +167,7 @@ const isRowExpanded = (item: BodyItem<T>) => {
             :group-key="item.group.key"
             :count="item.group.count"
             :row="item.group.row"
-            :index="item.group.index"
+            :row-index="item.group.index"
             >{{ item.group.key }}</slot
           >
         </th>

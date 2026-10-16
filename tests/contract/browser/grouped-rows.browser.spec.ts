@@ -120,7 +120,7 @@ describe('C-101 Grouped rows [own]', () => {
           groupKey: string
           count: number
           row: Item
-          index: number
+          rowIndex: number
         }) => {
           seen.push({ ...p, row: p.row.id })
           return h(
@@ -133,8 +133,8 @@ describe('C-101 Grouped rows [own]', () => {
     })
     await frames(1)
     expect(seen).toEqual([
-      { groupKey: 'x', count: 1, row: 1, index: 0 },
-      { groupKey: 'y', count: 3, row: 2, index: 1 }
+      { groupKey: 'x', count: 1, row: 1, rowIndex: 0 },
+      { groupKey: 'y', count: 3, row: 2, rowIndex: 1 }
     ])
     expect(groupRows().map(tr => tr.textContent.trim())).toEqual([
       'x (1)',
@@ -370,6 +370,58 @@ describe('C-102 Grouped rows in a virtual body [own]', () => {
     expect(
       document.querySelector('.qt-table')!.getAttribute('aria-rowcount')
     ).toBe('-1')
+  })
+
+  test('a live update with new objects and a row added above keeps the view and flashes no group row', async () => {
+    const restore = useStickySkin()
+    try {
+      // The task monitor: the whole list again, as new objects, with a new
+      // row in the first group, above the view.
+      const groupBy = (row: ScrollRow) =>
+        row.id > 100_000 ? 'g0' : `g${Math.floor((row.id - 1) / 125)}`
+      const api = await mountScroll({ rowKey: 'id', flash: true, groupBy })
+      const box = api.box()
+      await scrollTo(box, 3000)
+      // A row in the middle of the view, found by its name.
+      const index = drawnIndexes()[Math.floor(drawnIndexes().length / 2)]
+      const name = `Name ${index + 1}`
+      const byName = () =>
+        [...document.querySelectorAll<HTMLElement>('tr[data-row-index]')].find(
+          tr =>
+            tr.textContent.includes(`${name}`) &&
+            !tr.textContent.includes(`${name}0`)
+        )!
+      const before = byName().getBoundingClientRect().top
+      const next = scrollRows(1000).map(row => ({ ...row }))
+      next.splice(10, 0, { id: 100_001, name: 'New', age: 1 })
+      api.setRows(next)
+      await frames(4)
+      const row = byName()
+      expect(row.dataset.rowIndex).toBe(String(index + 1))
+      expect(Math.abs(row.getBoundingClientRect().top - before)).toBeLessThan(2)
+      expect(
+        document.querySelectorAll('tr.qt-group-row[data-flash]')
+      ).toHaveLength(0)
+      expect(new Set(groupRows().map(tr => tr.textContent.trim())).size).toBe(
+        groupRows().length
+      )
+      expectAriaInOrder()
+    } finally {
+      restore()
+    }
+  })
+
+  test('with infinite and a known total the group rows still to load keep the count unknown', async () => {
+    // 50 of 100 rows given: the data count is known, the groups to come are not.
+    await mountScroll({ infinite: true, totalRows: 100 }, 50)
+    const table = document.querySelector('.qt-table')!
+    expect(table.getAttribute('aria-rowcount')).toBe('-1')
+    cleanup()
+    // All rows given: header, 50 rows and their one group row.
+    await mountScroll({ infinite: true, totalRows: 50 }, 50)
+    expect(
+      document.querySelector('.qt-table')!.getAttribute('aria-rowcount')
+    ).toBe('52')
   })
 })
 

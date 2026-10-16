@@ -53,7 +53,7 @@ export interface GroupSlotProps<T> {
   groupKey: string | number
   count: number
   row: T
-  index: number
+  rowIndex: number
 }
 ```
 
@@ -67,7 +67,12 @@ The draft was reviewed on 2026-10-16 by two independent consultants, astra (code
 - astra: with `infinite` and more to load the number of group rows to come is unknown; `aria-rowcount` is `-1`. Taken.
 - Both: a row kept drawn for the focus (C-86) above the window must not give a group two header rows, and the carried row's height may have to come from the spacer between the kept row and the window. Taken: the group row is carried only when no row of its group is drawn before, from the spacer right before it.
 - Fable: keep the group row out of the row's measured height, or a row measured once with a carried group row above it and once without makes the C-84 correction run on every window move; give the group row an identity of its own in the `v-for`, or it remounts when the window passes its group or a row is added above its first row; compare `groupRowHeight` by value. Taken (K38-4, K38-2).
-- Fable on #133: in Chrome and Firefox the browser's own scroll anchoring keeps the first visible row when rows are added above it in a virtual body (the spacer grows above the anchor node); a test that adds rows above while scrolled should decide whether #133 must come first. Kept out of this change; checked in the playground scenario of the Task Monitor (see the pull request).
+- Fable on #133: in Chrome and Firefox the browser's own scroll anchoring keeps the first visible row when rows are added above it in a virtual body (the spacer grows above the anchor node); a test that adds rows above while scrolled should decide whether #133 must come first. Kept out of this change; checked in the playground scenario of the Task Monitor (see the pull request): with a 50 ms feed adding and removing rows above, the top visible row stayed at the same pixel, grouped and flat. A browser test now covers a row added above with new objects (C-102).
+
+Review of the finished change (astra and Fable):
+
+- astra: without `groupBy` the virtual body allocated a second height array (P8). Fixed: one array serves both when there are no groups. A group row's `v-for` key was a string that a consumer `rowKey` could equal; it is now a symbol per group. The infinite `-1` test did not cover a known total; added.
+- Fable: `scope="row"` alone in its row would fail axe `th-has-data-cells`. Rejected after a check: a grouped plain and virtual body pass the axe scan (a C-101 case added to the C-45 scan). Sticky on the `tr` breaks the window's reading of the flow: the contract now says sticky goes on the cell, and only the cell is read. An inline `groupBy` rebuilt the heights on every parent render: the rebuild now follows the runs' shape. `scrollToIndex` added the sticky cover to rows in no group: fixed. The slot prop `index` is `rowIndex`, as in the cell slot. `NaN` is no group. The slot content is for reading (no kept focus, #134), and without `virtual` `scrollToIndex` scrolls the row, not its group row: both written in C-101. A reflow of the TanStack table in `rules.md` was reverted.
 
 ## Trade-off
 
