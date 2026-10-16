@@ -292,6 +292,18 @@ export const features: Feature[] = [
     example: 'virtual-scroll'
   },
   {
+    id: 'scroll-body',
+    group: 'own',
+    title: 'Scrolling body under a fixed header',
+    summary:
+      'Draw header, body and footer as three tables so only the body scrolls, with the header widths kept on the body columns, sideways scrolling in step and ARIA roles that make them one table (ADR 0015).',
+    tanstack: null,
+    component: 'yes',
+    tanstackPath: 'no',
+    mode: 'server',
+    example: 'scroll-body'
+  },
+  {
     id: 'infinite-scroll',
     group: 'own',
     title: 'Infinite scroll',

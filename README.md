@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.7.1
+pnpm add @dolusoft/query-table@3.8.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -125,6 +125,35 @@ The scroll container is `.qt-table-responsive`; to scroll sideways, let the tabl
 ```
 
 With `width: 100%` the columns squeeze to fit and nothing scrolls; with `max-content` alone a narrow table stops short of the container's right edge.
+
+## Scrolling body
+
+A sticky header scrolls inside the same container as the rows, so the vertical scrollbar starts beside it. With `scroll-body` the table draws the header, the body and the footer as three tables, each in a wrapper of `.qt-table-responsive`: `.qt-table-head`, `.qt-table-body` and, with footer rows, `.qt-table-foot`. Make the body scroll in your CSS; the header and footer stay outside it. Give all three a vertical scrollbar (the same `scrollbar-width`), and hide the header's and the footer's: with `overflow: hidden` they stop short of the body at the right end, a reserved `scrollbar-gutter` included, and their columns end shifted by the scrollbar's width.
+
+```css
+/* Every wrapper has a vertical scrollbar: the three are equally wide and
+   scroll sideways equally far. Only the body's moves. */
+.qt-table-head,
+.qt-table-body,
+.qt-table-foot {
+  overflow-y: scroll;
+}
+.qt-table-body {
+  max-height: 28rem;
+  overflow-x: auto;
+}
+.qt-table-head,
+.qt-table-foot {
+  overflow-x: hidden;
+  scrollbar-color: transparent transparent; /* never shows */
+}
+.qt-table-body > .qt-table,
+.qt-table-foot > .qt-table {
+  table-layout: fixed;
+}
+```
+
+The body and footer tables get a `col` per header cell with the header cell's measured `width`, so with the fixed layout their columns are as wide as the header's. The three scroll sideways together: the table keeps the header and footer at the body's `scrollLeft`, and the body at the header's when a filter input out of view takes the focus. Pinned columns, resizing, `virtual`, `scrollToIndex` and infinite scroll work as in one table; `.qt-table-body` is the scroll container a virtual body finds. For assistive technology the three tables are one: `.qt-table-responsive` has `role="table"` and the rows and cells carry ARIA roles (C-101, C-102). The DOM without `scroll-body` is the same as before.
 
 ## Resizing columns
 
