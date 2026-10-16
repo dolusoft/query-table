@@ -64,8 +64,10 @@ test.each(pages)(
     const box = table.closest('.qt-table-responsive')!
     // Narrower than its box, the table spreads the rest over its columns.
     const stretched = table.getBoundingClientRect().width <= box.clientWidth + 1
-    const report: Record<string, { th: number; drawn: number; text?: number }> =
-      {}
+    const report: Record<
+      string,
+      { th: number; drawn: number; text?: number; row?: string }
+    > = {}
     for (const th of document.querySelectorAll<HTMLElement>(
       'thead th[data-field][style*="width"]'
     )) {
@@ -94,11 +96,20 @@ test.each(pages)(
       probe.remove()
       const text = input.getBoundingClientRect().width - sides(css)
       report[field].text = Math.round(text * 10) / 10
+      const row = input.parentElement!
+      report[field].row =
+        [...row.children]
+          .map(
+            c =>
+              `${c.className || c.tagName}:${Math.round(c.getBoundingClientRect().width * 10) / 10}`
+          )
+          .join(' | ') +
+        ` gap=${getComputedStyle(row).columnGap} pad=${sides(getComputedStyle(row))} six=${six}`
       // Six characters, less what the layout drew the column under its
       // header width (the pixel the check above allows).
-      expect(text, `${name} ${field} text`).toBeGreaterThanOrEqual(
-        six - Math.max(0, given - drawn) - 0.5
-      )
+      expect
+        .soft(text, `${name} ${field} text`)
+        .toBeGreaterThanOrEqual(six - Math.max(0, given - drawn) - 0.5)
     }
     console.log(`[auto-width-pages] ${name}`, JSON.stringify(report))
   },
