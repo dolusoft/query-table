@@ -87,9 +87,11 @@ const flash = computed<boolean | FlashOptions>(() =>
   flashOn.value ? { rows: flashRows.value, cells: flashCells.value } : false
 )
 
-// The ID column is pinned to the left; the first row is pinned to the top.
+// Time and ID are pinned to the left; the first row is pinned to the top.
 const columns: Column[] = listColumns(data).map(column =>
-  column.field === 'id' ? { ...column, pinned: 'left' } : column
+  column.field === data.fields.when || column.field === 'id'
+    ? { ...column, pinned: 'left' }
+    : column
 )
 const pinning = shallowRef<RowPinning>({ top: ['1'], bottom: [] })
 
@@ -282,6 +284,8 @@ const rowsUpdate = computed(() => (hint.value ? update.value : undefined))
         :flash="flash"
         :rows-update="rowsUpdate"
         :virtual="{ overscan: 10 }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable

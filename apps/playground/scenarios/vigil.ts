@@ -95,37 +95,35 @@ export const vigil: Dataset = {
     sum: 'bytes'
   },
   columns: {
-    id: { field: 'id', title: 'ID', type: 'integer', width: '72px' },
+    id: { field: 'id', title: 'ID', type: 'integer' },
     time: { field: 'time', title: 'Time', type: 'datetime', width: '200px' },
-    user: { field: 'user', title: 'User', width: '150px' },
-    severity: { field: 'severity', title: 'Severity', width: '150px' },
-    sourceIp: { field: 'sourceIp', title: 'Source IP', width: '150px' },
-    rule: { field: 'rule', title: 'Rule', width: '190px' },
-    hits: { field: 'hits', title: 'Hits', type: 'integer', width: '110px' },
-    bytes: { field: 'bytes', title: 'Bytes', type: 'number', width: '150px' },
+    user: { field: 'user', title: 'User' },
+    severity: { field: 'severity', title: 'Severity' },
+    sourceIp: { field: 'sourceIp', title: 'Source IP' },
+    rule: { field: 'rule', title: 'Rule' },
+    hits: { field: 'hits', title: 'Hits', type: 'integer' },
+    bytes: { field: 'bytes', title: 'Bytes', type: 'number' },
     firstSeen: {
       field: 'firstSeen',
       title: 'First seen',
-      type: 'date',
-      width: '200px'
+      type: 'date'
     },
     acknowledged: {
       field: 'acknowledged',
       title: 'Acked',
-      type: 'bool',
-      width: '130px'
+      type: 'bool'
     }
   },
-  list: ['id', 'user', 'severity', 'hits', 'bytes', 'time'],
+  list: ['time', 'id', 'user', 'severity', 'hits', 'bytes'],
   wide: ['id', 'user', 'severity', 'rule', 'hits', 'bytes', 'acknowledged'],
   showcase: [
+    'time',
     'id',
     'user',
     'severity',
     'sourceIp',
     'hits',
     'bytes',
-    'time',
     'acknowledged'
   ],
   searchFields: ['user', 'rule'],

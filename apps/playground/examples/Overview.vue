@@ -19,25 +19,14 @@ import { currentDataset, listColumns, useFakeServer } from '../scenarios'
 // sort button (`toggleSort`) and a funnel that opens a sheet for that column.
 // Chips above the table show the filters in `query.filters`.
 // The date column gets a width: a date input needs more room than an even
-// share of the fixed layout, which clipped its placeholder at 768px. ID gets
-// 7rem: in the compact header its sort button and funnel (2.75rem each on a
-// touch screen) did not fit the scenario's 90px, and the funnel lay under
-// the next header.
-// In the compact header the other columns take the dataset's widths too: an
-// even share of 48rem is narrower than a title like "Severity" with its sort
-// button and funnel. The table scrolls sideways there anyway.
+// share of the fixed layout, which clipped its placeholder at 768px.
+// Other columns measure their content, including the compact header controls.
 const data = currentDataset()
 const root = ref<HTMLElement | null>(null)
 const compact = useCompact(root)
 const columns = computed(() =>
   listColumns(data).map(column =>
-    column.field === data.fields.when
-      ? { ...column, width: '260px' }
-      : column.field === 'id'
-        ? { ...column, width: '7rem' }
-        : compact.value
-          ? { ...column, width: data.columns[column.field]?.width }
-          : column
+    column.field === data.fields.when ? { ...column, width: '260px' } : column
   )
 )
 const { query, result } = useFakeServer(data.createRows(), {
@@ -69,6 +58,8 @@ const edit = (field: string, trigger: HTMLElement) =>
       :columns="columns"
       :rows="result.rows"
       :total-rows="result.totalRows"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       :pagination="{ pageSizeOptions: [15, 30, 50], alwaysShow: true }"
       sortable

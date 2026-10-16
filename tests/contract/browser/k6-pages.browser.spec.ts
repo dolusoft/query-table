@@ -11,7 +11,7 @@ import TanstackPath from '../../../apps/playground/examples/TanstackPath.vue'
 
 const firstIds = () =>
   [...document.querySelectorAll('tbody > tr')].map(
-    row => row.querySelector('td:not(:has(input))')?.textContent?.trim() ?? ''
+    row => row.querySelector('td[data-field="id"]')?.textContent?.trim() ?? ''
   )
 
 test('cursor paging walks forward and back with the cursors of the server C-56 C-65', async () => {

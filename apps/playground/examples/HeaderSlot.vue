@@ -31,6 +31,8 @@ const arrow = (direction: 'asc' | 'desc' | null) =>
     :columns="columns"
     :rows="result.rows"
     :total-rows="result.totalRows"
+    auto-width
+    :auto-width-max="240"
     row-key="id"
     sortable
     filterable

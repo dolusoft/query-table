@@ -179,6 +179,40 @@
   text-align: center;
 }
 
+/* own: selection utilities and boolean cell slots share centered controls.
+   A slotted checkbox may be a block-level flex box, so text-align alone
+   cannot center it. Keep native table-cell layout for vertical alignment. */
+.qt-table :is(th, td):has(> :is(.qt-select-all, .qt-select-row)),
+.qt-table :is(th, td)[data-type='bool'] {
+  text-align: center;
+  vertical-align: middle;
+}
+/* own: auto margins center block-level slotted controls as well as inputs. */
+.qt-table :is(.qt-select-all, .qt-select-row),
+.qt-table :is(th, td)[data-type='bool'] > * {
+  margin-inline: auto;
+  vertical-align: middle;
+}
+
+/* own: a native checkbox as a block avoids the text baseline offset. */
+.qt-table :is(.qt-select-all, .qt-select-row) {
+  display: block;
+}
+
+/* own: numeric filters keep number semantics and keyboard stepping without
+   native spinner buttons competing with the filter controls. */
+.qt-datatable input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+/* own: Chromium exposes spinner parts separately from the input. */
+.qt-datatable input[type='number']::-webkit-inner-spin-button,
+.qt-datatable input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
 /* shadcn: table/TableFooter.vue */
 .qt-footer {
   @apply bg-muted/50 border-t font-medium [&>tr]:last:border-b-0;
@@ -225,21 +259,20 @@
     background-color: color-mix(in oklab, var(--muted) 50%, var(--background));
   }
 }
-/* own: collapsed borders belong to the table, not to the cell: they stay
-   behind when a sticky cell moves and let the scrolled cells show through.
-   With a pinned column the table separates its borders and draws the row
-   lines on the cells. */
-.qt-table:has([data-pinned]) {
+/* own: collapsed borders stay behind when a sticky header, group cell or
+   pinned cell moves. Every table uses separate borders so its page can make
+   any of these sticky without exposing the scrolled rows at their edges. */
+.qt-table {
   border-collapse: separate;
   border-spacing: 0;
 }
-/* own: the row lines, drawn on the cells of a table with a pinned column. */
-.qt-table:has([data-pinned]) :is(th, td) {
+/* own: separate borders belong to cells; row borders are not painted. */
+.qt-table :is(th, td) {
   border-bottom: 1px solid var(--border);
 }
 /* own: the last row keeps its borderless end. */
-.qt-table:has([data-pinned]) tbody:last-child > tr:last-child > td,
-.qt-table:has([data-pinned]) .qt-footer > tr:last-child > td {
+.qt-table tbody:last-child > tr:last-child > td,
+.qt-table .qt-footer > tr:last-child > td {
   border-bottom-width: 0;
 }
 /* own: a shadow on the last left-pinned cell shows where the scrolled part

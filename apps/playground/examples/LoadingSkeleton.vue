@@ -90,6 +90,8 @@ const againRows = useSkeletonRows({
           :rows="firstRows"
           :total-rows="first.totalRows.value"
           :loading="firstLoading"
+          auto-width
+          :auto-width-max="240"
           row-key="id"
         >
           <template
@@ -141,6 +143,8 @@ const againRows = useSkeletonRows({
           :rows="againRows"
           :total-rows="again.totalRows.value"
           :loading="againLoading"
+          auto-width
+          :auto-width-max="240"
           row-key="id"
           sortable
           filterable

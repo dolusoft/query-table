@@ -31,7 +31,7 @@ const columns = computed<Column[]>(() =>
   listColumns(data).map(column => {
     const base: Column =
       column.field === 'id'
-        ? // 104px instead of the scenario's 90: the skin's wider padding
+        ? // ID uses 104px: the skin's wider padding
           // beside the resize handles left 62px of filter box, under the
           // 4rem at which the skin hides the input.
           { ...column, width: '104px', resizable: false }
@@ -85,6 +85,8 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
         :columns="columns"
         :rows="result.rows"
         :total-rows="result.totalRows"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable

@@ -32,6 +32,8 @@ const totalRows = computed(() =>
       :rows="result.rows"
       :total-rows="totalRows"
       :pagination="{ pageSizeOptions: [10, 20, 50, 100] }"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
     >
       <template #pagination="page">

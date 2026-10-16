@@ -16,7 +16,9 @@ const bodyRows = (name: string) => [
   ...section(name).querySelectorAll<HTMLElement>('tbody > tr')
 ]
 const names = (name: string) =>
-  bodyRows(name).map(row => row.children[1]?.textContent?.trim())
+  bodyRows(name).map(row =>
+    row.querySelector('td[data-field="user"]')?.textContent?.trim()
+  )
 const root = (name: string) =>
   section(name).querySelector<HTMLElement>('.qt-datatable')!
 

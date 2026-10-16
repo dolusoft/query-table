@@ -48,6 +48,8 @@ const rowExpandable = (row: GroupRow) => !row.others
       :columns="columns"
       :rows="groups"
       :total-rows="groups.length"
+      auto-width
+      :auto-width-max="240"
       row-key="id"
       has-subtable
       :row-kind="rowKind"

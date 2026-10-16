@@ -49,6 +49,8 @@ const virtual = ref(false)
         :total-rows="result.totalRows"
         :footer-rows="footerRows"
         :virtual="virtual"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         scroll-body
         sortable

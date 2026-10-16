@@ -14,9 +14,10 @@ import {
   wideColumns
 } from '../scenarios'
 
-// `pinned: 'left'` keeps the first two columns at the start while the rest scrolls
-// sideways; `pinned: 'right'` keeps a column at the end. The table draws
-// left-pinned columns first and right-pinned ones last, and writes
+// `pinned: 'left'` keeps the first two columns (time and ID, or ID and the
+// primary field without time) while the rest scrolls sideways;
+// `pinned: 'right'` keeps a column at the end. The table draws left-pinned
+// columns first and right-pinned ones last, and writes
 // `data-pinned` (empty on the left, `right` on the right) and the measured
 // offset `--qt-pin-left` or `--qt-pin-right` on their cells (the expand cell
 // too, with a left-pinned column); `position: sticky`, the layer and the
@@ -31,7 +32,7 @@ import {
 //     background: var(--background);
 //   }
 const data = currentDataset()
-const { category, flag, primary } = data.fields
+const { category, flag } = data.fields
 const title = (field: string) => columnOf(data, field).title ?? field
 const pinCategory = ref(false)
 const pinFlagRight = ref(false)
@@ -51,7 +52,7 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
   <div class="flex flex-col gap-3">
     <Label class="font-normal text-muted-foreground">
       <Checkbox v-model="pinCategory" />
-      Pin {{ title(category) }} too (it moves next to {{ title(primary) }})
+      Pin {{ title(category) }} too (it follows the first two columns)
     </Label>
     <Label class="font-normal text-muted-foreground">
       <Checkbox v-model="pinFlagRight" />
@@ -66,6 +67,8 @@ const { query, result } = useFakeServer(data.createRows(), { pageSize: 20 })
         :rows="result.rows"
         :total-rows="result.totalRows"
         :pagination="{ pageSizeOptions: [20, 50, 200] }"
+        auto-width
+        :auto-width-max="240"
         row-key="id"
         sortable
         filterable
