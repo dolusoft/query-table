@@ -90,9 +90,12 @@ test('overview filters use emitted shortcuts, update totals, and recover from em
   expect(el('.qt-table tbody tr td[data-field="user"]').textContent).toBe(
     'svc-backup'
   )
-  // A new filter resets auto widths (C-100): shorter names narrow the user
-  // column, while headers, filters and body cells keep their alignment.
-  expect(userWidth()).toBeLessThan(initialUserWidth)
+  // A new filter resets auto widths (C-100): shorter names never widen the
+  // user column, and its filter row is a floor, so in this skin the column
+  // stays at its filter's width (the reset itself is checked in
+  // auto-width.browser.spec with content wider than the floor). Headers,
+  // filters and body cells keep their alignment.
+  expect(userWidth()).toBeLessThanOrEqual(initialUserWidth)
   expectAlignedColumns()
   const filteredGeometry = geometry()
   expect(filteredGeometry.map(({ y, height }) => ({ y, height }))).toEqual(

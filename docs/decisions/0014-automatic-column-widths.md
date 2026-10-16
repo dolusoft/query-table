@@ -29,8 +29,16 @@ DataTables ships this as `autoWidth`, on by default. Its calculation was compare
 - P2 lists the automatic widths among the UI state; P5's header `width` includes them.
 - One synchronous layout per measure (ADR 0013): with `autoWidth` that is one per change of `rows`, and on a live stream one per tick.
 - With `virtual` only the drawn rows count (C-99), and scrolling does not measure: rows that come into view later can be wider than their column.
+- The filter floor (amendment below) follows the skin's geometry: the padding, border and gap of the filter controls and the width of the filter button are the consumer's CSS, so the same table is wider in a skin with roomier controls. A skin that reserves a share of the row (a percentage padding) makes every filtered column grow by more than that share.
+- Since the widths only grow within one result, the first measure of a result, its floor included, stays until the query moves: a column a skin later draws with smaller controls keeps the wider width until then.
 - A consumer that saves the drawn header widths (none should; `columnResize` carries the width the user chose) would save automatic ones.
 
 ## Trade-off
 
 The table keeps a width it was not given, for as long as no width is given. In exchange the rules that fit columns to their content live once, next to the measure, and every product gets the same stable behavior with one prop.
+
+## Amendment: the filter row is a floor (2026-10-16)
+
+C-99 leaves the filter row out of the measure, so a short column (an ID) was drawn at its label's width and its filter input kept about two characters: in the playground's `column-layout` and `filtering` pages the ID column was 88px with a 27px text box. The automatic width now counts the filter row as a floor (C-100): the table's own controls side by side (six characters of text in a text or number input, a select or date input at its own width, the filter buttons), read out of the cell's flow and from the controls alone, so slot content never counts and a measure never feeds on the width it gave. A consumer's `maxWidth` or `autoWidthMax` below the floor wins, as in AG Grid, where an explicit limit beats the fitted width. `measureColumnWidths` is unchanged: it measures content, and a width the user chose stays the user's. The floor is not an option: a column drawn too narrow for its filter is a defect, not a preference, and a table without filters is measured as before. Options considered: a prop `autoWidthIncludeFilters` (rejected: one more prop for the only sensible value, P9), a floor computed from the controls' current boxes (rejected: a skin's narrow form, a container query, changes those boxes with the width being chosen).
+
+Autofit takes the same floor (decided by Zahid, 2026-10-16). A double click or Enter on a resize handle (C-50) fitted a short column to its label and cells and left its filter as unusable as the automatic width did; the width it emits is now never less than the filter controls side by side, read as for `autoWidth`. A column without a filter row fits as before. Autofit stays a user action: the width is emitted as `columnResize` and is the consumer's to write back, so a column the user narrows by dragging can still go below the floor.
