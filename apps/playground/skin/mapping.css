@@ -688,7 +688,7 @@ th[data-filtered] .qt-filter-input {
   color: var(--muted-foreground);
   text-align: center;
 }
-/* own: the group row of `groupBy` (C-101), a muted band with the group's
+/* own: the group row of `groupBy` (C-103), a muted band with the group's
    name. Sticking it to the top is the page's: it knows how tall its sticky
    header is. */
 .qt-table tbody > tr.qt-group-row > th {

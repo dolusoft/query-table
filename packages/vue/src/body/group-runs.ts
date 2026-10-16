@@ -3,7 +3,7 @@ import type { BodyRow } from '../use-query-table'
 /** A group key: what `groupBy` returns for a row that belongs to a group. */
 export type GroupKey = string | number
 
-/** One group: a run of consecutive rows with the same key (C-101). */
+/** One group: a run of consecutive rows with the same key (C-103). */
 export interface GroupRun<T> {
   key: GroupKey
   /** Rows in the group. */
@@ -32,7 +32,7 @@ export const groupShape = <T>(groups: GroupRuns<T> | null): string | null =>
 
 /**
  * Splits `rows` into runs of consecutive rows with the same `groupBy` key
- * (C-101). The rows are not reordered: a key that comes back after another
+ * (C-103). The rows are not reordered: a key that comes back after another
  * starts a new run. `null` and `undefined` mean no group.
  */
 export const groupRuns = <T>(

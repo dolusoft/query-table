@@ -18,9 +18,9 @@ import {
   type ScrollRow
 } from '../../support/scroll-host'
 
-// C-101 to C-103 in a real browser: the group rows of `groupBy`, in a plain
+// C-103 to C-105 in a real browser: the group rows of `groupBy`, in a plain
 // body and in a virtual one, the sticky group row a virtual body keeps
-// drawn, and the DOM contract entry `addedBy: 'C-101'`. Not compared with a
+// drawn, and the DOM contract entry `addedBy: 'C-103'`. Not compared with a
 // 3.7 baseline (`ADDED_AFTER_BASELINE`).
 
 let restoreLayout: () => void
@@ -63,7 +63,7 @@ const bodyShape = () =>
       : (tr.dataset.rowIndex ?? tr.className)
   )
 
-describe('C-101 Grouped rows [own]', () => {
+describe('C-103 Grouped rows [own]', () => {
   test('a group row is drawn above each run of one key, and the rows keep their indexes', async () => {
     await render(QueryTable as never, {
       props: {
@@ -230,7 +230,7 @@ const expectAriaInOrder = () => {
   return indexes
 }
 
-describe('C-102 Grouped rows in a virtual body [own]', () => {
+describe('C-104 Grouped rows in a virtual body [own]', () => {
   test('the group row of the top group stays drawn, once, with its own aria index', async () => {
     const restore = useStickySkin()
     try {
@@ -425,7 +425,7 @@ describe('C-102 Grouped rows in a virtual body [own]', () => {
   })
 })
 
-describe('C-103 Grouping off and DOM contract of 3.8 [own]', () => {
+describe('C-105 Grouping off and DOM contract of 3.8 [own]', () => {
   test('without groupBy no group row is drawn', async () => {
     await mountScroll({ groupBy: undefined })
     expect(groupRows()).toHaveLength(0)
@@ -454,6 +454,6 @@ describe('C-103 Grouping off and DOM contract of 3.8 [own]', () => {
     dom.collect()
     cleanup()
     dom.expectNothingOutsideContract()
-    dom.expectEntriesRendered(entry => entry.addedBy === 'C-101')
+    dom.expectEntriesRendered(entry => entry.addedBy === 'C-103')
   })
 })

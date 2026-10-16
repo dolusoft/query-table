@@ -247,7 +247,7 @@ export interface TableProps<
    */
   rowKind?: (row: T, index: number) => string | null | undefined
   /**
-   * Group the rows (C-101): called with each row that is not pinned and its
+   * Group the rows (C-103): called with each row that is not pinned and its
    * index in `rows`, it returns the row's group key. A run of consecutive
    * rows with the same key is one group, drawn under one `tr.qt-group-row`
    * that holds the `group` slot; the table never reorders, so sort the rows
@@ -319,7 +319,7 @@ export interface VirtualOptions {
   /** Height counted for a row not measured yet. Defaults to the first measured row, else `32`. */
   estimateRowHeight?: number
   /**
-   * With `rowHeight` and `groupBy`: height of a group row in pixels (C-102).
+   * With `rowHeight` and `groupBy`: height of a group row in pixels (C-104).
    * Defaults to `rowHeight`.
    */
   groupRowHeight?: number
@@ -344,7 +344,7 @@ export interface ScrollToIndexOptions {
   align?: 'start' | 'center' | 'end' | 'auto'
 }
 
-/** What the `group` slot receives (C-101). */
+/** What the `group` slot receives (C-103). */
 export interface GroupSlotProps<T> {
   /**
    * The group key `groupBy` returned (not `key`: Vue keeps `key` off slot
@@ -655,7 +655,7 @@ export interface TableSlots<T> {
   'load-more'?(props: LoadMoreSlotProps): unknown
   /**
    * With `groupBy`: the content of a group row, one `th` that spans every
-   * column above the rows of the group (C-101). Without it the cell shows
+   * column above the rows of the group (C-103). Without it the cell shows
    * the key.
    */
   group?(props: GroupSlotProps<T>): unknown

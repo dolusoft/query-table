@@ -41,7 +41,7 @@ export interface SpacerRow {
   spacer: number
   key: symbol
 }
-/** The header row of a group (C-101), with its `aria-rowindex` when virtual. */
+/** The header row of a group (C-103), with its `aria-rowindex` when virtual. */
 export interface GroupRow<T> {
   group: GroupRun<T>
   key: symbol
@@ -57,7 +57,7 @@ export interface RowWindowOptions<T> {
   bodyRows: () => BodyRow<T>[]
   keyOf: (row: T, index: number) => string | number
   isExpanded: (row: T, index: number) => boolean
-  /** The `groupBy` prop (C-101); absent, no group is drawn. */
+  /** The `groupBy` prop (C-103); absent, no group is drawn. */
   groupBy?: () =>
     ((row: T, index: number) => GroupKey | null | undefined) | undefined
 }
@@ -113,7 +113,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   })
   const center = () => parts.value.center
 
-  /** The groups of the center rows (C-101), or `null` without `groupBy`. */
+  /** The groups of the center rows (C-103), or `null` without `groupBy`. */
   const groups = computed(() => {
     const groupBy = o.groupBy?.()
     return groupBy ? groupRuns(center(), groupBy) : null
@@ -184,7 +184,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   // ---- heights (C-84) -------------------------------------------------------
 
   let heights = new Float64Array(0)
-  /** Item heights without the group row above an item (C-102). */
+  /** Item heights without the group row above an item (C-104). */
   let base = new Float64Array(0)
   let measured = new Uint8Array(0)
   /** The measured height of a group row, `0` until one is measured. */
@@ -197,7 +197,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   const version = shallowRef(0)
   const estimate = () =>
     fixed() ?? settings.value?.estimateRowHeight ?? (firstMeasured || 32)
-  /** Height counted for a group row (C-102). */
+  /** Height counted for a group row (C-104). */
   const groupHeight = () => {
     const height = fixed()
     if (height !== undefined) {
@@ -274,7 +274,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     let from = -1
     for (const tr of tbody.children) {
       if (groups.value && tr.classList.contains('qt-group-row')) {
-        // Every group row counts as tall as the last one measured (C-102).
+        // Every group row counts as tall as the last one measured (C-104).
         const height = tr.getBoundingClientRect().height
         if (height > 0 && Math.abs(height - groupMeasured) > 0.5) {
           groupMeasured = height
@@ -393,7 +393,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     const view = viewport()
     // A sticky header that covers the top of the container hides a row
     // aligned to the top; the row goes below it, and below a sticky group
-    // row that covers it too (C-102).
+    // row that covers it too (C-104).
     const head = o.table.value?.tHead?.getBoundingClientRect()
     const cover =
       head && head.top <= view.top + 1 && head.bottom > view.top
@@ -420,7 +420,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
 
   /**
    * Height of a group row the consumer's CSS made sticky, which covers a
-   * row aligned to the top of its group (C-102); `0` without one.
+   * row aligned to the top of its group (C-104); `0` without one.
    */
   const stickyGroupCover = (tbody: HTMLElement) => {
     if (!groups.value) {
@@ -615,7 +615,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     return counts
   })
 
-  /** Group rows drawn up to and with the center position (C-102). */
+  /** Group rows drawn up to and with the center position (C-104). */
   const groupsThrough = (position: number) =>
     groups.value ? groups.value.headersThrough[position] : 0
   const groupCount = () => groups.value?.runs.length ?? 0
@@ -643,7 +643,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     const rows = center()
     const before = expandedBefore.value
     // The header row is 1, the first body row 2; a group row counts as a
-    // row, before the first row of its group (C-102).
+    // row, before the first row of its group (C-104).
     const headersBefore = (q: number) =>
       q < top
         ? 0
@@ -665,7 +665,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
         } else if (carry) {
           // The first row of the group is not drawn: its group row is drawn
           // here, with its height taken from the spacer above, so a sticky
-          // group row stays while its group is in view (C-102).
+          // group row stays while its group is in view (C-104).
           const last = out[out.length - 1]
           if (last && 'spacer' in last) {
             const height = Math.max(0, last.spacer - groupHeight())
@@ -935,7 +935,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     ready,
     centerCount: () => center().length,
     expandedCount: () => expandedBefore.value[expandedBefore.value.length - 1],
-    /** Group rows of the body, drawn or not (C-102). */
+    /** Group rows of the body, drawn or not (C-104). */
     groupCount,
     scrollToIndex,
     onFocusIn,

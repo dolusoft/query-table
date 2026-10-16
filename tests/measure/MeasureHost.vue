@@ -20,7 +20,7 @@ const props = withDefaults(
     reorderable?: boolean
     /** `flash` with `rowKey` (the `flash` scenario); the others keep it off. */
     flash?: boolean
-    /** Groups the rows in runs of 13 (the `grouped` scenario, C-101). */
+    /** Groups the rows in runs of 13 (the `grouped` scenario, C-103). */
     grouped?: boolean
   }>(),
   { reorderable: false, flash: false, grouped: false }

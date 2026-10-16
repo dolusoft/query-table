@@ -131,9 +131,9 @@ describe.each<Theme>(['light', 'dark'])(
   }
 )
 
-// 3.8 (C-101, C-102): not in a 3.7 baseline (`ADDED_AFTER_BASELINE`).
+// 3.8 (C-103, C-104): not in a 3.7 baseline (`ADDED_AFTER_BASELINE`).
 describe.each<Theme>(['light', 'dark'])(
-  'C-101 accessibility scan (axe) of grouped rows, %s theme',
+  'C-103 accessibility scan (axe) of grouped rows, %s theme',
   theme => {
     const groupBy = (row: { id: number }) => `g${Math.floor(row.id / 40)}`
     test('finds no violation with group rows in a plain body', async () => {

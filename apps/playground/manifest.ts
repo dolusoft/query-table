@@ -200,7 +200,7 @@ export const pages: PlaygroundPage[] = [
       exposed: ['scrollToIndex'],
       types: ['GroupSlotProps', 'VirtualOptions']
     },
-    rules: ['C-101', 'C-102', 'C-103']
+    rules: ['C-103', 'C-104', 'C-105']
   },
   {
     id: 'infinite-scroll',

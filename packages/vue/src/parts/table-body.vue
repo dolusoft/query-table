@@ -23,7 +23,7 @@ const props = defineProps<{
   /**
    * The rows in drawing order: pinned top, the others, pinned bottom (C-74);
    * with `virtual` only the drawn ones, between spacers (C-83); with
-   * `groupBy` a group row above the first row of each group (C-101).
+   * `groupBy` a group row above the first row of each group (C-103).
    */
   bodyRows: Array<BodyItem<T>>
   /** Pin a row or unpin it (C-74). */

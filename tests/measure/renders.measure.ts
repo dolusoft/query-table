@@ -169,7 +169,7 @@ interface Scenario {
   reorderable?: boolean
   /** Mounts with `flash` and `rowKey` (C-93); off by default. */
   flash?: boolean
-  /** Mounts with `groupBy` (C-101); off by default. */
+  /** Mounts with `groupBy` (C-103); off by default. */
   grouped?: boolean
   act: (applied: number[]) => Promise<void>
 }
@@ -371,7 +371,7 @@ const scenarios: Scenario[] = [
     act: () => liveChanges(6)
   },
   {
-    // C-101, C-103: the `flash` scenario with the rows grouped in runs of
+    // C-103, C-105: the `flash` scenario with the rows grouped in runs of
     // 13 (eight group rows). The group rows add no re-render: the body draws
     // them in its own render of the new rows.
     name: 'grouped',

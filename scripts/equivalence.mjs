@@ -165,12 +165,12 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/measure-widths.browser.spec.ts > C-50 Keyboard and autofit with block and flex slot content [own]',
   // 3.7 addition (C-100, ADR 0014): automatic column widths.
   'tests/contract/browser/auto-width.browser.spec.ts > C-100 Automatic column widths [own]',
-  // 3.8 addition (C-101..C-103, ADR 0016): grouped rows.
-  'tests/contract/browser/grouped-rows.browser.spec.ts > C-101 Grouped rows [own]',
-  'tests/contract/browser/grouped-rows.browser.spec.ts > C-102 Grouped rows in a virtual body [own]',
-  'tests/contract/browser/grouped-rows.browser.spec.ts > C-103 Grouping off and DOM contract of 3.8 [own]',
-  'tests/contract/browser/accessibility.browser.spec.ts > C-101 accessibility scan (axe) of grouped rows, light theme',
-  'tests/contract/browser/accessibility.browser.spec.ts > C-101 accessibility scan (axe) of grouped rows, dark theme'
+  // 3.8 addition (C-103..C-105, ADR 0016): grouped rows.
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-103 Grouped rows [own]',
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-104 Grouped rows in a virtual body [own]',
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-105 Grouping off and DOM contract of 3.8 [own]',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, light theme',
+  'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, dark theme'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

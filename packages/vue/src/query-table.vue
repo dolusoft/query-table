@@ -228,7 +228,7 @@ const ariaRowCount = computed(() => {
     return undefined
   }
   const total = props.totalRows
-  // The group rows of the pages still to load are unknown (C-102).
+  // The group rows of the pages still to load are unknown (C-104).
   if (growing() && (total === null || rowWindow.groupCount() > 0)) {
     return -1
   }

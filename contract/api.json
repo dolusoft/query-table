@@ -153,7 +153,7 @@
       "type": "((row: T, index: number) => string | number | null | undefined)",
       "required": false,
       "default": "undefined",
-      "description": "Group the rows (C-101): called with each row that is not pinned and its\nindex in `rows`, it returns the row's group key. A run of consecutive\nrows with the same key is one group, drawn under one `tr.qt-group-row`\nthat holds the `group` slot; the table never reorders, so sort the rows\nby group yourself. `null` or `undefined` puts a row in no group. Group\nrows are not rows of `rows`: indexes, the selection and `scrollToIndex`\ncount only the rows given."
+      "description": "Group the rows (C-103): called with each row that is not pinned and its\nindex in `rows`, it returns the row's group key. A run of consecutive\nrows with the same key is one group, drawn under one `tr.qt-group-row`\nthat holds the `group` slot; the table never reorders, so sort the rows\nby group yourself. `null` or `undefined` puts a row in no group. Group\nrows are not rows of `rows`: indexes, the selection and `scrollToIndex`\ncount only the rows given."
     },
     {
       "name": "hasRightPanel",
@@ -291,7 +291,7 @@
     {
       "name": "group",
       "props": "GroupSlotProps<T>",
-      "description": "With `groupBy`: the content of a group row, one `th` that spans every\ncolumn above the rows of the group (C-101). Without it the cell shows\nthe key."
+      "description": "With `groupBy`: the content of a group row, one `th` that spans every\ncolumn above the rows of the group (C-103). Without it the cell shows\nthe key."
     },
     {
       "name": "header-<field>",
@@ -477,7 +477,7 @@
     {
       "name": "GroupSlotProps",
       "kind": "interface",
-      "description": "What the `group` slot receives (C-101)."
+      "description": "What the `group` slot receives (C-103)."
     },
     {
       "name": "LoadMoreSlotProps",
@@ -1072,19 +1072,19 @@
       "text": "With `autoWidth`, a visible column without `Column.width` is drawn at its automatic width: what `measureColumnWidths` measures for it (C-99), clamped as a resize is (C-49), with `autoWidthMax` standing in for a missing `maxWidth`. The width is the header cell's inline `width` (C-31), as a `Column.width` would be. It is not emitted and not written to `columns`; the slot props carry the column as given. A column with a `width` keeps it, so a column the user resized (C-49, C-50) leaves the automatic width when the consumer writes the width back. The table measures after the drawn rows change (`rows`), after the set of visible columns without a width changes and once it is displayed, each time after the DOM update; with no data row it measures nothing and keeps the widths it has. A table that is not displayed keeps its widths and measures when it is displayed again. While the query stays the same apart from its paging position (`page` or `cursor`), `pageSize` and `sort`, the widths only grow: a page, a sort, `append` and `live` rows never make a column narrower. A query that differs in anything else, `rowsUpdate: 'reset'`, a new `autoWidthMax` and `autoWidth` turned on measure from scratch. Turned off, the automatic widths go. Off by default. Source: own"
     },
     {
-      "id": "C-101",
+      "id": "C-103",
       "title": "Grouped rows",
       "text": "With `groupBy` the table calls it with every row that is not pinned (C-74) and its index in `rows`; a run of consecutive rows for which it returns the same key (`string` or `number`, compared with `===`) is one group, and `null`, `undefined` or `NaN` puts a row in no group. The table never reorders the rows (P1): a key that comes back after another key starts a new group, and sorting the rows by group is the consumer's. Above the first row of each group the body draws one `tr.qt-group-row` with one `th scope=\"row\"` that spans every column (the utility columns included) and holds the `group` slot, which receives `groupKey`, `count` (the rows of the group), `row` (its first row) and `rowIndex` (that row's index in `rows`); without the slot the cell shows the key. The slot content is for reading: the table keeps no focus inside a group row (an interactive group row is #134). A group row is not a row of `rows`: it has no `data-row-index`, `data-row-kind`, `data-selected`, `data-expanded` or `data-flash`, no utility cell, no checkbox and no expand button, and `rows.length`, the `rowIndex` of every slot and event, the selection (C-64), `expandAll`, `rowKind` (C-97), the change flash (C-93) and the infinite trigger (C-88) count only the rows given. Pinned rows are drawn without a group row. Without `virtual`, `scrollToIndex` (C-87) scrolls the row itself, not its group row. Without `groupBy` no group row is drawn. Source: own"
     },
     {
-      "id": "C-102",
+      "id": "C-104",
       "title": "Grouped rows in a virtual body",
       "text": "With `virtual` and `groupBy` a group row is part of the item of the first row of its group (C-83): the spacers count it. Without `virtual.rowHeight` it is measured, and every group row counts as tall as the last group row measured (the estimate of C-84 until one is); with `rowHeight` nothing is measured and a group row is `virtual.groupRowHeight` tall, `rowHeight` when that is not given. When the first row drawn after a spacer is not the first row of its group and no row of its group is drawn before it, the group row of its group is drawn right before it and its height is taken from that spacer, so the scroll height does not change and a group row made sticky by the consumer's CSS stays while its group is in view; a group never has two group rows in the DOM. While the page prints every group row is drawn above its first row. `aria-rowcount` counts the group rows and a group row carries `aria-rowindex`, its position among all rows (C-86): it comes right before the first row of its group, also when it is drawn above a later row; with `infinite` while there is more to load the count is `-1` when there is a group, since the group rows of the pages to come are unknown. `scrollToIndex` (C-87) shows the first row of a group with its group row above it, and aligns any other row of a group below a group row the consumer's CSS made sticky, as it does below a sticky header. Sticky goes on the group row's cell (`tr.qt-group-row > th`), not on the `tr`: the window reads the row's place in the flow. Source: own"
     },
     {
-      "id": "C-103",
+      "id": "C-105",
       "title": "Grouping off and DOM contract of 3.8",
-      "text": "With `groupBy` absent the body is the one of 3.7: no group row, no extra measure, and the DOM is the one C-40, C-72, C-91 and C-95 check. With `groupBy` the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entry the contract marks `addedBy: 'C-101'` (`qt-group-row`) is rendered by the state that adds it. Source: own"
+      "text": "With `groupBy` absent the body is the one of 3.7: no group row, no extra measure, and the DOM is the one C-40, C-72, C-91 and C-95 check. With `groupBy` the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entry the contract marks `addedBy: 'C-103'` (`qt-group-row`) is rendered by the state that adds it. Source: own"
     }
   ]
 }
