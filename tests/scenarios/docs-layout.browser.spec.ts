@@ -97,7 +97,7 @@ test.each([1280, 1343, 1344, 1440, 1535, 1536, 1537, 1920, 2560])(
     )!
     const box = scroller.getBoundingClientRect()
     expect(box.width).toBeLessThanOrEqual(preview.width)
-    expect(Math.abs(box.left - preview.left)).toBeLessThanOrEqual(1)
+    expect(box.left).toBeGreaterThanOrEqual(preview.left - 0.5)
     expect(box.right).toBeLessThanOrEqual(preview.right + 0.5)
     expect(scroller.scrollWidth).toBeGreaterThanOrEqual(768)
     if (scroller.scrollWidth > scroller.clientWidth) {
