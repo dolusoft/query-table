@@ -11,16 +11,26 @@ import { llmsPlugin } from './build/llms-plugin'
 // on GitHub Pages); routing uses the URL hash, so any base works. No package
 // build reads this file.
 const packages = resolve(import.meta.dirname, '../../packages')
+const channel = process.env.PLAYGROUND_CHANNEL ?? 'release'
+if (channel !== 'release' && channel !== 'next') {
+  throw new Error(`Unknown PLAYGROUND_CHANNEL: ${channel}`)
+}
 
 export default defineConfig({
   root: import.meta.dirname,
   base: process.env.PLAYGROUND_BASE ?? '/',
+  define: {
+    'import.meta.env.PLAYGROUND_CHANNEL': JSON.stringify(channel)
+  },
   // llms.txt and llms-full.txt are generated into the build output on every
   // build (build/llms.ts), never committed, so they cannot go stale.
   plugins: [
     vue(),
     tailwindcss(),
-    llmsPlugin(resolve(import.meta.dirname, '../..'))
+    llmsPlugin(
+      resolve(import.meta.dirname, '../..'),
+      channel === 'next' ? 'next' : 'main'
+    )
   ],
   resolve: {
     // The examples import the packages by name, as a consumer does; here the

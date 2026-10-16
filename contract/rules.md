@@ -581,7 +581,7 @@ With `virtual` and `groupBy` a group row is part of the item of the first row of
 
 Source: own
 
-### C-105 Grouping off and DOM contract of 3.8
+### C-105 Grouping off and DOM contract of 3.9
 
 With `groupBy` absent the body is the one of 3.7: no group row, no extra measure, and the DOM is the one C-40, C-72, C-91 and C-95 check. With `groupBy` the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entry the contract marks `addedBy: 'C-103'` (`qt-group-row`) is rendered by the state that adds it.
 

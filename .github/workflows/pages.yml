@@ -1,12 +1,12 @@
 name: Playground
 
-# Builds the playground (apps/playground/) and publishes it to GitHub Pages.
+# Builds both playground channels and publishes one site to GitHub Pages.
 # Needs Pages enabled in the repository settings with "GitHub Actions" as
 # the source.
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
   workflow_dispatch:
 
 permissions:
@@ -16,31 +16,64 @@ permissions:
 
 concurrency:
   group: pages
+  # Let an active deployment finish; the next run rebuilds both branch tips.
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out release
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: release
+
+      - name: Check out next
+        uses: actions/checkout@v4
+        with:
+          ref: next
+          path: next
 
       # The pnpm version is the `packageManager` field of package.json.
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: release/package.json
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: |
+            release/pnpm-lock.yaml
+            next/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+        working-directory: release
       - run: pnpm playground:build
+        working-directory: release
         env:
           PLAYGROUND_BASE: /${{ github.event.repository.name }}/
+          PLAYGROUND_CHANNEL: release
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: next
+      - run: pnpm playground:build
+        working-directory: next
+        env:
+          PLAYGROUND_BASE: /${{ github.event.repository.name }}/next/
+          PLAYGROUND_CHANNEL: next
+
+      - name: Assemble both channels
+        run: |
+          mkdir -p site/next
+          cp -a release/apps/playground/dist/. site/
+          cp -a next/apps/playground/dist/. site/next/
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/playground/dist
+          path: site
 
   deploy:
     needs: build

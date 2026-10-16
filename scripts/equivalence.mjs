@@ -175,7 +175,7 @@ const ADDED_AFTER_BASELINE = [
   // 3.8 addition (C-103..C-105, ADR 0016): grouped rows.
   'tests/contract/browser/grouped-rows.browser.spec.ts > C-103 Grouped rows [own]',
   'tests/contract/browser/grouped-rows.browser.spec.ts > C-104 Grouped rows in a virtual body [own]',
-  'tests/contract/browser/grouped-rows.browser.spec.ts > C-105 Grouping off and DOM contract of 3.8 [own]',
+  'tests/contract/browser/grouped-rows.browser.spec.ts > C-105 Grouping off and DOM contract of 3.9 [own]',
   'tests/contract/browser/grouped-scroll-body.browser.spec.ts',
   'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, light theme',
   'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, dark theme'
