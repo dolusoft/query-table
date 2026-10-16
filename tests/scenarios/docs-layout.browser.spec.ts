@@ -89,19 +89,19 @@ test.each([1280, 1343, 1344, 1440, 1535, 1536, 1537, 1920, 2560])(
       ).toBeLessThanOrEqual(1)
     }
 
-    // The Overview table is at least its 48rem floor, and with automatic
-    // widths whose filter row is a floor (C-100) its columns can need more
-    // than the page gives it. Only its own box may scroll then: the box
-    // stays inside the preview and the page never scrolls sideways.
+    // The equal rails and frame gutters leave less than the Overview
+    // table's 48rem floor at 1344px. Only its own box may scroll there.
     const scroller = document.querySelector<HTMLElement>(
       '.qt-table-responsive'
     )!
     expect(scroller.getBoundingClientRect().width).toBeLessThanOrEqual(
       preview.width
     )
-    expect(scroller.scrollWidth).toBeGreaterThanOrEqual(768)
     if (width === 1344) {
+      expect(scroller.scrollWidth).toBe(768)
       expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
+    } else {
+      expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
     }
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(viewport)
   },

@@ -6,9 +6,11 @@ import { measureColumnWidths } from './measure-widths'
 // around the read are checked alone. The layout itself is checked in the
 // browser tests (auto-width.browser.spec, measure-widths.browser.spec).
 
-const widths = new Map<Element, number>()
+/** A width, or one that follows the width the read gives the filter row. */
+type Width = number | ((row: number) => number)
+const widths = new Map<Element, Width>()
 
-const box = (element: Element, width: number) => {
+const box = (element: Element, width: Width) => {
   widths.set(element, width)
   return element
 }
@@ -16,9 +18,14 @@ const box = (element: Element, width: number) => {
 const rect = (width: number) =>
   ({ width, right: width, left: 0 }) as unknown as DOMRect
 
+/** The inline `width` of the filter row around an element, in pixels. */
+const rowWidth = (element: Element) =>
+  parseFloat(element.closest<HTMLElement>('.qt-filter')?.style.width ?? '') || 0
+
 vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
   function (this: Element) {
-    return rect(widths.get(this) ?? 0)
+    const width = widths.get(this) ?? 0
+    return rect(typeof width === 'number' ? width : width(rowWidth(this)))
   }
 )
 
@@ -53,7 +60,7 @@ const filterRow = (th: HTMLElement, ...controls: HTMLElement[]) => {
   return row
 }
 
-const control = (tag: string, className: string, width: number) => {
+const control = (tag: string, className: string, width: Width) => {
   const element = document.createElement(tag)
   element.className = className
   return box(element, width) as HTMLElement
@@ -111,6 +118,102 @@ describe('C-100 measureColumnWidths with the filter floor', () => {
     expect(
       measureColumnWidths(table, undefined, null, { filters: true })
     ).toEqual({ id: 32, code: 20, plain: 25 })
+  })
+
+  it('gives six characters to a text or number input only; a date input draws its own width', () => {
+    const seen: Record<string, string> = {}
+    const input = (type: string) => {
+      const element = control('input', 'qt-filter-input', () => {
+        seen[type] = element.style.width
+        return 50
+      })
+      ;(element as HTMLInputElement).type = type
+      return element
+    }
+    const table = tableOf([
+      ['a', 30, th => filterRow(th, input('text'))],
+      ['b', 30, th => filterRow(th, input('number'))],
+      ['c', 30, th => filterRow(th, input('date'))],
+      ['d', 30, th => filterRow(th, input('datetime-local'))]
+    ])
+    measureColumnWidths(table, undefined, null, { filters: true })
+    expect(seen).toEqual({
+      text: '6ch',
+      number: '6ch',
+      date: 'auto',
+      'datetime-local': 'auto'
+    })
+  })
+
+  it('puts a button a narrow form laid absolute back in the row, and counts only the row’s own buttons', () => {
+    const laid = control('button', 'qt-filter-button', 32)
+    laid.style.position = 'absolute'
+    const nested = document.createElement('span')
+    nested.append(control('button', 'qt-filter-button', 500))
+    const table = tableOf([
+      [
+        'id',
+        30,
+        th =>
+          filterRow(th, control('input', 'qt-filter-input', 50), laid, nested)
+      ]
+    ])
+    expect(
+      measureColumnWidths(table, undefined, null, { filters: true }).id
+    ).toBe(50 + 4 + 32)
+    expect(laid.style.position).toBe('absolute')
+  })
+
+  it('solves a percentage padding at the width the column is drawn at', () => {
+    // An input 50px wide plus 30% of the row: the row needs R with
+    // R = 50 + 0.3 R + 4 + 32, so the input keeps its 50px at that width.
+    const table = tableOf([
+      [
+        'id',
+        30,
+        th =>
+          filterRow(
+            th,
+            control('input', 'qt-filter-input', row => 50 + 0.3 * row),
+            control('button', 'qt-filter-button', 32)
+          )
+      ]
+    ])
+    expect(
+      measureColumnWidths(table, undefined, null, { filters: true }).id
+    ).toBe(Math.ceil((50 + 4 + 32) / 0.7))
+  })
+
+  it('counts no slot content, whatever its width or the width it follows', () => {
+    const slot = (width: Width) => {
+      const element = document.createElement('div')
+      return box(element, width) as HTMLElement
+    }
+    const floorWith = (extra: HTMLElement) => {
+      const table = tableOf([
+        [
+          'id',
+          30,
+          th =>
+            filterRow(
+              th,
+              control('input', 'qt-filter-input', row => 50 + 0.3 * row),
+              control('button', 'qt-filter-button', 32),
+              extra
+            )
+        ]
+      ])
+      const width = measureColumnWidths(table, undefined, null, {
+        filters: true
+      }).id
+      table.remove()
+      return width
+    }
+    const alone = floorWith(slot(0))
+    expect(floorWith(slot(400))).toBe(alone)
+    // Content that takes the row's width does not feed back either.
+    expect(floorWith(slot(row => row))).toBe(alone)
+    expect(floorWith(slot(row => row))).toBe(alone)
   })
 
   it('leaves out a column with no box: the table is not displayed', () => {

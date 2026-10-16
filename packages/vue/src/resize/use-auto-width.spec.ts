@@ -143,6 +143,20 @@ describe('C-100 use-auto-width', () => {
     expect(state.api.widths.value).toEqual({ name: 120, tiny: 40 })
   })
 
+  it('lets a maxWidth or autoWidthMax below the filter floor win', async () => {
+    const state = setup({
+      max: 90,
+      columns: [
+        { field: 'name', title: 'Name' },
+        { field: 'code', title: 'Code', maxWidth: 70 }
+      ]
+    })
+    // What the measure gives includes the floor (the stub stands for it).
+    measure.widths = { name: 120, code: 120 }
+    await arrive(state)
+    expect(state.api.widths.value).toEqual({ name: 90, code: 70 })
+  })
+
   it('counts the filter row as a floor in every measure', async () => {
     const state = setup()
     await arrive(state)

@@ -68,6 +68,15 @@ const Host = defineComponent({
     rows: { type: Array as PropType<Row[]>, default: () => rowsWith(longName) },
     query: { type: Object as PropType<TableQuery>, default: () => makeQuery() },
     tableProps: { type: Object, default: () => ({ autoWidth: true }) },
+    /**
+     * A `filter-menu` slot: a filter button and a box beside it, this many
+     * pixels wide, or `'column'` to follow the width the column was drawn
+     * at before. Without it there is no slot.
+     */
+    filterSlot: {
+      type: [Number, String] as PropType<number | 'column'>,
+      default: undefined
+    },
     api: { type: Function as PropType<(api: HostApi) => void>, required: true }
   },
   setup(props) {
@@ -102,6 +111,21 @@ const Host = defineComponent({
               ? String(cellValue)
               : ''
           )
+      }
+      if (props.filterSlot !== undefined) {
+        out['filter-menu'] = ({ column }: { column: Column }) => {
+          const width =
+            props.filterSlot === 'column'
+              ? drawnPx(column.field) || 100
+              : props.filterSlot
+          return [
+            h('button', { type: 'button', class: 'qt-filter-button' }, 'f'),
+            h('div', {
+              class: 'measure-extra',
+              style: { width: `${width}px`, flex: 'none' }
+            })
+          ]
+        }
       }
       return out
     }
@@ -231,13 +255,49 @@ describe('C-100 Automatic column widths [own]', () => {
         parseFloat(inputStyle.paddingLeft) -
         parseFloat(inputStyle.paddingRight)
       const ch = probe.getBoundingClientRect().width / 6
-      expect(text).toBeGreaterThanOrEqual(5 * ch)
+      // The percentage padding is solved at the width drawn: six characters.
+      expect(text).toBeGreaterThanOrEqual(6 * ch - 1)
       // Every style the read set is back: the skin's own layout is drawn.
       expect(input.getAttribute('style')).toBeNull()
     } finally {
       style.remove()
       probe.remove()
     }
+  })
+
+  test('slot content in the filter row never counts, nor feeds back on a new measure', async () => {
+    await mount({ filterSlot: 0 })
+    const alone = drawnPx('id')
+    cleanup()
+    await mount({ filterSlot: 400 })
+    expect(drawnPx('id')).toBe(alone)
+    cleanup()
+    // A slot as wide as the column was drawn: every measure from scratch
+    // gives the same width, it does not grow with what it drew.
+    const follow = await mount({ filterSlot: 'column' })
+    const first = drawnPx('id')
+    for (const page of [2, 3, 4]) {
+      await follow.rerender({
+        query: makeQuery({ filters: [rule('code', 'Equal', String(page))] }),
+        rows: rowsWith(longName)
+      })
+      expect(drawnPx('id')).toBe(first)
+    }
+    expect(first).toBe(alone)
+  })
+
+  test('autofit takes the same floor (C-50): a short column fits its filter, not its label', async () => {
+    const { api } = await mount({
+      columns: autoColumns().map(column =>
+        column.field === 'id' ? { ...column, width: '300px' } : column
+      )
+    })
+    const handle = el('thead th[data-field="id"] .qt-resize-handle')
+    handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(api.resized).toHaveLength(1)
+    const content = api.table().measureColumnWidths(['id']).id
+    expect(api.resized[0].width).toBeGreaterThan(content)
+    expect(api.resized[0].width).toBeLessThan(300)
   })
 
   test('is off by default', async () => {
