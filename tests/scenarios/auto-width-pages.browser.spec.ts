@@ -94,7 +94,11 @@ test.each(pages)(
       probe.remove()
       const text = input.getBoundingClientRect().width - sides(css)
       report[field].text = Math.round(text * 10) / 10
-      expect(text, `${name} ${field} text`).toBeGreaterThanOrEqual(six - 0.5)
+      // Six characters, less what the layout drew the column under its
+      // header width (the pixel the check above allows).
+      expect(text, `${name} ${field} text`).toBeGreaterThanOrEqual(
+        six - Math.max(0, given - drawn) - 0.5
+      )
     }
     console.log(`[auto-width-pages] ${name}`, JSON.stringify(report))
   },
