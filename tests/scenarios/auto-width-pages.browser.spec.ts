@@ -64,10 +64,8 @@ test.each(pages)(
     const box = table.closest('.qt-table-responsive')!
     // Narrower than its box, the table spreads the rest over its columns.
     const stretched = table.getBoundingClientRect().width <= box.clientWidth + 1
-    const report: Record<
-      string,
-      { th: number; drawn: number; text?: number; row?: string }
-    > = {}
+    const report: Record<string, { th: number; drawn: number; text?: number }> =
+      {}
     for (const th of document.querySelectorAll<HTMLElement>(
       'thead th[data-field][style*="width"]'
     )) {
@@ -89,27 +87,23 @@ test.each(pages)(
         continue
       }
       const css = getComputedStyle(input)
-      const probe = document.createElement('span')
-      probe.style.cssText = `position: absolute; visibility: hidden; width: 6ch; font: ${css.font}`
-      document.body.append(probe)
-      const six = probe.getBoundingClientRect().width
+      // Six characters in the input's own font: a copy of it beside it,
+      // six characters wide. A span with the computed `font` shorthand
+      // misses what the shorthand cannot say (the ID input came out 1px
+      // wider than its own `6ch`).
+      const probe = input.cloneNode() as HTMLInputElement
+      probe.style.cssText =
+        'position: absolute; visibility: hidden; box-sizing: content-box; width: 6ch; flex: none'
+      input.after(probe)
+      const six = probe.getBoundingClientRect().width - sides(css)
       probe.remove()
       const text = input.getBoundingClientRect().width - sides(css)
       report[field].text = Math.round(text * 10) / 10
-      const row = input.parentElement!
-      report[field].row =
-        [...row.children]
-          .map(
-            c =>
-              `${c.className || c.tagName}:${Math.round(c.getBoundingClientRect().width * 10) / 10}`
-          )
-          .join(' | ') +
-        ` gap=${getComputedStyle(row).columnGap} pad=${sides(getComputedStyle(row))} six=${six}`
       // Six characters, less what the layout drew the column under its
       // header width (the pixel the check above allows).
-      expect
-        .soft(text, `${name} ${field} text`)
-        .toBeGreaterThanOrEqual(six - Math.max(0, given - drawn) - 0.5)
+      expect(text, `${name} ${field} text`).toBeGreaterThanOrEqual(
+        six - Math.max(0, given - drawn) - 0.5
+      )
     }
     console.log(`[auto-width-pages] ${name}`, JSON.stringify(report))
   },
