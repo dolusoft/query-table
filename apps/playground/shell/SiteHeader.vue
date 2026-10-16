@@ -53,7 +53,7 @@ const menuOpen = ref(false)
 
 <template>
   <header
-    class="sticky top-0 z-20 w-full bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
+    class="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
   >
     <div class="docs-frame flex h-16 items-center gap-2">
       <slot name="menu" />
