@@ -1,6 +1,6 @@
 # 0015 A scrolling body under a fixed header (3.8)
 
-Status: Proposed (2026-10-16), to be decided by Zahid ([query-table#140](https://github.com/dolusoft/query-table/issues/140)). Amends P5, P7 and P13, and the part of ADR 0010 that has the table write to a scroll position only for the drift correction and `scrollToIndex`; the rest of the principles and of ADR 0010 stand.
+Status: Accepted (2026-10-16), decided by Enes ([query-table#140](https://github.com/dolusoft/query-table/issues/140), [#141](https://github.com/dolusoft/query-table/pull/141); proposed 2026-10-16). Amends P5, P7 and P13, and the part of ADR 0010 that has the table write to a scroll position only for the drift correction and `scrollToIndex`; the rest of the principles and of ADR 0010 stand.
 
 ## Context
 
