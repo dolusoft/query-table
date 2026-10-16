@@ -11,38 +11,43 @@ import playgroundCss from '../../apps/playground/playground.css?inline'
 
 // The playground's pages with `autoWidth` (C-100), with the page CSS: every
 // column is drawn at the width the table gives its header cell, and every
-// visible text or number filter input keeps six characters of text. With the
-// automatic table layout the header width was a hint only and the columns
-// were squeezed under their filters.
+// visible text or number filter input of a column without a given width
+// keeps six characters of text. With the automatic table layout the header
+// width was a hint only and the columns were squeezed under their filters.
 
-let style: HTMLStyleElement
+let sheet: HTMLStyleElement
 beforeAll(() => {
-  style = document.createElement('style')
-  style.textContent = playgroundCss
-  document.head.append(style)
+  sheet = document.createElement('style')
+  sheet.textContent = playgroundCss
+  document.head.append(sheet)
 })
-afterAll(() => style.remove())
+afterAll(() => sheet.remove())
 afterEach(() => {
   cleanup()
 })
 
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
-const pages: [string, Component][] = [
-  ['column-layout', ColumnLayout],
-  ['filtering', Filtering],
-  ['column-resizing', ColumnResizing],
-  ['overview', Overview]
+/** Page, component, and whether its columns are drawn at automatic widths. */
+const pages: [string, Component, boolean][] = [
+  ['column-layout', ColumnLayout, true],
+  ['filtering', Filtering, true],
+  // Every column there has a width the page gives (C-49): no floor applies.
+  ['column-resizing', ColumnResizing, false],
+  ['overview', Overview, true]
 ]
 
-const sides = (style: CSSStyleDeclaration) =>
-  parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
+const sides = (css: CSSStyleDeclaration) =>
+  parseFloat(css.paddingLeft) +
+  parseFloat(css.paddingRight) +
+  parseFloat(css.borderLeftWidth) +
+  parseFloat(css.borderRightWidth)
 
 test.each(pages)(
   '%s draws each column at its header width and keeps six characters in each filter',
-  async (name, Page) => {
+  async (name, view, floored) => {
     await page.viewport(1440, 900)
-    await render(Page)
+    await render(view)
     await expect
       .poll(
         () =>
@@ -78,18 +83,18 @@ test.each(pages)(
       const input = th.querySelector<HTMLInputElement>(
         ':scope > .qt-filter > input.qt-filter-input:is([type="text"], [type="number"])'
       )
-      if (!input || input.getBoundingClientRect().width === 0) {
+      if (!floored || !input || input.getBoundingClientRect().width === 0) {
         continue
       }
-      const inputStyle = getComputedStyle(input)
+      const css = getComputedStyle(input)
       const probe = document.createElement('span')
-      probe.style.cssText = `position: absolute; visibility: hidden; width: 6ch; font: ${inputStyle.font}`
+      probe.style.cssText = `position: absolute; visibility: hidden; width: 6ch; font: ${css.font}`
       document.body.append(probe)
       const six = probe.getBoundingClientRect().width
       probe.remove()
-      const text = input.clientWidth - sides(inputStyle)
+      const text = input.getBoundingClientRect().width - sides(css)
       report[field].text = Math.round(text * 10) / 10
-      expect(text, `${name} ${field} text`).toBeGreaterThanOrEqual(six - 1)
+      expect(text, `${name} ${field} text`).toBeGreaterThanOrEqual(six - 0.5)
     }
     console.log(`[auto-width-pages] ${name}`, JSON.stringify(report))
   },
