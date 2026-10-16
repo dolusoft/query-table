@@ -22,21 +22,21 @@ const around = computed(() => neighbours(route.path))
       v-if="around.previous"
       as-child
       variant="secondary"
-      class="min-h-11 lg:pointer-fine:min-h-8"
+      class="h-auto min-h-11 min-w-0 max-w-[calc(50%-0.25rem)] whitespace-normal py-2 text-left lg:pointer-fine:min-h-8"
     >
       <RouterLink :to="`/${around.previous.id}`">
         <ArrowLeftIcon />
-        {{ around.previous.title }}
+        <span class="min-w-0 break-words">{{ around.previous.title }}</span>
       </RouterLink>
     </Button>
     <Button
       v-if="around.next"
       as-child
       variant="secondary"
-      class="ml-auto min-h-11 lg:pointer-fine:min-h-8"
+      class="ml-auto h-auto min-h-11 min-w-0 max-w-[calc(50%-0.25rem)] whitespace-normal py-2 text-right lg:pointer-fine:min-h-8"
     >
       <RouterLink :to="`/${around.next.id}`">
-        {{ around.next.title }}
+        <span class="min-w-0 break-words">{{ around.next.title }}</span>
         <ArrowRightIcon />
       </RouterLink>
     </Button>

@@ -2,6 +2,7 @@
 import { useEventListener } from '@vueuse/core'
 import { ref, useTemplateRef, watch } from 'vue'
 
+import { ScrollArea } from '@/ui/scroll-area'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/ui/sidebar'
 
 import { setTheme, themeFromUrl, type Theme } from './harness/theme'
@@ -101,20 +102,18 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
         <SidebarTrigger class="-ml-2 size-11 min-[769px]:hidden" />
       </template>
     </SiteHeader>
-    <div class="mx-auto flex w-full max-w-(--breakpoint-2xl) flex-1">
+    <div class="docs-frame flex flex-1">
       <DocsSidebar />
       <SidebarInset class="min-w-0 flex-row">
         <div ref="column" class="flex min-w-0 flex-1 flex-col">
           <!-- Text keeps the 40rem measure of the shadcn-vue docs. A part
                marked `data-wide` (an example's preview) starts on the same
                left edge and widens to the right, up to 64rem: in 40rem a
-               table example drops to its phone layout. With "On This Page"
-               on screen (84rem up), a column wider than that centers the
-               64rem block between the two rails. Without the rail the block
-               stays at the column's start: centering it there would push it
-               right up to 1343px and make it jump back when the rail shows. -->
+               table example drops to its phone layout. The preview is
+               centered in the space between equally wide sidebar and TOC
+               rails; text and preview always share their left edge. -->
           <div
-            class="flex min-[84rem]:mx-auto w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 text-[1.05rem] leading-relaxed sm:text-[15px] md:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
+            class="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col py-6 text-[1.05rem] leading-relaxed sm:text-[15px] min-[769px]:px-6 lg:py-8 [&_article>*]:w-full [&_article>*:not([data-wide])]:max-w-160"
           >
             <!-- A new page instance per route: each page mounts its own example. -->
             <RouterView :key="$route.path" />
@@ -126,9 +125,14 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
              Overview table (48rem plus the card), so the page goes without
              it there and the preview uses that room. -->
         <aside
-          class="sticky top-16 hidden h-[calc(100svh-4rem)] w-56 shrink-0 flex-col overflow-y-auto pt-8 min-[84rem]:flex"
+          class="sticky top-16 hidden h-[calc(100svh-4rem)] w-(--sidebar-width) shrink-0 flex-col pt-8 min-[84rem]:flex"
         >
-          <DocToc :root="column" />
+          <ScrollArea
+            class="min-h-0 flex-1"
+            viewport-class="overscroll-contain"
+          >
+            <DocToc :root="column" />
+          </ScrollArea>
         </aside>
       </SidebarInset>
     </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { SparklesIcon } from '@lucide/vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
@@ -15,12 +16,13 @@ import {
 } from '@/ui/sidebar'
 
 import DatasetMenu from './DatasetMenu.vue'
-import { navigation } from './docs-nav'
+import { navigationGroups } from './docs-nav'
+import { prefetchExamplesWhenIdle, prefetchPage } from './examples'
 import { aiNav } from '../guides/guides'
 
 // The documentation sidebar, after the shadcn-vue docs: an offcanvas
-// shadcn-vue `Sidebar` below the 4rem site header with two groups, the pages
-// and AI. Below `md` the same Sidebar is a Sheet that the header's menu
+// shadcn-vue `Sidebar` below the 4rem site header with topic groups and AI.
+// Below `md` the same Sidebar is a Sheet that the header's menu
 // button opens, with the demo data switch on top; following a link closes
 // it.
 //
@@ -32,6 +34,11 @@ import { aiNav } from '../guides/guides'
 // instead of sliding it out; its gap goes to 0 and the page takes the room.
 const route = useRoute()
 const { isMobile, setOpenMobile } = useSidebar()
+let stopPrefetch = () => {}
+onMounted(() => {
+  stopPrefetch = prefetchExamplesWhenIdle()
+})
+onUnmounted(() => stopPrefetch())
 
 // The AI entries share a route; the hash tells them apart.
 const isAiActive = (to: string) => {
@@ -48,7 +55,7 @@ const follow = (
 }
 
 const link =
-  'min-h-11 text-[0.8rem] font-medium lg:pointer-fine:min-h-0 lg:pointer-fine:h-[30px] data-active:text-sidebar-accent-foreground'
+  '-mx-2 w-[calc(100%+1rem)] min-h-11 whitespace-nowrap px-2 text-[0.8rem] font-medium lg:pointer-fine:min-h-0 lg:pointer-fine:h-[30px] data-active:text-sidebar-accent-foreground'
 </script>
 
 <template>
@@ -56,7 +63,9 @@ const link =
     collapsible="offcanvas"
     class="sticky top-16 bottom-auto h-[calc(100svh-4rem)]! border-r-0! group-data-[collapsible=offcanvas]:hidden *:data-[slot=sidebar-inner]:bg-background"
   >
-    <SidebarContent class="pt-4">
+    <SidebarContent
+      class="pt-4 max-[769px]:px-4 [&_[data-slot=sidebar-group]]:pl-2 [&_[data-slot=sidebar-group]]:pr-0 [&_[data-slot=sidebar-group-label]]:px-0"
+    >
       <!-- In the Sheet the header's menu button opens, the demo data switch
            the header shows from `sm` up: on a phone the bar has no room. -->
       <SidebarGroup v-if="isMobile">
@@ -67,14 +76,14 @@ const link =
           <DatasetMenu align="start" class="w-full" />
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
-        <SidebarGroupLabel class="text-muted-foreground"
-          >Pages</SidebarGroupLabel
-        >
+      <SidebarGroup v-for="group in navigationGroups" :key="group.title">
+        <SidebarGroupLabel class="text-muted-foreground">{{
+          group.title
+        }}</SidebarGroupLabel>
         <SidebarGroupContent>
-          <nav aria-label="Examples">
+          <nav :aria-label="group.title">
             <SidebarMenu class="gap-0.5">
-              <SidebarMenuItem v-for="page in navigation" :key="page.id">
+              <SidebarMenuItem v-for="page in group.pages" :key="page.id">
                 <RouterLink
                   v-slot="{ href, navigate, isActive }"
                   :to="`/${page.id}`"
@@ -86,9 +95,11 @@ const link =
                     :is-active="isActive"
                     :aria-current="isActive ? 'page' : undefined"
                     :class="link"
+                    @pointerenter="prefetchPage(page.id)"
+                    @focus="prefetchPage(page.id)"
                     @click="follow(navigate, $event)"
                   >
-                    {{ page.title }}
+                    {{ page.navTitle ?? page.title }}
                   </SidebarMenuButton>
                 </RouterLink>
               </SidebarMenuItem>

@@ -5,6 +5,7 @@ import FeatureMatrixPage from './guides/FeatureMatrixPage.vue'
 import TanstackPage from './guides/TanstackPage.vue'
 import HomePage from './home/HomePage.vue'
 import { pages } from './manifest'
+import { loadExample, resolvedExample } from './shell/examples'
 import PageView from './shell/PageView.vue'
 
 // Hash history: the playground is a static site (GitHub Pages) with no
@@ -23,11 +24,19 @@ export const router = createRouter({
     ...pages.map(page => ({
       path: `/${page.id}`,
       component: PageView,
-      props: { page }
+      meta: { example: page.example },
+      props: () => ({ page, ...resolvedExample(page.example) })
     })),
     { path: '/features', component: FeatureMatrixPage },
     { path: '/tanstack', component: TanstackPage },
     { path: '/ai', component: AiPage },
     { path: '/:unknown(.*)', redirect: '/' }
   ]
+})
+
+router.beforeResolve(async to => {
+  const name = to.meta.example
+  if (typeof name === 'string') {
+    await loadExample(name)
+  }
 })
