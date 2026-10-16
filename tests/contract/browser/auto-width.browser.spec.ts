@@ -116,7 +116,11 @@ const Host = defineComponent({
         out['filter-menu'] = ({ column }: { column: Column }) => {
           const width =
             props.filterSlot === 'column'
-              ? drawnPx(column.field) || 100
+              ? parseFloat(
+                  document.querySelector<HTMLElement>(
+                    `thead th[data-field="${column.field}"]`
+                  )?.style.width ?? ''
+                ) || 100
               : props.filterSlot
           return [
             h('button', { type: 'button', class: 'qt-filter-button' }, 'f'),
