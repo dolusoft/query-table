@@ -89,19 +89,19 @@ test.each([1280, 1343, 1344, 1440, 1535, 1536, 1537, 1920, 2560])(
       ).toBeLessThanOrEqual(1)
     }
 
-    // The equal rails and frame gutters leave less than the Overview
-    // table's 48rem floor at 1344px. Only its own box may scroll there.
+    // The Overview table may be wider than its box (its filter floor, C-100,
+    // keeps six characters per filter), as DataTables and AG Grid scroll a
+    // wide table in its own box: the table scrolls, its box never overflows.
     const scroller = document.querySelector<HTMLElement>(
       '.qt-table-responsive'
     )!
-    expect(scroller.getBoundingClientRect().width).toBeLessThanOrEqual(
-      preview.width
-    )
-    if (width === 1344) {
-      expect(scroller.scrollWidth).toBe(768)
-      expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
-    } else {
-      expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth)
+    const box = scroller.getBoundingClientRect()
+    expect(box.width).toBeLessThanOrEqual(preview.width)
+    expect(box.left).toBeGreaterThanOrEqual(preview.left - 0.5)
+    expect(box.right).toBeLessThanOrEqual(preview.right + 0.5)
+    expect(scroller.scrollWidth).toBeGreaterThanOrEqual(768)
+    if (scroller.scrollWidth > scroller.clientWidth) {
+      expect(getComputedStyle(scroller).overflowX).toBe('auto')
     }
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(viewport)
   },

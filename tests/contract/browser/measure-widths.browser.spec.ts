@@ -282,10 +282,36 @@ describe('C-50 Keyboard and autofit with block and flex slot content [own]', () 
     handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     expect(api.resized).toHaveLength(1)
     expect(api.resized[0].field).toBe('code')
-    expect(api.resized[0].width).toBe(
-      api.table().measureColumnWidths(['code']).code
+    // The filter row is a floor (C-50, C-100): the wider of the content and
+    // the filter input with six characters of text, plus the cell's padding
+    // and border. This table has no filter button.
+    const th = el('thead th[data-field="code"]')
+    const twin = document.createElement('input')
+    twin.className = 'qt-filter-input'
+    twin.style.cssText = 'flex: none; box-sizing: content-box; width: 6ch'
+    th.querySelector('.qt-filter')!.append(twin)
+    const style = getComputedStyle(th)
+    const floor = Math.ceil(
+      twin.getBoundingClientRect().width +
+        parseFloat(style.paddingLeft) +
+        parseFloat(style.paddingRight) +
+        parseFloat(style.borderLeftWidth) +
+        parseFloat(style.borderRightWidth)
     )
+    twin.remove()
+    const content = api.table().measureColumnWidths(['code']).code
+    expect(api.resized[0].width).toBe(Math.max(40, content, floor))
     expect(api.resized[0].width).toBeLessThan(150)
+  })
+
+  test('without a filter row a double click fits exactly what measureColumnWidths measures', async () => {
+    const { api } = await mount({ tableProps: { filterable: false } })
+    const handle = el('thead th[data-field="code"] .qt-resize-handle')
+    handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(api.resized).toHaveLength(1)
+    expect(api.resized[0].width).toBe(
+      Math.max(40, api.table().measureColumnWidths(['code']).code)
+    )
   })
 
   test('Enter on a table that is not displayed emits nothing', async () => {

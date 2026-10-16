@@ -210,14 +210,16 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
         Math.round(drawn) + sign * (event.shiftKey ? 50 : 10)
       )
       // A step moves at least one declared pixel, however stretched the
-      // table. Autofit is the width `measureColumnWidths` gives (C-50, C-99);
-      // a column that measures nothing (the table not displayed) stays.
+      // table. Autofit is the width `measureColumnWidths` gives (C-50, C-99),
+      // with the filter row as a floor as for `autoWidth` (C-100); a column
+      // that measures nothing (the table not displayed) stays.
       const to = sign
         ? from + sign * Math.max(1, Math.abs(step - from))
         : measureColumnWidths(
             th.closest('table'),
             [column.field],
-            options.body()
+            options.body(),
+            { filters: true }
           )[column.field]
       if (to !== undefined) {
         commit(column, from, to)

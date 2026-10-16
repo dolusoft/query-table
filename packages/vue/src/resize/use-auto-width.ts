@@ -100,7 +100,10 @@ export const useAutoWidth = (options: AutoWidthOptions) => {
     const measured = measureColumnWidths(
       table,
       columns.map(column => column.field),
-      options.body()
+      options.body(),
+      // The filter row is a floor: a column never draws its filter
+      // unusable (C-100).
+      { filters: true }
     )
     if (Object.keys(measured).length === 0) {
       // Not displayed: nothing has a box. Keep what is drawn.

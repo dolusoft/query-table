@@ -528,11 +528,14 @@ th:is([data-type='number'], [data-type='integer']) > .qt-sort {
 /* own: the input shares the filter row with its button. It grows from zero
    width instead of `w-full`, and always keeps room for the condition label
    at its end: padding that came and went with the label would change the
-   column's width in the auto table layout. */
+   column's width in the auto table layout. The room is fixed, the label's
+   2.5rem cap plus a 0.25rem inset: a share of the row (it was 30%) grows
+   with the column, and an automatic width that keeps six characters of text
+   (C-100) then has to grow by more than that share. */
 .qt-filter-input {
   flex: 1 1 0%;
   width: 0;
-  padding-right: calc(30% + 0.25rem);
+  padding-right: 2.75rem;
 }
 /* own: a date input has no condition label to make room for: its text and
    the picker icon take the whole box. The condition stays in the filter
@@ -594,14 +597,15 @@ th[data-filtered] .qt-filter-input {
   @apply h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium transition-all [&>svg]:size-3! inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&>svg]:pointer-events-none bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80;
 }
 /* own: the label sits over the input's end (the button is 2rem wide plus the
-   0.25rem gap) and is cut with an ellipsis when the column is narrow; an
-   inline-flex box cannot end its text with one, so it is a block here. */
+   0.25rem gap) and is cut with an ellipsis past 2.5rem, the room the input
+   keeps for it at its end; an inline-flex box cannot end its text with one,
+   so it is a block here. */
 .qt-filter-condition {
   position: absolute;
   top: 50%;
   right: 2.5rem;
   display: block;
-  max-width: 30%;
+  max-width: 2.5rem;
   text-overflow: ellipsis;
   transform: translateY(-50%);
   pointer-events: none;
