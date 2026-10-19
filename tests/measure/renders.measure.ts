@@ -196,7 +196,13 @@ interface Scenario {
     subtable?: boolean
     forward?: boolean
     clockCells?: boolean
+    shallowRows?: boolean
   }
+  /**
+   * Exact `updated` counts of named components the action must give: a
+   * scenario that expects no row to be drawn proves the body ran.
+   */
+  updated?: Record<string, number>
   /** Runs on the mounted table before counting starts. */
   prepare?: (api: MeasureApi) => Promise<void>
   act: (applied: number[], api: MeasureApi) => Promise<void>
@@ -274,6 +280,9 @@ const measure = async (scenario: Scenario): Promise<ScenarioResult> => {
     expect(run.queryUpdates).toBe(runs[0].queryUpdates)
   }
   const { rows, queryUpdates, counts: first, libraryUpdates: lib } = runs[0]
+  for (const [name, count] of Object.entries(scenario.updated ?? {})) {
+    expect(first.updates[name] ?? 0, `${scenario.name}: ${name}`).toBe(count)
+  }
   return {
     rows,
     queryUpdates,
@@ -428,6 +437,21 @@ const scenarios: Scenario[] = [
     pageSize: 200,
     expectedUpdates: 0,
     host: { keyed: true },
+    updated: { 'table-body': 1, TableRow: 1 },
+    act: async (_, api) => {
+      api.replaceAt(10)
+      await frame()
+      expectAge(10, 130)
+    }
+  },
+  {
+    // The same with the rows in a `shallowRef`: the table gets the plain
+    // row objects instead of their reactive proxies.
+    name: 'replace-one-shallow',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, shallowRows: true },
+    updated: { 'table-body': 1, TableRow: 1 },
     act: async (_, api) => {
       api.replaceAt(10)
       await frame()
@@ -440,6 +464,7 @@ const scenarios: Scenario[] = [
     pageSize: 200,
     expectedUpdates: 0,
     host: { keyed: true },
+    updated: { 'table-body': 1 },
     act: async (_, api) => {
       api.sameObjects()
       await frame()
@@ -495,6 +520,7 @@ const scenarios: Scenario[] = [
     pageSize: 200,
     expectedUpdates: 0,
     host: { keyed: true, virtual: true },
+    updated: { 'table-body': 1 },
     act: async (_, api) => {
       api.replaceAt(150)
       await frame()
@@ -574,6 +600,7 @@ const scenarios: Scenario[] = [
     pageSize: 200,
     expectedUpdates: 0,
     host: { keyed: true, forward: true },
+    updated: { MeasureWrapper: 1, QueryTable: 1, 'table-body': 1 },
     act: async (_, api) => {
       api.ownState()
       await frame()

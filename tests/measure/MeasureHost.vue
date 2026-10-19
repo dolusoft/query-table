@@ -38,6 +38,11 @@ const props = withDefaults(
     forward?: boolean
     /** A `cell-age` slot that reads `clock` in rows 0 to 4 (C-107). */
     clockCells?: boolean
+    /**
+     * The rows in a `shallowRef`. Off, they are in a `ref`, as in 3.10 and
+     * in most consumers: the table gets reactive proxies of the rows.
+     */
+    shallowRows?: boolean
     /** The controls the row scenarios drive. */
     api?: (api: MeasureApi) => void
   }>(),
@@ -52,6 +57,7 @@ const props = withDefaults(
     subtable: false,
     forward: false,
     clockCells: false,
+    shallowRows: false,
     api: undefined
   }
 )
@@ -94,7 +100,9 @@ const answer = (query: TableQuery) => {
 
 const query = ref(props.initialQuery)
 const first = answer(props.initialQuery)
-const rows = shallowRef(first.rows)
+// A deep `ref` keeps the proxy of an unchanged row, so `replaceAt` and
+// `sameObjects` hand the table the same objects for the rows they keep.
+const rows = props.shallowRows ? shallowRef(first.rows) : ref(first.rows)
 const total = ref(first.total)
 // Flipped by the `.toggle-loading` button (the `loading` scenario).
 const loading = ref(false)

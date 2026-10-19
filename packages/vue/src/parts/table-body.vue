@@ -36,8 +36,9 @@ const props = defineProps<{
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
   /**
-   * The names of the slots the body is given, space separated. Slots are not
-   * reactive; a slot that comes or goes changes this text (K311-3).
+   * The `cell-<field>` slots the consumer gives, one per line (a field name
+   * may hold a space, never a line break). Slots are not reactive; a slot
+   * that comes or goes changes this text (K311-3).
    */
   slotNames: string
   /** Cells a full-width row (subtable, empty) spans. */
@@ -112,7 +113,7 @@ const spanAttrs = () => ({
   by identity.
 */
 const cells = computed<readonly RowCell[]>(previous => {
-  const names = new Set(props.slotNames.split(' '))
+  const names = new Set(props.slotNames.split('\n'))
   const role = cellRole()
   let same = previous?.length === props.entries.length
   const next = props.entries.map((entry, i): RowCell => {
@@ -127,7 +128,6 @@ const cells = computed<readonly RowCell[]>(previous => {
     if (
       old &&
       old.column === column &&
-      old.index === entry.index &&
       old.type === type &&
       old.side === side &&
       old.offset === offset &&
@@ -140,7 +140,6 @@ const cells = computed<readonly RowCell[]>(previous => {
     return {
       field,
       column,
-      index: entry.index,
       type,
       side,
       offset,

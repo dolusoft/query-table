@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { onBeforeUnmount, ref, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { Badge } from '@/ui/badge'
 import { Button } from '@/ui/button'
@@ -15,7 +15,8 @@ import { seeded } from '../scenarios/random'
 // row is drawn again only when its row object, its own state (selection,
 // expansion, flash) or something every row draws (columns, the set of cell
 // slots) changes. The feed below replaces one task with a new object and
-// keeps every other task by reference, so only that row is drawn again.
+// keeps every other task by reference, so only that row is drawn again. The
+// change lands on a task in view, and the line above the table names it.
 //
 // The "Renders" column counts the calls of its own slot per task in a plain
 // `Map`: written while the slot renders and not reactive, so counting draws
@@ -67,13 +68,19 @@ const tasks = shallowRef<Task[]>(
   )
 )
 
-// One change: a running task makes progress (and may finish), or a queued
-// one starts. The changed task is a new object; a task changed in place
-// would not be seen.
+// One change: a running task makes progress (and may finish), a queued one
+// starts, a done one runs again. The changed task is a new object; a task
+// changed in place would not be seen.
 const advance = (task: Task): Task => {
   const now = Date.now()
-  if (task.status === 'queued') {
-    return { ...task, status: 'running', progress: 10, startedAt: now }
+  if (task.status !== 'running') {
+    return {
+      ...task,
+      status: 'running',
+      progress: 10,
+      startedAt: now,
+      endedAt: 0
+    }
   }
   const progress = Math.min(100, task.progress + 10)
   return progress === 100
@@ -81,18 +88,37 @@ const advance = (task: Task): Task => {
     : { ...task, progress }
 }
 
+// The change lands on a task in view, so it can be watched: with `virtual`
+// most of the 400 tasks are not drawn. `data-row-index` is the index in
+// `rows`; a row partly in view counts.
+const box = useTemplateRef<HTMLElement>('box')
+const inView = (): number[] => {
+  const element = box.value
+  if (!element) {
+    return []
+  }
+  const { top, bottom } = element.getBoundingClientRect()
+  const head = element.querySelector('thead')?.getBoundingClientRect().bottom
+  return [
+    ...element.querySelectorAll<HTMLElement>('tbody > tr[data-row-index]')
+  ]
+    .filter(tr => {
+      const rect = tr.getBoundingClientRect()
+      return rect.bottom > Math.max(top, head ?? top) && rect.top < bottom
+    })
+    .map(tr => Number(tr.dataset.rowIndex))
+}
+
 const newObjects = ref(false)
 const lastChanged = ref('')
 const change = () => {
   const list = tasks.value
-  const running = list.filter(task => task.status === 'running')
-  const queued = list.filter(task => task.status === 'queued')
-  const target =
-    running.length > 0 && (running.length >= 8 || queued.length === 0)
-      ? pick(running)
-      : pick(queued.length > 0 ? queued : list)
-  const next = target.status === 'done' ? target : advance(target)
-  lastChanged.value = next.name
+  const visible = inView()
+  const index =
+    visible.length > 0 ? pick(visible) : Math.floor(random() * list.length)
+  const target = list[index]
+  const next = advance(target)
+  lastChanged.value = `${next.name} (row ${String(index + 1)}), now ${next.status} ${String(next.progress)}%`
   // Keep the unchanged tasks by reference; the switch shows the other way.
   tasks.value = list.map(task =>
     task === target ? next : newObjects.value ? { ...task } : task
@@ -185,11 +211,15 @@ const groupBy = (task: Task) => task.workCategory
         <Checkbox v-model="clockOn" />
         Clock in the duration cell
       </Label>
-      <span class="text-muted-foreground" aria-live="off">
-        Last changed: {{ lastChanged || 'none yet' }}
-      </span>
     </div>
+    <p class="text-sm" aria-live="off">
+      <span class="text-muted-foreground">Changed:</span>
+      <span class="font-medium tabular-nums">
+        {{ lastChanged || 'nothing yet' }}
+      </span>
+    </p>
     <div
+      ref="box"
       class="max-h-[28rem] overflow-y-auto rounded-md [&_.qt-table]:table-fixed"
     >
       <QueryTable

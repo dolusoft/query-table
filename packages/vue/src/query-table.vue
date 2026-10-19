@@ -348,7 +348,8 @@ const bodySlotNames = () =>
       name === 'load-more' ||
       name === 'group'
   )
-// A string, so the header sees a changed prop only when the set changes.
+// A string, so the header sees a changed prop only when the set changes;
+// one name per line, since a field name may hold a space.
 const headerSlotNames = () =>
   Object.keys(rawSlots)
     .filter(
@@ -358,14 +359,14 @@ const headerSlotNames = () =>
         name === 'filter-menu'
     )
     .sort()
-    .join(' ')
+    .join('\n')
 // The `cell-<field>` slots the rows call, as one string: the body's cells
 // change only when the set changes (K311-3).
 const cellSlotNames = () =>
   Object.keys(rawSlots)
     .filter(name => name.startsWith('cell-'))
     .sort()
-    .join(' ')
+    .join('\n')
 
 const exposed: QueryTableExpose = {
   collapseAll: expansion.collapseAll,

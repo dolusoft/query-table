@@ -27,8 +27,6 @@ import type { RowFlash } from '../flash/use-change-flash'
 export interface RowCell {
   field: string
   column: Column
-  /** The column's position in `columns`, hidden ones included. */
-  index: number
   type: string
   side: PinSide
   offset: number | undefined

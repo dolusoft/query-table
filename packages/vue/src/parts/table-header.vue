@@ -35,7 +35,8 @@ const props = defineProps<{
   autoWidths: Readonly<Record<string, number>>
   /**
    * The header slots the consumer gave (`header-<field>`, `filter-datetime`,
-   * `filter-menu`), space-separated. The slots below are always passed so
+   * `filter-menu`), one per line: a field name may hold a space, never a
+   * line break. The slots below are always passed so
    * that they stay stable; this says which ones to draw.
    */
   slotNames: string
@@ -50,7 +51,7 @@ defineSlots<{
   header?(props: HeaderSlotProps): unknown
 }>()
 
-const given = (name: string) => props.slotNames.split(' ').includes(name)
+const given = (name: string) => props.slotNames.split('\n').includes(name)
 
 const { filters, sort, layout, resize, reorder, selection, labels } =
   useTableContext()

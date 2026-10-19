@@ -233,6 +233,43 @@ describe('TableRow structure (ADR 0017)', () => {
   })
 })
 
+describe('slot names of a field that holds a space', () => {
+  it('draws the cell and the header slot of the field', async () => {
+    wrapper = mount(
+      defineComponent({
+        components: { QueryTable: Table },
+        setup() {
+          return {
+            rows: [{ 'first name': 'Ada' }],
+            cell: 'cell-first name',
+            header: 'header-first name'
+          }
+        },
+        template: `
+          <QueryTable
+            :query="{ page: 1, pageSize: 10, sort: null, filters: [] }"
+            :columns="[{ field: 'first name', title: 'First name' }]"
+            :rows="rows"
+            :total-rows="1"
+          >
+            <template #[cell]="{ cellValue }">
+              <b class="slot-cell">{{ cellValue }}</b>
+            </template>
+            <template #[header]="{ column }">
+              <i class="slot-header">{{ column.title }}</i>
+            </template>
+          </QueryTable>
+        `
+      })
+    )
+    await nextTick()
+    expect(wrapper.find('td[data-field="first name"] .slot-cell').text()).toBe(
+      'Ada'
+    )
+    expect(wrapper.find('.slot-header').text()).toBe('First name')
+  })
+})
+
 describe('TableRow and the expansion snapshot (K311-7)', () => {
   it('mounts the subtable when a cell slot writes reactive state once while it is evaluated', async () => {
     const rows = ref([{ name: 'a' }, { name: 'b' }])
@@ -282,4 +319,76 @@ describe('TableRow and the expansion snapshot (K311-7)', () => {
     expect(wrapper.find('tr.qt-subtable-row').exists()).toBe(true)
     expect(wrapper.find('.sub').exists()).toBe(true)
   })
+
+  // The `subtable` and `group` slots run inside the body's render, between
+  // the row's `expanded` prop and the subtable row's `v-if`: the case the
+  // snapshot is for.
+  it.each(['subtable', 'group'] as const)(
+    'mounts the subtable when the %s slot writes reactive state once while it runs',
+    async slot => {
+      const rows = ref([
+        { name: 'a', kind: 'x' },
+        { name: 'b', kind: 'x' }
+      ])
+      let armed = false
+      let wrote = false
+      wrapper = mount(
+        defineComponent({
+          components: { QueryTable: Table },
+          setup() {
+            // Written once, synchronously, inside the slot's run.
+            const touch = (text: string) => {
+              if (armed && !wrote) {
+                wrote = true
+                rows.value = rows.value.map(row => ({ ...row }))
+              }
+              return text
+            }
+            const groupBy =
+              slot === 'group' ? (row: { kind: string }) => row.kind : undefined
+            return { rows, touch, groupBy }
+          },
+          template: `
+            <QueryTable
+              :query="{ page: 1, pageSize: 10, sort: null, filters: [] }"
+              :columns="[{ field: 'name', title: 'Name' }]"
+              :rows="rows"
+              :total-rows="2"
+              :has-subtable="true"
+              :group-by="groupBy"
+              row-key="name"
+            >
+              <template #subtable="{ row }">
+                <div class="sub">{{ ${slot === 'subtable' ? 'touch(row.name)' : 'row.name'} }}</div>
+              </template>
+              <template #group="{ groupKey }">
+                <span>{{ ${slot === 'group' ? 'touch(String(groupKey))' : 'groupKey'} }}</span>
+              </template>
+            </QueryTable>
+          `
+        }),
+        { attachTo: document.body }
+      )
+      await nextTick()
+      armed = true
+      await wrapper.findAll('.qt-expand')[0].trigger('click')
+      await nextTick()
+      await nextTick()
+      expect(wrote).toBe(true)
+      expect(
+        wrapper.find('tr[data-row-index="0"]').attributes('data-expanded')
+      ).toBe('')
+      expect(wrapper.find('.qt-expand').attributes('aria-expanded')).toBe(
+        'true'
+      )
+      const subtable = wrapper.find('tr.qt-subtable-row')
+      expect(subtable.exists()).toBe(true)
+      // Inserted right after its row.
+      expect(
+        (subtable.element.previousElementSibling as HTMLElement).dataset
+          .rowIndex
+      ).toBe('0')
+      expect(wrapper.find('.sub').text()).toBe('a')
+    }
+  )
 })

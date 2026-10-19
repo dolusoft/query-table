@@ -7,7 +7,6 @@ import {
   ref,
   shallowRef,
   type PropType,
-  type Slot,
   type VNode
 } from 'vue'
 
@@ -17,6 +16,7 @@ import QueryTable, {
   type TableQuery
 } from '@dolusoft/query-table'
 
+import Forward from './ForwardSlots.vue'
 import {
   drawnIndexes,
   frames,
@@ -70,28 +70,9 @@ interface HostApi {
   box: () => HTMLElement
 }
 
-/**
- * A consumer component that forwards every slot it is given, as the Task
- * Monitor does with `<template v-for="(_, name) in $slots" #[name]>`: the
- * table gets new slot functions on each render of this component.
- */
-const Forward = defineComponent({
-  inheritAttrs: false,
-  setup(_, { attrs, slots }) {
-    return () =>
-      h(
-        QueryTable as never,
-        attrs,
-        Object.fromEntries(
-          Object.keys(slots).map(name => [
-            name,
-            (props: unknown) => (slots[name] as Slot)(props)
-          ])
-        )
-      )
-  }
-})
-
+// `Forward` is a consumer component that forwards every slot it is given
+// with `<template v-for="(_, name) in $slots" #[name]>`, as the Task Monitor
+// does: the table gets new slot functions on each render of it.
 const Host = defineComponent({
   props: {
     rows: { type: Array as PropType<Row[]>, required: true },
