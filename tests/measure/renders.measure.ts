@@ -3,6 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { cleanup, config, render } from 'vitest-browser-vue'
 import type { ComponentInternalInstance, ComponentPublicInstance } from 'vue'
 
+import type { MeasureApi } from './measure-api'
 import MeasureHost from './MeasureHost.vue'
 import type { Column, TableQuery } from '../../packages/vue/src/contract'
 
@@ -16,9 +17,16 @@ import type { Column, TableQuery } from '../../packages/vue/src/contract'
 // How it counts: a global mixin (`config.global.mixins`) adds `mounted`,
 // `updated` and `renderTriggered` hooks to every component. `renderTriggered`
 // only fires in a development build of Vue, which is what this project serves.
+//
+// The data row component (`TableRow`, ADR 0017) is counted on its own:
+// `rowUpdates` is the number of rows drawn again, `rowMounts` the number of
+// rows mounted. It is left out of `libraryUpdates`, which keeps counting
+// what it counted in 3.10 (the root, the header, the body, the filter cells).
 
 const ROWS = 1000
 const RUNS = 5
+/** The name of the data row component in the counts. */
+const ROW = 'TableRow'
 
 declare module 'vitest' {
   interface TaskMeta {
@@ -42,8 +50,15 @@ interface ScenarioResult {
   /** Updates the consumer applied (one per `update:query` event). */
   queryUpdates: number
   counts: Counts
-  /** Of the counts above: the table's own components (files under `src/`). */
+  /**
+   * Of the counts above: the table's own components (files under `src/`),
+   * `TableRow` left out.
+   */
   libraryUpdates: number
+  /** `TableRow` updates: the data rows drawn again (C-106). */
+  rowUpdates: number
+  /** `TableRow` mounts: the data rows mounted. */
+  rowMounts: number
   /** Median over RUNS, in milliseconds. */
   timings: {
     /** Render and layout of one answer to `update:query`, summed per run. */
@@ -107,8 +122,9 @@ const counter = {
   },
   updated(this: ComponentPublicInstance) {
     if (counting) {
-      bump(counts.updates, nameOf(this))
-      if (isLibrary(this.$)) {
+      const name = nameOf(this)
+      bump(counts.updates, name)
+      if (name !== ROW && isLibrary(this.$)) {
         libraryUpdates++
       }
     }
@@ -171,7 +187,25 @@ interface Scenario {
   flash?: boolean
   /** Mounts with `groupBy` (C-103); off by default. */
   grouped?: boolean
-  act: (applied: number[]) => Promise<void>
+  /** The other host settings of the row scenarios (C-106, C-107). */
+  host?: {
+    keyed?: boolean
+    live?: boolean
+    virtual?: boolean
+    selectable?: boolean
+    subtable?: boolean
+    forward?: boolean
+    clockCells?: boolean
+    shallowRows?: boolean
+  }
+  /**
+   * Exact `updated` counts of named components the action must give: a
+   * scenario that expects no row to be drawn proves the body ran.
+   */
+  updated?: Record<string, number>
+  /** Runs on the mounted table before counting starts. */
+  prepare?: (api: MeasureApi) => Promise<void>
+  act: (applied: number[], api: MeasureApi) => Promise<void>
 }
 
 const sortButton = (field: string) =>
@@ -179,6 +213,7 @@ const sortButton = (field: string) =>
 
 const once = async (scenario: Scenario): Promise<Run> => {
   const applied: number[] = []
+  let api: MeasureApi | null = null
   const mount = () =>
     render(MeasureHost as never, {
       props: {
@@ -191,7 +226,11 @@ const once = async (scenario: Scenario): Promise<Run> => {
         applied,
         reorderable: scenario.reorderable ?? false,
         flash: scenario.flash ?? false,
-        grouped: scenario.grouped ?? false
+        grouped: scenario.grouped ?? false,
+        ...scenario.host,
+        api: (given: MeasureApi) => {
+          api = given
+        }
       } as never
     })
 
@@ -206,10 +245,14 @@ const once = async (scenario: Scenario): Promise<Run> => {
     return finish(applied, started)
   }
   await frame()
+  if (scenario.prepare) {
+    await scenario.prepare(api!)
+    await frame()
+  }
   reset()
   counting = true
   const actStarted = performance.now()
-  await scenario.act(applied)
+  await scenario.act(applied, api!)
   await expect.poll(() => applied.length).toBe(scenario.expectedUpdates)
   await frame()
   counting = false
@@ -237,11 +280,16 @@ const measure = async (scenario: Scenario): Promise<ScenarioResult> => {
     expect(run.queryUpdates).toBe(runs[0].queryUpdates)
   }
   const { rows, queryUpdates, counts: first, libraryUpdates: lib } = runs[0]
+  for (const [name, count] of Object.entries(scenario.updated ?? {})) {
+    expect(first.updates[name] ?? 0, `${scenario.name}: ${name}`).toBe(count)
+  }
   return {
     rows,
     queryUpdates,
     counts: first,
     libraryUpdates: lib,
+    rowUpdates: first.updates[ROW] ?? 0,
+    rowMounts: first.mounts[ROW] ?? 0,
     timings: {
       applyMs: round(median(runs.map(run => run.applyMs))),
       scenarioMs: round(median(runs.map(run => run.scenarioMs)))
@@ -380,8 +428,244 @@ const scenarios: Scenario[] = [
     flash: true,
     grouped: true,
     act: () => liveChanges(6)
+  },
+  // ---- the data row component (C-106, C-107, ADR 0017) ---------------------
+  {
+    // 200 rows with `rowKey`: one row replaced by a new object. One row is
+    // drawn again; the body renders once to find out which.
+    name: 'replace-one',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true },
+    updated: { 'table-body': 1, TableRow: 1 },
+    act: async (_, api) => {
+      api.replaceAt(10)
+      await frame()
+      expectAge(10, 130)
+    }
+  },
+  {
+    // The same with the rows in a `shallowRef`: the table gets the plain
+    // row objects instead of their reactive proxies.
+    name: 'replace-one-shallow',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, shallowRows: true },
+    updated: { 'table-body': 1, TableRow: 1 },
+    act: async (_, api) => {
+      api.replaceAt(10)
+      await frame()
+      expectAge(10, 130)
+    }
+  },
+  {
+    // A new array that holds the same row objects in the same order.
+    name: 'same-objects',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true },
+    updated: { 'table-body': 1 },
+    act: async (_, api) => {
+      api.sameObjects()
+      await frame()
+    }
+  },
+  {
+    // `flash` with `rowsUpdate="live"`: row 50 replaced, a frame later row
+    // 120. The first row, still flashing, is not drawn again by the second.
+    name: 'replace-flash',
+    pageSize: 200,
+    expectedUpdates: 0,
+    flash: true,
+    host: { live: true },
+    act: async (_, api) => {
+      api.replaceAt(50)
+      await frame()
+      api.replaceAt(120)
+      await frame()
+      expectMarked(2)
+    }
+  },
+  {
+    // The same with the rows grouped in runs of 13; no group key changes.
+    name: 'replace-group',
+    pageSize: 200,
+    expectedUpdates: 0,
+    flash: true,
+    grouped: true,
+    host: { live: true },
+    act: async (_, api) => {
+      api.replaceAt(50)
+      await frame()
+      api.replaceAt(120)
+      await frame()
+      expectMarked(2)
+    }
+  },
+  {
+    // `virtual` in a 400px box: a drawn row replaced.
+    name: 'replace-virtual',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, virtual: true },
+    act: async (_, api) => {
+      api.replaceAt(3)
+      await frame()
+      expectAge(3, 123)
+    }
+  },
+  {
+    // `virtual`: a row outside the window replaced. Nothing is drawn again.
+    name: 'replace-offscreen',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, virtual: true },
+    updated: { 'table-body': 1 },
+    act: async (_, api) => {
+      api.replaceAt(150)
+      await frame()
+    }
+  },
+  {
+    // `virtual`: scrolled by 600px. The rows that came into view mount;
+    // the rows that stay are not drawn again.
+    name: 'scroll',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, virtual: true },
+    act: async (_, api) => {
+      await scrollBy(api, 600)
+    }
+  },
+  {
+    // The Task Monitor's setup: slots forwarded by a wrapper with a
+    // `v-for`, `virtual`, `flash` and `groupBy`. Scrolled first (not
+    // counted), then a row mounted by the scroll is replaced.
+    name: 'scroll-replace',
+    pageSize: 200,
+    expectedUpdates: 0,
+    flash: true,
+    grouped: true,
+    host: { live: true, virtual: true, forward: true },
+    prepare: async api => {
+      await scrollBy(api, 1200)
+    },
+    act: async (_, api) => {
+      const index = Math.max(...drawnIndexes()) - 2
+      api.replaceAt(index)
+      await frame()
+      expectMarked(1)
+    }
+  },
+  {
+    // `v-model:selection`: one row's checkbox.
+    name: 'select-one',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, selectable: true },
+    act: async () => {
+      await userEvent.click(rowControl(5, '.qt-select-row'))
+      await frame()
+    }
+  },
+  {
+    // `hasSubtable`: one row expanded.
+    name: 'expand-one',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, subtable: true },
+    act: async () => {
+      await userEvent.click(rowControl(5, '.qt-expand'))
+      await frame()
+    }
+  },
+  {
+    // The same with `virtual`: the drawn rows below the expanded one move
+    // their `aria-rowindex` (the subtable row counts) and are drawn again.
+    name: 'expand-one-virtual',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, subtable: true, virtual: true },
+    act: async () => {
+      await userEvent.click(rowControl(2, '.qt-expand'))
+      await frame()
+      await frame()
+    }
+  },
+  {
+    // A state of the page that the table does not read renders the wrapper
+    // that forwards the slots, so `QueryTable` and the body render. No row
+    // is drawn again.
+    name: 'owner-render',
+    pageSize: 200,
+    expectedUpdates: 0,
+    host: { keyed: true, forward: true },
+    updated: { MeasureWrapper: 1, QueryTable: 1, 'table-body': 1 },
+    act: async (_, api) => {
+      api.ownState()
+      await frame()
+    }
+  },
+  {
+    // 100 rows, a `cell-age` slot that reads `clock` in rows 0 to 4: the
+    // clock changes three times. Only those five rows are drawn again.
+    name: 'clock',
+    pageSize: 100,
+    expectedUpdates: 0,
+    host: { keyed: true, clockCells: true },
+    act: async (_, api) => {
+      for (let i = 0; i < 3; i++) {
+        api.tick()
+        await frame()
+      }
+    }
   }
 ]
+
+/** Data rows drawn in the body, by `data-row-index`. */
+const drawnIndexes = () =>
+  [...document.querySelectorAll<HTMLElement>('tbody > tr[data-row-index]')].map(
+    tr => Number(tr.dataset.rowIndex)
+  )
+
+const rowControl = (index: number, selector: string) => {
+  const control = document.querySelector<HTMLElement>(
+    `tbody > tr[data-row-index="${index}"] ${selector}`
+  )
+  if (!control) {
+    throw new Error(`no ${selector} in row ${index}`)
+  }
+  return control
+}
+
+const scrollBy = async (api: MeasureApi, top: number) => {
+  const box = api.box()
+  if (!box) {
+    throw new Error('no scroll box')
+  }
+  box.scrollTop += top
+  box.dispatchEvent(new Event('scroll'))
+  for (let i = 0; i < 4; i++) {
+    await frame()
+  }
+}
+
+/** The replaced row shows its new age. */
+const expectAge = (index: number, age: number) => {
+  const cell = document.querySelector(
+    `tbody > tr[data-row-index="${index}"] td[data-field="age"]`
+  )
+  if (cell?.textContent?.trim() !== String(age)) {
+    throw new Error(`row ${index} shows ${cell?.textContent}, not ${age}`)
+  }
+}
+
+const expectMarked = (count: number) => {
+  const marked = document.querySelectorAll('tbody [data-flash]').length
+  if (marked !== count) {
+    throw new Error(`expected ${count} flashing cells, saw ${marked}`)
+  }
+}
 
 async function liveChanges(flashing: number) {
   const change = document.querySelector<HTMLElement>('.live-change')

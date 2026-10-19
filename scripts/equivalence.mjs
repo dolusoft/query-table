@@ -178,7 +178,15 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/grouped-rows.browser.spec.ts > C-105 Grouping off and DOM contract of 3.9 [own]',
   'tests/contract/browser/grouped-scroll-body.browser.spec.ts',
   'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, light theme',
-  'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, dark theme'
+  'tests/contract/browser/accessibility.browser.spec.ts > C-103 accessibility scan (axe) of grouped rows, dark theme',
+  // 3.11 (C-106, C-107, ADR 0017): the row component. These tests assert
+  // fewer cell slot calls than 3.10 makes (it draws every row again); the
+  // DOM tests of the same file (C-108) compare.
+  'tests/contract/browser/row-render.browser.spec.ts > C-106 A row is drawn again only for its own inputs [own]',
+  'tests/contract/browser/row-render.browser.spec.ts > C-107 A cell slot is called again with its row only [own]',
+  // 3.10 patches the row's vnode hooks as attributes once `flash` turns on
+  // after the mount, which adds a `vnode-*` listener to every row (C-108).
+  'tests/contract/browser/row-markup.browser.spec.ts > C-108 Row component and DOM contract of 3.11 [own] with flash on the table adds no listener to a row or a cell'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

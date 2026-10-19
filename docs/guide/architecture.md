@@ -20,7 +20,7 @@ The playground sits on top of all three and is never part of a package.
 - **Core.** The behavior that makes the table worth using, as TanStack plugins, so it works without our component ([plugin guide](tanstack-plugins.md)).
 - **Vue.** The component and the composable. `QueryTable` is built on `useQueryTable()` and holds no state logic of its own. (Until frontendx decides on its shadcn table, frontendx uses `QueryTable` only; a lint rule there holds the fence, ADR 0005.)
 
-A new package is opened only when it has a different dependency set or a different consumer. The three are versioned together; 3.0.0 was their first release and 3.10.0 is the current minor ([ADR 0002](../decisions/0002-three-packages.md), [ADR 0006](../decisions/0006-release-3.md)).
+A new package is opened only when it has a different dependency set or a different consumer. The three are versioned together; 3.0.0 was their first release and 3.11.0 is the current minor ([ADR 0002](../decisions/0002-three-packages.md), [ADR 0006](../decisions/0006-release-3.md)).
 
 ### Dependency direction
 
@@ -86,6 +86,8 @@ At the time of writing, for `3.1.0` (gzip). Measured is the output of `pnpm meas
 | `core`           | 17,639 B | 18,442 B | 18,500 B |
 
 Most of the core figure is TanStack itself (the stock features the fixture uses). The 2.2.12 component, for comparison, costs 10,815 B. The trade is stated plainly in [ADR 0001](../decisions/0001-tanstack-v9.md): the gain is not less code, it is a TanStack-native path for consumers and a way to extend the table with features. Run `pnpm check:package-size` to check the budgets and `pnpm measure:package-size` to measure.
+
+The render budget, `scripts/render-budget.json` (`pnpm check:renders`, see `CONTRIBUTING.md`), counts work instead of bytes. Counts are deterministic, so most of its numbers are exact rather than a measurement plus 5%: per scenario, the `update:query` events the consumer applies (`queryUpdates`), the data rows drawn again (`rowUpdates`) and mounted (`rowMounts`), the `TableRow` components of 3.11 ([ADR 0017](../decisions/0017-row-component.md)), and a ceiling on the re-renders of the table's other components (`maxLibraryUpdates`; `TableRow` is left out of it). The 3.11 scenarios replace one or two row objects with `rowKey` (`replace-one`, `replace-one-shallow`, `replace-flash`, `replace-group`, `replace-virtual`, `replace-offscreen`, `scroll-replace`), pass the same objects again (`same-objects`), select or expand one row (`select-one`, `expand-one`, `expand-one-virtual`), render the page around a wrapper that forwards its slots (`owner-render`) and tick a clock that five cells read (`clock`). A change that moves these numbers changes the budget in the same pull request, with its reason in the budget's `note`.
 
 ## Decision records
 

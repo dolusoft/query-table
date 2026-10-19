@@ -244,6 +244,17 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-92', 'C-93', 'C-94', 'C-95']
   },
   {
+    id: 'row-rendering',
+    title: 'Live rows',
+    summary:
+      'Every data row is a component of its own: a row is drawn again only when its row object, its own state or something every row draws changes. Keep unchanged rows by reference and give a changed row a new object; the reactive reads of a cell slot belong to its row, so a clock redraws only the rows whose slot reads it.',
+    example: 'RowRendering',
+    api: {
+      props: ['rowKey', 'flash', 'rowsUpdate', 'groupBy', 'virtual']
+    },
+    rules: ['C-106', 'C-107', 'C-108']
+  },
+  {
     id: 'footer-rows',
     title: 'Footer rows',
     summary:
