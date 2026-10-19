@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-vue'
-import { defineComponent, h, shallowRef, type Slots } from 'vue'
+import { defineComponent, h, shallowRef, type VNode } from 'vue'
 
 import QueryTable, {
   type Column,
@@ -92,11 +92,11 @@ const Host = defineComponent({
       rows: () => rows.value
     })
     return () => {
-      const slots: Slots = {
+      const slots: Record<string, (props: never) => VNode> = {
         subtable: ({ row }: { row: Row }) => h('i', `detail ${row.id}`)
       }
       for (const name of names.value) {
-        slots[name] = cellSlot(name.slice('cell-'.length)) as never
+        slots[name] = cellSlot(name.slice('cell-'.length))
       }
       const table = h(
         QueryTable as never,
@@ -115,7 +115,7 @@ const Host = defineComponent({
             pinning.value = next
           }
         },
-        slots
+        slots as never
       )
       return h(
         'div',
@@ -210,7 +210,9 @@ describe('C-108 Row component and DOM contract of 3.11 [own]', () => {
       tableProps: fullProps(),
       slotNames: ['cell-name']
     })
-    take('selection, subtable open and closed, a row that cannot expand, right panel, kind, pinned columns, a cell slot')
+    take(
+      'selection, subtable open and closed, a row that cannot expand, right panel, kind, pinned columns, a cell slot'
+    )
     cleanup()
 
     await mount({
@@ -299,7 +301,9 @@ describe('C-108 Row component and DOM contract of 3.11 [own]', () => {
     api.setRows(
       api
         .rows()
-        .map(row => (row.id === 2 ? { ...row, name: 'Replaced', age: 77 } : row))
+        .map(row =>
+          row.id === 2 ? { ...row, name: 'Replaced', age: 77 } : row
+        )
     )
     await frames(2)
     take('a row replaced')
@@ -344,6 +348,8 @@ describe('C-108 Row component and DOM contract of 3.11 [own]', () => {
  */
 async function listenersOnRowsAndCells(extra: Record<string, unknown>) {
   const targets: string[] = []
+  // Called back with `apply` and the element as `this`, then restored.
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const original = EventTarget.prototype.addEventListener
   EventTarget.prototype.addEventListener = function (
     this: EventTarget,

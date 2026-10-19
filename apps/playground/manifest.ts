@@ -241,7 +241,9 @@ export const pages: PlaygroundPage[] = [
       props: ['flash', 'rowsUpdate', 'rowKey', 'virtual', 'rowPinning'],
       types: ['FlashOptions', 'RowsUpdate']
     },
-    rules: ['C-92', 'C-93', 'C-94', 'C-95']
+    // C-106 to C-108 (ADR 0017) stay here until the `row-rendering` page
+    // of the ADR takes them.
+    rules: ['C-92', 'C-93', 'C-94', 'C-95', 'C-106', 'C-107', 'C-108']
   },
   {
     id: 'footer-rows',

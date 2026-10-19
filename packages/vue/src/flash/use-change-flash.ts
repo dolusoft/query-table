@@ -17,8 +17,7 @@ import {
   type ComponentInternalInstance,
   type EffectScope,
   type Ref,
-  type ShallowRef,
-  type VNode
+  type ShallowRef
 } from 'vue'
 
 import type { FlashOptions, Query } from '../contract'
@@ -55,22 +54,34 @@ export interface ChangeFlashOptions<T extends object> {
   table: Readonly<Ref<HTMLTableElement | null>>
 }
 
-/** What the body draws with: the marks and the binding hook (C-94). */
-export interface FlashView<T> {
-  /** `data-flash` of a data row. */
-  row: (row: T, index: number) => FlashPhase | undefined
-  /** `data-flash` of a data cell. */
-  cell: (row: T, index: number, field: string) => FlashPhase | undefined
-  /**
-   * `onVnodeBeforeMount` and `onVnodeUpdated` of a data row: writes
-   * `--qt-flash-elapsed` on the row and on its cells that were bound after
-   * their flash began, or whose flash changed.
-   */
-  bind: (vnode: VNode) => void
+/**
+ * The live marks of one row (K311-6): the `data-flash` value of the row and
+ * of each cell with a mark of its own.
+ */
+export interface RowFlash {
+  row?: FlashPhase
+  cells?: Readonly<Record<string, FlashPhase>>
 }
 
-interface Controller<T> {
-  view: FlashView<T>
+/** What the body draws with: the marks and the binding hook (C-94). */
+export interface FlashView {
+  /**
+   * The live marks of the row of `key`, or `undefined`. Read in the body's
+   * render: a change of the marks draws the body again. Equal marks give the
+   * same object, so a row whose marks did not change is not drawn again.
+   */
+  of: (key: RowChangeKey) => RowFlash | undefined
+  /**
+   * Called with a data row's `tr` after it is mounted or patched: writes
+   * `--qt-flash-elapsed` on the row and on its cells that were bound after
+   * their flash began, or whose flash changed. Reads nothing reactive: it
+   * runs while the row's render effect is active.
+   */
+  bind: (el: HTMLElement, key: RowChangeKey) => void
+}
+
+interface Controller {
+  view: FlashView
   /** Remove the elapsed times written on the body (`flash` turned off). */
   unbind: () => void
   update: () => void
@@ -100,9 +111,7 @@ const keyReader =
  * marks, reads the duration, runs the one timer and binds the elapsed time.
  * It lives in the effect scope it is created in and goes with it.
  */
-const startFlash = <T extends object>(
-  o: ChangeFlashOptions<T>
-): Controller<T> => {
+const startFlash = <T extends object>(o: ChangeFlashOptions<T>): Controller => {
   let rowKey = o.rowKey()
   let keyOf = rowKey === undefined ? null : keyReader(rowKey)
   const newTracker = () =>
@@ -173,6 +182,7 @@ const startFlash = <T extends object>(
         // Only what has ended goes; the next wake takes the rest.
         const { nearest, dropped } = marks.prune(performance.now())
         if (dropped) {
+          pruneDrawn()
           version.value++
         }
         if (nearest !== Infinity) {
@@ -187,8 +197,25 @@ const startFlash = <T extends object>(
   const resetAll = () => {
     tracker.clear()
     stopClock()
+    drawn.clear()
     if (marks.clear()) {
       version.value++
+    }
+  }
+
+  // ---- the marks each row is drawn with (K311-6) ----------------------------
+
+  /**
+   * The last `RowFlash` of each row key, with the live marks it was made
+   * from as a text of copied numbers (field, phase, generation): never the
+   * `Mark` objects, which a restart updates in place. Pruned with the marks.
+   */
+  const drawn = new Map<RowChangeKey, { live: string; flash: RowFlash }>()
+  const pruneDrawn = () => {
+    for (const key of drawn.keys()) {
+      if (!marks.get(key)) {
+        drawn.delete(key)
+      }
     }
   }
 
@@ -279,6 +306,7 @@ const startFlash = <T extends object>(
       }
     }
     if (changed) {
+      pruneDrawn()
       version.value++
     }
   }
@@ -287,12 +315,6 @@ const startFlash = <T extends object>(
   update()
 
   // ---- drawing (C-94) ------------------------------------------------------
-
-  const rowMarksOf = (row: T, index: number) => {
-    // Read by the render: a change of the marks draws the body again.
-    void version.value
-    return keyOf === null ? undefined : marks.get(keyOf(row, index))
-  }
 
   /** The generation bound to an element, and the elapsed value written on it. */
   const bound = new WeakMap<Element, number>()
@@ -339,24 +361,53 @@ const startFlash = <T extends object>(
     written.set(el, value)
   }
 
-  const view: FlashView<T> = {
-    // The clock is read only for an element that has a mark.
-    row: (row, index) => {
-      const mark = rowMarksOf(row, index)?.row
-      return mark ? live(mark, performance.now())?.phase : undefined
+  const view: FlashView = {
+    of: key => {
+      // Read by the body's render: a change of the marks draws it again.
+      void version.value
+      const rowMarks = keyOf === null ? undefined : marks.get(key)
+      if (!rowMarks) {
+        drawn.delete(key)
+        return undefined
+      }
+      // The clock is read only for a row that has a mark.
+      const now = performance.now()
+      const rowMark = live(rowMarks.row, now)
+      let text = rowMark ? `${rowMark.phase}${rowMark.gen}` : ''
+      rowMarks.cells?.forEach((mark, field) => {
+        if (live(mark, now)) {
+          text += `|${field}:${mark.phase}${mark.gen}`
+        }
+      })
+      if (text === '') {
+        drawn.delete(key)
+        return undefined
+      }
+      const last = drawn.get(key)
+      if (last?.live === text) {
+        return last.flash
+      }
+      const flash: RowFlash = {}
+      if (rowMark) {
+        flash.row = rowMark.phase
+      }
+      let cells: Record<string, FlashPhase> | undefined
+      rowMarks.cells?.forEach((mark, field) => {
+        if (live(mark, now)) {
+          ;(cells ??= {})[field] = mark.phase
+        }
+      })
+      if (cells) {
+        flash.cells = cells
+      }
+      drawn.set(key, { live: text, flash })
+      return flash
     },
-    cell: (row, index, field) => {
-      const mark = rowMarksOf(row, index)?.cells?.get(field)
-      return mark ? live(mark, performance.now())?.phase : undefined
-    },
-    bind: vnode => {
-      const tr = vnode.el as HTMLTableRowElement | null
-      const index = Number(vnode.props?.['data-row-index'])
-      const row = o.rows()[index]
-      if (!tr || row === undefined || keyOf === null) {
+    bind: (tr, key) => {
+      if (keyOf === null) {
         return
       }
-      const rowMarks = marks.get(keyOf(row, index))
+      const rowMarks = marks.get(key)
       // Most rows have no flash and nothing bound: nothing to do.
       if (!rowMarks && !boundRows.has(tr)) {
         return
@@ -450,12 +501,12 @@ const startFlash = <T extends object>(
  */
 export const useChangeFlash = <T extends object>(
   o: ChangeFlashOptions<T>
-): ShallowRef<FlashView<T> | null> => {
-  const view = shallowRef<FlashView<T> | null>(null)
+): ShallowRef<FlashView | null> => {
+  const view = shallowRef<FlashView | null>(null)
   const instance = getCurrentInstance() as ComponentInternalInstance
   const owner = getCurrentScope() as EffectScope
   let scope: EffectScope | null = null
-  let controller: Controller<T> | null = null
+  let controller: Controller | null = null
   let hooked = false
   let mounted = false
 

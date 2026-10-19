@@ -11,7 +11,9 @@
 //
 // `--check` (`pnpm check:renders`, CI) also compares the counts with
 // scripts/render-budget.json and fails when a scenario applies a different
-// number of updates or re-renders the table more often than the budget.
+// number of updates, re-renders the table more often than the budget, or
+// draws again (`rowUpdates`) or mounts (`rowMounts`) a different number of
+// data rows than the budget says (ADR 0017).
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -82,14 +84,18 @@ const result = {
 writeFileSync(resultFile, JSON.stringify(result, null, 2) + '\n')
 
 console.log(`\n[measure:renders] ${resultFile}`)
-console.log('scenario  rows  queryUpdates  libraryUpdates  applyMs  scenarioMs')
+console.log(
+  'scenario            rows  queryUpdates  libraryUpdates  rowUpdates  rowMounts  applyMs  scenarioMs'
+)
 for (const [name, s] of Object.entries(scenarios)) {
   console.log(
     [
-      name.padEnd(9),
-      String(s.rows).padStart(4),
+      name.padEnd(18),
+      String(s.rows).padStart(5),
       String(s.queryUpdates).padStart(13),
       String(s.libraryUpdates).padStart(15),
+      String(s.rowUpdates).padStart(11),
+      String(s.rowMounts).padStart(10),
       String(s.timings.applyMs).padStart(8),
       String(s.timings.scenarioMs).padStart(11)
     ].join(' ')
@@ -120,6 +126,18 @@ if (process.argv.includes('--check')) {
       failures.push(
         `${name}: ${measured.libraryUpdates} library re-renders, budget ${limit.maxLibraryUpdates}`
       )
+    }
+    // The data rows drawn again and mounted (ADR 0017) are exact, like the
+    // query updates: a row drawn again for nothing is a regression, and one
+    // fewer means the scenario no longer measures what it says.
+    for (const field of ['rowUpdates', 'rowMounts']) {
+      if (!Number.isInteger(limit[field])) {
+        failures.push(`${name}: the budget has no \`${field}\``)
+      } else if (measured[field] !== limit[field]) {
+        failures.push(
+          `${name}: ${measured[field]} ${field}, expected ${limit[field]}`
+        )
+      }
     }
   }
   if (failures.length > 0) {

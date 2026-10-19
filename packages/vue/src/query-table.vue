@@ -359,6 +359,13 @@ const headerSlotNames = () =>
     )
     .sort()
     .join(' ')
+// The `cell-<field>` slots the rows call, as one string: the body's cells
+// change only when the set changes (K311-3).
+const cellSlotNames = () =>
+  Object.keys(rawSlots)
+    .filter(name => name.startsWith('cell-'))
+    .sort()
+    .join(' ')
 
 const exposed: QueryTableExpose = {
   collapseAll: expansion.collapseAll,
@@ -443,6 +450,7 @@ defineExpose(exposed)
               :pin-row="state.rowPinning.pin"
               :loading="loading"
               :entries="entries"
+              :slot-names="cellSlotNames()"
               :column-count="columnCount"
               :has-subtable="hasSubtable"
               :has-right-panel="hasRightPanel"
@@ -538,6 +546,7 @@ defineExpose(exposed)
           :pin-row="state.rowPinning.pin"
           :loading="loading"
           :entries="entries"
+          :slot-names="cellSlotNames()"
           :column-count="columnCount"
           :has-subtable="hasSubtable"
           :has-right-panel="hasRightPanel"

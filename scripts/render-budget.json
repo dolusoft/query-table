@@ -1,14 +1,137 @@
 {
-  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.9 (filter fell from 50 to 26 when the header got stable slots). v3 (PR-C) raised filter from 26 to 34: the filter draft is table state in the TanStack store (`filterInputFeature`), so each of the six keys re-renders the four filter cells (6 x 4 = 24) and Enter adds 10. The root and the header read `canClearAll` through a computed, which keeps them out of that (an earlier measurement, 44, had `QueryTable` and `table-body` re-render with every key too); the other scenarios are unchanged. 3.1 (PR-D1) added move: ArrowRight on a reorder handle with the order written back re-renders the root, the header and the body once and the four filter cells once each (they read the column layout), 7 in all. 3.3 (change flash, ADR 0011) added live and flash: two live changes under the same query over 100 rows (a row at the top, three rows with a new age), once with `flash` off and once on. Both are 14: the root, the body, the header and the four filter cells once per change, so a flash re-renders nothing more; the marks are written by the body's own render of the new rows. The other scenarios are unchanged. 3.8 (grouped rows, ADR 0016) added grouped: the flash scenario with `groupBy` (eight group rows), also 14; the group rows are drawn by the body's own render and add no re-render. Raise it only on purpose, in the change that adds the renders.",
+  "note": "Budget for `pnpm check:renders` (CI). Per scenario of tests/measure/renders.measure.ts: the exact number of `update:query` events the consumer applies, and the most re-renders the table's own components may do (`libraryUpdates`). Counts are deterministic, so the budget equals the count measured in 2.2.9 (filter fell from 50 to 26 when the header got stable slots). v3 (PR-C) raised filter from 26 to 34: the filter draft is table state in the TanStack store (`filterInputFeature`), so each of the six keys re-renders the four filter cells (6 x 4 = 24) and Enter adds 10. The root and the header read `canClearAll` through a computed, which keeps them out of that (an earlier measurement, 44, had `QueryTable` and `table-body` re-render with every key too); the other scenarios are unchanged. 3.1 (PR-D1) added move: ArrowRight on a reorder handle with the order written back re-renders the root, the header and the body once and the four filter cells once each (they read the column layout), 7 in all. 3.3 (change flash, ADR 0011) added live and flash: two live changes under the same query over 100 rows (a row at the top, three rows with a new age), once with `flash` off and once on. Both are 14: the root, the body, the header and the four filter cells once per change, so a flash re-renders nothing more; the marks are written by the body's own render of the new rows. The other scenarios are unchanged. 3.8 (grouped rows, ADR 0016) added grouped: the flash scenario with `groupBy` (eight group rows), also 14; the group rows are drawn by the body's own render and add no re-render. Raise it only on purpose, in the change that adds the renders. 3.11 (row component, ADR 0017) added `rowUpdates` and `rowMounts`: the exact number of data rows drawn again and mounted (`TableRow` updates and mounts), checked like `queryUpdates`. `TableRow` is left out of `libraryUpdates`, so the limits keep their meaning. `mount` mounts every row (1000) and `scroll` the 16 rows that come into view. `filter`, `sort` and `page` draw other rows (111, 1000, 300: their rows are keyed by index); each change of `live`, `flash` and `grouped` inserts a row at the top, mounts it and moves every row's `data-row-index`, so every row is drawn again (2 x 100 + 1); `move` draws every row with the moved column. New scenarios, with `rowKey`: one replaced row object draws one row (`replace-one`, `replace-virtual`, and `scroll-replace` through a wrapper that forwards its slots, with `virtual`, `flash` and `groupBy`); two replaced rows draw two (`replace-flash`, `replace-group`: the first, still flashing, is skipped); a new array of the same objects, a row outside the window and a render of the page around a forwarding wrapper draw none (`same-objects`, `replace-offscreen`, `owner-render`); a selected or expanded row draws itself (`select-one`, `expand-one`), and with `virtual` an expanded row also moves the `aria-rowindex` of the drawn rows below it (`expand-one-virtual`, 16). `clock`: a `cell-age` slot reads a clock in five rows and the clock changes three times; 3.10 rendered the body three times with all 100 rows (3 library re-renders), 3.11 draws those five rows three times (15) and re-renders no component of the table (0).",
   "scenarios": {
-    "mount": { "queryUpdates": 0, "maxLibraryUpdates": 0 },
-    "filter": { "queryUpdates": 1, "maxLibraryUpdates": 34 },
-    "sort": { "queryUpdates": 2, "maxLibraryUpdates": 18 },
-    "loading": { "queryUpdates": 0, "maxLibraryUpdates": 4 },
-    "page": { "queryUpdates": 3, "maxLibraryUpdates": 24 },
-    "move": { "queryUpdates": 0, "maxLibraryUpdates": 7 },
-    "live": { "queryUpdates": 0, "maxLibraryUpdates": 14 },
-    "flash": { "queryUpdates": 0, "maxLibraryUpdates": 14 },
-    "grouped": { "queryUpdates": 0, "maxLibraryUpdates": 14 }
+    "mount": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 0,
+      "rowUpdates": 0,
+      "rowMounts": 1000
+    },
+    "filter": {
+      "queryUpdates": 1,
+      "maxLibraryUpdates": 34,
+      "rowUpdates": 111,
+      "rowMounts": 0
+    },
+    "sort": {
+      "queryUpdates": 2,
+      "maxLibraryUpdates": 18,
+      "rowUpdates": 1000,
+      "rowMounts": 0
+    },
+    "loading": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 4,
+      "rowUpdates": 0,
+      "rowMounts": 0
+    },
+    "page": {
+      "queryUpdates": 3,
+      "maxLibraryUpdates": 24,
+      "rowUpdates": 300,
+      "rowMounts": 0
+    },
+    "move": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 7,
+      "rowUpdates": 100,
+      "rowMounts": 0
+    },
+    "live": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 14,
+      "rowUpdates": 201,
+      "rowMounts": 2
+    },
+    "flash": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 14,
+      "rowUpdates": 201,
+      "rowMounts": 2
+    },
+    "grouped": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 14,
+      "rowUpdates": 201,
+      "rowMounts": 2
+    },
+    "replace-one": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 7,
+      "rowUpdates": 1,
+      "rowMounts": 0
+    },
+    "same-objects": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 7,
+      "rowUpdates": 0,
+      "rowMounts": 0
+    },
+    "replace-flash": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 14,
+      "rowUpdates": 2,
+      "rowMounts": 0
+    },
+    "replace-group": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 14,
+      "rowUpdates": 2,
+      "rowMounts": 0
+    },
+    "replace-virtual": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 7,
+      "rowUpdates": 1,
+      "rowMounts": 0
+    },
+    "replace-offscreen": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 7,
+      "rowUpdates": 0,
+      "rowMounts": 0
+    },
+    "scroll": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 2,
+      "rowUpdates": 0,
+      "rowMounts": 16
+    },
+    "scroll-replace": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 8,
+      "rowUpdates": 1,
+      "rowMounts": 0
+    },
+    "select-one": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 7,
+      "rowUpdates": 1,
+      "rowMounts": 0
+    },
+    "expand-one": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 1,
+      "rowUpdates": 1,
+      "rowMounts": 0
+    },
+    "expand-one-virtual": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 6,
+      "rowUpdates": 16,
+      "rowMounts": 0
+    },
+    "owner-render": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 8,
+      "rowUpdates": 0,
+      "rowMounts": 0
+    },
+    "clock": {
+      "queryUpdates": 0,
+      "maxLibraryUpdates": 0,
+      "rowUpdates": 15,
+      "rowMounts": 0
+    }
   }
 }
