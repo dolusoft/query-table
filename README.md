@@ -84,6 +84,45 @@ For large tables set `table-layout: fixed` and give every column a `width` (`Col
 
 Measured on a table of about 11,000 rows (77,852 DOM nodes), a forced layout after a filter input changed took 82-152 ms with `auto` and 31 ms with `fixed`. Without widths a `fixed` table splits the width evenly, so set them. Small tables, a few dozen rows, do not need any of this.
 
+### Live rows
+
+Each data row is drawn by a component of its own. A row is drawn again only when its row object, its own state (selection, expansion, flash) or an input every row draws (the columns, the set of cell slots) changes; a new `rows` array alone draws no row. For a live list that gets the whole list again on every message, keep the objects of unchanged rows by reference and give a changed row a new object:
+
+```ts
+rows.value = rows.value.map(row => (row.id === changed.id ? changed : row))
+```
+
+A new object for every row (`rows.value.map(row => ({ ...row }))`) draws every row again. A plain row object changed in place is not seen: give it a new object instead.
+
+- A cell slot's reactive reads belong to its row: a duration cell that reads a ticking clock draws only the rows whose slot reads it. A reactive value that every row's slot reads draws every row, so read the clock in the cells that show it.
+- A row inserted above others, a group split above them, or with `virtual` a row expanded above them, draws the rows below it again: their `data-row-index` and `aria-rowindex` change.
+- In the Vue DevTools tree every drawn data row is a `TableRow` under the table body; its render count shows which rows a change drew.
+
+What a cell slot can rely on (C-107): it is called again when its row is drawn again, or when a reactive value it read in its last call changes, and not when the component that owns the slot renders. In 3.10 every render of the table called every cell slot, so this is a change of 3.11 (a compatibility exception). Slot props (`row`, `cellValue`, ...), reactive state read inside the slot (refs, `computed`s, stores, injected refs, the locale behind `t()`) and `$attrs` stay current. Until its row is drawn again, a slot keeps showing:
+
+- a value that is not reactive: `Date.now()`, a plain variable, a plain row object changed in place;
+- a value captured from an outer scope (`v-for`, an outer `v-slot`), and a reactive object that the outer scope replaces with another one;
+- the definition it had, when two `<template #cell-x>` of the same name are switched with `v-if`/`v-else`;
+- event handlers and directive bindings that close over such values.
+
+To migrate, read the state inside the slot, keep a condition inside one slot, and read the current state in a handler:
+
+```vue
+<!-- Stays as it was until the row is drawn again -->
+<template v-if="mode === 'short'" #cell-owner="{ row }">{{ row.owner }}</template>
+<template v-else #cell-owner="{ row }">{{ ownerName }}: {{ row.owner }}</template>
+<template #cell-actions="{ row }"><button @click="assign(row, account)">Assign</button></template>
+
+<!-- Current -->
+<template #cell-owner="{ row }">
+  <template v-if="mode === 'short'">{{ row.owner }}</template>
+  <template v-else>{{ store.ownerName }}: {{ row.owner }}</template>
+</template>
+<template #cell-actions="{ row }"><button @click="assignToCurrent(row)">Assign</button></template>
+```
+
+Here `ownerName` and `account` stand for values captured from an outer scope (a `v-for` variable, an outer slot's prop), `store.ownerName` for reactive state, and `assignToCurrent(row)` reads the current account when it is clicked.
+
 ## Pinned columns
 
 Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their declared order, and when any column is pinned to the left the utility cells (expand, select) are pinned too. The table marks every pinned `th` and `td` with `data-pinned` and writes its left offset, measured from the rendered widths, as the inline custom property `--qt-pin-left`. `pinned: 'right'` draws a column last instead, marks its cells `data-pinned="right"` and writes `--qt-pin-right`, the measured widths of the right-pinned cells after it. Making the cells stick is your CSS; one rule serves both sides, since the unset property leaves the other side `auto` (an LTR layout is assumed):

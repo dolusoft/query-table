@@ -165,6 +165,17 @@ async function onQuery(next: TableQuery, reason: QueryChangeReason) {
 - The table writes no CSS. The skin sets the length with `--qt-flash-duration` on `.qt-datatable` (`0ms` under `prefers-reduced-motion` turns it off) and draws the animation, keyed on the `data-flash` value, with `animation-delay: calc(var(--qt-flash-elapsed, 0ms) * -1)` so a row that scrolls back into the window flashes only for the time it has left (C-94).
 - Off, the table runs nothing but one watcher of `flash` and the DOM is unchanged (C-95).
 
+## Live rows
+
+```ts
+rows.value = rows.value.map(row => (row.id === changed.id ? changed : row))
+```
+
+- Every data row is its own component (`TableRow` in Vue DevTools). It is drawn again only when its row object, its own state (selection, expansion, flash) or an input every row draws (columns, the set of cell slots) changes (C-106). Keep unchanged rows by reference; a new object for every row draws every row; a plain row changed in place is not seen.
+- A cell slot's reactive reads belong to its row: a clock read in a few cells draws those rows. A value every row's slot reads draws every row; read the clock only in the cells that show it.
+- A row inserted above, or with `virtual` expanded above, draws the rows below (their `data-row-index`, `aria-rowindex` change).
+- A cell slot is called again only when its row is drawn again or a reactive value it read changes, not when its owner renders (C-107; a change of 3.11). Slot props, reactive state read inside the slot and `$attrs` stay current. Stale until the row redraws: non-reactive values (`Date.now()`, plain variables, a plain row mutated in place), values captured from an outer scope (`v-for`, an outer `v-slot`), a `v-if`/`v-else` switch between two `<template #cell-x>` of one name, and handlers closing over such values. Fix: read state inside the slot, keep the condition inside one slot, read current state in the handler at click time.
+
 ## useQueryTable()
 
 `QueryTable` is a thin view over it. Options take refs or getters; `onQueryChange(query, reason)` is called once per user action.

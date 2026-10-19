@@ -1,13 +1,16 @@
 <script setup lang="ts" generic="T extends object">
-import { onBeforeUpdate, useSlots } from 'vue'
+import { computed, onBeforeUpdate, useSlots } from 'vue'
 
 import { useCellView } from '../body/use-cell-view'
+import { sideOf } from '../columns/column-layout'
 import type {
   CellContextMenuPayload,
   LoadMoreSlotProps,
   TableLabels,
   TableSlots
 } from '../contract'
+import { tableRow, type RowCell, type RowUtilities } from './table-row'
+import { columnTypeOf } from '../core/column'
 import type { FlashView } from '../flash/use-change-flash'
 import { pinAttrs, utilityKey } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
@@ -32,6 +35,12 @@ const props = defineProps<{
   loading: boolean
   /** The columns to draw, hidden ones already dropped. */
   entries: ColumnEntry[]
+  /**
+   * The `cell-<field>` slots the consumer gives, one per line (a field name
+   * may hold a space, never a line break). Slots are not reactive; a slot
+   * that comes or goes changes this text (K311-3).
+   */
+  slotNames: string
   /** Cells a full-width row (subtable, empty) spans. */
   columnCount: number
   hasSubtable: boolean
@@ -60,7 +69,7 @@ const props = defineProps<{
    * With `flash`: the marks and the binding hook (C-94), else `null`; off,
    * the body draws what it drew in 3.2 and calls nothing per row (C-95).
    */
-  flash: FlashView<T> | null
+  flash: FlashView | null
   /** With `scrollBody`: the ARIA table roles of C-102. */
   roles?: boolean
 }>()
@@ -71,18 +80,19 @@ const emit = defineEmits<{
 }>()
 
 const slots = defineSlots<TableSlots<T>>()
+/**
+ * The body's slots object: the same object for the life of the body, whose
+ * functions Vue replaces before each render. Every row gets it as a prop and
+ * calls the latest `cell-<field>` function when it renders (K311-3).
+ */
 const rawSlots = useSlots()
 
-const { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu } =
-  useCellView<T>({
-    slots: rawSlots,
-    rows: () => props.rows,
-    entries: () => props.entries,
-    offsets: () => props.offsets,
-    listening: () => props.hasContextMenuListener(),
-    onContextMenu: payload => emit('cellContextMenu', payload),
-    pinRow: (row, index, position) => props.pinRow(row, index, position)
-  })
+const { onContextMenu } = useCellView<T>({
+  rows: () => props.rows,
+  entries: () => props.entries,
+  listening: () => props.hasContextMenuListener(),
+  onContextMenu: payload => emit('cellContextMenu', payload)
+})
 
 /** `role` of a row and of a cell with `scrollBody` (C-102). */
 const rowRole = () => (props.roles ? 'row' : undefined)
@@ -94,17 +104,83 @@ const spanAttrs = () => ({
   'aria-colspan': props.roles ? props.columnCount : undefined
 })
 
-// Utilities are pinned only with a left-pinned column (C-46, C-71).
-const utilityAttrs = (utility: string) => ({
-  role: cellRole(),
-  ...pinAttrs(
-    props.hasPinned ? 'left' : false,
-    props.offsets[utilityKey(utility)]
-  )
+/*
+  The cells every row draws, kept by value (K311-2): `entries` is a new
+  array of new entries after a change of `rows` (TanStack's column getters
+  read its options), so a cell keeps its object while its column (by
+  identity), place, type, pinning, slot and role are the same, and the
+  array is the previous one when every cell is. A row compares this array
+  by identity.
+*/
+const cells = computed<readonly RowCell[]>(previous => {
+  const names = new Set(props.slotNames.split('\n'))
+  const role = cellRole()
+  let same = previous?.length === props.entries.length
+  const next = props.entries.map((entry, i): RowCell => {
+    const { column } = entry
+    const field = column.field
+    // The type of a column, read once per change of the columns (C-82).
+    const type = columnTypeOf(column)
+    const side = sideOf(column)
+    const offset = props.offsets[field]
+    const slot = names.has(`cell-${field}`) ? `cell-${field}` : null
+    const old = previous?.[i]
+    if (
+      old &&
+      old.column === column &&
+      old.type === type &&
+      old.side === side &&
+      old.offset === offset &&
+      old.slot === slot &&
+      old.role === role
+    ) {
+      return old
+    }
+    same = false
+    return {
+      field,
+      column,
+      type,
+      side,
+      offset,
+      role,
+      slot,
+      attrs: {
+        role,
+        'data-field': field,
+        'data-type': type,
+        ...pinAttrs(side, offset)
+      }
+    }
+  })
+  return same && previous ? previous : next
 })
-const rightPanelAttrs = () => utilityAttrs('right-panel')
-const expandAttrs = () => utilityAttrs('subtable')
-const selectAttrs = () => utilityAttrs('select')
+
+// Utilities are pinned only with a left-pinned column (C-46, C-71); kept by
+// value like the cells.
+const utilities = computed<RowUtilities>(previous => {
+  const role = cellRole()
+  const side = props.hasPinned ? 'left' : false
+  const offsetOf = (utility: string) => props.offsets[utilityKey(utility)]
+  const signature = [
+    role,
+    side,
+    props.hasRightPanel && `p${offsetOf('right-panel')}`,
+    props.hasSubtable && `e${offsetOf('subtable')}`,
+    props.hasSelection && `s${offsetOf('select')}`
+  ].join('|')
+  if (previous?.signature === signature) {
+    return previous
+  }
+  const attrs = (on: boolean, utility: string) =>
+    on ? { role, ...pinAttrs(side, offsetOf(utility)) } : null
+  return {
+    panel: attrs(props.hasRightPanel, 'right-panel'),
+    expand: attrs(props.hasSubtable, 'subtable'),
+    select: attrs(props.hasSelection, 'select'),
+    signature
+  }
+})
 
 const isSpacer = (item: BodyItem<T>): item is SpacerRow => 'spacer' in item
 const isGroup = (item: BodyItem<T>): item is GroupRow<T> => 'group' in item
@@ -122,12 +198,13 @@ const nextIndex = (aria: number | undefined) =>
   aria === undefined ? undefined : aria + 1
 
 /*
-  Snapshot expansion once per body render (not a live computed). The main `tr`
-  props are evaluated before cell slots; a consumer slot that writes reactive
-  state mid-render can clear TanStack's `expanded` atom before the subtable
-  `v-if` runs — chevron flips, detail row never mounts. A computed would
-  re-read the cleared atom; this map is filled on first use in the render and
-  kept until the next update.
+  Snapshot expansion once per body render (not a live computed). A row's
+  `expanded` prop is computed before the subtable `v-if`, and the `group`
+  and `subtable` slots run in this render: a consumer slot that writes
+  reactive state mid-render can clear TanStack's `expanded` atom before the
+  subtable `v-if` runs — chevron flips, detail row never mounts. A computed
+  would re-read the cleared atom; this map is filled on first use in the
+  render and kept until the next update (K311-7).
 */
 let expandedSnapshot: Map<string, boolean> | null = null
 onBeforeUpdate(() => {
@@ -163,6 +240,9 @@ const isRowExpanded = (item: BodyItem<T>) => {
       Flat `template v-for` children (no nested `<template v-else>` Fragment).
       A nested Fragment left the subtable `tr` vnode created but not inserted
       into `tbody` — chevron flipped, detail row never appeared in the DOM.
+      A data row is one `TableRow` (ADR 0017): every prop is a value, so Vue
+      skips a row whose values did not change (C-106). No children and no
+      directive on it: either would update every row on every render.
     -->
     <template v-for="item in bodyRows" :key="itemKey(item)">
       <tr
@@ -196,109 +276,37 @@ const isRowExpanded = (item: BodyItem<T>) => {
           >
         </th>
       </tr>
-      <tr
+      <table-row
         v-else
-        :role="rowRole()"
-        :data-row-index="item.index"
-        :aria-rowindex="item.aria"
-        :data-pinned-row="item.pinned || undefined"
-        :data-row-kind="kindOf(item)"
-        :data-expanded="isRowExpanded(item) ? '' : undefined"
-        :data-selected="
-          hasSelection && isSelected(item.row, item.index) ? '' : undefined
+        :row="item.row"
+        :row-key="keyOf(item.row, item.index)"
+        :index="item.index"
+        :aria="item.aria"
+        :pinned="item.pinned"
+        :kind="kindOf(item)"
+        :selected="hasSelection && isSelected(item.row, item.index)"
+        :expanded="isRowExpanded(item)"
+        :expandable="hasSubtable && canExpand(item.row, item.index)"
+        :flash="flash ? flash.of(keyOf(item.row, item.index)) : undefined"
+        :cells="cells"
+        :utilities="utilities"
+        :label-panel="labels.openRightPanel"
+        :label-expand="labels.expandRow"
+        :label-select="labels.selectRow"
+        :roles="roles"
+        :slots="rawSlots"
+        :flash-bind="flash ? flash.bind : undefined"
+        :pin-row="
+          pinRow as (
+            row: object,
+            index: number,
+            position: 'top' | 'bottom' | false
+          ) => void
         "
-        :data-flash="flash ? flash.row(item.row, item.index) : undefined"
-        :onVnodeBeforeMount="flash ? flash.bind : undefined"
-        :onVnodeUpdated="flash ? flash.bind : undefined"
-      >
-        <td v-if="hasRightPanel" v-bind="rightPanelAttrs()">
-          <button
-            type="button"
-            class="qt-right-panel-button"
-            :aria-label="labels.openRightPanel"
-            @click.stop="emit('rowRightPanelClick', item.row)"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-        </td>
-        <td v-if="hasSubtable" v-bind="expandAttrs()">
-          <button
-            v-if="canExpand(item.row, item.index)"
-            type="button"
-            class="qt-expand"
-            :aria-expanded="isRowExpanded(item)"
-            :aria-label="labels.expandRow"
-            @click="toggle(item.row, item.index)"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <polyline v-if="isRowExpanded(item)" points="6 9 12 15 18 9" />
-              <polyline v-else points="9 6 15 12 9 18" />
-            </svg>
-          </button>
-        </td>
-        <td v-if="hasSelection" v-bind="selectAttrs()">
-          <input
-            type="checkbox"
-            class="qt-select-row"
-            :aria-label="labels.selectRow"
-            :checked="isSelected(item.row, item.index)"
-            @change="toggleSelected(item.row, item.index)"
-          />
-        </td>
-        <template v-for="entry in entries" :key="entry.column.field">
-          <td
-            v-if="hasCellSlot(entry.column)"
-            :role="cellRole()"
-            v-bind="cellAttrs(entry)"
-            :data-flash="
-              flash
-                ? flash.cell(item.row, item.index, entry.column.field)
-                : undefined
-            "
-          >
-            <slot
-              :name="`cell-${entry.column.field}`"
-              v-bind="
-                slotProps(item.row, entry.column, item.index, item.pinned)
-              "
-            />
-          </td>
-          <td
-            v-else
-            :role="cellRole()"
-            v-bind="cellAttrs(entry)"
-            :data-flash="
-              flash
-                ? flash.cell(item.row, item.index, entry.column.field)
-                : undefined
-            "
-          >
-            {{ cellText(item.row, entry.column) }}
-          </td>
-        </template>
-      </tr>
+        @toggle="toggle(item.row, item.index)"
+        @toggle-selected="toggleSelected(item.row, item.index)"
+        @right-panel="emit('rowRightPanelClick', item.row)"
+      />
       <tr
         v-if="isRow(item) && isRowExpanded(item)"
         class="qt-subtable-row"

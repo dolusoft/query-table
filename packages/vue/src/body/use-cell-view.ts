@@ -1,55 +1,22 @@
-import { computed, type Slots } from 'vue'
-
-import { sideOf } from '../columns/column-layout'
-import type { CellContextMenuPayload, CellSlotProps, Column } from '../contract'
-import { columnTypeOf, valueAt } from '../core/column'
-import { pinAttrs } from '../pin/pin'
+import type { CellContextMenuPayload } from '../contract'
+import { valueAt } from '../core/column'
 import type { ColumnEntry } from '../use-query-table'
 
 export interface CellViewOptions<T extends object> {
-  /** The slots the body received: `cell-<field>` is looked up. */
-  slots: Slots
   /** The rows of the body, to find the one a context menu event belongs to. */
   rows: () => T[]
   /** The drawn columns, to find the one a context menu event belongs to. */
   entries: () => ColumnEntry[]
-  /** `--qt-pin-left` or `--qt-pin-right` of each pinned cell, by key (C-47, C-71). */
-  offsets: () => Readonly<Record<string, number>>
   /** Someone listens to `cellContextMenu`; without one the menu is left alone. */
   listening: () => boolean
   onContextMenu: (payload: CellContextMenuPayload<T>) => void
-  /** Pin a row or unpin it (C-74). */
-  pinRow: (row: T, index: number, position: 'top' | 'bottom' | false) => void
 }
 
 /**
- * What a body cell shows: its text, its attributes, the props for a
- * `cell-<field>` slot and the context menu event (C-27, C-28, C-30).
+ * The context menu event of the body cells (C-28). What a cell shows is
+ * drawn by its row (`parts/table-row.ts`).
  */
 export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
-  /** Text of a cell, whole: the table never cuts it. */
-  const cellText = (row: T, column: Column) =>
-    // A cell value may be any type; its string form is what the table shows.
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    String(valueAt(row, column.field) ?? '')
-
-  // The type of each drawn column, read once per change of the columns
-  // instead of once per body cell (C-82).
-  const types = computed(
-    () =>
-      new Map(
-        options
-          .entries()
-          .map(entry => [entry.column.field, columnTypeOf(entry.column)])
-      )
-  )
-
-  const cellAttrs = (entry: ColumnEntry) => ({
-    'data-field': entry.column.field,
-    'data-type': types.value.get(entry.column.field),
-    ...pinAttrs(sideOf(entry.column), options.offsets()[entry.column.field])
-  })
-
   /**
    * One listener on the `tbody` serves every cell (C-28): a listener per cell
    * would be a new closure per cell on every render. The cell is the nearest
@@ -93,22 +60,5 @@ export const useCellView = <T extends object>(options: CellViewOptions<T>) => {
     })
   }
 
-  const hasCellSlot = (column: Column) =>
-    !!options.slots[`cell-${column.field}`]
-
-  const slotProps = (
-    row: T,
-    column: Column,
-    rowIndex: number,
-    rowPinned: CellSlotProps<T>['rowPinned']
-  ): CellSlotProps<T> => ({
-    row,
-    rowIndex,
-    column,
-    cellValue: valueAt(row, column.field),
-    rowPinned,
-    pinRow: position => options.pinRow(row, rowIndex, position)
-  })
-
-  return { cellText, cellAttrs, hasCellSlot, slotProps, onContextMenu }
+  return { onContextMenu }
 }

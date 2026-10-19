@@ -586,3 +586,21 @@ Source: own
 With `groupBy` absent the body is the one of 3.7: no group row, no extra measure, and the DOM is the one C-40, C-72, C-91 and C-95 check. With `groupBy` the rendered DOM still uses only the classes, attributes and inline styles of the DOM contract, and the entry the contract marks `addedBy: 'C-103'` (`qt-group-row`) is rendered by the state that adds it.
 
 Source: own
+
+### C-106 A row is drawn again only for its own inputs
+
+A data row is drawn again only when its row object (by reference) or its key, its index in `rows`, its `aria-rowindex`, its pinned position, its `rowKind`, whether it is selected, expanded or can expand, or its live flash marks change, or when an input every row draws changes: the drawn columns (order, type, pinning and its offsets), which `cell-<field>` slots exist, the utility columns, the three row labels, `scrollBody`, and `flash` turned on or off. Its index and `aria-rowindex` change when a row is added or removed above it, when a group run above it splits or merges, and with `virtual` when a row above it expands or collapses; it is then drawn again. A new `rows` array that holds the same row objects in the same order draws no row again and mounts none. A `cell-<field>` slot of a row that is not drawn again is not called. Group rows, spacers and the subtable row are drawn by the body, as in 3.10.
+
+Source: own
+
+### C-107 A cell slot is called again with its row only
+
+A `cell-<field>` slot runs in the render of its row: a reactive value it read during its last call draws that row again, and no other row and not the body. A cell slot is called again only then or when its row is drawn again (C-106); a render of the component that gives the slot does not call it. So a value the slot shows that is neither in its slot props nor read reactively inside the slot (a non-reactive value, a value or object captured from an outer `v-for` or `v-slot` scope, a choice between two same-name slot definitions made outside the slot) is not refreshed until the row is drawn again, and handlers in the slot keep the values they captured. The `group` and `subtable` slots run in the body's render.
+
+Source: own
+
+### C-108 Row component and DOM contract of 3.11
+
+The body's markup is the one of 3.10 for every state and every transition: the same elements, attributes, text and comment placeholders. The table adds no listener to a row or a cell, with `flash` on too; `contextmenu`, `focusin` and `focusout` stay on the `tbody` (C-28, C-86).
+
+Source: own

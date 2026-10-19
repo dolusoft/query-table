@@ -22,5 +22,6 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0014](0014-automatic-column-widths.md)     | Automatic column widths (3.7)                                                   | Accepted |
 | [0015](0015-scrolling-body.md)              | A scrolling body under a fixed header (3.8)                                     | Accepted |
 | [0016](0016-grouped-rows.md)                | Grouped rows and the sticky group header (3.9)                                  | Accepted |
+| [0017](0017-row-component.md)               | One component per data row (3.11)                                               | Accepted |
 
-Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014, K38-n in ADR 0015, K39-n in ADR 0016.
+Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014, K38-n in ADR 0015, K39-n in ADR 0016, K311-n in ADR 0017.

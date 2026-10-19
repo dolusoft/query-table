@@ -43,6 +43,7 @@ const groups = [
       'row-kind',
       'row-pinning',
       'grouped-rows',
+      'row-rendering',
       'footer-rows'
     ]
   },
