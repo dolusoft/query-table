@@ -39,6 +39,25 @@ const scroll = (element: HTMLElement, left: number) => {
   element.dispatchEvent(new Event('scroll'))
 }
 
+/** Gives `element` a rendered width, as a layout would. */
+const drawn = <E extends Element>(element: E, width: number) => {
+  element.getBoundingClientRect = () => ({ width }) as DOMRect
+  return element
+}
+
+/** A header table whose cells are drawn at `widths`. */
+const headTable = (widths: number[]) => {
+  const table = document.createElement('table')
+  const row = table.createTHead().insertRow()
+  for (const width of widths) {
+    row.append(drawn(document.createElement('th'), width))
+  }
+  return drawn(
+    table,
+    widths.reduce((sum, width) => sum + width, 0)
+  )
+}
+
 const setup = (options: { headMax?: number; layout?: string } = {}) => {
   const enabled = shallowRef(true)
   const head = shallowRef<HTMLElement | null>(box(options.headMax))
@@ -47,6 +66,10 @@ const setup = (options: { headMax?: number; layout?: string } = {}) => {
   const table = document.createElement('table')
   table.style.tableLayout = options.layout ?? 'fixed'
   document.body.append(table)
+  const header = shallowRef(headTable([100, 200]))
+  const colWidths = shallowRef<readonly (number | undefined)[]>([100, 200])
+  const rows = shallowRef<unknown[]>([])
+  drawn(table, 300)
   const wrapper = mount(
     defineComponent({
       setup() {
@@ -57,15 +80,21 @@ const setup = (options: { headMax?: number; layout?: string } = {}) => {
             body: body.value,
             foot: foot.value
           }),
-          bodyTable: () => table
+          headTable: () => header.value,
+          bodyTable: () => table,
+          colWidths: () => colWidths.value,
+          rows: () => rows.value
         })
         return () => h('div')
       }
     })
   )
   mounted.push(wrapper)
-  return { enabled, head, body, foot, wrapper }
+  return { enabled, head, body, foot, wrapper, table, header, colWidths, rows }
 }
+
+const layoutWarnings = (warn: { mock: { calls: unknown[][] } }) =>
+  warn.mock.calls.filter(call => String(call[0]).includes('automatic layout'))
 
 describe('C-101 Scrolling body: sideways together (unit) [own]', () => {
   it('sets the header and footer to the position of the body', async () => {
@@ -149,9 +178,55 @@ describe('C-101 Scrolling body: sideways together (unit) [own]', () => {
     await nextTick()
     foot.value = box()
     await nextTick()
-    expect(
-      warn.mock.calls.filter(call => String(call[0]).includes('table-layout'))
-    ).toHaveLength(1)
+    expect(layoutWarnings(warn)).toHaveLength(1)
+  })
+
+  it('warns once when rows widen the body table past the header: the layout is automatic whatever `tableLayout` reads', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { table, rows } = setup()
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
+    // `width: max-content`: a long cell widens its column and the table.
+    drawn(table, 340)
+    rows.value = [{ id: 1 }]
+    await nextTick()
+    rows.value = [{ id: 2 }]
+    await nextTick()
+    expect(layoutWarnings(warn)).toHaveLength(1)
+  })
+
+  it('does not take `col` widths not yet measured for a layout that ignores them', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { table, header, colWidths, rows } = setup()
+    await nextTick()
+    // Laid out with the stale `col` widths, the body is wider for a moment.
+    drawn(table, 400)
+    // A column was added: one `col` too few until the header is measured.
+    header.value = headTable([100, 200, 40])
+    rows.value = [{ id: 1 }]
+    await nextTick()
+    // Measured, but not the header cell's width yet.
+    colWidths.value = [100, 200, 60]
+    await nextTick()
+    colWidths.value = [100, 200, undefined]
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
+    // Measured: the body follows the header.
+    drawn(table, 340)
+    colWidths.value = [100, 200, 40]
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('checks nothing while off', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { enabled, table, rows } = setup()
+    await nextTick()
+    enabled.value = false
+    drawn(table, 400)
+    rows.value = [{ id: 1 }]
+    await nextTick()
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('does not warn with the fixed layout', async () => {

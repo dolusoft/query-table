@@ -311,10 +311,13 @@
 .qt-table-foot .qt-footer {
   background-color: transparent;
 }
-/* own: the columns take the `col` widths of the header cells (C-101). */
+/* own: the columns take the `col` widths of the header cells (C-101). The
+   fixed layout needs a definite width: under the page's `max-content` the
+   browser lays the table out automatically and its rows widen the columns. */
 .qt-table-body > .qt-table,
 .qt-table-foot > .qt-table {
   table-layout: fixed;
+  width: 100%;
 }
 /* own: the line between the scrolled rows and the totals. */
 .qt-table-foot {
