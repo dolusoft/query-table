@@ -188,7 +188,10 @@ useScrollBody({
     body: bodyWrap.value,
     foot: footWrap.value
   }),
-  bodyTable: () => bodyTableEl.value
+  headTable: () => tableEl.value,
+  bodyTable: () => bodyTableEl.value,
+  colWidths: () => colWidths.value,
+  rows: () => props.rows
 })
 const resize = useColumnResize({
   resizable: () => props.resizable,

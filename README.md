@@ -189,10 +189,11 @@ A sticky header scrolls inside the same container as the rows, so the vertical s
 .qt-table-body > .qt-table,
 .qt-table-foot > .qt-table {
   table-layout: fixed;
+  width: 100%; /* a definite width: see below */
 }
 ```
 
-The body and footer tables get a `col` per header cell with the header cell's measured `width`, so with the fixed layout their columns are as wide as the header's. The three scroll sideways together: the table keeps the header and footer at the body's `scrollLeft`, and the body at the header's when a filter input out of view takes the focus. Pinned columns, resizing, `virtual`, `scrollToIndex` and infinite scroll work as in one table; `.qt-table-body` is the scroll container a virtual body finds. For assistive technology the three tables are one: `.qt-table-responsive` has `role="table"` and the rows and cells carry ARIA roles (C-101, C-102). The DOM without `scroll-body` is the same as before.
+The body and footer tables get a `col` per header cell with the header cell's measured `width`, so with the fixed layout their columns are as wide as the header's. The fixed layout needs a width that is a length or a percentage: under `width: auto` or `max-content` (the `.qt-table` rule above, under Large tables) the browser lays the table out automatically whatever `table-layout` says, a cell wider than its column widens it, and the body drifts from the header as its rows change. With `width: 100%` a fixed table still grows to the sum of its columns. A development build warns once when the body is laid out automatically. The three scroll sideways together: the table keeps the header and footer at the body's `scrollLeft`, and the body at the header's when a filter input out of view takes the focus. Pinned columns, resizing, `virtual`, `scrollToIndex` and infinite scroll work as in one table; `.qt-table-body` is the scroll container a virtual body finds. For assistive technology the three tables are one: `.qt-table-responsive` has `role="table"` and the rows and cells carry ARIA roles (C-101, C-102). The DOM without `scroll-body` is the same as before.
 
 ## Resizing columns
 
