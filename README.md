@@ -333,6 +333,18 @@ const columns: Column[] = [
 
 Both bounds are inclusive and never swapped. `useLocalQuery` evaluates the three with `profile: 'tr-2'`; a server that follows [the semantics profile](docs/guide/semantics.md#profile-tr-2) does the same ([ADR 0020](docs/decisions/0020-null-and-range-conditions.md)).
 
+**TypeScript, from 3.13.** `FilterRule` is a union by `condition`, so code that builds `{ field, condition, value }` from a variable typed `FilterCondition` no longer type-checks: narrow the condition first, to `ValueCondition` or with a `switch` on it (an `if` with an early return for `IsNull` does not narrow the union). Runtime behavior does not change, and there is no second rule type next to it (ADR 0020, K313-1).
+
+```ts
+import type { FilterRule, ValueCondition } from '@dolusoft/query-table'
+
+const ruleOf = (field: string, condition: ValueCondition, value: string): FilterRule => ({
+  field,
+  condition,
+  value
+})
+```
+
 ## Filter text without a table
 
 `parseFilterInput(text, column, condition?)` returns the `FilterRule[]` the table emits for `text` typed into the filter of `column`: the same shortcuts (`*a*`, `a*`, `!a`, `a,b`) and the same coercion per column type. Text that gives no rule returns `[]`.

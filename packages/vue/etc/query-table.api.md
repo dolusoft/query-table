@@ -441,8 +441,8 @@ export interface TableLabels {
     expandRow: string;
     filterCondition: (condition: FilterCondition, type: ColumnType) => string;
     filterInput: (column: string) => string;
-    filterInputFrom: (column: string) => string;
-    filterInputTo: (column: string) => string;
+    filterInputFrom?: (column: string) => string;
+    filterInputTo?: (column: string) => string;
     filterOptions: (column: string) => string;
     moveColumn: (column: string) => string;
     openRightPanel: string;

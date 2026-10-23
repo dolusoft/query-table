@@ -25,7 +25,9 @@ import type {
  * blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`.
  * `IsNull` and `IsNotNull` give their one rule, without a `value`, whatever
  * the text (C-113). `Between` gives `[]`: its two bounds are two inputs, and
- * one text holds one (C-114).
+ * one text holds one (C-114). Any condition is taken: a column's
+ * `filterConditions` only drives the table's menu (C-112), so passing one of
+ * the 3.13 conditions here is an explicit opt-in.
  * Invalid input never throws. Pure: no framework, no DOM; the column is not
  * written.
  */

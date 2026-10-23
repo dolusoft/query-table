@@ -552,10 +552,17 @@ export interface TableLabels {
   openRightPanel: string
   /** Name of a filter input. Default `` name => `Filter ${name}` ``. */
   filterInput: (column: string) => string
-  /** Name of the lower bound input of a `Between` filter. Default `` name => `Filter ${name} from` ``. */
-  filterInputFrom: (column: string) => string
-  /** Name of the upper bound input of a `Between` filter. Default `` name => `Filter ${name} to` ``. */
-  filterInputTo: (column: string) => string
+  /**
+   * Name of the lower bound input of a `Between` filter. Default
+   * `` name => `Filter ${name} from` ``. Optional (3.13), so a complete
+   * `TableLabels` of 3.12 still type-checks.
+   */
+  filterInputFrom?: (column: string) => string
+  /**
+   * Name of the upper bound input of a `Between` filter. Default
+   * `` name => `Filter ${name} to` ``. Optional (3.13), like `filterInputFrom`.
+   */
+  filterInputTo?: (column: string) => string
   /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
@@ -759,7 +766,8 @@ export interface FilterMenuSlotProps {
    * Pick a condition. With a value typed the filter is applied; otherwise the
    * pick waits for a value. `null` clears the filter. `IsNull` and
    * `IsNotNull` apply at once (C-113); `Between` waits for both bounds
-   * (C-114).
+   * (C-114). Any condition is taken, also one outside `conditions`: the
+   * column's `filterConditions` only drives the menu (C-112).
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */
@@ -1684,7 +1692,7 @@ Source: own
 
 #### C-112 Column filterConditions
 
-`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date` and `datetime`, the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value or with two. A `bool` column has no menu (C-34), so the list changes nothing there.
+`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date` and `datetime`, the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value or with two. A `bool` column has no menu (C-34), so the list changes nothing there. The list only drives the menu: `setCondition` of the slot, `setFilterCondition` of the core and `parseFilterInput` take any condition, so calling them with one of the 3.13 conditions is an explicit opt-in.
 
 Source: own
 
@@ -1696,13 +1704,13 @@ Source: own
 
 #### C-114 Between in the filter row
 
-Under `Between` a column draws two `.qt-filter-input` elements in place of one, the lower bound first, named by `labels.filterInputFrom` and `labels.filterInputTo` (date inputs on a date column, number inputs on a number one, or the `filter-datetime` slot twice, C-35). Typing in either bound applies like typing does (C-09); once both bounds read, the column emits one `Between` rule, `value` the lower bound and `value2` the upper one, that replaces its rules. The bounds are not swapped. A range with one bound, or with a bound that does not read, is no change: the last applied rules stay and nothing is emitted. Emptying both bounds removes the rules of the column (C-11). Picking a one-value condition keeps the lower bound as the text and drops the upper one. An outside `Between` rule fills both inputs; its echo leaves them untouched (C-18). `value2` on a rule of any other condition is an extra property (C-60). The DOM contract gains no entry.
+Under `Between` a column draws two `.qt-filter-input` elements in place of one, the lower bound first, named by `labels.filterInputFrom` and `labels.filterInputTo` (date inputs on a date column, number inputs on a number one, or the `filter-datetime` slot twice, C-35). Typing in either bound applies like typing does (C-09); once both bounds read, the column emits one `Between` rule, `value` the lower bound and `value2` the upper one, that replaces its rules. The bounds are not swapped. A range with one bound, or with a bound that does not read, is no change: the last applied rules stay and nothing is emitted, and its `getFilterLabel()` has `count: 0`. Emptying both bounds is an empty input: it removes the rules of the column (C-11). Picking a one-value condition keeps the lower bound as the text and drops the upper one. An outside `Between` rule fills both inputs; its echo leaves them untouched (C-18). `value2` on a rule of any other condition is an extra property (C-60). The DOM contract gains no entry.
 
 Source: own
 
 #### C-115 Profile tr-2
 
-`applyQuery` with `profile: 'tr-2'` evaluates `IsNull` (true only on a missing, `undefined` or `null` value), `IsNotNull` (its complement) and `Between` (`GreaterThanOrEqual` the lower bound and `LessThanOrEqual` the upper one, on `number`, `integer`, `date` and `datetime`; nothing when the lower bound is above the upper one), as `semantics.md` writes them. Every other result is the one of `tr-1`. A value on a condition without one, or a bound missing or not a string, number or boolean, is `invalid-query` at `/filters/i/value` or `/filters/i/value2`, checked where `tr-1` checks its one value; a bound that does not fit the field is `invalid-value` at its own pointer. Under `tr-1` the three conditions keep their 3.12 errors.
+`applyQuery` with `profile: 'tr-2'` evaluates `IsNull` (true only on a missing, `undefined` or `null` value), `IsNotNull` (its complement) and `Between` (`GreaterThanOrEqual` the lower bound and `LessThanOrEqual` the upper one, on `number`, `integer`, `date` and `datetime`; nothing when the lower bound is above the upper one), as `semantics.md` writes them. A query whose rules use only the ten conditions of `tr-1` gives the result of `tr-1`; the three new conditions have their own error order, so a query with one of them can get another error than under `tr-1`. A value on a condition without one, or a bound missing or not a string, number or boolean, is `invalid-query` at `/filters/i/value` or `/filters/i/value2`, checked where `tr-1` checks its one value; a bound that does not fit the field is `invalid-value` at its own pointer. Under `tr-1` the three conditions keep their 3.12 errors.
 
 Source: own
 

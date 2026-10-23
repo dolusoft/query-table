@@ -444,10 +444,17 @@ export interface TableLabels {
   openRightPanel: string
   /** Name of a filter input. Default `` name => `Filter ${name}` ``. */
   filterInput: (column: string) => string
-  /** Name of the lower bound input of a `Between` filter. Default `` name => `Filter ${name} from` ``. */
-  filterInputFrom: (column: string) => string
-  /** Name of the upper bound input of a `Between` filter. Default `` name => `Filter ${name} to` ``. */
-  filterInputTo: (column: string) => string
+  /**
+   * Name of the lower bound input of a `Between` filter. Default
+   * `` name => `Filter ${name} from` ``. Optional (3.13), so a complete
+   * `TableLabels` of 3.12 still type-checks.
+   */
+  filterInputFrom?: (column: string) => string
+  /**
+   * Name of the upper bound input of a `Between` filter. Default
+   * `` name => `Filter ${name} to` ``. Optional (3.13), like `filterInputFrom`.
+   */
+  filterInputTo?: (column: string) => string
   /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
@@ -651,7 +658,8 @@ export interface FilterMenuSlotProps {
    * Pick a condition. With a value typed the filter is applied; otherwise the
    * pick waits for a value. `null` clears the filter. `IsNull` and
    * `IsNotNull` apply at once (C-113); `Between` waits for both bounds
-   * (C-114).
+   * (C-114). Any condition is taken, also one outside `conditions`: the
+   * column's `filterConditions` only drives the menu (C-112).
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */
