@@ -35,8 +35,27 @@ const dateTime = /^\d{4}-\d{2}-\d{2}[t ]/
 
 const matches = (row: object, rule: FilterRule): boolean => {
   const raw = valueOf(row, rule.field)
-  if (raw === undefined || raw === null) {
+  // Null is missing, `undefined` or `null`; `''` is a value (tr-2).
+  const missing = raw === undefined || raw === null
+  switch (rule.condition) {
+    case 'IsNull':
+      return missing
+    case 'IsNotNull':
+      return !missing
+  }
+  if (missing) {
     return false
+  }
+  if (rule.condition === 'Between') {
+    // Both bounds inclusive; a lower bound above the upper one keeps nothing.
+    return (
+      matches(row, { ...rule, condition: 'GreaterThanOrEqual' }) &&
+      matches(row, {
+        ...rule,
+        condition: 'LessThanOrEqual',
+        value: rule.value2
+      })
+    )
   }
   const expected = normalize(rule.value)
   const read = normalize(raw as FilterValue)

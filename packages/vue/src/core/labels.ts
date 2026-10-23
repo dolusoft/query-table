@@ -8,6 +8,8 @@ const defaultLabels: TableLabels = {
   expandRow: 'Expand row',
   openRightPanel: 'Open right panel',
   filterInput: column => `Filter ${column}`,
+  filterInputFrom: column => `Filter ${column} from`,
+  filterInputTo: column => `Filter ${column} to`,
   filterOptions: column => `Filter options for ${column}`,
   resizeColumn: column => `Resize ${column}`,
   moveColumn: column => `Move ${column}`,

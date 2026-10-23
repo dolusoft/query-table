@@ -1,10 +1,17 @@
 import { columnTypeOf } from './column-type'
 import { defaultConditionFor } from './conditions'
 import { hasShortcut, parseShortcuts, serializeFilterRules } from './shortcuts'
+import { conditionArity } from '../protocol/arity'
 import type {
+  ColumnType,
   FilterColumn,
   FilterCondition,
-  FilterRule
+  FilterRule,
+  FilterValue,
+  NoValueFilterRule,
+  RangeFilterRule,
+  ValueCondition,
+  ValueFilterRule
 } from '../protocol/types'
 
 /**
@@ -12,7 +19,10 @@ import type {
  * not part of the query: the query only changes when the draft is applied.
  */
 export interface Draft {
+  /** The typed text; with `Between`, the lower bound. */
   text: string
+  /** With `Between`, the typed upper bound. Absent otherwise. */
+  text2?: string
   /** Condition picked from the menu; `null` means the type default. */
   condition: FilterCondition | null
   /**
@@ -23,38 +33,112 @@ export interface Draft {
   multi?: number
 }
 
-/** The rules a draft parses to: condition and value, the field is the column's. */
-export type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>
+/** A rule without its `field`, kept per member so `condition` still picks the operands. */
+type WithoutField<R> = R extends FilterRule ? Omit<R, 'field'> : never
 
-/** The rules a draft stands for. */
-export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
-  const type = columnTypeOf(column)
-  const text = draft.text.trim()
+/**
+ * The rules a draft parses to: condition and operands, the field is the
+ * column's. Each entry is one member of `FilterRule` without `field`, so a
+ * `Between` entry has `value2` and an `IsNull` entry has no `value`.
+ */
+export type Parsed = Array<WithoutField<FilterRule>>
+
+/** One operand typed into an input of a column that is not text, or `null`. */
+const operandOf = (type: ColumnType, raw: string): FilterValue | null => {
+  const text = raw.trim()
   if (text === '') {
-    return []
+    return null
   }
-  const condition = draft.condition ?? defaultConditionFor(type)
   switch (type) {
-    case 'string':
-      return parseShortcuts(text, condition)
     case 'number': {
       const value = Number(text)
-      return Number.isFinite(value) ? [{ condition, value }] : []
+      return Number.isFinite(value) ? value : null
     }
     case 'integer': {
       // A whole number in the safe range only: `2.5` is no rule, and neither
       // is `2^53`, which a number cannot hold exactly (C-16).
       const value = Number(text)
-      return Number.isSafeInteger(value) ? [{ condition, value }] : []
+      return Number.isSafeInteger(value) ? value : null
     }
     case 'bool':
-      return text === 'true' || text === 'false'
-        ? [{ condition, value: text === 'true' }]
-        : []
+      return text === 'true' || text === 'false' ? text === 'true' : null
     default:
-      return [{ condition, value: text }]
+      return text
   }
 }
+
+/**
+ * The `Between` rule of two typed bounds, on a column that has an order
+ * (C-114): both bounds must read, or there is no rule. The bounds are never
+ * swapped.
+ */
+const parseRange = (type: ColumnType, draft: Draft): Parsed => {
+  if (type === 'string' || type === 'bool') {
+    return []
+  }
+  const value = operandOf(type, draft.text)
+  const value2 = operandOf(type, draft.text2 ?? '')
+  return value === null || value2 === null
+    ? []
+    : [{ condition: 'Between', value, value2 }]
+}
+
+/** The rules a draft stands for. */
+export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
+  const type = columnTypeOf(column)
+  // A condition without a value is a rule on its own, without text (C-113).
+  if (draft.condition !== null && conditionArity(draft.condition) === 0) {
+    return [{ condition: draft.condition } as WithoutField<NoValueFilterRule>]
+  }
+  if (draft.condition !== null && conditionArity(draft.condition) === 2) {
+    return parseRange(type, draft)
+  }
+  const text = draft.text.trim()
+  if (text === '') {
+    return []
+  }
+  const condition = (draft.condition ??
+    defaultConditionFor(type)) as ValueCondition
+  if (type === 'string') {
+    return parseShortcuts(text, condition) as WithoutField<ValueFilterRule>[]
+  }
+  const value = operandOf(type, text)
+  return value === null ? [] : [{ condition, value }]
+}
+
+/**
+ * The rule of `parsed` on `field`, with its keys in the order `field`,
+ * `condition`, `value`, `value2`, and only the keys its condition has: a rule
+ * without a value has no `value` key, not one that is `undefined`.
+ */
+const ruleOf = (
+  field: string,
+  parsed: WithoutField<FilterRule>
+): FilterRule => {
+  if ('value2' in parsed) {
+    const range: RangeFilterRule = {
+      field,
+      condition: parsed.condition,
+      value: parsed.value,
+      value2: parsed.value2
+    }
+    return range
+  }
+  if (parsed.value === undefined) {
+    return { field, condition: parsed.condition }
+  }
+  return { field, condition: parsed.condition, value: parsed.value }
+}
+
+/**
+ * The rules the table emits for `draft` in `column`: `parseDraft` with the
+ * column's `field` on each rule. New objects, no extra property.
+ */
+export const rulesFromDraft = (
+  column: FilterColumn,
+  draft: Draft
+): FilterRule[] =>
+  parseDraft(column, draft).map(parsed => ruleOf(column.field, parsed))
 
 /** Text that parses as itself: no operator, no comma, no outer spaces. */
 const isPlainText = (value: string) =>
@@ -71,10 +155,27 @@ export const draftFromRules = (
   if (rules.length === 0) {
     return { text: '', condition: null }
   }
+  const [first] = rules
+  const plain = rules.every(rule => conditionArity(rule.condition) === 1)
+  if (!plain) {
+    // A rule without a value or with two cannot be written as text: alone it
+    // is its condition (and its bounds), with others the count (C-42).
+    if (rules.length > 1) {
+      return { text: '', condition: first.condition, multi: rules.length }
+    }
+    if (first.condition === 'Between') {
+      return {
+        text: String(first.value),
+        text2: String(first.value2),
+        condition: first.condition
+      }
+    }
+    return { text: '', condition: first.condition }
+  }
   if (columnTypeOf(column) === 'string') {
     // A rule written without an operator needs its condition as the base.
-    const plain = rules.find(rule => !hasShortcut(rule.condition))
-    const base = plain?.condition ?? defaultConditionFor('string')
+    const base0 = rules.find(rule => !hasShortcut(rule.condition))
+    const base = base0?.condition ?? defaultConditionFor('string')
     // A rule of the base condition is written as plain text when the text
     // cannot be read as an operator; the others keep their shortcut.
     const text = rules
@@ -82,12 +183,11 @@ export const draftFromRules = (
         const value = String(rule.value)
         return rule.condition === base && isPlainText(value)
           ? value
-          : serializeFilterRules([rule])
+          : serializeFilterRules([rule as ValueFilterRule])
       })
       .join(',')
-    return { text, condition: plain?.condition ?? null }
+    return { text, condition: base0?.condition ?? null }
   }
-  const [first] = rules
   if (rules.length > 1) {
     // One input holds one value: show the count instead of dropping rules.
     return { text: '', condition: first.condition, multi: rules.length }
@@ -99,4 +199,6 @@ export const draftFromRules = (
 }
 
 export const hasContent = (draft: Draft) =>
-  draft.text.trim() !== '' || draft.condition !== null
+  draft.text.trim() !== '' ||
+  (draft.text2 ?? '').trim() !== '' ||
+  draft.condition !== null

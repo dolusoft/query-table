@@ -11,6 +11,7 @@
 // state.
 import {
   columnTypeOf,
+  conditionArity,
   defaultConditionFor,
   draftFromRules,
   draftHasContent,
@@ -20,6 +21,7 @@ import {
   type FilterRule,
   parseDraft,
   previewCondition,
+  rulesFromDraft,
   sameRules
 } from '@dolusoft/query-protocol'
 import {
@@ -30,7 +32,7 @@ import {
   type TableFeature
 } from '@tanstack/table-core'
 
-import type { FilterDrafts, FilterLabel } from './types'
+import type { FilterBound, FilterDrafts, FilterLabel } from './types'
 import {
   type AnyColumn,
   type AnyTable,
@@ -109,18 +111,19 @@ const cancel = (instance: Instance, id: string) => {
 
 /** The rules the draft of `column` stands for. */
 const parsedRules = (column: AnyColumn, draft: FilterDraft): FilterRule[] =>
-  parseDraft(filterColumnOf(column), draft).map(rule => ({
-    field: column.id,
-    condition: rule.condition,
-    value: rule.value
-  }))
+  rulesFromDraft(filterColumnOf(column), draft)
+
+/** The upper bound of a `Between` rule; any other rule has none. */
+const upperOf = (rule: FilterRule) =>
+  rule.condition === 'Between' ? rule.value2 : undefined
 
 /**
- * Whether two rule lists say the same by `field`, `condition` and `value`
- * alone. The rules a draft parses to carry no extra properties, so they are
- * compared with this: typing the text a rule already holds is no change and
- * must not drop the extra properties the consumer put on that rule (C-60).
- * Rules that come from the consumer on both sides use `sameRules`.
+ * Whether two rule lists say the same by `field`, `condition`, `value` and,
+ * on a `Between` rule, `value2` alone. The rules a draft parses to carry no
+ * extra properties, so they are compared with this: typing the text a rule
+ * already holds is no change and must not drop the extra properties the
+ * consumer put on that rule (C-60). Rules that come from the consumer on
+ * both sides use `sameRules`.
  */
 const sameMeaning = (a: readonly FilterRule[], b: readonly FilterRule[]) =>
   a.length === b.length &&
@@ -128,8 +131,19 @@ const sameMeaning = (a: readonly FilterRule[], b: readonly FilterRule[]) =>
     (rule, i) =>
       rule.field === b[i].field &&
       rule.condition === b[i].condition &&
-      rule.value === b[i].value
+      rule.value === b[i].value &&
+      upperOf(rule) === upperOf(b[i])
   )
+
+/**
+ * A `Between` draft with a bound typed whose two bounds do not both read yet
+ * (C-114): applying it changes nothing, so the last applied rules stay until
+ * it is complete. Both bounds blank is a blank input: it clears (C-11).
+ */
+const incompleteRange = (draft: FilterDraft, rules: readonly FilterRule[]) =>
+  draft.condition === 'Between' &&
+  rules.length === 0 &&
+  (draft.text.trim() !== '' || (draft.text2 ?? '').trim() !== '')
 
 /** Remembers `rules` as emitted for `id`; returns how to undo it. */
 const remember = (instance: Instance, id: string, rules: FilterRule[]) => {
@@ -183,8 +197,12 @@ const commit = (table: AnyTable, ids: readonly string[]): boolean => {
         // given inside the emit is already recognised (C-18).
         let next = old
         for (const column of columns) {
-          const rules = parsedRules(column, draftOf(table, column.id))
-          if (sameMeaning(rulesIn(next, column.id), rules)) {
+          const draft = draftOf(table, column.id)
+          const rules = parsedRules(column, draft)
+          if (
+            incompleteRange(draft, rules) ||
+            sameMeaning(rulesIn(next, column.id), rules)
+          ) {
             continue
           }
           changed = true
@@ -246,17 +264,27 @@ const flushAll = (table: AnyTable): boolean => {
   return instance ? commit(table, [...instance.timers.keys()]) : false
 }
 
-const setInput = (column: AnyColumn, text: string) => {
+const setInput = (column: AnyColumn, text: string, bound?: FilterBound) => {
   const { table } = column
   if (isDisposed(table)) {
     return
   }
-  setDraft(table, column.id, {
-    ...draftOf(table, column.id),
-    text,
-    multi: undefined
-  })
+  const draft = draftOf(table, column.id)
+  setDraft(
+    table,
+    column.id,
+    bound === 'upper'
+      ? { ...draft, text2: text, multi: undefined }
+      : { ...draft, text, multi: undefined }
+  )
   schedule(table, column.id)
+}
+
+/** `draft` without its upper bound: a condition with one value or none. */
+const withoutUpper = (draft: FilterDraft): FilterDraft => {
+  const rest = { ...draft }
+  delete rest.text2
+  return rest
 }
 
 const applyInput = (column: AnyColumn) => {
@@ -286,15 +314,26 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
     clearInput(column)
     return
   }
-  const draft = { ...draftOf(table, column.id) }
+  let draft = { ...draftOf(table, column.id) }
   if (draft.multi) {
     // Picking a condition is an explicit edit: the first rule's value
     // carries over, the other rules go.
     const first = rulesIn(shownFilters(table), column.id)[0]
-    draft.text = first ? String(first.value) : ''
+    draft.text = first?.value === undefined ? '' : String(first.value)
     draft.multi = undefined
   }
   draft.condition = condition
+  const arity = conditionArity(condition)
+  if (arity === 0) {
+    // No value to type: the text goes, and the rule applies now (C-113);
+    // the commit below cancels a pending text.
+    draft = withoutUpper({ ...draft, text: '' })
+  } else if (arity === 2) {
+    // The typed text is the lower bound; the upper one waits (C-114).
+    draft.text2 = draft.text2 ?? ''
+  } else if ('text2' in draft) {
+    draft = withoutUpper(draft)
+  }
   setDraft(table, column.id, draft)
   commit(table, [column.id])
 }
@@ -466,7 +505,8 @@ export const filterInputFeature: TableFeature = {
         fn: (column: AnyColumn) => draftOf(column.table, column.id)
       },
       column_setFilterInput: {
-        fn: (column: AnyColumn, text: string) => setInput(column, text)
+        fn: (column: AnyColumn, text: string, bound?: FilterBound) =>
+          setInput(column, text, bound)
       },
       column_applyFilterInput: {
         fn: (column: AnyColumn) => applyInput(column)

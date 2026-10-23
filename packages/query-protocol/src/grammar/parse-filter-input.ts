@@ -1,4 +1,4 @@
-import { parseDraft } from './draft'
+import { rulesFromDraft } from './draft'
 import type {
   FilterColumn,
   FilterCondition,
@@ -23,6 +23,9 @@ import type {
  * `condition` is the one picked in the filter menu; without it the column
  * type's default applies (`Contains` for text, `Equal` otherwise). Empty or
  * blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`.
+ * `IsNull` and `IsNotNull` give their one rule, without a `value`, whatever
+ * the text (C-113). `Between` gives `[]`: its two bounds are two inputs, and
+ * one text holds one (C-114).
  * Invalid input never throws. Pure: no framework, no DOM; the column is not
  * written.
  */
@@ -36,9 +39,5 @@ export function parseFilterInput(
   if (typeof text !== 'string') {
     return []
   }
-  return parseDraft(column, { text, condition }).map(rule => ({
-    field: column.field,
-    condition: rule.condition,
-    value: rule.value
-  }))
+  return rulesFromDraft(column, { text, condition })
 }

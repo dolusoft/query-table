@@ -5,9 +5,11 @@ import type {
   Column,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
-  FilterRule,
+  FilterValue,
   PaginationSlotProps,
-  ToolbarSlotProps
+  ToolbarSlotProps,
+  ValueCondition,
+  ValueFilterRule
 } from '@dolusoft/query-table'
 
 import {
@@ -43,9 +45,9 @@ const type = async (m: Mounted, field: string, text: string) =>
 
 const rule = (
   field: string,
-  condition: FilterRule['condition'],
-  value: FilterRule['value']
-): FilterRule => ({ field, condition, value })
+  condition: ValueCondition,
+  value: FilterValue
+): ValueFilterRule => ({ field, condition, value })
 
 // The clear-all button lives in the first utility column.
 const base = { filterable: true, hasRightPanel: true }

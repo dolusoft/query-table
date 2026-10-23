@@ -12,10 +12,11 @@ import {
   sameQuery,
   sameRules,
   searchOf,
+  type ValueFilterRule,
   withSearch
 } from '../src'
 
-const rule = (field: string, value: string): FilterRule => ({
+const rule = (field: string, value: string): ValueFilterRule => ({
   field,
   condition: 'Equal',
   value
@@ -178,5 +179,35 @@ describe('C-58 search', () => {
     const cleared = withSearch(pageQuery({ search: 'x' }), '')
     expect('search' in cleared).toBe(false)
     expect(searchOf(cleared)).toBe('')
+  })
+})
+
+describe('rules of ADR 0020: no value, or two', () => {
+  const between = (value2: number): FilterRule => ({
+    field: 'a',
+    condition: 'Between',
+    value: 1,
+    value2
+  })
+  const isNull: FilterRule = { field: 'a', condition: 'IsNull' }
+
+  it('sameRules compares the upper bound of Between', () => {
+    expect(sameRules([between(2)], [between(2)])).toBe(true)
+    expect(sameRules([between(2)], [between(3)])).toBe(false)
+  })
+
+  it('sameRules tells a rule without a value from one with a value', () => {
+    expect(sameRules([isNull], [{ field: 'a', condition: 'IsNull' }])).toBe(
+      true
+    )
+    expect(sameRules([isNull], [{ field: 'a', condition: 'IsNotNull' }])).toBe(
+      false
+    )
+  })
+
+  it('cloneQuery copies value2 and adds no value key', () => {
+    const copy = cloneQuery(pageQuery({ filters: [between(2), isNull] }))
+    expect(copy.filters).toEqual([between(2), isNull])
+    expect(Object.keys(copy.filters[1])).toEqual(['field', 'condition'])
   })
 })

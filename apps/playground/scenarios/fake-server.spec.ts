@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest'
 
-import type { FilterRule, TableQuery } from '@dolusoft/query-table'
+import type {
+  FilterRule,
+  FilterValue,
+  TableQuery,
+  ValueCondition,
+  ValueFilterRule
+} from '@dolusoft/query-table'
 
 import { cursorDemoPage, queryDemoRows, searchDemoRows } from './fake-server'
 
@@ -39,9 +45,9 @@ const query = (overrides: Partial<TableQuery> = {}): TableQuery => ({
 })
 const rule = (
   field: string,
-  condition: FilterRule['condition'],
-  value: FilterRule['value']
-): FilterRule => ({ field, condition, value })
+  condition: ValueCondition,
+  value: FilterValue
+): ValueFilterRule => ({ field, condition, value })
 const ids = (filters: FilterRule[]) =>
   queryDemoRows(rows, query({ filters })).rows.map(row => row.id)
 

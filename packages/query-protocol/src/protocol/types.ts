@@ -2,7 +2,9 @@ import type {
   columnTypes,
   cursorDirections,
   filterConditions,
+  noValueConditions,
   queryChangeReasons,
+  rangeConditions,
   sortDirections
 } from './constants'
 
@@ -18,25 +20,66 @@ export type FilterCondition = (typeof filterConditions)[number]
  */
 export type FilterValue = string | number | boolean
 
+/** A condition whose rule has neither `value` nor `value2` (`IsNull`, `IsNotNull`). */
+export type NoValueCondition = (typeof noValueConditions)[number]
+
+/** A condition whose rule has a lower `value` and an upper `value2` (`Between`). */
+export type RangeCondition = (typeof rangeConditions)[number]
+
+/** A condition whose rule has one `value`: every condition of 3.12. */
+export type ValueCondition = Exclude<
+  FilterCondition,
+  NoValueCondition | RangeCondition
+>
+
+/** A rule with one value: the rule of 3.12. */
+export interface ValueFilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: ValueCondition
+  /** A non-empty value. */
+  value: FilterValue
+}
+
+/** A `Between` rule: both bounds are inclusive and never swapped. */
+export interface RangeFilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: RangeCondition
+  /** The lower bound. */
+  value: FilterValue
+  /** The upper bound. */
+  value2: FilterValue
+}
+
+/**
+ * An `IsNull` or `IsNotNull` rule: no value. `value` is declared so that
+ * `rule.value` reads as `FilterValue | undefined` on any rule; the rule
+ * never carries the key.
+ */
+export interface NoValueFilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: NoValueCondition
+  value?: undefined
+}
+
 /**
  * One clean filter rule. Operator shortcuts the user types (`*`, `!`, `,`) are
- * parsed by the grammar and never appear here.
+ * parsed by the grammar and never appear here. The `condition` says how many
+ * values the rule has: none (`IsNull`, `IsNotNull`), two (`Between`, the
+ * lower `value` and the upper `value2`) or one (every other condition). A
+ * 3.12 rule is a valid rule.
  *
  * Several rules may share one `field` (the user typed `a,b`). They combine
  * with OR; when every rule of the field is negative (`NotEqual`,
  * `NotContains`) they combine with AND. Rules of different fields combine
  * with AND. The table does not evaluate rules, the server does.
  *
- * Properties besides these three are kept as they are: the table copies them
- * and never drops them.
+ * Properties besides `field`, `condition`, `value` and, on a `Between` rule,
+ * `value2` are kept as they are: the table copies them and never drops them.
  */
-export interface FilterRule {
-  /** Column `field` the rule applies to. */
-  field: string
-  condition: FilterCondition
-  /** A non-empty value. */
-  value: FilterValue
-}
+export type FilterRule = ValueFilterRule | RangeFilterRule | NoValueFilterRule
 
 export type SortDirection = (typeof sortDirections)[number]
 
