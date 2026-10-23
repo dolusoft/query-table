@@ -10,7 +10,7 @@
 //               left out of the comparison, so the first run and a re-run of
 //               the same tag are judged alike.
 //
-// Tags must be fetched first (`fetch-tags: true` of actions/checkout).
+// Tags must be fetched first (`fetch-depth: 0` of actions/checkout).
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'

@@ -15,7 +15,7 @@ Nothing stopped a pull request or a tag from carrying `4.0.0`, or from skipping 
 ## Consequences
 
 - A wrong version turns the pull request red, before the tag.
-- The tags must be fetched (`fetch-tags: true`) in both workflows.
+- The tags must be fetched (`fetch-depth: 0`) in both workflows.
 - Re-running the release of an older tag after a newer one exists fails ("not greater"); that is intended.
 
 ## Trade-off
