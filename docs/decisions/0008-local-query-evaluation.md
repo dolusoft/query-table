@@ -1,6 +1,6 @@
 # 0008 Local query evaluation as a data source
 
-Status: Accepted (2026-10-06)
+Status: Accepted (2026-10-06); the freeze of the reserved names for 3.x is superseded for the conditions `IsNull` and `IsNotNull` by [0020](0020-null-and-range-conditions.md), which evaluates them in the profile `tr-2` (`tr-1` keeps refusing them).
 
 ## Context
 

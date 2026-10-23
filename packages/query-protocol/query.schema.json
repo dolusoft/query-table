@@ -31,12 +31,19 @@
     },
     "FilterValue": {
       "description": "A string for text, date and datetime columns, a number for number and integer columns, a boolean for bool columns.",
-      "type": ["string", "number", "boolean"]
+      "type": [
+        "string",
+        "number",
+        "boolean"
+      ]
     },
     "FilterRule": {
       "type": "object",
       "description": "Rules of one field combine with OR, or with AND when all of them are negative (NotEqual, NotContains). Rules of different fields combine with AND. The condition says how many values a rule has: IsNull and IsNotNull none, Between two (value is the lower bound, value2 the upper one, both inclusive), every other condition one.",
-      "required": ["field", "condition"],
+      "required": [
+        "field",
+        "condition"
+      ],
       "properties": {
         "field": {
           "type": "string",
@@ -52,7 +59,10 @@
       "if": {
         "properties": {
           "condition": {
-            "enum": ["IsNull", "IsNotNull"]
+            "enum": [
+              "IsNull",
+              "IsNotNull"
+            ]
           }
         }
       },
@@ -60,10 +70,14 @@
         "not": {
           "anyOf": [
             {
-              "required": ["value"]
+              "required": [
+                "value"
+              ]
             },
             {
-              "required": ["value2"]
+              "required": [
+                "value2"
+              ]
             }
           ]
         }
@@ -72,12 +86,17 @@
         "if": {
           "properties": {
             "condition": {
-              "enum": ["Between"]
+              "enum": [
+                "Between"
+              ]
             }
           }
         },
         "then": {
-          "required": ["value", "value2"],
+          "required": [
+            "value",
+            "value2"
+          ],
           "properties": {
             "value2": {
               "$ref": "#/$defs/FilterValue"
@@ -85,21 +104,29 @@
           }
         },
         "else": {
-          "required": ["value"]
+          "required": [
+            "value"
+          ]
         }
       },
       "additionalProperties": true
     },
     "SortState": {
       "type": "object",
-      "required": ["field", "direction"],
+      "required": [
+        "field",
+        "direction"
+      ],
       "properties": {
         "field": {
           "type": "string",
           "minLength": 1
         },
         "direction": {
-          "enum": ["asc", "desc"]
+          "enum": [
+            "asc",
+            "desc"
+          ]
         }
       },
       "additionalProperties": false
@@ -107,21 +134,31 @@
     "CursorRequest": {
       "type": "object",
       "description": "The cursor to follow and the side it leads to. `prev` means: the consumer asks for the page before the one shown with this cursor; mapping the direction to what the server expects is the consumer's.",
-      "required": ["token", "direction"],
+      "required": [
+        "token",
+        "direction"
+      ],
       "properties": {
         "token": {
           "type": "string",
           "description": "Opaque: it may hold JSON or base64 and has no length limit. The table and the consumer never read inside it; only the server does."
         },
         "direction": {
-          "enum": ["next", "prev"]
+          "enum": [
+            "next",
+            "prev"
+          ]
         }
       },
       "additionalProperties": false
     },
     "QueryBase": {
       "type": "object",
-      "required": ["pageSize", "sort", "filters"],
+      "required": [
+        "pageSize",
+        "sort",
+        "filters"
+      ],
       "properties": {
         "pageSize": {
           "type": "integer",
@@ -157,7 +194,9 @@
           "$ref": "#/$defs/QueryBase"
         }
       ],
-      "required": ["page"],
+      "required": [
+        "page"
+      ],
       "properties": {
         "page": {
           "type": "integer",
@@ -165,7 +204,9 @@
         }
       },
       "not": {
-        "required": ["cursor"]
+        "required": [
+          "cursor"
+        ]
       }
     },
     "CursorQuery": {
@@ -175,7 +216,9 @@
           "$ref": "#/$defs/QueryBase"
         }
       ],
-      "required": ["cursor"],
+      "required": [
+        "cursor"
+      ],
       "properties": {
         "cursor": {
           "oneOf": [
@@ -189,7 +232,9 @@
         }
       },
       "not": {
-        "required": ["page"]
+        "required": [
+          "page"
+        ]
       }
     }
   }

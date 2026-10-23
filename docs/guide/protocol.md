@@ -101,9 +101,11 @@ export const matches = (row: Person, filters: readonly FilterRule[]) =>
 
 An `integer` column never produces a number with a fraction, and text that is not a number produces no rule at all. Date text is **not validated** by the table; it is the string the date input gave, so parse and validate it yourself.
 
-The schema accepts all ten conditions with any value type, because a query can also come from somewhere else (a saved view, a URL). Refuse the combinations your endpoint does not support (`Contains` on a number, `GreaterThan` on a boolean) with a 400.
+**Conditions without a value and with two (3.13, [ADR 0020](../decisions/0020-null-and-range-conditions.md)).** A column that lists them in `filterConditions` also offers `IsNull` and `IsNotNull`, rules with neither `value` nor `value2` (`{ field, condition: 'IsNull' }`), and on `number`, `integer`, `date` and `datetime` `Between`, a rule with a lower `value` and an upper `value2`, both inclusive. Without `filterConditions` the table never sends them, so an endpoint that does not support them sees no change. Their meaning is the profile `tr-2` of the [semantics profile](semantics.md#profile-tr-2).
 
-**Typed shortcuts never arrive.** In a text column the user can type `*foo*`, `foo*`, `*foo`, `!foo`, `!*foo*` or `a,b`. The table turns them into clean rules, so you only ever see the ten conditions. Two details: there is no `NotStartsWith` or `NotEndsWith`, so `!foo*` and `!*foo` arrive as `NotContains` with value `foo`, and `a,b` arrives as two rules for the same field (an OR).
+The schema accepts all thirteen conditions with any value type, because a query can also come from somewhere else (a saved view, a URL). Refuse the combinations your endpoint does not support (`Contains` on a number, `GreaterThan` on a boolean) with a 400.
+
+**Typed shortcuts never arrive.** In a text column the user can type `*foo*`, `foo*`, `*foo`, `!foo`, `!*foo*` or `a,b`. The table turns them into clean rules, so you only ever see the thirteen conditions (the ten of 3.12 unless a column opts in). Two details: there is no `NotStartsWith` or `NotEndsWith`, so `!foo*` and `!*foo` arrive as `NotContains` with value `foo`, and `a,b` arrives as two rules for the same field (an OR).
 
 <!-- snippet: queries.ts#grammar -->
 ```ts
@@ -284,9 +286,9 @@ The schema allows these at the top level and on rules. It does **not** allow ext
 Some names are kept for future forms of the query. Do not use these names for your own extensions:
 
 - the top-level keys `sorts`, `any`, `group`, `aggregates`, `columns` and `range`;
-- the conditions `IsNull` and `IsNotNull`.
+- the conditions `IsNull` and `IsNotNull`, under the profile `tr-1` only: 3.13 gives them a meaning in `tr-2` ([ADR 0020](../decisions/0020-null-and-range-conditions.md)).
 
-The table carries them like any other unknown key, but the local evaluator refuses `sorts`, `any`, `group`, `aggregates`, `IsNull` and `IsNotNull`, and a server that follows the same semantics profile does too. Future forms go into a versioned envelope, not into the query; see [Versioning](semantics.md#versioning) in the semantics profile.
+The table carries them like any other unknown key, but the local evaluator refuses `sorts`, `any`, `group` and `aggregates`, and under `tr-1` also `IsNull` and `IsNotNull`, and a server that follows the same semantics profile does too. Future forms go into a versioned envelope, not into the query; see [Versioning](semantics.md#versioning) in the semantics profile.
 
 ## JSON Schema
 
@@ -297,7 +299,7 @@ It checks the **shape**:
 - exactly one of `page` and `cursor`;
 - `page` and `pageSize` are whole numbers of at least 1;
 - `sort` is `null` or `{ field, direction }` with a known direction;
-- every rule has a non-empty `field`, one of the ten conditions and a string, number or boolean `value`;
+- every rule has a non-empty `field` and one of the thirteen conditions; `IsNull` and `IsNotNull` have neither `value` nor `value2`, `Between` has a string, number or boolean `value` and `value2`, every other condition a string, number or boolean `value`;
 - `search`, when present, is not empty;
 - unknown keys at the top level and on rules are allowed.
 

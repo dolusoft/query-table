@@ -9,22 +9,29 @@ import type { Component } from 'vue';
 import { ComputedRef } from 'vue';
 import { CursorQuery } from '@dolusoft/query-protocol';
 import { CursorRequest } from '@dolusoft/query-protocol';
+import { FilterBound as FilterBound_2 } from '@dolusoft/query-table-core';
 import { FilterCondition } from '@dolusoft/query-protocol';
 import { FilterDraft } from '@dolusoft/query-protocol';
 import { FilterLabel } from '@dolusoft/query-table-core';
 import { FilterRule } from '@dolusoft/query-protocol';
 import { FilterValue } from '@dolusoft/query-protocol';
 import { MaybeRefOrGetter } from 'vue';
+import { NoValueCondition } from '@dolusoft/query-protocol';
+import { NoValueFilterRule } from '@dolusoft/query-protocol';
 import { PageCursors } from '@dolusoft/query-protocol';
 import { PublicProps } from 'vue';
 import { Query } from '@dolusoft/query-protocol';
 import { QueryChangeReason } from '@dolusoft/query-protocol';
+import { RangeCondition } from '@dolusoft/query-protocol';
+import { RangeFilterRule } from '@dolusoft/query-protocol';
 import { RowsUpdate } from '@dolusoft/query-table-core/row-changes';
 import { ShallowUnwrapRef } from 'vue';
 import { SortDirection } from '@dolusoft/query-protocol';
 import { SortState } from '@dolusoft/query-protocol';
 import { TableFeature } from '@tanstack/table-core';
 import { TableQuery } from '@dolusoft/query-protocol';
+import { ValueCondition } from '@dolusoft/query-protocol';
+import { ValueFilterRule } from '@dolusoft/query-protocol';
 import { VNode } from 'vue';
 import { VueTable } from '@tanstack/vue-table';
 
@@ -68,6 +75,7 @@ export interface CellSlotProps<T> {
 export interface Column {
     field: string;
     filterable?: boolean;
+    filterConditions?: FilterCondition[];
     hide?: boolean;
     maxWidth?: number;
     minWidth?: number;
@@ -120,6 +128,9 @@ const _default: typeof __VLS_export;
 export { _default as QueryTable }
 export default _default;
 
+// @public
+export type FilterBound = 'lower' | 'upper';
+
 export { FilterCondition }
 
 // @public
@@ -131,6 +142,7 @@ export interface FilterConditionOption {
 
 // @public (undocumented)
 export interface FilterDatetimeSlotProps {
+    bound: FilterBound | null;
     // (undocumented)
     column: Column;
     updateValue: (value: string) => void;
@@ -211,6 +223,10 @@ export interface LoadMoreSlotProps {
     loadMore: () => void;
 }
 
+export { NoValueCondition }
+
+export { NoValueFilterRule }
+
 export { PageCursors }
 
 // @public (undocumented)
@@ -288,7 +304,7 @@ export interface QueryTableFilters {
     labelOf: (field: string) => FilterLabel | null;
     multiOf: (field: string) => number;
     setCondition: (field: string, condition: FilterCondition | null) => void;
-    setInput: (field: string, text: string) => void;
+    setInput: (field: string, text: string, bound?: FilterBound_2) => void;
 }
 
 // @public
@@ -352,6 +368,10 @@ export interface QueryTableState<T extends object, Q extends Query = TableQuery>
     sort: QueryTableSort;
     table: VueTable<QueryTableFeatures, T>;
 }
+
+export { RangeCondition }
+
+export { RangeFilterRule }
 
 // @public
 export interface RowFocusPayload<T> {
@@ -421,6 +441,8 @@ export interface TableLabels {
     expandRow: string;
     filterCondition: (condition: FilterCondition, type: ColumnType) => string;
     filterInput: (column: string) => string;
+    filterInputFrom: (column: string) => string;
+    filterInputTo: (column: string) => string;
     filterOptions: (column: string) => string;
     moveColumn: (column: string) => string;
     openRightPanel: string;
@@ -514,6 +536,10 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     sortable?: MaybeRefOrGetter<boolean | undefined>;
     totalRows?: MaybeRefOrGetter<number | null | undefined>;
 }
+
+export { ValueCondition }
+
+export { ValueFilterRule }
 
 // @public
 export interface VirtualOptions {

@@ -139,12 +139,18 @@ export type {
   FilterCondition,
   FilterRule,
   FilterValue,
+  NoValueCondition,
+  NoValueFilterRule,
   PageCursors,
   Query,
   QueryChangeReason,
+  RangeCondition,
+  RangeFilterRule,
   SortDirection,
   SortState,
-  TableQuery
+  TableQuery,
+  ValueCondition,
+  ValueFilterRule
 } from '@dolusoft/query-protocol'
 
 /**
@@ -218,6 +224,15 @@ export interface Column {
   hide?: boolean
   /** Show a filter input for this column (needs table `filterable`). Defaults to `true`. */
   filterable?: boolean
+  /**
+   * The conditions the `filter-menu` slot offers for this column, in this
+   * order, in place of the list of its type (C-112). It is how a column offers
+   * `IsNull`, `IsNotNull` and `Between`, which the list of a type leaves
+   * out. A condition the column type does not take is left out (`Between`
+   * on `string`, `Contains` on `number`). Unset, the menu offers the list
+   * of the type, as in 3.12.
+   */
+  filterConditions?: FilterCondition[]
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
 }
@@ -537,6 +552,10 @@ export interface TableLabels {
   openRightPanel: string
   /** Name of a filter input. Default `` name => `Filter ${name}` ``. */
   filterInput: (column: string) => string
+  /** Name of the lower bound input of a `Between` filter. Default `` name => `Filter ${name} from` ``. */
+  filterInputFrom: (column: string) => string
+  /** Name of the upper bound input of a `Between` filter. Default `` name => `Filter ${name} to` ``. */
+  filterInputTo: (column: string) => string
   /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
@@ -701,12 +720,21 @@ export interface SubtableSlotProps<T> {
   rowIndex: number
 }
 
+/** Which bound of a `Between` filter an input holds (C-114). */
+export type FilterBound = 'lower' | 'upper'
+
 export interface FilterDatetimeSlotProps {
   column: Column
   /** Text currently in the filter input. */
   value: string | undefined
   /** Replace the input text; the filter is applied after the debounce. */
   updateValue: (value: string) => void
+  /**
+   * The bound this input holds when the column's condition is `Between`:
+   * the slot is then drawn twice, `'lower'` first. `null` for a filter of
+   * one value (C-114).
+   */
+  bound: FilterBound | null
 }
 
 /** One entry of the condition list offered for a column. */
@@ -722,11 +750,16 @@ export interface FilterMenuSlotProps {
   rules: FilterRule[]
   /** Condition shown for the column: the first rule's, else the one picked, else `null`. */
   condition: FilterCondition | null
-  /** Conditions that make sense for the column type, labelled by `labels.filterCondition`. */
+  /**
+   * Conditions offered for the column, labelled by `labels.filterCondition`:
+   * the column's `filterConditions`, else those of its type (C-112).
+   */
   conditions: FilterConditionOption[]
   /**
    * Pick a condition. With a value typed the filter is applied; otherwise the
-   * pick waits for a value. `null` clears the filter.
+   * pick waits for a value. `null` clears the filter. `IsNull` and
+   * `IsNotNull` apply at once (C-113); `Between` waits for both bounds
+   * (C-114).
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */
@@ -890,25 +923,66 @@ export type FilterCondition = (typeof filterConditions)[number]
  */
 export type FilterValue = string | number | boolean
 
+/** A condition whose rule has neither `value` nor `value2` (`IsNull`, `IsNotNull`). */
+export type NoValueCondition = (typeof noValueConditions)[number]
+
+/** A condition whose rule has a lower `value` and an upper `value2` (`Between`). */
+export type RangeCondition = (typeof rangeConditions)[number]
+
+/** A condition whose rule has one `value`: every condition of 3.12. */
+export type ValueCondition = Exclude<
+  FilterCondition,
+  NoValueCondition | RangeCondition
+>
+
+/** A rule with one value: the rule of 3.12. */
+export interface ValueFilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: ValueCondition
+  /** A non-empty value. */
+  value: FilterValue
+}
+
+/** A `Between` rule: both bounds are inclusive and never swapped. */
+export interface RangeFilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: RangeCondition
+  /** The lower bound. */
+  value: FilterValue
+  /** The upper bound. */
+  value2: FilterValue
+}
+
+/**
+ * An `IsNull` or `IsNotNull` rule: no value. `value` is declared so that
+ * `rule.value` reads as `FilterValue | undefined` on any rule; the rule
+ * never carries the key.
+ */
+export interface NoValueFilterRule {
+  /** Column `field` the rule applies to. */
+  field: string
+  condition: NoValueCondition
+  value?: undefined
+}
+
 /**
  * One clean filter rule. Operator shortcuts the user types (`*`, `!`, `,`) are
- * parsed by the grammar and never appear here.
+ * parsed by the grammar and never appear here. The `condition` says how many
+ * values the rule has: none (`IsNull`, `IsNotNull`), two (`Between`, the
+ * lower `value` and the upper `value2`) or one (every other condition). A
+ * 3.12 rule is a valid rule.
  *
  * Several rules may share one `field` (the user typed `a,b`). They combine
  * with OR; when every rule of the field is negative (`NotEqual`,
  * `NotContains`) they combine with AND. Rules of different fields combine
  * with AND. The table does not evaluate rules, the server does.
  *
- * Properties besides these three are kept as they are: the table copies them
- * and never drops them.
+ * Properties besides `field`, `condition`, `value` and, on a `Between` rule,
+ * `value2` are kept as they are: the table copies them and never drops them.
  */
-export interface FilterRule {
-  /** Column `field` the rule applies to. */
-  field: string
-  condition: FilterCondition
-  /** A non-empty value. */
-  value: FilterValue
-}
+export type FilterRule = ValueFilterRule | RangeFilterRule | NoValueFilterRule
 
 export type SortDirection = (typeof sortDirections)[number]
 
@@ -1066,7 +1140,7 @@ Source: own
 
 #### C-11 Emptying an input applies at once
 
-Emptying a filter input does not wait for the debounce. The rules of that column are removed.
+Emptying a filter input does not wait for the debounce. The rules of that column are removed. Under `Between` the column is emptied when both bounds are (C-114).
 
 Source: own
 
@@ -1102,7 +1176,7 @@ Source: own
 
 #### C-17 Several rules for one field
 
-Rules of one `field` combine with OR, or with AND when all of them are negative (`NotEqual`, `NotContains`). Rules of different fields combine with AND. The table only produces the rules; evaluating them is the server's job.
+Rules of one `field` combine with OR, or with AND when all of them are negative (`NotEqual`, `NotContains`). Rules of different fields combine with AND. `IsNull`, `IsNotNull` and `Between` are positive: `IsNotNull` is not negative because of its name. The table only produces the rules; evaluating them is the server's job.
 
 Source: own
 
@@ -1120,7 +1194,7 @@ Source: own
 
 #### C-20 Picking a condition
 
-`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. `setCondition(null)` clears the filter.
+`setCondition(condition)` from the `filter-menu` slot applies the filter when the input has a value. Without a value the pick only waits for one and emits nothing. A condition without a value applies at once (C-113); `Between` keeps the typed text as its lower bound and waits for the upper one (C-114). `setCondition(null)` clears the filter.
 
 Source: own
 
@@ -1184,11 +1258,11 @@ A template ref exposes `collapseAll`, `expandAll` (C-55), `focusFilter` (C-54), 
 
 #### C-34 Filter menu slot
 
-The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions` (the conditions of the column type in menu order, each `label` from `labels.filterCondition`, C-44), `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select with no condition to pick, so it has no filter button and no menu (the header click still sorts it).
+The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions` (the conditions of the column type in menu order, or the column's own `filterConditions` (C-112), each `label` from `labels.filterCondition`, C-44), `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select with no condition to pick, so it has no filter button and no menu (the header click still sorts it).
 
 #### C-35 Date filter slot
 
-The `filter-datetime` slot replaces the date input. Its `updateValue(text)` applies like typing does.
+The `filter-datetime` slot replaces the date input. Its `updateValue(text)` applies like typing does. Its `bound` is `null` for the one input of a column; under `Between` the slot is drawn twice, with `bound` `'lower'` and then `'upper'`, and each `updateValue` sets its own bound (C-114).
 
 #### C-36 Right panel
 
@@ -1216,7 +1290,7 @@ The test skin selects only classes and attributes of the DOM contract (besides s
 
 #### C-42 Several rules on a column that is not text
 
-A number, integer, date, datetime or bool column has one input and the input holds one value. When `query.filters` holds several rules for such a column (`age > 20` and `age < 40`), the input is read-only and shows the count, `(2)`, and the condition label shows the first condition with the same count. A bool select is disabled. Nothing is emitted and no rule is dropped. The clear action of the column and clear all remove the rules. Picking a condition from the menu, or an `updateValue` of the `filter-datetime` slot, is an explicit edit: it replaces the rules with one (the first rule's value for a pick), and `filter-datetime` receives an empty `value` while the rules stand. Text columns write several rules as `a,b` and are not affected.
+A number, integer, date, datetime or bool column has one input and the input holds one value. When `query.filters` holds several rules for such a column (`age > 20` and `age < 40`), the input is read-only and shows the count, `(2)`, and the condition label shows the first condition with the same count. A bool select is disabled. Nothing is emitted and no rule is dropped. The clear action of the column and clear all remove the rules. Picking a condition from the menu, or an `updateValue` of the `filter-datetime` slot, is an explicit edit: it replaces the rules with one (the first rule's value for a pick), and `filter-datetime` receives an empty `value` while the rules stand. Text columns write several rules as `a,b` and are not affected. One `Between` rule is one rule: it fills the two inputs of C-114, not the count.
 
 #### C-43 A rule the shortcuts cannot say
 
@@ -1224,7 +1298,7 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 #### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs, resize handles, reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and of the two bounds of a range, resize handles, reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter ${name} from` ``, `` `Filter ${name} to` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`, and `'Is Null'`, `'Is Not Null'` and `'Between'` for the conditions of C-112). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. No component template holds a literal `aria-label`.
 
 #### C-45 Header semantics
 
@@ -1260,7 +1334,7 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 #### C-53 Filter parser
 
-`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number in the safe range, a bool column's text other than `true` and `false`. Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
+`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others, and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number in the safe range, a bool column's text other than `true` and `false`. With `condition` `IsNull` or `IsNotNull` it returns that rule, without a value and whatever the text; with `Between` it returns `[]`, since one text holds one bound (C-114). Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
 
 Source: own
 
@@ -1400,13 +1474,13 @@ Source: own
 
 #### C-77 Structural errors
 
-A query the evaluator does not support, or data that does not fit the dataset, is returned as a value, `{ ok: false, error }`, with one of the codes of `semantics.md` and its location fields (`path`, `field`, `rule`, `row`, `name`). The error is the first one in the validation order of the profile; query errors are found before any row is read, and there is no partial result. A query, a sort or a rule that is not a plain object is `invalid-query`. A malformed definition passed to `defineDataset`, and a broken precondition of `applyQuery` (a dataset not made by `defineDataset`, options that are not an object, a `paginate` that is not a boolean), throw `TypeError`. Unknown top-level keys that are not reserved, and extra properties of a rule, are ignored. `sorts`, `any`, `group`, `aggregates` and the conditions `IsNull` and `IsNotNull` are `unsupported-extension`. A read that throws (a `get`, or a getter met by a path read), or a value that does not fit the field type, is `invalid-data`; values are never converted. A repeated key is `duplicate-key`, even on a row that is filtered out or off the page.
+A query the evaluator does not support, or data that does not fit the dataset, is returned as a value, `{ ok: false, error }`, with one of the codes of `semantics.md` and its location fields (`path`, `field`, `rule`, `row`, `name`). The error is the first one in the validation order of the profile; query errors are found before any row is read, and there is no partial result. A query, a sort or a rule that is not a plain object is `invalid-query`. A malformed definition passed to `defineDataset`, and a broken precondition of `applyQuery` (a dataset not made by `defineDataset`, options that are not an object, a `paginate` that is not a boolean), throw `TypeError`. Unknown top-level keys that are not reserved, and extra properties of a rule, are ignored. `sorts`, `any`, `group`, `aggregates` and, under `tr-1`, the conditions `IsNull` and `IsNotNull` are `unsupported-extension` (`tr-2` evaluates them, C-115). A read that throws (a `get`, or a getter met by a path read), or a value that does not fit the field type, is `invalid-data`; values are never converted. A repeated key is `duplicate-key`, even on a row that is filtered out or off the page.
 
 Source: own
 
 #### C-78 Semantics profile
 
-Every evaluation names a semantics profile, and there is no default: a missing or unknown profile is the error `unknown-profile`, not a throw. `tr-1` is the meaning written in `semantics.md` and never changes; a new meaning is a new profile. `profiles` lists the profiles of the build.
+Every evaluation names a semantics profile, and there is no default: a missing or unknown profile is the error `unknown-profile`, not a throw. `tr-1` is the meaning written in `semantics.md` and never changes; a new meaning is a new profile. `tr-2` (3.13) is `tr-1` plus `IsNull`, `IsNotNull` and `Between` (C-115). `profiles` lists the profiles of the build, `['tr-1', 'tr-2']`.
 
 Source: own
 
@@ -1605,6 +1679,30 @@ Source: own
 #### C-111 Row navigation off and DOM contract of 3.12
 
 Without `rowNavigation` the table adds no `keydown` listener and reads nothing on a key, and the DOM is the one of 3.11. With it, the one listener is on the `tbody` (C-28, C-108), never on a row or a cell (while a move runs, one `pointerdown` listener on the window ends it on a click), and the DOM contract gains no entry: the table writes no `tabindex`, no class and no attribute for the navigation.
+
+Source: own
+
+#### C-112 Column filterConditions
+
+`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date` and `datetime`, the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value or with two. A `bool` column has no menu (C-34), so the list changes nothing there.
+
+Source: own
+
+#### C-113 A condition without a value in the filter row
+
+Picking `IsNull` or `IsNotNull` applies at once, without debounce and without text: it emits one rule `{ field, condition }`, with no `value` key, that replaces the rules of the column. The input is hidden and the typed text goes; the condition label and the clear action stay. An outside rule of such a condition shows the same way. Picking another condition shows the input again, empty.
+
+Source: own
+
+#### C-114 Between in the filter row
+
+Under `Between` a column draws two `.qt-filter-input` elements in place of one, the lower bound first, named by `labels.filterInputFrom` and `labels.filterInputTo` (date inputs on a date column, number inputs on a number one, or the `filter-datetime` slot twice, C-35). Typing in either bound applies like typing does (C-09); once both bounds read, the column emits one `Between` rule, `value` the lower bound and `value2` the upper one, that replaces its rules. The bounds are not swapped. A range with one bound, or with a bound that does not read, is no change: the last applied rules stay and nothing is emitted. Emptying both bounds removes the rules of the column (C-11). Picking a one-value condition keeps the lower bound as the text and drops the upper one. An outside `Between` rule fills both inputs; its echo leaves them untouched (C-18). `value2` on a rule of any other condition is an extra property (C-60). The DOM contract gains no entry.
+
+Source: own
+
+#### C-115 Profile tr-2
+
+`applyQuery` with `profile: 'tr-2'` evaluates `IsNull` (true only on a missing, `undefined` or `null` value), `IsNotNull` (its complement) and `Between` (`GreaterThanOrEqual` the lower bound and `LessThanOrEqual` the upper one, on `number`, `integer`, `date` and `datetime`; nothing when the lower bound is above the upper one), as `semantics.md` writes them. Every other result is the one of `tr-1`. A value on a condition without one, or a bound missing or not a string, number or boolean, is `invalid-query` at `/filters/i/value` or `/filters/i/value2`, checked where `tr-1` checks its one value; a bound that does not fit the field is `invalid-value` at its own pointer. Under `tr-1` the three conditions keep their 3.12 errors.
 
 Source: own
 

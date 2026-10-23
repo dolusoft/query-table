@@ -979,3 +979,229 @@ describe('C-43 A rule the shortcuts cannot say', () => {
     expect(m.events[0][0].filters).toEqual([rule('name', 'StartsWith', 'a')])
   })
 })
+
+describe('C-112 Column filterConditions', () => {
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const slots = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  const offered = (field: string) =>
+    menus[field].conditions.map(option => option.value)
+
+  it('without it the menu offers the list of the type, as in 3.12', () => {
+    mountIt(base, { slots })
+    expect(offered('age')).not.toContain('IsNull')
+    expect(offered('age')).not.toContain('Between')
+    expect(offered('name')).toContain('Contains')
+  })
+
+  it('replaces the list, in its order, and leaves out what the type does not take', () => {
+    const columns: Column[] = [
+      {
+        field: 'name',
+        filterConditions: [
+          'IsNotNull',
+          'Between',
+          'Equal',
+          'GreaterThan',
+          'IsNull'
+        ]
+      },
+      {
+        field: 'age',
+        type: 'number',
+        filterConditions: ['Between', 'Contains', 'IsNull', 'Equal', 'Between']
+      }
+    ]
+    mountIt({ ...base, columns }, { slots })
+    expect(offered('name')).toEqual(['IsNotNull', 'Equal', 'IsNull'])
+    expect(offered('age')).toEqual(['Between', 'IsNull', 'Equal'])
+    expect(menus.age.conditions[0]).toEqual({
+      value: 'Between',
+      label: 'Between'
+    })
+  })
+})
+
+describe('C-113 A condition without a value in the filter row', () => {
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const slots = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  const cell = (m: Mounted, field: string) =>
+    m.wrapper.find(`th[data-field="${field}"] .qt-filter`)
+
+  it('applies at once, hides the input and keeps the label', async () => {
+    const m = mountIt(
+      { ...base, query: makeQuery({ page: 3 }), totalRows: 100 },
+      { slots }
+    )
+    menus.age.setCondition('IsNull')
+    await flush()
+    expect(m.events).toEqual([
+      [
+        makeQuery({ filters: [{ field: 'age', condition: 'IsNull' }] }),
+        'filter'
+      ]
+    ])
+    expect(Object.keys(m.query().filters[0])).toEqual(['field', 'condition'])
+    expect(input(m, 'age').exists()).toBe(false)
+    expect(cell(m, 'age').find('.qt-filter-condition').text()).toBe('Is Null')
+  })
+
+  it('shows the input again when a condition with a value is picked or the column is cleared', async () => {
+    const m = mountIt(
+      {
+        ...base,
+        query: makeQuery({
+          filters: [{ field: 'name', condition: 'IsNotNull' }]
+        })
+      },
+      { slots }
+    )
+    await flush()
+    expect(input(m, 'name').exists()).toBe(false)
+    menus.name.setCondition('Contains')
+    await flush()
+    expect(input(m, 'name').exists()).toBe(true)
+    menus.name.setCondition('IsNotNull')
+    await flush()
+    expect(input(m, 'name').exists()).toBe(false)
+    menus.name.clear()
+    await flush()
+    expect(input(m, 'name').exists()).toBe(true)
+    expect(m.query().filters).toEqual([])
+  })
+
+  it('with another rule on a text column shows their count in a read-only input', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({
+        filters: [
+          { field: 'name', condition: 'IsNull' },
+          rule('name', 'Contains', 'a')
+        ]
+      })
+    })
+    await flush()
+    const element = input(m, 'name').element as HTMLInputElement
+    expect(element.readOnly).toBe(true)
+    expect(element.value).toBe('(2)')
+  })
+})
+
+describe('C-114 Between in the filter row', () => {
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const slots = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  // The lower bound is the first input of the cell, the upper one the second.
+  const bound = (m: Mounted, field: string, which: 'lower' | 'upper') =>
+    m.wrapper.findAll(`th[data-field="${field}"] .qt-filter-input`)[
+      which === 'lower' ? 0 : 1
+    ]
+  const between = (field: string, value: FilterValue, value2: FilterValue) => ({
+    field,
+    condition: 'Between' as const,
+    value,
+    value2
+  })
+
+  it('draws two named inputs and applies one rule once both bounds read', async () => {
+    const m = mountIt(base, { slots })
+    menus.age.setCondition('Between')
+    await flush()
+    expect(
+      m.wrapper.findAll('th[data-field="age"] .qt-filter-input')
+    ).toHaveLength(2)
+    expect(bound(m, 'age', 'lower').attributes('aria-label')).toBe(
+      'Filter Age from'
+    )
+    expect(bound(m, 'age', 'upper').attributes('aria-label')).toBe(
+      'Filter Age to'
+    )
+    expect(bound(m, 'age', 'lower').attributes('type')).toBe('number')
+    await bound(m, 'age', 'lower').setValue('20')
+    vi.advanceTimersByTime(100)
+    expect(m.events).toEqual([])
+    await bound(m, 'age', 'upper').setValue('30')
+    vi.advanceTimersByTime(100)
+    expect(m.events.map(([query]) => query.filters)).toEqual([
+      [between('age', 20, 30)]
+    ])
+  })
+
+  it('keeps the last applied query while the range is incomplete', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({ filters: [between('age', 20, 30)] })
+    })
+    await flush()
+    expect((bound(m, 'age', 'upper').element as HTMLInputElement).value).toBe(
+      '30'
+    )
+    await bound(m, 'age', 'upper').setValue('')
+    await bound(m, 'age', 'upper').trigger('keydown', { key: 'Enter' })
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
+    await bound(m, 'age', 'upper').setValue('35')
+    await bound(m, 'age', 'upper').trigger('keydown', { key: 'Enter' })
+    expect(m.events[0][0].filters).toEqual([between('age', 20, 35)])
+  })
+
+  it('draws two date inputs, and the filter-datetime slot twice with its bound', async () => {
+    const slotsSeen: FilterDatetimeSlotProps[] = []
+    const query = makeQuery({
+      filters: [between('joined', '2024-01-01', '2024-03-31')]
+    })
+    const plain = mountIt({ ...base, query })
+    await flush()
+    expect(bound(plain, 'joined', 'lower').attributes('type')).toBe('date')
+    plain.wrapper.unmount()
+    const m = mountIt(
+      { ...base, query },
+      {
+        slots: {
+          'filter-datetime': (slot: FilterDatetimeSlotProps) => {
+            slotsSeen.push(slot)
+            return h('span', { class: 'custom-date' }, String(slot.value))
+          }
+        }
+      }
+    )
+    await flush()
+    expect(m.wrapper.findAll('.custom-date').map(span => span.text())).toEqual([
+      '2024-01-01',
+      '2024-03-31'
+    ])
+    expect(slotsSeen.filter(slot => slot.bound === null)).toEqual([])
+    const upper = slotsSeen.filter(slot => slot.bound === 'upper').at(-1)!
+    upper.updateValue('2024-02-29')
+    vi.advanceTimersByTime(100)
+    expect(m.events[0][0].filters).toEqual([
+      between('joined', '2024-01-01', '2024-02-29')
+    ])
+  })
+
+  it('gives a one-value date filter the slot once with no bound', () => {
+    const slotsSeen: FilterDatetimeSlotProps[] = []
+    mountIt(base, {
+      slots: {
+        'filter-datetime': (slot: FilterDatetimeSlotProps) => {
+          slotsSeen.push(slot)
+          return h('span')
+        }
+      }
+    })
+    expect(slotsSeen.at(-1)?.bound).toBeNull()
+  })
+})

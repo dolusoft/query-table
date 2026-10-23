@@ -166,7 +166,6 @@ const pick = (event: Event) => {
           v-else
           :type="isDated() ? 'date' : 'number'"
           class="qt-filter-input"
-          :data-bound="bound"
           :aria-label="boundName(bound)"
           :value="boundText(bound)"
           @input="filters.setInput(column.field, inputValue($event), bound)"

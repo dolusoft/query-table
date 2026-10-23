@@ -7,7 +7,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | Prop | Meaning |
 | --- | --- |
 | `query` (required) | The query, with `v-model:query`. A `CursorQuery` (a `cursor` key) pages by cursor. |
-| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`. With `v-model:columns` when the user may change the layout. |
+| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`, `filterConditions` (the conditions its filter menu offers, in place of its type's; the way to offer `IsNull`, `IsNotNull` and `Between`, which draws two inputs named by `labels.filterInputFrom` and `labels.filterInputTo`). With `v-model:columns` when the user may change the layout. |
 | `rows`, `totalRows` | Rows of the current page; the total on the server, `null` when unknown. |
 | `sortable`, `filterable`, `resizable` | Turn on the sort buttons, the filter row, the resize handles (each also needs the column to allow it). |
 | `filterDebounce` | ms before typed filter text applies (default 100; `0` applies every key). |

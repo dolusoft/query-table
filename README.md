@@ -319,6 +319,20 @@ const query = ref<CursorQuery>({ cursor: null, pageSize: 20, sort: null, filters
 const cursors = ref<PageCursors>({ next: null, prev: null })
 ```
 
+## No value and ranges
+
+A column offers `IsNull`, `IsNotNull` and `Between` when it lists them in `filterConditions`; the list replaces the conditions of its type in the filter menu, and a column without it keeps the menu of 3.12 (C-112). Picking `IsNull` or `IsNotNull` applies at once and hides the input (C-113). `Between` draws two inputs, named by `labels.filterInputFrom` and `labels.filterInputTo`, and emits one rule once both bounds read; with one bound the last applied filter stays (C-114).
+
+```ts
+const columns: Column[] = [
+  { field: 'due', type: 'date', filterConditions: ['Between', 'Equal', 'IsNull', 'IsNotNull'] }
+]
+// { field: 'due', condition: 'IsNull' }
+// { field: 'due', condition: 'Between', value: '2026-10-01', value2: '2026-10-31' }
+```
+
+Both bounds are inclusive and never swapped. `useLocalQuery` evaluates the three with `profile: 'tr-2'`; a server that follows [the semantics profile](docs/guide/semantics.md#profile-tr-2) does the same ([ADR 0020](docs/decisions/0020-null-and-range-conditions.md)).
+
 ## Filter text without a table
 
 `parseFilterInput(text, column, condition?)` returns the `FilterRule[]` the table emits for `text` typed into the filter of `column`: the same shortcuts (`*a*`, `a*`, `!a`, `a,b`) and the same coercion per column type. Text that gives no rule returns `[]`.

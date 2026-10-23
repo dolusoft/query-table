@@ -210,4 +210,12 @@ describe('rules of ADR 0020: no value, or two', () => {
     expect(copy.filters).toEqual([between(2), isNull])
     expect(Object.keys(copy.filters[1])).toEqual(['field', 'condition'])
   })
+
+  it('keeps both shapes through JSON', () => {
+    const query = pageQuery({ filters: [between(2), isNull] })
+    const read = JSON.parse(JSON.stringify(query)) as typeof query
+    expect(read).toEqual(query)
+    expect(sameRules(read.filters, query.filters)).toBe(true)
+    expect(Object.keys(read.filters[1])).toEqual(['field', 'condition'])
+  })
 })

@@ -20,6 +20,7 @@ const groups = [
       'query-model',
       'filtering',
       'filter-parser',
+      'nulls-and-ranges',
       'sorting',
       'pagination',
       'search-selection-cursors'
