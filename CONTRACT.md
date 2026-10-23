@@ -36,6 +36,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `rowKey` | `(keyof T & string) \| ((row: T, index: number) => string \| number)` |  | `undefined` | Identity of a row, for expansion state and for the rendered row (a row keeps the state of its `subtable` components when `rows` reorder): a property name or a function. A string is a direct property read, not a dotted path; use the function form for a nested value. Keys must be unique. Without it the row index is the identity and the expansion state resets whenever `rows` changes. |
 | `labels` | `Partial<TableLabels>` |  | `undefined` | Text the table writes for people: accessible names and the options of a bool filter. Give only the entries you want to change; the rest keep their English defaults. |
 | `virtual` | `boolean \| VirtualOptions` |  | `false` | Draw only the rows in view of the scroll container, between two spacer rows (C-83). `true` takes the defaults. Give the table `table-layout: fixed` (C-85). Defaults to `false`. |
+| `rowNavigation` | `boolean \| RowNavigationOptions<T>` |  | `false` | Move the focus between rows with the keyboard (C-109, C-110): ↑ and ↓ to the previous and next row, Home and End to the first and last. The keys act while the focus is on a row's focus target (`focus`, else its first focusable element) and land on the next row's, with `virtual` after the row is drawn; the row is shown whole, below a sticky header. Group rows (C-103) and subtable rows are passed over, and so are the rows `skip` names. Each move emits `rowFocus`. Defaults to `false`. |
 | `scrollBody` | `boolean` |  | `false` | Draw the header, the body and the footer as three tables in `.qt-table-head`, `.qt-table-body` and `.qt-table-foot`, so the body scrolls under a header that stays outside it (C-101, C-102). The columns of the body and footer take the widths of the header cells, and the three scroll sideways together. In your CSS give the three wrappers `overflow-y: scroll`, the body a height and `overflow-x: auto`, the header and footer `overflow-x: hidden` and a transparent scrollbar, and the body and footer tables `table-layout: fixed`. Defaults to `false`. |
 | `infinite` | `boolean \| InfiniteOptions` |  | `false` | Ask for the next page (`update:query`, reason `page`) when the end of `rows` comes into view (C-88); append the rows of a `page` answer and replace them for any other reason. Needs `rowKey`. `true` takes the defaults. Defaults to `false`. |
 | `flash` | `boolean \| FlashOptions` |  | `false` | Flash the rows that are new and the cells whose value changed while the query stays the same (C-93, C-94). Off by default; needs `rowKey`, and a changed row must be a new object. The table finds the change and marks it with `data-flash`; the skin draws it and sets its length with `--qt-flash-duration`. `true` flashes both; `{ rows, cells }` picks. |
@@ -53,6 +54,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `columnResize` | `[payload: ColumnResizePayload]` | The user resized a column: on release of a drag, on an arrow key or on autofit. Write `width` back to the column (`Column.width`), or the column keeps its old width. |
 | `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
 | `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
+| `rowFocus` | `[payload: RowFocusPayload<T>]` | With `rowNavigation`: a key moved the focus to another row (C-109), once the focus is there. Once per key press; a click or Tab does not emit it. |
 
 ### Slots
 
@@ -386,6 +388,16 @@ export interface TableProps<
    */
   virtual?: boolean | VirtualOptions
   /**
+   * Move the focus between rows with the keyboard (C-109, C-110): ↑ and ↓
+   * to the previous and next row, Home and End to the first and last. The
+   * keys act while the focus is on a row's focus target (`focus`, else its
+   * first focusable element) and land on the next row's, with `virtual`
+   * after the row is drawn; the row is shown whole, below a sticky header.
+   * Group rows (C-103) and subtable rows are passed over, and so are the
+   * rows `skip` names. Each move emits `rowFocus`. Defaults to `false`.
+   */
+  rowNavigation?: boolean | RowNavigationOptions<T>
+  /**
    * Draw the header, the body and the footer as three tables in
    * `.qt-table-head`, `.qt-table-body` and `.qt-table-foot`, so the body
    * scrolls under a header that stays outside it (C-101, C-102). The columns
@@ -447,6 +459,33 @@ export interface VirtualOptions {
    * table, else the window (C-85).
    */
   scrollElement?: () => HTMLElement | null
+}
+
+/** Options of `rowNavigation` (C-109). */
+export interface RowNavigationOptions<T> {
+  /**
+   * A CSS selector for the element of a row that takes the focus: the first
+   * element of the row that matches; it must take the focus. Defaults to
+   * the first link, button, checkbox or element with a `tabindex` of the
+   * row (a utility button or checkbox included); text fields, selects and
+   * radio buttons keep their arrow keys and are not a default target.
+   */
+  focus?: string
+  /**
+   * The rows the keys pass over, such as heading rows of a kind (C-97):
+   * called with the row and its index in `rows` when a key is pressed.
+   */
+  skip?: (row: T, index: number) => boolean
+}
+
+/** Payload of the `rowFocus` event (C-109). */
+export interface RowFocusPayload<T> {
+  /** The row that has the focus now. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The key that moved the focus. */
+  key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'
 }
 
 /** Options of `infinite` (C-88). */
@@ -622,6 +661,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * `v-model:rowPinning`, or the table draws the old order.
    */
   'update:rowPinning': [rowPinning: RowPinning]
+  /**
+   * With `rowNavigation`: a key moved the focus to another row (C-109),
+   * once the focus is there. Once per key press; a click or Tab does not
+   * emit it.
+   */
+  rowFocus: [payload: RowFocusPayload<T>]
 }
 
 export interface CellSlotProps<T> {
@@ -1542,6 +1587,24 @@ Source: own
 #### C-108 Row component and DOM contract of 3.11
 
 The body's markup is the one of 3.10 for every state and every transition: the same elements, attributes, text and comment placeholders. The table adds no listener to a row or a cell, with `flash` on too; `contextmenu`, `focusin` and `focusout` stay on the `tbody` (C-28, C-86).
+
+Source: own
+
+#### C-109 Row navigation
+
+With `rowNavigation` the keyboard moves the focus between the data rows: `ArrowDown` to the next row, `ArrowUp` to the previous one, `Home` to the first and `End` to the last, in the order the body draws them (the top-pinned rows, the others, the bottom-pinned rows, C-74), the rows out of a virtual window included (C-83). Group rows (C-103) and subtable rows are not rows and are passed over, and so is every row for which `rowNavigation.skip(row, index)` returns `true` (a heading row of a kind, C-97). A row's focus target is the first element of the row that matches `rowNavigation.focus`, else its first link, enabled button, enabled checkbox or element with a `tabindex` other than `-1` (a utility button or checkbox included); controls that use the arrow keys themselves (text fields, `select`, radio buttons, editable content) are not a default target and keep their keys. The target must take the focus. A key acts only when the focus is on a row's focus target and no modifier key is held, the event is not composing and its default is not prevented already; it then prevents the default (the container does not scroll by the key), also at the first or last row, where nothing moves. The focus lands on the target row's focus target (`focus({ preventScroll: true })`), and once it is there the table emits `rowFocus` with `row`, `rowIndex` and `key`: one event per key press that moved the focus, none when nothing moved, none for a click or Tab, and none when the focus is put back (C-110). A row with no focus target ends the move where it is, without an event. The table writes no `tabindex` and no attribute for it, and nothing emits `update:query`.
+
+Source: own
+
+#### C-110 Row navigation: drawing and showing the row
+
+The row a key moves to is shown whole in its scroll container, below a sticky header that covers the top of the container and below a group row whose cell the consumer's CSS made sticky (C-104); the first row of a group is shown with its group row above it. With `virtual` the container is the one of C-85; without it, the nearest scrolling ancestor of the table, else the window. The row is shown in the vertical direction only, and the row alone: an open subtable row below it does not count, so a tall one cannot push the row out of view. A `scrollToIndex` still waiting (C-87) is dropped once the row is shown. With `virtual`, a row out of the window is not drawn: the table scrolls to it as `scrollToIndex` does (C-87, `align: 'auto'`, asked again when a change of `rows` dropped it), waits until the window has drawn and aligned it, and focuses it by its key (`rowKey`), or by its row object without `rowKey`, not by its index, so a change of `rows` in between does not land on another row; a key pressed while a move waits moves on from the row it waits for. When moving DOM nodes takes the focus off the target in the frames after it landed (the focus is on no element), the table puts it back; those frames are counted while the window has nothing left to draw. A move ends when its row leaves `rows`, when the focus goes to another element, on a `pointerdown` anywhere, or after 30 frames.
+
+Source: own
+
+#### C-111 Row navigation off and DOM contract of 3.12
+
+Without `rowNavigation` the table adds no `keydown` listener and reads nothing on a key, and the DOM is the one of 3.11. With it, the one listener is on the `tbody` (C-28, C-108), never on a row or a cell (while a move runs, one `pointerdown` listener on the window ends it on a click), and the DOM contract gains no entry: the table writes no `tabindex`, no class and no attribute for the navigation.
 
 Source: own
 

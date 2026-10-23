@@ -280,6 +280,16 @@ export interface TableProps<
    */
   virtual?: boolean | VirtualOptions
   /**
+   * Move the focus between rows with the keyboard (C-109, C-110): ↑ and ↓
+   * to the previous and next row, Home and End to the first and last. The
+   * keys act while the focus is on a row's focus target (`focus`, else its
+   * first focusable element) and land on the next row's, with `virtual`
+   * after the row is drawn; the row is shown whole, below a sticky header.
+   * Group rows (C-103) and subtable rows are passed over, and so are the
+   * rows `skip` names. Each move emits `rowFocus`. Defaults to `false`.
+   */
+  rowNavigation?: boolean | RowNavigationOptions<T>
+  /**
    * Draw the header, the body and the footer as three tables in
    * `.qt-table-head`, `.qt-table-body` and `.qt-table-foot`, so the body
    * scrolls under a header that stays outside it (C-101, C-102). The columns
@@ -341,6 +351,33 @@ export interface VirtualOptions {
    * table, else the window (C-85).
    */
   scrollElement?: () => HTMLElement | null
+}
+
+/** Options of `rowNavigation` (C-109). */
+export interface RowNavigationOptions<T> {
+  /**
+   * A CSS selector for the element of a row that takes the focus: the first
+   * element of the row that matches; it must take the focus. Defaults to
+   * the first link, button, checkbox or element with a `tabindex` of the
+   * row (a utility button or checkbox included); text fields, selects and
+   * radio buttons keep their arrow keys and are not a default target.
+   */
+  focus?: string
+  /**
+   * The rows the keys pass over, such as heading rows of a kind (C-97):
+   * called with the row and its index in `rows` when a key is pressed.
+   */
+  skip?: (row: T, index: number) => boolean
+}
+
+/** Payload of the `rowFocus` event (C-109). */
+export interface RowFocusPayload<T> {
+  /** The row that has the focus now. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The key that moved the focus. */
+  key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'
 }
 
 /** Options of `infinite` (C-88). */
@@ -516,6 +553,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * `v-model:rowPinning`, or the table draws the old order.
    */
   'update:rowPinning': [rowPinning: RowPinning]
+  /**
+   * With `rowNavigation`: a key moved the focus to another row (C-109),
+   * once the focus is there. Once per key press; a click or Tab does not
+   * emit it.
+   */
+  rowFocus: [payload: RowFocusPayload<T>]
 }
 
 export interface CellSlotProps<T> {
