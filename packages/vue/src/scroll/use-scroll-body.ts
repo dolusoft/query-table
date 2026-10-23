@@ -23,9 +23,18 @@ export interface ScrollBodyOptions {
   /** The `scrollBody` prop. */
   enabled: () => boolean
   wrappers: () => ScrollBodyWrappers
-  /** The table of the body rows: its layout is checked once (C-101). */
+  /** The table of the header cells, whose widths the body takes. */
+  headTable: () => HTMLTableElement | null
+  /** The table of the body rows: its layout is checked (C-101). */
   bodyTable: () => HTMLTableElement | null
+  /** The `col` widths written to the body table, in pixels. */
+  colWidths: () => readonly (number | undefined)[]
+  /** Changes when the body rows do: their content can widen a column. */
+  rows: () => unknown
 }
+
+const automaticLayout =
+  '[QueryTable] `scrollBody`: the body table has the automatic layout, so its columns follow its rows, not the header. Give the body and footer tables `table-layout: fixed` and a width that is a length or a percentage, such as `width: 100%`: with `width: auto` or `max-content` the browser uses the automatic layout whatever `table-layout` says (C-101).'
 
 /**
  * Header, body and footer of `scrollBody` scroll sideways together (C-101):
@@ -106,13 +115,65 @@ export const useScrollBody = (options: ScrollBodyOptions) => {
         getComputedStyle(table).tableLayout !== 'fixed'
       ) {
         warned = true
-        console.warn(
-          '[QueryTable] `scrollBody` with `table-layout: auto` on the body table: its columns follow its rows, not the header. Set `table-layout: fixed` (C-101).'
-        )
+        console.warn(automaticLayout)
       }
     },
     { flush: 'post', immediate: true }
   )
+
+  /**
+   * `table-layout: fixed` applies only to a table with a definite width:
+   * under `width: auto` or `max-content` the browser lays the body out
+   * automatically while `tableLayout` still reads `fixed`, and a cell wider
+   * than its `col` widens its column and the table. That shows once the
+   * rows hold such a cell, so it is checked whenever the rows or the `col`
+   * widths change, against `col` widths that match the header cells (not
+   * ones a change of the drawn columns has made stale until measured).
+   */
+  const checkLayout = () => {
+    const head = options.headTable()
+    const body = options.bodyTable()
+    if (warned || !head || !body) {
+      return
+    }
+    const cells = head.querySelectorAll(':scope > thead > tr > *')
+    const widths = options.colWidths()
+    if (
+      cells.length === 0 ||
+      cells.length !== widths.length ||
+      [...cells].some((cell, i) => {
+        const width = widths[i]
+        return (
+          width === undefined ||
+          Math.abs(cell.getBoundingClientRect().width - width) >= 0.5
+        )
+      })
+    ) {
+      return
+    }
+    if (
+      body.getBoundingClientRect().width - head.getBoundingClientRect().width >=
+      1
+    ) {
+      warned = true
+      console.warn(automaticLayout)
+    }
+  }
+
+  if (isDevelopment()) {
+    watch(
+      () =>
+        options.enabled()
+          ? [options.colWidths(), options.rows(), options.bodyTable()]
+          : null,
+      sources => {
+        if (sources) {
+          checkLayout()
+        }
+      },
+      { flush: 'post' }
+    )
+  }
 
   onBeforeUnmount(detach)
 }

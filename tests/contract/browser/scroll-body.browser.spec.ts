@@ -5,6 +5,7 @@ import {
   beforeAll,
   describe,
   expect,
+  onTestFinished,
   test,
   vi
 } from 'vitest'
@@ -31,10 +32,13 @@ import {
 let style: HTMLStyleElement
 beforeAll(() => {
   style = document.createElement('style')
-  // The layout the README gives for a table that scrolls sideways.
+  // The layout the README gives for a table that scrolls sideways, and the
+  // definite width of the body and footer tables that keeps their layout
+  // fixed (C-101).
   style.textContent = [
     '.qt-table-body { height: 200px; }',
-    '.qt-table.qt-table { width: max-content; min-width: 100%; }'
+    '.qt-table.qt-table { width: max-content; min-width: 100%; }',
+    ':is(.qt-table-body, .qt-table-foot) > .qt-table.qt-table { width: 100%; }'
   ].join(' ')
   document.head.append(style)
 })
@@ -176,6 +180,65 @@ describe('C-101 Scrolling body [own]', () => {
     expect(edges(footRow())).toEqual(edges(headRow()))
   })
 
+  test('the body columns stay under the header cells while live rows, a scroll and a resize change the table', async () => {
+    // A live view: the rows are replaced on every tick, a column goes and a
+    // utility comes when it starts, a cell's content outgrows its column.
+    const columns = (): Column[] => [
+      { field: 'id', title: 'ID', type: 'number', width: '80px' },
+      { field: 'name', title: 'Name' },
+      { field: 'age', title: 'Age', type: 'number', width: '700px' },
+      { field: 'joined', title: 'Joined', type: 'date', width: '700px' }
+    ]
+    const tick = (count: number, words: number) =>
+      rows(count).map(row => ({ ...row, name: 'lorem '.repeat(words) }))
+    // Cells on one line that clip what does not fit, as a data grid draws them.
+    const clip = document.createElement('style')
+    clip.textContent =
+      '.qt-table-responsive td { white-space: nowrap; overflow: hidden; }'
+    document.head.append(clip)
+    onTestFinished(() => clip.remove())
+    const aligned = () => {
+      expect(edges(bodyRow())).toEqual(edges(headRow()))
+      expect(edges(footRow())).toEqual(edges(headRow()))
+      expect(part('head').scrollLeft).toBe(part('body').scrollLeft)
+    }
+    const { rerender } = await mount({ columns: columns(), rows: tick(40, 1) })
+    aligned()
+    await rerender({
+      columns: columns().filter(column => column.field !== 'id'),
+      hasRightPanel: true,
+      rows: tick(3, 40)
+    })
+    await frames(3)
+    aligned()
+    for (const [count, length] of [
+      [10, 80],
+      [1, 4],
+      [25, 120]
+    ]) {
+      await rerender({ rows: tick(count, length) })
+      await frames(2)
+      aligned()
+    }
+    part('body').scrollLeft = 200
+    await frames(2)
+    expect(part('body').scrollLeft).toBe(200)
+    aligned()
+    // A column narrowed below what its cells hold.
+    await rerender({
+      columns: columns().map(column =>
+        column.field === 'name' ? { ...column, width: '120px' } : column
+      ),
+      rows: tick(30, 60)
+    })
+    await frames(3)
+    expect(box(headRow().querySelector('[data-field="name"]')!).width).toBe(120)
+    aligned()
+    part('body').scrollLeft = part('body').scrollWidth
+    await frames(2)
+    aligned()
+  })
+
   test('header, body and footer scroll sideways together', async () => {
     await mount()
     const body = part('body')
@@ -305,6 +368,34 @@ describe('C-101 Scrolling body [own]', () => {
     // The header label is short; the automatic width is the body's.
     expect(name).toBeGreaterThan(400)
     expect(edges(bodyRow())).toEqual(edges(headRow()))
+  })
+
+  test('warns once in development when a `max-content` width gives the body table the automatic layout', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const intrinsic = document.createElement('style')
+    intrinsic.textContent =
+      ':is(.qt-table-body, .qt-table-foot) > .qt-table.qt-table.qt-table { width: max-content; }'
+    document.head.append(intrinsic)
+    try {
+      const { rerender } = await mount()
+      // The layout still reads `fixed`, and the rows fit their columns.
+      expect(
+        getComputedStyle(part('body').querySelector('table')!).tableLayout
+      ).toBe('fixed')
+      expect(warn).not.toHaveBeenCalled()
+      const long = rows(40).map(row => ({ ...row, name: 'x'.repeat(200) }))
+      await rerender({ rows: long })
+      await frames(2)
+      await rerender({ rows: long.slice(1) })
+      await frames(2)
+      expect(
+        warn.mock.calls.filter(call =>
+          String(call[0]).includes('automatic layout')
+        )
+      ).toHaveLength(1)
+    } finally {
+      intrinsic.remove()
+    }
   })
 
   test('warns once in development when the body table has the automatic layout', async () => {
