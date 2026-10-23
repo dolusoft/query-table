@@ -1,4 +1,9 @@
-import type { FilterRule, PageQuery } from '@dolusoft/query-protocol'
+import type {
+  FilterRule,
+  PageQuery,
+  ValueCondition,
+  ValueFilterRule
+} from '@dolusoft/query-protocol'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { makeTable, start } from './support/table'
@@ -6,8 +11,8 @@ import { makeTable, start } from './support/table'
 const rule = (
   field: string,
   value: string | number,
-  condition: FilterRule['condition'] = 'Contains'
-): FilterRule => ({ field, condition, value })
+  condition: ValueCondition = 'Contains'
+): ValueFilterRule => ({ field, condition, value })
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -337,6 +342,164 @@ describe('C-60 extra rule properties count in comparison [own]', () => {
     const t = makeTable({ query: start({ filters: [noted(1)] }) })
     t.column('name').setFilterInput('a')
     t.column('name').applyFilterInput()
+    vi.runAllTimers()
+    expect(t.updates).toEqual([])
+  })
+})
+
+describe('C-113 Conditions without a value [own]', () => {
+  const isNull = (field: string): FilterRule => ({ field, condition: 'IsNull' })
+
+  it('picking one applies at once, without text and without a value key', () => {
+    const t = makeTable({ query: start({ page: 2 }), rowCount: 100 })
+    t.column('age').setFilterCondition('IsNull')
+    expect(t.updates).toEqual([[start({ filters: [isNull('age')] }), 'filter']])
+    expect(Object.keys(t.query.filters[0])).toEqual(['field', 'condition'])
+    expect(t.column('age').getFilterInput()).toEqual({
+      text: '',
+      condition: 'IsNull'
+    })
+    expect(t.column('age').getFilterLabel()).toEqual({
+      condition: 'IsNull',
+      count: 1
+    })
+  })
+
+  it('replaces the typed value and a pending text is not applied after it', () => {
+    const t = makeTable({ query: start({ filters: [rule('name', 'a')] }) })
+    const name = t.column('name')
+    name.setFilterInput('ab')
+    name.setFilterCondition('IsNotNull')
+    vi.runAllTimers()
+    expect(t.updates).toEqual([
+      [
+        start({ filters: [{ field: 'name', condition: 'IsNotNull' }] }),
+        'filter'
+      ]
+    ])
+  })
+
+  it('an echo keeps the condition; picking a one-value condition waits for text', () => {
+    const t = makeTable()
+    const age = t.column('age')
+    age.setFilterCondition('IsNull')
+    expect(age.getFilterInput().condition).toBe('IsNull')
+    age.setFilterCondition('Equal')
+    expect(t.query.filters).toEqual([])
+    expect(age.getFilterInput()).toEqual({ text: '', condition: 'Equal' })
+  })
+
+  it('an outside rule shows as its condition', () => {
+    const t = makeTable()
+    t.setQuery(start({ filters: [isNull('name')] }))
+    expect(t.column('name').getFilterInput()).toEqual({
+      text: '',
+      condition: 'IsNull'
+    })
+  })
+})
+
+describe('C-114 Between [own]', () => {
+  const between = (value: number, value2: number): FilterRule => ({
+    field: 'age',
+    condition: 'Between',
+    value,
+    value2
+  })
+
+  it('applies when both bounds read, as one rule, after the debounce', () => {
+    const t = makeTable({ query: start({ page: 3 }), rowCount: 100 })
+    const age = t.column('age')
+    age.setFilterCondition('Between')
+    expect(t.updates).toEqual([])
+    age.setFilterInput('18')
+    vi.runAllTimers()
+    expect(t.updates).toEqual([])
+    age.setFilterInput('65', 'upper')
+    vi.advanceTimersByTime(99)
+    expect(t.updates).toEqual([])
+    vi.advanceTimersByTime(1)
+    expect(t.updates).toEqual([
+      [start({ filters: [between(18, 65)] }), 'filter']
+    ])
+    expect(Object.keys(t.query.filters[0])).toEqual([
+      'field',
+      'condition',
+      'value',
+      'value2'
+    ])
+    expect(age.getFilterInput()).toEqual({
+      text: '18',
+      text2: '65',
+      condition: 'Between'
+    })
+  })
+
+  it('a change of the upper bound alone emits', () => {
+    const t = makeTable({ query: start({ filters: [between(1, 5)] }) })
+    t.column('age').setFilterInput('9', 'upper')
+    vi.runAllTimers()
+    expect(t.updates).toEqual([[start({ filters: [between(1, 9)] }), 'filter']])
+  })
+
+  it('an incomplete range keeps the last applied rules', () => {
+    const t = makeTable({ query: start({ filters: [between(1, 5)] }) })
+    const age = t.column('age')
+    age.setFilterInput('', 'upper')
+    vi.runAllTimers()
+    age.setFilterInput('x')
+    vi.runAllTimers()
+    age.applyFilterInput()
+    expect(t.updates).toEqual([])
+    expect(t.query.filters).toEqual([between(1, 5)])
+  })
+
+  it('both bounds blank clear the column', () => {
+    const t = makeTable({ query: start({ filters: [between(1, 5)] }) })
+    const age = t.column('age')
+    age.setFilterInput('', 'upper')
+    age.setFilterInput('')
+    expect(t.updates).toEqual([[start(), 'filter']])
+  })
+
+  it('the typed value becomes the lower bound; leaving Between drops the upper one', () => {
+    const t = makeTable({
+      query: start({ filters: [rule('age', 4, 'GreaterThan')] })
+    })
+    const age = t.column('age')
+    age.setFilterCondition('Between')
+    expect(age.getFilterInput()).toEqual({
+      text: '4',
+      text2: '',
+      condition: 'Between'
+    })
+    expect(t.updates).toEqual([])
+    age.setFilterInput('8', 'upper')
+    vi.runAllTimers()
+    expect(t.query.filters).toEqual([between(4, 8)])
+    age.setFilterCondition('LessThan')
+    expect(age.getFilterInput()).toEqual({ text: '4', condition: 'LessThan' })
+    expect(t.query.filters).toEqual([rule('age', 4, 'LessThan')])
+  })
+
+  it('an outside range shows both bounds; its echo leaves them as typed', () => {
+    const t = makeTable()
+    t.setQuery(start({ filters: [between(2, 3)] }))
+    expect(t.column('age').getFilterInput()).toEqual({
+      text: '2',
+      text2: '3',
+      condition: 'Between'
+    })
+    t.column('age').setFilterInput(' 7 ', 'upper')
+    vi.runAllTimers()
+    expect(t.query.filters).toEqual([between(2, 7)])
+    expect(t.column('age').getFilterInput().text2).toBe(' 7 ')
+  })
+
+  it('a value2 extra on a one-value rule is kept when typing the same value (C-60)', () => {
+    const extra = { ...rule('age', 4, 'Equal'), value2: 'x' } as FilterRule
+    const t = makeTable({ query: start({ filters: [extra] }) })
+    t.column('age').setFilterInput('4')
     vi.runAllTimers()
     expect(t.updates).toEqual([])
   })

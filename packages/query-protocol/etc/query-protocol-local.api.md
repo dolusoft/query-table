@@ -60,7 +60,7 @@ export type LocalQueryResult<T> = {
 };
 
 // @public
-export const profiles: readonly ["tr-1"];
+export const profiles: readonly ["tr-1", "tr-2"];
 
 // @public
 export const reservedQueryKeys: readonly ["sorts", "any", "group", "aggregates"];

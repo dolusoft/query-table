@@ -39,7 +39,7 @@ A query has exactly one of `page` and `cursor`. Extra top-level keys and extra r
 
 ## Conditions and values
 
-Ten conditions: `Contains`, `NotContains`, `Equal`, `NotEqual`, `StartsWith`, `EndsWith`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`. `value` is a string, number or boolean.
+Ten conditions with one `value`: `Contains`, `NotContains`, `Equal`, `NotEqual`, `StartsWith`, `EndsWith`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`. `value` is a string, number or boolean. Since 3.13 three more, sent only for a column that lists them in `filterConditions`: `IsNull` and `IsNotNull` have neither `value` nor `value2` (`{ "field": "due", "condition": "IsNull" }`), `Between` has a lower `value` and an upper `value2`, both inclusive, never swapped (a lower bound above the upper one matches nothing). Their meaning is the profile `tr-2` (`docs/guide/semantics.md#profile-tr-2`).
 
 | Column type | `value` | Offered conditions |
 | --- | --- | --- |

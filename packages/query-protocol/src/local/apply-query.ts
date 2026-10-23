@@ -16,7 +16,7 @@ import {
   matchKey,
   sortKey
 } from './text'
-import type { Plan, PlanRule } from './validate'
+import type { Operand, Plan, PlanRule, Positive } from './validate'
 import { checkPage, validate } from './validate'
 import type { PageQuery, Query } from '../protocol/types'
 
@@ -155,13 +155,37 @@ const readRows = <T>(
  * instant compare as they are (`-0` equals `0`).
  */
 const holds = (rule: PlanRule, value: unknown): boolean => {
+  // tr-2: the null predicates are the only conditions true on null.
+  switch (rule.positive) {
+    case 'IsNull':
+      return value === null
+    case 'IsNotNull':
+      return value !== null
+  }
   if (value === null) {
     return false
   }
-  const operand = rule.operand
+  if (rule.positive === 'Between') {
+    // GreaterThanOrEqual the lower bound and LessThanOrEqual the upper one,
+    // each with its own reading (a day-only bound is its day): inclusive,
+    // and nothing when the lower bound is above the upper one.
+    return (
+      compare('GreaterThanOrEqual', rule.operand!, value) &&
+      compare('LessThanOrEqual', rule.operand2!, value)
+    )
+  }
+  return compare(rule.positive, rule.operand!, value)
+}
+
+/** Whether `positive` holds between a value that is not null and `operand`. */
+const compare = (
+  positive: Exclude<Positive, 'IsNull' | 'IsNotNull' | 'Between'>,
+  operand: Operand,
+  value: unknown
+): boolean => {
   if (operand.kind === 'text') {
     const text = value as string
-    switch (rule.positive) {
+    switch (positive) {
       case 'Contains':
         return text.includes(operand.text)
       case 'StartsWith':
@@ -175,7 +199,7 @@ const holds = (rule: PlanRule, value: unknown): boolean => {
   }
   const t = value as number
   if (operand.kind === 'range') {
-    switch (rule.positive) {
+    switch (positive) {
       case 'Equal':
         return t >= operand.start && t < operand.end
       case 'GreaterThan':
@@ -190,7 +214,7 @@ const holds = (rule: PlanRule, value: unknown): boolean => {
     }
   }
   const v = operand.value as number
-  switch (rule.positive) {
+  switch (positive) {
     case 'GreaterThan':
       return t > v
     case 'GreaterThanOrEqual':

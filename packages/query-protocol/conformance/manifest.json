@@ -1,13 +1,14 @@
 {
   "fixtureFormat": 1,
   "suite": "query-local-conformance",
-  "revision": 1,
+  "revision": 2,
   "profiles": [
-    "tr-1"
+    "tr-1",
+    "tr-2"
   ],
   "querySchema": {
     "path": "../query.schema.json",
-    "sha256": "ccd4f7686393000f65fd702a70128d2bbc61897ab1b002bc59d59ed91024b654"
+    "sha256": "558059d539791d4cb6af30354f75e5e5245302e8e57d11b5e6f8df2f8c4bf3e7"
   },
   "files": [
     {
@@ -23,6 +24,13 @@
       "withdrawn": 0,
       "executions": 68,
       "sha256": "d0102220cb93d90cf6c0a2cf757739ab6588b98f301b3768d4f2ce65651c0f3e"
+    },
+    {
+      "path": "cases/nulls-and-ranges.json",
+      "active": 11,
+      "withdrawn": 0,
+      "executions": 50,
+      "sha256": "19826c8c75245cdb315219833ed5af6c383065ecbc78f6bedead1eab0e467b6d"
     },
     {
       "path": "cases/paging.json",

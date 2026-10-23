@@ -24,6 +24,9 @@ export const applyColumnFilters: (filters: FilterRule[], next: ColumnFiltersStat
 export const dispose: (table: object) => void;
 
 // @public
+export type FilterBound = 'lower' | 'upper';
+
+// @public
 export type FilterDrafts = Record<string, FilterDraft>;
 
 // @public (undocumented)
@@ -33,7 +36,7 @@ export interface FilterInputColumnApi {
     getFilterInput: () => Readonly<FilterDraft>;
     getFilterLabel: () => FilterLabel | null;
     setFilterCondition: (condition: FilterCondition | null) => void;
-    setFilterInput: (text: string) => void;
+    setFilterInput: (text: string, bound?: FilterBound) => void;
 }
 
 // @public (undocumented)

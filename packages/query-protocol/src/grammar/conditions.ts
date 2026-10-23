@@ -43,10 +43,25 @@ export const conditionOptions: Record<ColumnType, FilterConditionOption[]> = {
 export const defaultConditionFor = (type: ColumnType): FilterCondition =>
   type === 'string' ? 'Contains' : 'Equal'
 
-/** Label of a condition for a column type, falling back to the raw name. */
+/**
+ * Labels of the conditions of 3.13 (ADR 0020). They are not in
+ * `conditionOptions`: a column offers them only when it lists them itself.
+ */
+const addedLabels: Partial<Record<FilterCondition, string>> = {
+  IsNull: 'Is Null',
+  IsNotNull: 'Is Not Null',
+  Between: 'Between'
+}
+
+/**
+ * Label of a condition for a column type: the one in `conditionOptions`,
+ * else the label of a 3.13 condition (`'Is Null'`, `'Is Not Null'`,
+ * `'Between'`), else the raw name.
+ */
 export const conditionLabel = (
   type: ColumnType,
   condition: FilterCondition
 ): string =>
   conditionOptions[type].find(option => option.value === condition)?.label ??
+  addedLabels[condition] ??
   condition

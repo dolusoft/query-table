@@ -31,12 +31,18 @@ export type {
   FilterCondition,
   FilterRule,
   FilterValue,
+  NoValueCondition,
+  NoValueFilterRule,
   PageCursors,
   Query,
   QueryChangeReason,
+  RangeCondition,
+  RangeFilterRule,
   SortDirection,
   SortState,
-  TableQuery
+  TableQuery,
+  ValueCondition,
+  ValueFilterRule
 } from '@dolusoft/query-protocol'
 
 /**
@@ -110,6 +116,15 @@ export interface Column {
   hide?: boolean
   /** Show a filter input for this column (needs table `filterable`). Defaults to `true`. */
   filterable?: boolean
+  /**
+   * The conditions the `filter-menu` slot offers for this column, in this
+   * order, in place of the list of its type (C-112). It is how a column offers
+   * `IsNull`, `IsNotNull` and `Between`, which the list of a type leaves
+   * out. A condition the column type does not take is left out (`Between`
+   * on `string`, `Contains` on `number`). Unset, the menu offers the list
+   * of the type, as in 3.12.
+   */
+  filterConditions?: FilterCondition[]
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
 }
@@ -429,6 +444,17 @@ export interface TableLabels {
   openRightPanel: string
   /** Name of a filter input. Default `` name => `Filter ${name}` ``. */
   filterInput: (column: string) => string
+  /**
+   * Name of the lower bound input of a `Between` filter. Default
+   * `` name => `Filter ${name} from` ``. Optional (3.13), so a complete
+   * `TableLabels` of 3.12 still type-checks.
+   */
+  filterInputFrom?: (column: string) => string
+  /**
+   * Name of the upper bound input of a `Between` filter. Default
+   * `` name => `Filter ${name} to` ``. Optional (3.13), like `filterInputFrom`.
+   */
+  filterInputTo?: (column: string) => string
   /** Name and tooltip of a filter button. Default `` name => `Filter options for ${name}` ``. */
   filterOptions: (column: string) => string
   /** Name of a column's resize handle. Default `` name => `Resize ${name}` ``. */
@@ -593,12 +619,21 @@ export interface SubtableSlotProps<T> {
   rowIndex: number
 }
 
+/** Which bound of a `Between` filter an input holds (C-114). */
+export type FilterBound = 'lower' | 'upper'
+
 export interface FilterDatetimeSlotProps {
   column: Column
   /** Text currently in the filter input. */
   value: string | undefined
   /** Replace the input text; the filter is applied after the debounce. */
   updateValue: (value: string) => void
+  /**
+   * The bound this input holds when the column's condition is `Between`:
+   * the slot is then drawn twice, `'lower'` first. `null` for a filter of
+   * one value (C-114).
+   */
+  bound: FilterBound | null
 }
 
 /** One entry of the condition list offered for a column. */
@@ -614,11 +649,17 @@ export interface FilterMenuSlotProps {
   rules: FilterRule[]
   /** Condition shown for the column: the first rule's, else the one picked, else `null`. */
   condition: FilterCondition | null
-  /** Conditions that make sense for the column type, labelled by `labels.filterCondition`. */
+  /**
+   * Conditions offered for the column, labelled by `labels.filterCondition`:
+   * the column's `filterConditions`, else those of its type (C-112).
+   */
   conditions: FilterConditionOption[]
   /**
    * Pick a condition. With a value typed the filter is applied; otherwise the
-   * pick waits for a value. `null` clears the filter.
+   * pick waits for a value. `null` clears the filter. `IsNull` and
+   * `IsNotNull` apply at once (C-113); `Between` waits for both bounds
+   * (C-114). Any condition is taken, also one outside `conditions`: the
+   * column's `filterConditions` only drives the menu (C-112).
    */
   setCondition: (condition: FilterCondition | null) => void
   /** Remove the rules of this column. Sort is left alone. */

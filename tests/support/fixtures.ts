@@ -1,4 +1,10 @@
-import type { Column, FilterRule, TableQuery } from '@dolusoft/query-table'
+import type {
+  Column,
+  FilterValue,
+  TableQuery,
+  ValueCondition,
+  ValueFilterRule
+} from '@dolusoft/query-table'
 
 // Data and DOM helpers of the browser specs. Nothing here touches the
 // playground skin or its harness, so specs of the bare component (the DOM
@@ -29,9 +35,9 @@ export const makeQuery = (overrides: Partial<TableQuery> = {}): TableQuery => ({
 
 export const rule = (
   field: string,
-  condition: FilterRule['condition'],
-  value: FilterRule['value']
-): FilterRule => ({ field, condition, value })
+  condition: ValueCondition,
+  value: FilterValue
+): ValueFilterRule => ({ field, condition, value })
 
 export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 

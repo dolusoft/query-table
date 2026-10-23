@@ -23,7 +23,10 @@
         "GreaterThan",
         "GreaterThanOrEqual",
         "LessThan",
-        "LessThanOrEqual"
+        "LessThanOrEqual",
+        "IsNull",
+        "IsNotNull",
+        "Between"
       ]
     },
     "FilterValue": {
@@ -36,11 +39,10 @@
     },
     "FilterRule": {
       "type": "object",
-      "description": "Rules of one field combine with OR, or with AND when all of them are negative (NotEqual, NotContains). Rules of different fields combine with AND.",
+      "description": "Rules of one field combine with OR, or with AND when all of them are negative (NotEqual, NotContains). Rules of different fields combine with AND. The condition says how many values a rule has: IsNull and IsNotNull none, Between two (value is the lower bound, value2 the upper one, both inclusive), every other condition one.",
       "required": [
         "field",
-        "condition",
-        "value"
+        "condition"
       ],
       "properties": {
         "field": {
@@ -52,6 +54,59 @@
         },
         "value": {
           "$ref": "#/$defs/FilterValue"
+        }
+      },
+      "if": {
+        "properties": {
+          "condition": {
+            "enum": [
+              "IsNull",
+              "IsNotNull"
+            ]
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "value"
+              ]
+            },
+            {
+              "required": [
+                "value2"
+              ]
+            }
+          ]
+        }
+      },
+      "else": {
+        "if": {
+          "properties": {
+            "condition": {
+              "enum": [
+                "Between"
+              ]
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "value",
+            "value2"
+          ],
+          "properties": {
+            "value2": {
+              "$ref": "#/$defs/FilterValue"
+            }
+          }
+        },
+        "else": {
+          "required": [
+            "value"
+          ]
         }
       },
       "additionalProperties": true

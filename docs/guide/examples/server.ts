@@ -87,10 +87,22 @@ const compare = (a: Cell, b: Cell): number => {
 }
 
 const holds = (row: Person, rule: FilterRule): boolean => {
-  const cell = row[rule.field as Field]
+  const cell = row[rule.field as Field] as Cell | null | undefined
+  // A rule without a value (3.13) asks about null; no other rule holds on it.
+  if (rule.condition === 'IsNull' || rule.condition === 'IsNotNull') {
+    return (
+      (cell === null || cell === undefined) === (rule.condition === 'IsNull')
+    )
+  }
+  if (cell === null || cell === undefined) {
+    return false
+  }
   const text = String(cell).toLowerCase()
   const value = String(rule.value).toLowerCase()
   switch (rule.condition) {
+    case 'Between':
+      // Both bounds inclusive, never swapped.
+      return compare(cell, rule.value) >= 0 && compare(cell, rule.value2) <= 0
     case 'Contains':
       return text.includes(value)
     case 'NotContains':

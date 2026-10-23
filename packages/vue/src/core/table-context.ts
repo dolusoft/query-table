@@ -1,6 +1,6 @@
 import { inject, provide, type InjectionKey } from 'vue'
 
-import type { TableLabels } from '../contract'
+import type { ResolvedLabels } from './labels'
 import type { ColumnReorder } from '../reorder/use-column-reorder'
 import type { ColumnResize } from '../resize/use-column-resize'
 import type {
@@ -29,7 +29,7 @@ export interface TableContext {
     QueryTableSelection<object>,
     'allSelected' | 'someSelected' | 'toggleAll'
   >
-  labels: () => TableLabels
+  labels: () => ResolvedLabels
 }
 
 const tableContextKey: InjectionKey<TableContext> = Symbol('query-table')

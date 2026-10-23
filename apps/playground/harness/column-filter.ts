@@ -57,7 +57,10 @@ const words: Record<FilterCondition, string> = {
   GreaterThan: 'greater than',
   GreaterThanOrEqual: 'at least',
   LessThan: 'less than',
-  LessThanOrEqual: 'at most'
+  LessThanOrEqual: 'at most',
+  IsNull: 'is null',
+  IsNotNull: 'is not null',
+  Between: 'between'
 }
 const temporalWords: Partial<Record<FilterCondition, string>> = {
   GreaterThan: 'after',
@@ -119,8 +122,12 @@ export function describeRules(column: Column, rules: FilterRule[]): string {
   const negative = rules.every(
     rule => rule.condition === 'NotEqual' || rule.condition === 'NotContains'
   )
-  const parts = rules.map(
-    rule => `${wordOf(type, rule.condition)} ${String(rule.value)}`
+  const parts = rules.map(rule =>
+    rule.condition === 'Between'
+      ? `${wordOf(type, rule.condition)} ${String(rule.value)} and ${String(rule.value2)}`
+      : rule.value === undefined
+        ? wordOf(type, rule.condition)
+        : `${wordOf(type, rule.condition)} ${String(rule.value)}`
   )
   return `${titleOf(column)} ${parts.join(negative ? ' and ' : ' or ')}`
 }

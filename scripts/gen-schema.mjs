@@ -23,7 +23,13 @@ const pkg = join(root, 'packages', 'query-protocol')
 const file = join(pkg, 'query.schema.json')
 
 // Node strips the types of constants.ts on import (it imports nothing).
-const { filterConditions, sortDirections, cursorDirections } = await import(
+const {
+  filterConditions,
+  noValueConditions,
+  rangeConditions,
+  sortDirections,
+  cursorDirections
+} = await import(
   pathToFileURL(join(pkg, 'src', 'protocol', 'constants.ts')).href
 )
 
@@ -46,12 +52,28 @@ export const buildSchema = () => ({
     FilterRule: {
       type: 'object',
       description:
-        'Rules of one field combine with OR, or with AND when all of them are negative (NotEqual, NotContains). Rules of different fields combine with AND.',
-      required: ['field', 'condition', 'value'],
+        'Rules of one field combine with OR, or with AND when all of them are negative (NotEqual, NotContains). Rules of different fields combine with AND. The condition says how many values a rule has: IsNull and IsNotNull none, Between two (value is the lower bound, value2 the upper one, both inclusive), every other condition one.',
+      required: ['field', 'condition'],
       properties: {
         field: { type: 'string', minLength: 1 },
         condition: { $ref: '#/$defs/FilterCondition' },
         value: { $ref: '#/$defs/FilterValue' }
+      },
+      if: {
+        properties: { condition: { enum: [...noValueConditions] } }
+      },
+      then: {
+        not: { anyOf: [{ required: ['value'] }, { required: ['value2'] }] }
+      },
+      else: {
+        if: {
+          properties: { condition: { enum: [...rangeConditions] } }
+        },
+        then: {
+          required: ['value', 'value2'],
+          properties: { value2: { $ref: '#/$defs/FilterValue' } }
+        },
+        else: { required: ['value'] }
       },
       additionalProperties: true
     },

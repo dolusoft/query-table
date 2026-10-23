@@ -6,17 +6,19 @@
     "3.1.0 (PR-L1, 2026-10-06): protocol-local fixture added for the /local entry (C-75), measured 29 B with only the `profiles` skeleton; ceiling 500 B until PR-L1 measures a real evaluation. protocol unchanged at 1052 B.",
     "3.1.0 (PR-L1, 2026-10-06): protocol-local 4027 B. The local evaluator: parsing, ordering and paging; rules and search arrive in PR-L2. The fixture now defines a dataset and runs applyQuery; budget 31 B -> 4229 B (measured + 5%), ceiling 500 B -> 5000 B (the 500 B guess predates any evaluator code; measured x 1.2, rounded up to 500).",
     "3.1.0 (PR-L2, 2026-10-06): protocol-local 5069 B (+1042 B). The condition x type matrix, rule values, composition and the search; budget 4229 B -> 5322 B (measured + 5%), ceiling 5000 B -> 6500 B (measured x 1.2, rounded up to 500). The other fixtures do not import /local and stay in their budgets.",
-    "3.3.0 (change flash, 2026-10-07): row-changes 1550 B, the row-change tracker alone (/row-changes entry, ADR 0011). First measured at 1466 B; +84 B for the bounded cycle tracking of sameValue and the query reset that waits for its answer (append keeps the running flashes). Budget 1628 B (measured + 5%), ceiling 2000 B. The other fixtures do not use it and stay in their budgets."
+    "3.3.0 (change flash, 2026-10-07): row-changes 1550 B, the row-change tracker alone (/row-changes entry, ADR 0011). First measured at 1466 B; +84 B for the bounded cycle tracking of sameValue and the query reset that waits for its answer (append keeps the running flashes). Budget 1628 B (measured + 5%), ceiling 2000 B. The other fixtures do not use it and stay in their budgets.",
+    "3.13.0 (ADR 0020, #167, 2026-10-23): protocol 1258 B (+206 B), protocol-local 5379 B (+310 B over 5069 B). The conditions IsNull, IsNotNull and Between: their lists (noValueConditions, rangeConditions), conditionArity, the operand shape checked by the condition in the schema, and in the evaluator the profile tr-2 (its matrix rows, the null predicates, the two bounds and the /value2 errors). Budgets set to measure plus 5%; ceilings unchanged.",
+    "3.13.0 (ADR 0020, #167, 2026-10-23): filter-input 11809 B (+555 B over the 11254 B measure; it had grown to within 8 B of its budget before this change was measured). The two bounds of a Between draft, the arity of a condition and the no-value rules. Budget set to measure plus 5%; no ceiling."
   ],
   "fixtures": {
     "protocol": {
-      "measuredGzipBytes": 1052,
-      "maxGzipBytes": 1105,
+      "measuredGzipBytes": 1258,
+      "maxGzipBytes": 1321,
       "ceilingGzipBytes": 1500
     },
     "protocol-local": {
-      "measuredGzipBytes": 5069,
-      "maxGzipBytes": 5322,
+      "measuredGzipBytes": 5379,
+      "maxGzipBytes": 5648,
       "ceilingGzipBytes": 6500
     },
     "server-query": {
@@ -24,8 +26,8 @@
       "maxGzipBytes": 14360
     },
     "filter-input": {
-      "measuredGzipBytes": 11254,
-      "maxGzipBytes": 11817
+      "measuredGzipBytes": 11809,
+      "maxGzipBytes": 12399
     },
     "row-changes": {
       "measuredGzipBytes": 1550,

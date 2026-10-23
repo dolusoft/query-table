@@ -215,7 +215,7 @@ describe('C-76 Pipeline, page mode and result [own]', () => {
 
 describe('C-78 Semantics profile [own]', () => {
   it('lists the profiles of this build', () => {
-    expect([...profiles]).toEqual(['tr-1'])
+    expect([...profiles]).toEqual(['tr-1', 'tr-2'])
   })
 
   it('an unknown profile is an error value, not a throw', () => {
@@ -599,5 +599,225 @@ describe('C-80 Filters and search [own]', () => {
     const frozen = deepFreeze(all.map(row => ({ ...row })))
     const result = where(rules, { search: 'a' }, frozen)
     expect(result.ok && result.rows[0]).toBe(frozen[2])
+  })
+})
+
+describe('C-115 Profile tr-2: null predicates and ranges [own]', () => {
+  type Typed = Record<string, unknown>
+  const typed = defineDataset<Typed>({
+    key: 'id',
+    fields: {
+      id: { type: 'integer' },
+      s: { type: 'string' },
+      n: { type: 'number' },
+      i: { type: 'integer' },
+      b: { type: 'bool' },
+      d: { type: 'date' },
+      t: { type: 'datetime', offset: '+03:00' }
+    }
+  })
+  // Row 2 is null everywhere; rows 3 and 4 hold the values a null test must
+  // not take for null: '', whitespace, 0, -0 and false.
+  const all: Typed[] = [
+    {
+      id: 1,
+      s: 'a',
+      n: 1.5,
+      i: 10,
+      b: true,
+      d: '2026-10-06',
+      t: '2026-10-06T00:30:00+03:00'
+    },
+    { id: 2, s: null, n: null, i: null, b: null, d: null, t: null },
+    {
+      id: 3,
+      s: '',
+      n: 0,
+      i: -5,
+      b: false,
+      d: '2026-10-05',
+      t: '2026-10-05T20:59:59.999Z'
+    },
+    {
+      id: 4,
+      s: '  ',
+      n: 3,
+      i: 0,
+      b: false,
+      d: '2026-10-07',
+      t: '2026-10-07T00:00:00+03:00'
+    }
+  ]
+  const run = (
+    rules: object[],
+    profile: 'tr-1' | 'tr-2' = 'tr-2',
+    data: readonly Typed[] = all
+  ) => applyQuery(data, q({ filters: rules }), typed, { profile })
+  const keys = (result: ReturnType<typeof run>) => {
+    if (result.ok) {
+      return result.rows.map(row => row.id)
+    }
+    const error: Partial<LocalQueryError> = { ...result.error }
+    expect(typeof error.message).toBe('string')
+    delete error.message
+    return error
+  }
+  const isNull = (field: string) => ({ field, condition: 'IsNull' })
+  const isNotNull = (field: string) => ({ field, condition: 'IsNotNull' })
+  const between = (field: string, value: unknown, value2: unknown) => ({
+    field,
+    condition: 'Between',
+    value,
+    value2
+  })
+
+  it.each(['s', 'n', 'i', 'b', 'd', 't'])(
+    'IsNull holds only on null and IsNotNull is its complement: %s',
+    field => {
+      expect(keys(run([isNull(field)]))).toEqual([2])
+      expect(keys(run([isNotNull(field)]))).toEqual([1, 3, 4])
+    }
+  )
+
+  it.each([
+    ['n', 0, 1.5, [1, 3]],
+    ['n', 1.5, 1.5, [1]],
+    ['n', -0, 0, [3]],
+    ['n', 3, 0, []],
+    ['i', -5, 0, [3, 4]],
+    ['i', 11, 20, []],
+    ['d', '2026-10-05', '2026-10-06', [1, 3]],
+    ['d', '2026-10-07', '2026-10-05', []],
+    // A day-only bound on a datetime field reads as its day in the offset.
+    ['t', '2026-10-06', '2026-10-06', [1]],
+    ['t', '2026-10-05', '2026-10-06', [1, 3]],
+    ['t', '2026-10-06', '2026-10-07', [1, 4]],
+    ['t', '2026-10-05T20:59:59.999Z', '2026-10-06T00:30:00+03:00', [1, 3]],
+    ['t', '2026-10-06T00:30', '2026-10-06', [1]],
+    ['t', '2026-10-05T21:00:00Z', '2026-10-06T00:29:59+03:00', []]
+  ])(
+    'Between %s %j and %j is inclusive and never swapped',
+    (field, l, u, expected) => {
+      expect(keys(run([between(field, l, u)]))).toEqual(expected)
+    }
+  )
+
+  it('Between equals GreaterThanOrEqual and LessThanOrEqual together', () => {
+    for (const [field, l, u] of [
+      ['n', 0, 1.5],
+      ['i', -5, 0],
+      ['d', '2026-10-05', '2026-10-06'],
+      ['t', '2026-10-06', '2026-10-07'],
+      ['t', '2026-10-05T20:59:59.999Z', '2026-10-06']
+    ] as const) {
+      const lower = keys(
+        run([{ field, condition: 'GreaterThanOrEqual', value: l }])
+      ) as number[]
+      const upper = keys(
+        run([{ field, condition: 'LessThanOrEqual', value: u }])
+      ) as number[]
+      expect(keys(run([between(field, l, u)]))).toEqual(
+        lower.filter(id => upper.includes(id))
+      )
+    }
+  })
+
+  it.each(['s', 'b'])(
+    'refuses Between on %s as unsupported-operator',
+    field => {
+      expect(keys(run([between(field, 'a', 'b')]))).toEqual({
+        code: 'unsupported-operator',
+        field,
+        rule: 0,
+        path: '/filters/0/condition'
+      })
+    }
+  )
+
+  it.each([
+    [isNull('s'), '/filters/0/value', { value: 'x' }],
+    [isNull('s'), '/filters/0/value', { value: null }],
+    [isNull('s'), '/filters/0/value', { value: '' }],
+    [isNotNull('n'), '/filters/0/value', { value: 0 }],
+    [isNotNull('n'), '/filters/0/value2', { value2: 1 }],
+    [between('n', 1, 2), '/filters/0/value', { value: undefined }],
+    [between('n', 1, 2), '/filters/0/value', { value: null }],
+    [between('n', 1, 2), '/filters/0/value2', { value2: undefined }],
+    [between('n', 1, 2), '/filters/0/value2', { value2: [2] }],
+    // The shape is checked before the field, as in tr-1.
+    [between('zz', 1, 2), '/filters/0/value2', { value2: null }]
+  ])(
+    'refuses the operand shape of %j as invalid-query',
+    (base, path, patch) => {
+      const item: Record<string, unknown> = { ...base, ...patch }
+      for (const key of Object.keys(patch)) {
+        if ((patch as Record<string, unknown>)[key] === undefined) {
+          delete item[key]
+        }
+      }
+      expect(keys(run([item]))).toEqual({
+        code: 'invalid-query',
+        rule: 0,
+        path
+      })
+    }
+  )
+
+  it.each([
+    ['n', 'x', 1, '/filters/0/value'],
+    ['n', 1, 'x', '/filters/0/value2'],
+    ['i', 1, 2.5, '/filters/0/value2'],
+    ['d', '2026-02-30', '2026-03-01', '/filters/0/value'],
+    ['d', '2026-03-01', '2026-03-01T00:00:00Z', '/filters/0/value2'],
+    ['t', '2026-10-06', '2026-10-06t00:00:00Z', '/filters/0/value2']
+  ])(
+    'refuses Between on %s %j and %j as invalid-value',
+    (field, l, u, path) => {
+      expect(keys(run([between(field, l, u)]))).toEqual({
+        code: 'invalid-value',
+        field,
+        rule: 0,
+        path
+      })
+    }
+  )
+
+  it('IsNotNull is positive: with NotEqual on its field it combines with OR (C-17)', () => {
+    const rules = [
+      { field: 'n', condition: 'NotEqual', value: 1.5 },
+      isNotNull('n')
+    ]
+    expect(keys(run(rules))).toEqual([1, 2, 3, 4])
+    expect(
+      keys(run([isNull('n'), { field: 'n', condition: 'Equal', value: 3 }]))
+    ).toEqual([2, 4])
+    expect(keys(run([isNull('s'), between('n', 0, 1)]))).toEqual([])
+  })
+
+  it('keeps the refusals of tr-1', () => {
+    // tr-1 checks one value first, then refuses the reserved name.
+    expect(keys(run([{ ...isNull('s'), value: 'x' }], 'tr-1'))).toEqual({
+      code: 'unsupported-extension',
+      name: 'IsNull',
+      field: 's',
+      rule: 0,
+      path: '/filters/0/condition'
+    })
+    expect(keys(run([isNotNull('s')], 'tr-1'))).toMatchObject({
+      code: 'invalid-query',
+      path: '/filters/0/value'
+    })
+    expect(keys(run([between('n', 0, 1)], 'tr-1'))).toEqual({
+      code: 'unsupported-operator',
+      field: 'n',
+      rule: 0,
+      path: '/filters/0/condition'
+    })
+  })
+
+  it('keeps an extra value2 on a one-value rule as an extra property (C-60)', () => {
+    expect(
+      keys(run([{ field: 'n', condition: 'Equal', value: 3, value2: 'x' }]))
+    ).toEqual([4])
   })
 })

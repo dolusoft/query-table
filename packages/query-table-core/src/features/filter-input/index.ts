@@ -5,6 +5,7 @@ import './types'
 export { dispose } from '../../shared'
 export { filterInputFeature } from './filter-input-feature'
 export type {
+  FilterBound,
   FilterInputColumnApi,
   FilterInputColumnDef,
   FilterDrafts,

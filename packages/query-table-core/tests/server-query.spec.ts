@@ -1,4 +1,9 @@
-import type { CursorQuery, FilterRule, Query } from '@dolusoft/query-protocol'
+import type {
+  CursorQuery,
+  FilterRule,
+  Query,
+  ValueFilterRule
+} from '@dolusoft/query-protocol'
 import {
   columnFilteringFeature,
   constructTable,
@@ -14,7 +19,7 @@ import { serverQueryFeature } from '../src/features/server-query'
 import { onBeforeAction } from '../src/shared'
 import { makeTable, rowsOf, start, tick } from './support/table'
 
-const rule = (field: string, value: string | number): FilterRule => ({
+const rule = (field: string, value: string | number): ValueFilterRule => ({
   field,
   condition: 'Equal',
   value

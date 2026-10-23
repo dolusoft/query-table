@@ -10,22 +10,31 @@ export type {
   FilterConditionOption,
   FilterRule,
   FilterValue,
+  NoValueCondition,
+  NoValueFilterRule,
   PageCursors,
   PageQuery,
   Query,
   QueryBase,
   QueryChangeReason,
+  RangeCondition,
+  RangeFilterRule,
   SortDirection,
   SortState,
-  TableQuery
+  TableQuery,
+  ValueCondition,
+  ValueFilterRule
 } from './protocol/types'
 export {
   columnTypes,
   cursorDirections,
   filterConditions,
+  noValueConditions,
   queryChangeReasons,
+  rangeConditions,
   sortDirections
 } from './protocol/constants'
+export { conditionArity } from './protocol/arity'
 export {
   cloneQuery,
   isCursorQuery,
@@ -48,7 +57,8 @@ export {
   type Parsed,
   draftFromRules,
   hasContent as draftHasContent,
-  parseDraft
+  parseDraft,
+  rulesFromDraft
 } from './grammar/draft'
 export { parseFilterInput } from './grammar/parse-filter-input'
 export {

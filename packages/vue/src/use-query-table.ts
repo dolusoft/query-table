@@ -18,6 +18,7 @@ import {
 } from '@dolusoft/query-protocol'
 import {
   dispose,
+  type FilterBound,
   type FilterLabel,
   filterInputFeature,
   projectServerQuery,
@@ -182,8 +183,11 @@ export interface ColumnEntry {
 export interface QueryTableFilters {
   /** The column's typed text and picked condition; blank when nothing is typed. */
   draftOf: (field: string) => Readonly<FilterDraft>
-  /** The input's text changed: applied after the debounce (C-09). */
-  setInput: (field: string, text: string) => void
+  /**
+   * The input's text changed: applied after the debounce (C-09). `'upper'`
+   * sets the upper bound of a `Between` filter instead (C-114).
+   */
+  setInput: (field: string, text: string, bound?: FilterBound) => void
   /** Enter: applies the column's pending text now (C-12). */
   apply: (field: string) => void
   /** Applies every pending text in one update; `true` when it changed the filters. */
@@ -668,7 +672,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   const filters: QueryTableFilters = {
     draftOf,
-    setInput: (field, text) => columnById(field)?.setFilterInput(text),
+    setInput: (field, text, bound) =>
+      columnById(field)?.setFilterInput(text, bound),
     apply: field => columnById(field)?.applyFilterInput(),
     flushAll: () => table.flushPendingFilters(),
     setCondition: (field, condition) =>

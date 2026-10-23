@@ -55,7 +55,11 @@ const sameJson = (a: unknown, b: unknown): boolean => {
 
 const ruleKeys = new Set(['field', 'condition', 'value'])
 
-/** The own enumerable properties of a rule besides the three it is made of. */
+/**
+ * The own enumerable properties of a rule besides `field`, `condition` and
+ * `value`. The upper bound `value2` of a `Between` rule is among them, so it
+ * is compared by value like any other property.
+ */
 const extraPart = (rule: FilterRule): Record<string, unknown> =>
   Object.fromEntries(Object.entries(rule).filter(([key]) => !ruleKeys.has(key)))
 
@@ -67,8 +71,9 @@ const sameRule = (a: FilterRule, b: FilterRule): boolean =>
 
 /**
  * Whether two rule lists say the same, in the same order. `field`,
- * `condition` and `value` are compared, and so are the extra properties of a
- * rule, by value and whatever their key order (C-60).
+ * `condition` and `value` are compared, and so are `value2` and the extra
+ * properties of a rule, by value and whatever their key order (C-60). A rule
+ * without a `value` key equals one whose `value` is `undefined`.
  */
 export const sameRules = (
   a: readonly FilterRule[],
@@ -117,7 +122,7 @@ const cloneValue = (value: unknown): unknown => {
 /**
  * A deep copy that shares no object with the original. Nothing is dropped:
  * keys the protocol does not know, and properties of a rule besides `field`,
- * `condition` and `value`, are copied as they are.
+ * `condition` and `value` (`value2` among them), are copied as they are.
  */
 export const cloneQuery = <Q extends Query>(query: Q): Q =>
   cloneValue(query) as Q

@@ -10,6 +10,8 @@ The unit of text is the **UTF-16 code unit** (`charCodeAt` in JavaScript, `char`
 
 The numbers in parentheses, such as (case C27), name the cases of the conformance suite that pin a sentence down; `C-nn` names a behavior rule in [`contract/rules.md`](../../contract/rules.md).
 
+The profile `tr-2` (3.13) is `tr-1` plus the conditions `IsNull`, `IsNotNull` and `Between`; what it changes is in [Profile `tr-2`](#profile-tr-2). Everywhere else this document is `tr-1`, and so is every sentence that does not name `tr-2`.
+
 ## Source context
 
 - `allRows` is the complete and authoritative set of rows of the **resolved source context**: the time range, the sources, the scope of the user's permissions and the source's own limits, such as a `maxRows`. The evaluator cannot tell that it was given one page or a cut-down subset; that is the caller's obligation.
@@ -125,13 +127,13 @@ offset    = "Z" / ("+" / "-") HH ":" MM
 
 ✓ allowed, ✗ `unsupported-operator`.
 
-| Condition                                                          | `string`                | `number` / `integer` | `bool` | `date` / `datetime` |
-| ------------------------------------------------------------------ | ----------------------- | -------------------- | ------ | ------------------- |
-| `Contains`, `NotContains`, `StartsWith`, `EndsWith`                | ✓                       | ✗                    | ✗      | ✗                   |
-| `Equal`, `NotEqual`                                                | ✓                       | ✓                    | ✓      | ✓                   |
-| `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual` | ✗                       | ✓                    | ✗      | ✓                   |
-| `IsNull`, `IsNotNull` (reserved)                                   | `unsupported-extension` | ←                    | ←      | ←                   |
-| an unknown condition                                               | `unsupported-operator`  | ←                    | ←      | ←                   |
+| Condition                                                              | `string`                | `number` / `integer` | `bool` | `date` / `datetime` |
+| ---------------------------------------------------------------------- | ----------------------- | -------------------- | ------ | ------------------- |
+| `Contains`, `NotContains`, `StartsWith`, `EndsWith`                    | ✓                       | ✗                    | ✗      | ✗                   |
+| `Equal`, `NotEqual`                                                    | ✓                       | ✓                    | ✓      | ✓                   |
+| `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`     | ✗                       | ✓                    | ✗      | ✓                   |
+| `IsNull`, `IsNotNull` (reserved; evaluated in [`tr-2`](#profile-tr-2)) | `unsupported-extension` | ←                    | ←      | ←                   |
+| an unknown condition                                                   | `unsupported-operator`  | ←                    | ←      | ←                   |
 
 The table's filter menu does not offer `GreaterThanOrEqual` and `LessThanOrEqual` on dates, but the protocol allows them and so does the evaluator. Order conditions on text are deliberately absent.
 
@@ -142,7 +144,7 @@ The table's filter menu does not offer `GreaterThanOrEqual` and `LessThanOrEqual
 ## Composition and search
 
 - **Composition (C-17):** rules are grouped by field; a group whose rules are all negative combines with AND, any other group with OR; groups combine with AND. The order of groups and rules does not change the result (case C62). Repeating a rule does not change the result.
-- **The range trap:** `age > 20` and `age < 40` on one field combine with OR; the result is every age that is not null. A bounded range cannot be expressed in 3.x (case C20).
+- **The range trap:** `age > 20` and `age < 40` on one field combine with OR; the result is every age that is not null. A bounded range cannot be expressed in `tr-1` (case C20); in `tr-2` it is one `Between` rule ([Profile `tr-2`](#profile-tr-2)).
 - **A group of mixed signs** (`Equal ali`, `NotContains e`) combines with OR (case C18).
 - **Search:** when `search` is absent, `null`, or empty after trimming, **there is no search and no error**, also on a dataset without a search field (case C53). The trim set is U+0009–U+000D, U+0020 and U+00A0, an explicit list because JavaScript's `trim()` and .NET's `Trim()` use different sets; other spaces, such as U+2003, are not trimmed. Order: UTF-16 check → trim → composition → `M`. The trimmed text is one needle (it is not split into words). A row matches when the `M(C(value))` of one of its `search: true` fields contains the needle; a null field does not match. The search combines with the filters by AND. An active search on a dataset without a search field is `search-not-supported`.
 
@@ -227,6 +229,32 @@ An error carries exactly the location fields below, no more and no fewer; `i` is
 | `invalid-data`                 | `field`, `row`                  | —                                                                                            |
 | `duplicate-key`                | `field`, `row`                  | —                                                                                            |
 
+## Profile `tr-2`
+
+`tr-2` (3.13, [ADR 0020](../decisions/0020-null-and-range-conditions.md)) is `tr-1` plus three conditions: `IsNull`, `IsNotNull` and `Between`. Everything else in this document holds for `tr-2` as written, and every condition of `tr-1` keeps its meaning, `NotEqual` and `NotContains` true on null included. A query whose rules use only the ten conditions of `tr-1` gives the same result, rows or error, under both profiles; the conformance runner checks it for every run of a `tr-1` case, except the runs that test the refusals `tr-2` replaces (C58.6 and C80). A rule of `IsNull`, `IsNotNull` or `Between` follows the order below, so its error can differ from the one `tr-1` gives. This section lists only what differs.
+
+**The operands a rule has.** The condition says how many: `IsNull` and `IsNotNull` have none (neither `value` nor `value2`), `Between` has two (`value` the lower bound, `value2` the upper one), every other condition one (`value`). On a one-value rule `value2` is an extra property, carried and not meant (C-60).
+
+**Condition by type.** The table of [Condition by type](#condition-by-type), with the row of `IsNull` and `IsNotNull` replaced and one row added (case C76):
+
+| Condition             | `string` | `number` / `integer` | `bool` | `date` / `datetime` |
+| --------------------- | -------- | -------------------- | ------ | ------------------- |
+| `IsNull`, `IsNotNull` | ✓        | ✓                    | ✓      | ✓                   |
+| `Between`             | ✗        | ✓                    | ✗      | ✓                   |
+
+**Meaning.**
+
+- `IsNull` is true only on null (missing, `undefined` or `null`, [Reading values](#reading-values)); `''`, whitespace, `0` and `false` are values (case C72). `IsNotNull` is its exact complement. In SQL: `col IS NULL` and `col IS NOT NULL`.
+- `Between` with `l` and `u` is `GreaterThanOrEqual l` and `LessThanOrEqual u` on the same value, each bound with its own reading: both bounds are inclusive (case C73), and on a `datetime` a day-only bound is its day in the field's offset, an instant is itself ([Calendar and time](#calendar-and-time); case C75). So `Between 2026-10-06 2026-10-06` is the whole day, `start ≤ t < end`. In SQL: `col BETWEEN @l AND @u` with a day-only bound written as its `start` (lower) or as `col < @end` (upper).
+- A lower bound above the upper one is not an error and matches nothing; the bounds are never swapped (case C74).
+- `Between` is false on null, as every positive condition is: `IsNull` is the only condition that asks for null.
+- **Composition** stays as written (C-17): `IsNull`, `IsNotNull` and `Between` are positive, so a field with one of them and a negative rule combines with OR (case C79). `IsNotNull` is not negative because of its name.
+- **The range trap** of [Composition and search](#composition-and-search) has its answer here: `age > 20` and `age < 40` still combine with OR, and the bounded range is one rule, `Between 21 39` (or with `GreaterThan` and `LessThan` bounds on a `number`, the range they mean). There is no `NotBetween`: `< l` and `> u` on one field already say "outside the range".
+
+**Validation order.** Step 8 of [Validation order](#validation-order) checks the operands by the condition, at the place where `tr-1` checks its one `value`, whatever the condition: a rule of `IsNull` or `IsNotNull` with a `value` or a `value2` key whose value is not `undefined` → `invalid-query` (`/filters/i/value`, then `/filters/i/value2`); a rule of `Between` whose `value` and then `value2` is not a string, number or boolean → `invalid-query` (the matching `path`). No condition is reserved, so there is no `unsupported-extension` on a rule. A bound that does not fit the type → `invalid-value`, `/filters/i/value` before `/filters/i/value2` (case C78). The shape comes before the field, as in `tr-1`: a `Between` without `value2` on an unknown field is `invalid-query` at `/filters/i/value2` (case C77.7), where `tr-1` gives `unknown-field`.
+
+**Error locations.** Two pointers are added to [Error locations](#error-locations): `/filters/i/value2` for `invalid-query` (rule) and for `invalid-value`. `unsupported-extension` (rule) does not occur.
+
 ## Versioning
 
 There are four separate versions; none implies another.
@@ -258,6 +286,8 @@ Rules:
 | `columns`             | top-level key             | ignored (reserved in the documentation only) | projection                         |
 | `range`               | top-level key             | ignored (reserved in the documentation only) | bounded ranges                     |
 | `IsNull`, `IsNotNull` | condition (internal list) | `unsupported-extension`                      | explicit null predicates           |
+
+> Superseded for `IsNull` and `IsNotNull` by [ADR 0020](../decisions/0020-null-and-range-conditions.md): the profile `tr-2` evaluates them ([Profile `tr-2`](#profile-tr-2)), and `tr-1` keeps refusing them as this table says. The top-level keys and the envelope below do not change.
 
 - The list of refused names is **frozen** for 3.x; it is not a way to grow the query. These names live in the open extension namespace and do not negotiate capabilities.
 - The table keeps carrying these keys, as it carries any unknown key (C-60). Do not use them for your own extensions.

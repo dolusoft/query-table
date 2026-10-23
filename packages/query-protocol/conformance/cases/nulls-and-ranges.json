@@ -1,0 +1,881 @@
+{
+  "fixtureFormat": 1,
+  "cases": [
+    {
+      "id": "C70",
+      "title": "IsNull holds only on null, on every type",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C70.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [7], "totalRows": 1 }
+        },
+        {
+          "id": "C70.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [3], "totalRows": 1 }
+        },
+        {
+          "id": "C70.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "score", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [4], "totalRows": 1 }
+        },
+        {
+          "id": "C70.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [4], "totalRows": 1 }
+        },
+        {
+          "id": "C70.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "born", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [3], "totalRows": 1 }
+        },
+        {
+          "id": "C70.6",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "seen", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [4], "totalRows": 1 }
+        },
+        {
+          "id": "C70.7",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [], "totalRows": 0 }
+        }
+      ]
+    },
+    {
+      "id": "C71",
+      "title": "IsNotNull is the exact complement of IsNull, on every type",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C71.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 3, 4, 5, 6, 8], "totalRows": 7 }
+        },
+        {
+          "id": "C71.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 4, 5, 6, 7, 8], "totalRows": 7 }
+        },
+        {
+          "id": "C71.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "score", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 3, 5, 6, 7, 8], "totalRows": 7 }
+        },
+        {
+          "id": "C71.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "active", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 3, 5, 6, 7, 8], "totalRows": 7 }
+        },
+        {
+          "id": "C71.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "born", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 4, 5, 6, 7, 8], "totalRows": 7 }
+        },
+        {
+          "id": "C71.6",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "seen", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 3, 5, 6, 7, 8], "totalRows": 7 }
+        },
+        {
+          "id": "C71.7",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "city", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2, 3, 4, 5, 6, 7, 8], "totalRows": 8 }
+        }
+      ]
+    },
+    {
+      "id": "C72",
+      "title": "An empty or blank string, 0 and false are values; a missing field is null",
+      "profile": "tr-2",
+      "data": {
+        "inline": {
+          "dataset": {
+            "key": "id",
+            "fields": {
+              "id": { "type": "integer" },
+              "s": { "type": "string" },
+              "n": { "type": "number" },
+              "b": { "type": "bool" }
+            }
+          },
+          "rows": [
+            { "id": 1, "s": "", "n": 0, "b": false },
+            { "id": 2, "s": "  ", "n": 0, "b": false },
+            { "id": 3, "s": null, "n": null, "b": null },
+            { "id": 4 }
+          ]
+        }
+      },
+      "runs": [
+        {
+          "id": "C72.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "s", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [3, 4], "totalRows": 2 }
+        },
+        {
+          "id": "C72.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "s", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2], "totalRows": 2 }
+        },
+        {
+          "id": "C72.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "n", "condition": "IsNull" }]
+          },
+          "expect": { "keys": [3, 4], "totalRows": 2 }
+        },
+        {
+          "id": "C72.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "b", "condition": "IsNotNull" }]
+          },
+          "expect": { "keys": [1, 2], "totalRows": 2 }
+        }
+      ]
+    },
+    {
+      "id": "C73",
+      "title": "Between keeps both bounds",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C73.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 25,
+                "value2": 35
+              }
+            ]
+          },
+          "expect": { "keys": [1, 2, 5, 6, 7], "totalRows": 5 }
+        },
+        {
+          "id": "C73.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "score",
+                "condition": "Between",
+                "value": 2.5,
+                "value2": 10
+              }
+            ]
+          },
+          "expect": { "keys": [1, 2, 3, 8], "totalRows": 4 }
+        },
+        {
+          "id": "C73.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "born",
+                "condition": "Between",
+                "value": "1990-05-01",
+                "value2": "1995-12-31"
+              }
+            ]
+          },
+          "expect": { "keys": [1, 2, 6], "totalRows": 3 }
+        }
+      ]
+    },
+    {
+      "id": "C74",
+      "title": "Between with equal bounds is Equal; a lower bound above the upper one keeps nothing and is never swapped",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C74.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 25,
+                "value2": 25
+              }
+            ]
+          },
+          "expect": { "keys": [2, 5, 7], "totalRows": 3 }
+        },
+        {
+          "id": "C74.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 35,
+                "value2": 25
+              }
+            ]
+          },
+          "expect": { "keys": [], "totalRows": 0 }
+        },
+        {
+          "id": "C74.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "score",
+                "condition": "Between",
+                "value": 10,
+                "value2": 2.5
+              }
+            ]
+          },
+          "expect": { "keys": [], "totalRows": 0 }
+        }
+      ]
+    },
+    {
+      "id": "C75",
+      "title": "Between on a datetime: a day-only bound is its day in the field offset, an instant is itself",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C75.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "seen",
+                "condition": "Between",
+                "value": "2026-10-06",
+                "value2": "2026-10-06"
+              }
+            ]
+          },
+          "expect": { "keys": [1, 3, 5], "totalRows": 3 }
+        },
+        {
+          "id": "C75.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "seen",
+                "condition": "Between",
+                "value": "2026-10-05",
+                "value2": "2026-10-06"
+              }
+            ]
+          },
+          "expect": { "keys": [1, 2, 3, 5], "totalRows": 4 }
+        },
+        {
+          "id": "C75.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "seen",
+                "condition": "Between",
+                "value": "2026-10-06",
+                "value2": "2026-10-07"
+              }
+            ]
+          },
+          "expect": { "keys": [1, 3, 5, 6], "totalRows": 4 }
+        },
+        {
+          "id": "C75.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "seen",
+                "condition": "Between",
+                "value": "2026-10-06T00:30:00+03:00",
+                "value2": "2026-10-06T23:59:59.999+03:00"
+              }
+            ]
+          },
+          "expect": { "keys": [1, 3, 5], "totalRows": 3 }
+        },
+        {
+          "id": "C75.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "seen",
+                "condition": "Between",
+                "value": "2026-10-05T23:59:59+03:00",
+                "value2": "2026-10-05"
+              }
+            ]
+          },
+          "expect": { "keys": [2], "totalRows": 1 }
+        }
+      ]
+    },
+    {
+      "id": "C76",
+      "title": "Between only on a type whose values have an order",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C76.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "name",
+                "condition": "Between",
+                "value": "a",
+                "value2": "z"
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "name",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C76.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "active",
+                "condition": "Between",
+                "value": true,
+                "value2": true
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "active",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "C77",
+      "title": "The condition says how many values a rule has: none for IsNull and IsNotNull, two for Between",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C77.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "name", "condition": "IsNull", "value": "x" }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value"
+            }
+          }
+        },
+        {
+          "id": "C77.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "name", "condition": "IsNotNull", "value": null }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value"
+            }
+          }
+        },
+        {
+          "id": "C77.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "IsNull", "value2": 1 }]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        },
+        {
+          "id": "C77.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Between", "value": 1 }]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        },
+        {
+          "id": "C77.5",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "age", "condition": "Between", "value2": 1 }]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value"
+            }
+          }
+        },
+        {
+          "id": "C77.6",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 1,
+                "value2": null
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        },
+        {
+          "id": "C77.7",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "nope", "condition": "Between", "value": 1 }]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        },
+        {
+          "id": "C77.8",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "age", "condition": "Equal", "value": 25 },
+              { "field": "name", "condition": "IsNull", "value": "" }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 1,
+              "path": "/filters/1/value"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "C78",
+      "title": "A bound that does not fit the field is refused at its own pointer",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C78.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 1,
+                "value2": 2.5
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-value",
+              "field": "age",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        },
+        {
+          "id": "C78.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": "1",
+                "value2": 2
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-value",
+              "field": "age",
+              "rule": 0,
+              "path": "/filters/0/value"
+            }
+          }
+        },
+        {
+          "id": "C78.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "born",
+                "condition": "Between",
+                "value": "1990-01-01",
+                "value2": "1990-02-30"
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-value",
+              "field": "born",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        },
+        {
+          "id": "C78.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "seen",
+                "condition": "Between",
+                "value": "2026-10-06",
+                "value2": "2026-10-06t00:00:00Z"
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-value",
+              "field": "seen",
+              "rule": 0,
+              "path": "/filters/0/value2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "C79",
+      "title": "IsNull, IsNotNull and Between are positive: with a negative rule on their field they combine with OR",
+      "profile": "tr-2",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C79.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "age", "condition": "NotEqual", "value": 25 },
+              { "field": "age", "condition": "IsNull" }
+            ]
+          },
+          "expect": { "keys": [1, 3, 4, 6, 8], "totalRows": 5 }
+        },
+        {
+          "id": "C79.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "age", "condition": "IsNull" },
+              { "field": "age", "condition": "Equal", "value": 40 }
+            ]
+          },
+          "expect": { "keys": [3, 4], "totalRows": 2 }
+        },
+        {
+          "id": "C79.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 30,
+                "value2": 40
+              },
+              { "field": "age", "condition": "Equal", "value": 22 }
+            ]
+          },
+          "expect": { "keys": [1, 4, 6, 8], "totalRows": 4 }
+        },
+        {
+          "id": "C79.4",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "age", "condition": "IsNotNull" },
+              { "field": "score", "condition": "IsNull" }
+            ]
+          },
+          "expect": { "keys": [4], "totalRows": 1 }
+        }
+      ]
+    },
+    {
+      "id": "C80",
+      "title": "tr-1 keeps refusing what tr-2 evaluates",
+      "profile": "tr-1",
+      "data": { "ref": "../data/people.json" },
+      "runs": [
+        {
+          "id": "C80.1",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [{ "field": "name", "condition": "IsNull" }]
+          },
+          "expect": {
+            "error": {
+              "code": "invalid-query",
+              "rule": 0,
+              "path": "/filters/0/value"
+            }
+          }
+        },
+        {
+          "id": "C80.2",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              { "field": "name", "condition": "IsNotNull", "value": "x" }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-extension",
+              "name": "IsNotNull",
+              "field": "name",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        },
+        {
+          "id": "C80.3",
+          "query": {
+            "page": 1,
+            "pageSize": 50,
+            "sort": null,
+            "filters": [
+              {
+                "field": "age",
+                "condition": "Between",
+                "value": 25,
+                "value2": 35
+              }
+            ]
+          },
+          "expect": {
+            "error": {
+              "code": "unsupported-operator",
+              "field": "age",
+              "rule": 0,
+              "path": "/filters/0/condition"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

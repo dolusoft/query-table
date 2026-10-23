@@ -27,7 +27,10 @@ const conditionNames: Record<FilterCondition, string> = {
   GreaterThan: 'Büyüktür (>)',
   GreaterThanOrEqual: 'Büyük veya eşittir (≥)',
   LessThan: 'Küçüktür (<)',
-  LessThanOrEqual: 'Küçük veya eşittir (≤)'
+  LessThanOrEqual: 'Küçük veya eşittir (≤)',
+  IsNull: 'Boş',
+  IsNotNull: 'Boş değil',
+  Between: 'Arasında'
 }
 
 // On a date the same conditions read as time: "after" where a number column

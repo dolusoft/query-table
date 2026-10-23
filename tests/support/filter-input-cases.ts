@@ -3,7 +3,8 @@ import type {
   ColumnType,
   FilterCondition,
   FilterRule,
-  FilterValue
+  FilterValue,
+  ValueCondition
 } from '@dolusoft/query-table'
 
 // One table of filter inputs and the rules they stand for (C-53). The unit
@@ -17,7 +18,7 @@ export interface FilterInputCase {
   /** Condition picked in the filter menu first; the type default without it. */
   condition?: FilterCondition
   /** `[condition, value]` of each rule, in order. */
-  expected: Array<[FilterCondition, FilterValue]>
+  expected: Array<[ValueCondition, FilterValue]>
 }
 
 export const filterInputColumn = (type: ColumnType): Column => ({
