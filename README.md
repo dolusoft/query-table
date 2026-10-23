@@ -123,6 +123,32 @@ To migrate, read the state inside the slot, keep a condition inside one slot, an
 
 Here `ownerName` and `account` stand for values captured from an outer scope (a `v-for` variable, an outer slot's prop), `store.ownerName` for reactive state, and `assignToCurrent(row)` reads the current account when it is clicked.
 
+### Keyboard navigation
+
+With `rowNavigation` the arrow keys move the focus between rows: ↑ and ↓ to the previous and next row, Home and End to the first and last. Each row draws its focus target, such as a button in a cell slot, and the table moves the focus from one row's target to the next one's (C-109):
+
+```vue
+<QueryTable
+  :rows="moments"
+  row-key="id"
+  virtual
+  :group-by="moment => moment.session"
+  :row-navigation="{ focus: '[data-row]', skip: moment => moment.kind === 'note' }"
+  @row-focus="({ row }) => select(row.id)"
+>
+  <template #cell-title="{ row }">
+    <button v-if="row.kind !== 'note'" type="button" data-row @click="select(row.id)">{{ row.title }}</button>
+    <span v-else>{{ row.title }}</span>
+  </template>
+</QueryTable>
+```
+
+- The keys act while the focus is on a row's focus target: the first element that matches `focus`, else the first link, button, checkbox or element with a `tabindex` of the row (a selection checkbox or an expand button included). Text fields, selects and radio buttons are never the default target and keep their arrow keys. With a modifier key the keys do nothing.
+- Group rows and subtable rows are passed over, and so are the rows `skip` names. Pinned rows come in the order the body draws them.
+- With `virtual` a row out of view is not in the DOM. The table scrolls to it, waits until it is drawn and focuses it by its key (by its row object without `rowKey`), so a change of `rows` in between does not land on another row, and it puts the focus back when moving rows drops it (C-110). With or without `virtual`, the row is shown whole (vertically, without its open subtable row), below a sticky header and below a sticky group row. A click ends a move that is still waiting.
+- `rowFocus` is emitted once per key press that moved the focus, with `row`, `rowIndex` and `key`. A click or Tab does not emit it; select on click in your own handler, as above.
+- The table writes no `tabindex` and no attribute. Off, it adds no listener (C-111).
+
 ## Pinned columns
 
 Set `pinned: 'left'` on a column. Pinned columns are drawn first, in their declared order, and when any column is pinned to the left the utility cells (expand, select) are pinned too. The table marks every pinned `th` and `td` with `data-pinned` and writes its left offset, measured from the rendered widths, as the inline custom property `--qt-pin-left`. `pinned: 'right'` draws a column last instead, marks its cells `data-pinned="right"` and writes `--qt-pin-right`, the measured widths of the right-pinned cells after it. Making the cells stick is your CSS; one rule serves both sides, since the unset property leaves the other side `auto` (an LTR layout is assumed):

@@ -186,7 +186,11 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/row-render.browser.spec.ts > C-107 A cell slot is called again with its row only [own]',
   // 3.10 patches the row's vnode hooks as attributes once `flash` turns on
   // after the mount, which adds a `vnode-*` listener to every row (C-108).
-  'tests/contract/browser/row-markup.browser.spec.ts > C-108 Row component and DOM contract of 3.11 [own] with flash on the table adds no listener to a row or a cell'
+  'tests/contract/browser/row-markup.browser.spec.ts > C-108 Row component and DOM contract of 3.11 [own] with flash on the table adds no listener to a row or a cell',
+  // 3.12 addition (C-109..C-111, ADR 0018): keyboard navigation between
+  // rows, which a 3.11 build does not have. Without `rowNavigation` the
+  // table is the one of 3.11.
+  'tests/contract/browser/row-navigation.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

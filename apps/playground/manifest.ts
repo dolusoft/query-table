@@ -255,6 +255,19 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-106', 'C-107', 'C-108']
   },
   {
+    id: 'row-navigation',
+    title: 'Row navigation',
+    summary:
+      'With `rowNavigation` ↑ and ↓ move the focus to the previous and next row, Home and End to the first and last, passing over group rows and the rows `skip` names. The focus lands on the focus target of the row; with `virtual` a row out of view is drawn first and focused by its key, and it is shown whole below a sticky header. Each move emits `rowFocus`.',
+    example: 'RowNavigation',
+    api: {
+      props: ['rowNavigation', 'virtual', 'groupBy', 'rowKind'],
+      emits: ['rowFocus'],
+      types: ['RowNavigationOptions', 'RowFocusPayload']
+    },
+    rules: ['C-109', 'C-110', 'C-111']
+  },
+  {
     id: 'footer-rows',
     title: 'Footer rows',
     summary:

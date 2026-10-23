@@ -604,3 +604,21 @@ Source: own
 The body's markup is the one of 3.10 for every state and every transition: the same elements, attributes, text and comment placeholders. The table adds no listener to a row or a cell, with `flash` on too; `contextmenu`, `focusin` and `focusout` stay on the `tbody` (C-28, C-86).
 
 Source: own
+
+### C-109 Row navigation
+
+With `rowNavigation` the keyboard moves the focus between the data rows: `ArrowDown` to the next row, `ArrowUp` to the previous one, `Home` to the first and `End` to the last, in the order the body draws them (the top-pinned rows, the others, the bottom-pinned rows, C-74), the rows out of a virtual window included (C-83). Group rows (C-103) and subtable rows are not rows and are passed over, and so is every row for which `rowNavigation.skip(row, index)` returns `true` (a heading row of a kind, C-97). A row's focus target is the first element of the row that matches `rowNavigation.focus`, else its first link, enabled button, enabled checkbox or element with a `tabindex` other than `-1` (a utility button or checkbox included); controls that use the arrow keys themselves (text fields, `select`, radio buttons, editable content) are not a default target and keep their keys. The target must take the focus. A key acts only when the focus is on a row's focus target and no modifier key is held, the event is not composing and its default is not prevented already; it then prevents the default (the container does not scroll by the key), also at the first or last row, where nothing moves. The focus lands on the target row's focus target (`focus({ preventScroll: true })`), and once it is there the table emits `rowFocus` with `row`, `rowIndex` and `key`: one event per key press that moved the focus, none when nothing moved, none for a click or Tab, and none when the focus is put back (C-110). A row with no focus target ends the move where it is, without an event. The table writes no `tabindex` and no attribute for it, and nothing emits `update:query`.
+
+Source: own
+
+### C-110 Row navigation: drawing and showing the row
+
+The row a key moves to is shown whole in its scroll container, below a sticky header that covers the top of the container and below a group row whose cell the consumer's CSS made sticky (C-104); the first row of a group is shown with its group row above it. With `virtual` the container is the one of C-85; without it, the nearest scrolling ancestor of the table, else the window. The row is shown in the vertical direction only, and the row alone: an open subtable row below it does not count, so a tall one cannot push the row out of view. A `scrollToIndex` still waiting (C-87) is dropped once the row is shown. With `virtual`, a row out of the window is not drawn: the table scrolls to it as `scrollToIndex` does (C-87, `align: 'auto'`, asked again when a change of `rows` dropped it), waits until the window has drawn and aligned it, and focuses it by its key (`rowKey`), or by its row object without `rowKey`, not by its index, so a change of `rows` in between does not land on another row; a key pressed while a move waits moves on from the row it waits for. When moving DOM nodes takes the focus off the target in the frames after it landed (the focus is on no element), the table puts it back; those frames are counted while the window has nothing left to draw. A move ends when its row leaves `rows`, when the focus goes to another element, on a `pointerdown` anywhere, or after 30 frames.
+
+Source: own
+
+### C-111 Row navigation off and DOM contract of 3.12
+
+Without `rowNavigation` the table adds no `keydown` listener and reads nothing on a key, and the DOM is the one of 3.11. With it, the one listener is on the `tbody` (C-28, C-108), never on a row or a cell (while a move runs, one `pointerdown` listener on the window ends it on a click), and the DOM contract gains no entry: the table writes no `tabindex`, no class and no attribute for the navigation.
+
+Source: own

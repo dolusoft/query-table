@@ -354,7 +354,20 @@ export interface QueryTableState<T extends object, Q extends Query = TableQuery>
 }
 
 // @public
+export interface RowFocusPayload<T> {
+    key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End';
+    row: T;
+    rowIndex: number;
+}
+
+// @public
 export type RowKey<T extends object> = TableProps<T>['rowKey'];
+
+// @public
+export interface RowNavigationOptions<T> {
+    focus?: string;
+    skip?: (row: T, index: number) => boolean;
+}
 
 // @public
 export interface RowPinning {
@@ -396,6 +409,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     columnResize: [payload: ColumnResizePayload];
     'update:columns': [columns: Column[], reason: ColumnChangeReason];
     'update:rowPinning': [rowPinning: RowPinning];
+    rowFocus: [payload: RowFocusPayload<T>];
 };
 
 // @public
@@ -438,6 +452,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     rowExpandable?: (row: T, index: number) => boolean;
     rowKey?: (keyof T & string) | ((row: T, index: number) => string | number);
     rowKind?: (row: T, index: number) => string | null | undefined;
+    rowNavigation?: boolean | RowNavigationOptions<T>;
     rowPinning?: RowPinning;
     rows?: T[];
     rowsUpdate?: RowsUpdate;
