@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { conditionOptions, rulesOf } from '@dolusoft/query-protocol'
+import {
+  conditionArity,
+  conditionOptions,
+  rulesOf
+} from '@dolusoft/query-protocol'
 
 import type {
   Column,
   ColumnType,
+  FilterBound,
   FilterCondition,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
@@ -52,6 +57,57 @@ const inputText = () => {
   return count > 0 ? `(${count})` : filters.draftOf(props.column.field).text
 }
 
+const draft = () => filters.draftOf(props.column.field)
+const isMulti = () => filters.multiOf(props.column.field) > 0
+
+// Types whose values have an order: the ones `Between` takes.
+const ordered: readonly ColumnType[] = ['number', 'integer', 'date', 'datetime']
+const isDated = () => props.type === 'date' || props.type === 'datetime'
+
+// A condition without a value has no input to type in: its label says it
+// all (C-113). A bool column keeps its select: it has no menu to pick one.
+const hidesInput = () => {
+  const { condition } = draft()
+  return (
+    !isMulti() &&
+    props.type !== 'bool' &&
+    condition !== null &&
+    conditionArity(condition) === 0
+  )
+}
+
+// `Between` takes two inputs, the lower bound first (C-114).
+const isRange = () =>
+  !isMulti() && draft().condition === 'Between' && ordered.includes(props.type)
+
+const bounds: readonly FilterBound[] = ['lower', 'upper']
+
+const boundText = (bound: FilterBound) =>
+  bound === 'upper' ? (draft().text2 ?? '') : draft().text
+
+const boundName = (bound: FilterBound) => {
+  const name = columnName(props.column)
+  return bound === 'upper'
+    ? labels().filterInputTo(name)
+    : labels().filterInputFrom(name)
+}
+
+// Whether the column type takes `condition`: one of its list, a null
+// predicate, or `Between` where values have an order.
+const takes = (condition: FilterCondition) =>
+  condition === 'Between'
+    ? ordered.includes(props.type)
+    : conditionArity(condition) === 0 ||
+      conditionOptions[props.type].some(option => option.value === condition)
+
+// The column's own list when it has one (C-112), else its type's.
+const offered = (): FilterCondition[] => {
+  const own = props.column.filterConditions
+  return own
+    ? [...new Set(own)].filter(takes)
+    : conditionOptions[props.type].map(({ value }) => value)
+}
+
 const currentCondition = (): FilterCondition | null =>
   rulesOf(props.query.filters, props.column.field)[0]?.condition ??
   filters.draftOf(props.column.field).condition
@@ -62,7 +118,7 @@ const menuProps = (): FilterMenuSlotProps => {
     column,
     rules: rulesOf(props.query.filters, column.field),
     condition: currentCondition(),
-    conditions: conditionOptions[props.type].map(({ value }) => ({
+    conditions: offered().map(value => ({
       value,
       label: labels().filterCondition(value, props.type)
     })),
@@ -77,10 +133,14 @@ const menuProps = (): FilterMenuSlotProps => {
   }
 }
 
-const datetimeProps = (): FilterDatetimeSlotProps => ({
+const datetimeProps = (
+  bound: FilterBound | null = null
+): FilterDatetimeSlotProps => ({
   column: props.column,
-  value: filters.draftOf(props.column.field).text,
-  updateValue: value => filters.setInput(props.column.field, value)
+  value: bound ? boundText(bound) : draft().text,
+  updateValue: value =>
+    filters.setInput(props.column.field, value, bound ?? undefined),
+  bound
 })
 
 const inputValue = (event: Event) =>
@@ -95,12 +155,32 @@ const pick = (event: Event) => {
 
 <template>
   <div class="qt-filter">
+    <template v-if="isRange()">
+      <template v-for="bound in bounds" :key="bound">
+        <slot
+          v-if="isDated() && $slots['filter-datetime']"
+          name="filter-datetime"
+          v-bind="datetimeProps(bound)"
+        />
+        <input
+          v-else
+          :type="isDated() ? 'date' : 'number'"
+          class="qt-filter-input"
+          :aria-label="boundName(bound)"
+          :value="boundText(bound)"
+          @input="filters.setInput(column.field, inputValue($event), bound)"
+          @keydown.enter="filters.apply(column.field)"
+        />
+      </template>
+    </template>
+    <template v-else-if="hidesInput()" />
     <input
-      v-if="type === 'string'"
+      v-else-if="type === 'string'"
       type="text"
       class="qt-filter-input"
       :aria-label="inputName()"
-      :value="filters.draftOf(column.field).text"
+      :value="inputText()"
+      :readonly="isMulti()"
       @input="filters.setInput(column.field, inputValue($event))"
       @keydown.enter="filters.apply(column.field)"
     />

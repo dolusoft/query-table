@@ -4,7 +4,9 @@
 
 /**
  * Every comparison a rule may carry. A column with no rule is not filtered,
- * so "no filter" is not a condition.
+ * so "no filter" is not a condition. The last three came with 3.13
+ * (ADR 0020): `IsNull` and `IsNotNull` take no value, `Between` takes two
+ * (`noValueConditions`, `rangeConditions`); every other one takes one.
  */
 export const filterConditions = [
   'Contains',
@@ -16,8 +18,17 @@ export const filterConditions = [
   'GreaterThan',
   'GreaterThanOrEqual',
   'LessThan',
-  'LessThanOrEqual'
+  'LessThanOrEqual',
+  'IsNull',
+  'IsNotNull',
+  'Between'
 ] as const
+
+/** The conditions whose rule has neither `value` nor `value2`. */
+export const noValueConditions = ['IsNull', 'IsNotNull'] as const
+
+/** The conditions whose rule has a lower `value` and an upper `value2`. */
+export const rangeConditions = ['Between'] as const
 
 /** The two directions of a sort. */
 export const sortDirections = ['asc', 'desc'] as const

@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
 
-import type { Column, FilterRule } from '@dolusoft/query-table'
+import type {
+  Column,
+  FilterValue,
+  ValueCondition,
+  ValueFilterRule
+} from '@dolusoft/query-table'
 
 import { commitDraft, draftFrom, isComposing, same } from './column-filter'
 
@@ -14,9 +19,9 @@ const active: Column = { field: 'active', title: 'Active', type: 'bool' }
 
 const rule = (
   field: string,
-  condition: FilterRule['condition'],
-  value: FilterRule['value']
-): FilterRule => ({ field, condition, value })
+  condition: ValueCondition,
+  value: FilterValue
+): ValueFilterRule => ({ field, condition, value })
 
 describe('draftFrom', () => {
   test('no rules: an empty draft with the default condition of the type', () => {

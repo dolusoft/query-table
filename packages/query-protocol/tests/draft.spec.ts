@@ -6,9 +6,15 @@ import {
   type Draft,
   draftFromRules,
   hasContent,
-  parseDraft
+  parseDraft,
+  rulesFromDraft
 } from '../src/grammar/draft'
-import type { FilterColumn, FilterRule } from '../src/protocol/types'
+import type {
+  FilterColumn,
+  FilterValue,
+  ValueCondition,
+  ValueFilterRule
+} from '../src/protocol/types'
 
 const column = (type?: FilterColumn['type']): FilterColumn => ({
   field: 'f',
@@ -21,9 +27,9 @@ const draft = (text: string, condition: Draft['condition'] = null): Draft => ({
 })
 
 const rule = (
-  condition: FilterRule['condition'],
-  value: FilterRule['value']
-): FilterRule => ({ field: 'f', condition, value })
+  condition: ValueCondition,
+  value: FilterValue
+): ValueFilterRule => ({ field: 'f', condition, value })
 
 describe('C-16 Value types: a draft parses into rules', () => {
   it('text columns read shortcuts and default to Contains', () => {
@@ -183,5 +189,116 @@ describe('hasContent', () => {
   it('is false for a blank or whitespace-only draft', () => {
     expect(hasContent(draft(''))).toBe(false)
     expect(hasContent(draft('  '))).toBe(false)
+  })
+})
+
+describe('C-113 Conditions without a value: the condition is the rule', () => {
+  it.each(['string', 'number', 'integer', 'bool', 'date', 'datetime'] as const)(
+    'IsNull and IsNotNull parse to their rule on %s, whatever the text',
+    type => {
+      expect(parseDraft(column(type), draft('', 'IsNull'))).toEqual([
+        { condition: 'IsNull' }
+      ])
+      expect(parseDraft(column(type), draft('ignored', 'IsNotNull'))).toEqual([
+        { condition: 'IsNotNull' }
+      ])
+    }
+  )
+
+  it('the rule has no value key, not one that is undefined', () => {
+    const [made] = rulesFromDraft(column('number'), draft('', 'IsNull'))
+    expect(Object.keys(made)).toEqual(['field', 'condition'])
+  })
+
+  it('a single rule shows as its condition with no text', () => {
+    expect(
+      draftFromRules(column(), [{ field: 'f', condition: 'IsNotNull' }])
+    ).toEqual({ text: '', condition: 'IsNotNull' })
+  })
+
+  it('with other rules on its field it shows their count, also on text', () => {
+    expect(
+      draftFromRules(column(), [
+        { field: 'f', condition: 'IsNull' },
+        rule('Contains', 'a')
+      ])
+    ).toEqual({ text: '', condition: 'IsNull', multi: 2 })
+  })
+
+  it('a picked condition alone is content', () => {
+    expect(hasContent(draft('', 'IsNull'))).toBe(true)
+  })
+})
+
+describe('C-114 Between: two bounds, both needed', () => {
+  const range = (text: string, text2: string): Draft => ({
+    text,
+    text2,
+    condition: 'Between'
+  })
+
+  it.each([
+    ['number', '1.5', ' 3 ', 1.5, 3],
+    ['integer', '-2', '7', -2, 7],
+    ['date', '2026-10-01', '2026-10-31', '2026-10-01', '2026-10-31'],
+    [
+      'datetime',
+      '2026-10-01T08:00',
+      '2026-10-01',
+      '2026-10-01T08:00',
+      '2026-10-01'
+    ]
+  ] as const)(
+    '%s bounds parse to one rule',
+    (type, text, text2, value, value2) => {
+      expect(parseDraft(column(type), range(text, text2))).toEqual([
+        { condition: 'Between', value, value2 }
+      ])
+    }
+  )
+
+  it('keys the rule field, condition, value, value2', () => {
+    const [made] = rulesFromDraft(column('number'), range('1', '2'))
+    expect(Object.keys(made)).toEqual(['field', 'condition', 'value', 'value2'])
+  })
+
+  it('never swaps the bounds', () => {
+    expect(parseDraft(column('number'), range('9', '1'))).toEqual([
+      { condition: 'Between', value: 9, value2: 1 }
+    ])
+  })
+
+  it.each([
+    ['number', '1', ''],
+    ['number', '', '2'],
+    ['number', '1', 'x'],
+    ['integer', '1', '2.5'],
+    ['date', '2026-10-01', '  ']
+  ] as const)(
+    'an incomplete range on %s (%j, %j) is no rule',
+    (type, text, text2) => {
+      expect(parseDraft(column(type), range(text, text2))).toEqual([])
+    }
+  )
+
+  it('makes no rule without text2', () => {
+    expect(parseDraft(column('number'), draft('1', 'Between'))).toEqual([])
+  })
+
+  it.each(['string', 'bool'] as const)('makes no rule on %s', type => {
+    expect(parseDraft(column(type), range('a', 'b'))).toEqual([])
+  })
+
+  it('a single rule shows both bounds', () => {
+    expect(
+      draftFromRules(column('number'), [
+        { field: 'f', condition: 'Between', value: 1, value2: 2 }
+      ])
+    ).toEqual({ text: '1', text2: '2', condition: 'Between' })
+  })
+
+  it('a typed upper bound alone is content', () => {
+    expect(hasContent(range('', '2'))).toBe(true)
+    expect(hasContent({ text: '', text2: ' ', condition: null })).toBe(false)
   })
 })

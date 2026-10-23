@@ -39,10 +39,19 @@ export interface FilterInputColumnDef {
   filterType?: ColumnType
 }
 
+/**
+ * Which bound of a `Between` draft an input holds (C-114): `'lower'` is the
+ * draft's `text`, `'upper'` its `text2`.
+ */
+export type FilterBound = 'lower' | 'upper'
+
 /** The condition label under an input. */
 export interface FilterLabel {
   condition: FilterCondition
-  /** How many rules the input stands for. */
+  /**
+   * How many rules the input stands for. It can be `0`: a draft whose text
+   * gives no rule, such as a `Between` with one bound typed (C-114).
+   */
   count: number
 }
 
@@ -51,12 +60,18 @@ export interface FilterInputColumnApi {
   getFilterInput: () => Readonly<FilterDraft>
   /**
    * The input's text changed: it is applied after the debounce (C-09), at
-   * once when it is blank (C-11) or the debounce is 0 (C-12).
+   * once when it is blank (C-11) or the debounce is 0 (C-12). With `Between`
+   * the text is the lower bound, and `'upper'` sets the upper one instead
+   * (C-114).
    */
-  setFilterInput: (text: string) => void
+  setFilterInput: (text: string, bound?: FilterBound) => void
   /** Enter: applies a pending text now (C-12). */
   applyFilterInput: () => void
-  /** Picks a condition, `null` clears the column (C-20). */
+  /**
+   * Picks a condition, `null` clears the column (C-20). Any condition is
+   * taken, also one the column's `filterConditions` does not list: that list
+   * only drives the menu (C-112), and calling this is an explicit opt-in.
+   */
   setFilterCondition: (condition: FilterCondition | null) => void
   /** Removes the column's rules and draft (C-21). */
   clearFilterInput: () => void

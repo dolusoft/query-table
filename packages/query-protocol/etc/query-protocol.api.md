@@ -17,6 +17,9 @@ export const columnTypeOf: (column: FilterColumn) => ColumnType;
 export const columnTypes: readonly ["string", "number", "integer", "date", "datetime", "bool"];
 
 // @public
+export const conditionArity: (condition: FilterCondition) => 0 | 1 | 2;
+
+// @public
 export const conditionLabel: (type: ColumnType, condition: FilterCondition) => string;
 
 // @public
@@ -63,23 +66,18 @@ export interface FilterConditionOption {
 }
 
 // @public
-export const filterConditions: readonly ["Contains", "NotContains", "Equal", "NotEqual", "StartsWith", "EndsWith", "GreaterThan", "GreaterThanOrEqual", "LessThan", "LessThanOrEqual"];
+export const filterConditions: readonly ["Contains", "NotContains", "Equal", "NotEqual", "StartsWith", "EndsWith", "GreaterThan", "GreaterThanOrEqual", "LessThan", "LessThanOrEqual", "IsNull", "IsNotNull", "Between"];
 
 // @public
 export interface FilterDraft {
     condition: FilterCondition | null;
     multi?: number;
-    // (undocumented)
     text: string;
+    text2?: string;
 }
 
 // @public
-export interface FilterRule {
-    // (undocumented)
-    condition: FilterCondition;
-    field: string;
-    value: FilterValue;
-}
+export type FilterRule = ValueFilterRule | RangeFilterRule | NoValueFilterRule;
 
 // @public
 export type FilterValue = string | number | boolean;
@@ -89,6 +87,21 @@ export const hasShortcut: (condition: FilterCondition) => boolean;
 
 // @public
 export const isCursorQuery: (query: Query) => query is CursorQuery;
+
+// @public
+export type NoValueCondition = (typeof noValueConditions)[number];
+
+// @public
+export const noValueConditions: readonly ["IsNull", "IsNotNull"];
+
+// @public
+export interface NoValueFilterRule {
+    // (undocumented)
+    condition: NoValueCondition;
+    field: string;
+    // (undocumented)
+    value?: undefined;
+}
 
 // @public
 export interface PageCursors {
@@ -103,8 +116,10 @@ export interface PageQuery extends QueryBase {
     page: number;
 }
 
+// Warning: (ae-forgotten-export) The symbol "WithoutField" needs to be exported by the entry point index.d.ts
+//
 // @public
-export type Parsed = Array<Pick<FilterRule, 'condition' | 'value'>>;
+export type Parsed = Array<WithoutField<FilterRule>>;
 
 // @public
 export const parseDraft: (column: FilterColumn, draft: FilterDraft) => Parsed;
@@ -145,7 +160,25 @@ export type QueryChangeReason = (typeof queryChangeReasons)[number];
 export const queryChangeReasons: readonly ["page", "pageSize", "sort", "filter", "reset", "search"];
 
 // @public
+export type RangeCondition = (typeof rangeConditions)[number];
+
+// @public
+export const rangeConditions: readonly ["Between"];
+
+// @public
+export interface RangeFilterRule {
+    // (undocumented)
+    condition: RangeCondition;
+    field: string;
+    value: FilterValue;
+    value2: FilterValue;
+}
+
+// @public
 export const replaceRules: (filters: readonly FilterRule[], field: string, rules: readonly FilterRule[]) => FilterRule[];
+
+// @public
+export const rulesFromDraft: (column: FilterColumn, draft: FilterDraft) => FilterRule[];
 
 // @public
 export const rulesOf: (filters: readonly FilterRule[], field: string) => FilterRule[];
@@ -180,6 +213,17 @@ export interface SortState {
 
 // @public
 export type TableQuery = PageQuery;
+
+// @public
+export type ValueCondition = Exclude<FilterCondition, NoValueCondition | RangeCondition>;
+
+// @public
+export interface ValueFilterRule {
+    // (undocumented)
+    condition: ValueCondition;
+    field: string;
+    value: FilterValue;
+}
 
 // @public
 export const withSearch: <Q extends Query>(query: Q, search: string) => Q;

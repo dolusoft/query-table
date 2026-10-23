@@ -5,7 +5,7 @@ import { join, posix } from 'node:path'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
 
-import type { Dataset, LocalQueryError } from '../src/local'
+import type { Dataset, LocalQueryError, SemanticsProfile } from '../src/local'
 import { applyQuery, defineDataset } from '../src/local'
 import { columnTypes, filterConditions } from '../src/protocol/constants'
 import type { Query } from '../src/protocol/types'
@@ -211,7 +211,8 @@ for (const { path, doc } of suite.files) {
             run.query as Query,
             defineDataset(dataset),
             {
-              profile: (run.options?.profile ?? kase.profile) as 'tr-1',
+              profile: (run.options?.profile ??
+                kase.profile) as SemanticsProfile,
               paginate: run.options?.paginate ?? true
             }
           )
@@ -242,11 +243,20 @@ describe('the cases', () => {
   // column of types. Every single condition is tried on every single type:
   // an allowed pair by a run with that one rule that keeps some rows and
   // drops others, a refused pair by a run that expects unsupported-operator.
+  // tr-1 has the first three rows; tr-2 adds the last two (ADR 0020), whose
+  // pairs are tried with tr-2 runs. The rows of tr-1 hold in tr-2 as well
+  // (the superset test below).
   const rows: readonly (readonly string[])[] = [
     ['Contains', 'NotContains', 'StartsWith', 'EndsWith'],
     ['Equal', 'NotEqual'],
-    ['GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual']
+    ['GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual'],
+    ['IsNull', 'IsNotNull'],
+    ['Between']
   ]
+  const rowsOf: Record<SemanticsProfile, readonly number[]> = {
+    'tr-1': [0, 1, 2],
+    'tr-2': [3, 4]
+  }
   const columns: readonly (readonly string[])[] = [
     ['string'],
     ['number', 'integer'],
@@ -256,6 +266,8 @@ describe('the cases', () => {
   const allowed = [
     [true, false, false, false],
     [true, true, true, true],
+    [false, true, false, true],
+    [true, true, true, true],
     [false, true, false, true]
   ]
 
@@ -264,55 +276,132 @@ describe('the cases', () => {
     expect(columns.flat().sort()).toEqual([...columnTypes].sort())
   })
 
-  it('cover every condition x type pair of the matrix', () => {
-    const accepted = new Set<string>()
-    const refused = new Set<string>()
-    const pair = (condition: string, type: string) => `${condition} ${type}`
+  it.each(Object.keys(rowsOf) as SemanticsProfile[])(
+    'cover every condition x type pair of the matrix of %s',
+    profile => {
+      const accepted = new Set<string>()
+      const refused = new Set<string>()
+      const pair = (condition: string, type: string) => `${condition} ${type}`
+      const named = new Set(rowsOf[profile].flatMap(r => rows[r]))
+      for (const { path, doc } of suite.files) {
+        for (const kase of doc.cases) {
+          if (kase.withdrawn) {
+            continue
+          }
+          for (const run of kase.runs) {
+            if ((run.options?.profile ?? kase.profile) !== profile) {
+              continue
+            }
+            const query = run.query as {
+              filters?: unknown
+              search?: unknown
+            } | null
+            const filters = query?.filters
+            if (!Array.isArray(filters)) {
+              continue
+            }
+            const data = suite.data(path, run.data ?? kase.data)
+            type Rule = { field: string; condition: string }
+            const pairOf = (rule: Rule) =>
+              pair(rule.condition, data.dataset.fields[rule.field].type)
+            const counts = (rule: Rule) => named.has(rule.condition)
+            if ('keys' in run.expect) {
+              const alone =
+                filters.length === 1 &&
+                (query?.search ?? null) === null &&
+                run.options?.paginate !== false
+              const { totalRows } = run.expect
+              const [only] = filters as Rule[]
+              if (
+                alone &&
+                counts(only) &&
+                totalRows > 0 &&
+                totalRows < data.rows.length
+              ) {
+                accepted.add(pairOf(only))
+              }
+            } else if (run.expect.error.code === 'unsupported-operator') {
+              const rule = (filters as Rule[])[run.expect.error.rule!]
+              if (counts(rule)) {
+                refused.add(pairOf(rule))
+              }
+            }
+          }
+        }
+      }
+      const want = (keep: boolean) =>
+        rowsOf[profile].flatMap(r =>
+          rows[r].flatMap(condition =>
+            columns.flatMap((column, c) =>
+              allowed[r][c] === keep
+                ? column.map(type => pair(condition, type))
+                : []
+            )
+          )
+        )
+      expect([...accepted].sort()).toEqual(want(true).sort())
+      expect([...refused].sort()).toEqual(want(false).sort())
+    }
+  )
+
+  // tr-2 is tr-1 and the three conditions of ADR 0020 (C-115): every run of
+  // tr-1 gives the same result under tr-2, except the runs listed here, each
+  // with what tr-2 gives instead. A new exception needs a reason in the ADR.
+  const tr2Instead: Record<string, Run['expect']> = {
+    // A value on IsNull is the wrong operand shape once IsNull is evaluated.
+    'C58.6': {
+      error: { code: 'invalid-query', rule: 0, path: '/filters/0/value' }
+    },
+    // The runs of C80 pin the refusals of tr-1 that tr-2 evaluates.
+    'C80.1': { keys: [7], totalRows: 1 },
+    'C80.2': {
+      error: { code: 'invalid-query', rule: 0, path: '/filters/0/value' }
+    },
+    'C80.3': { keys: [1, 2, 5, 6, 7], totalRows: 5 }
+  }
+
+  it('give every run of tr-1 the same result under tr-2, but the listed ones', () => {
+    const outcome = (
+      run: Run,
+      data: Data,
+      profile: SemanticsProfile
+    ): Run['expect'] => {
+      const result = applyQuery(
+        data.rows,
+        run.query as Query,
+        defineDataset(data.dataset),
+        { profile, paginate: run.options?.paginate ?? true }
+      )
+      if (result.ok) {
+        return {
+          keys: result.rows.map(row => keyOf(row, data.dataset.key)),
+          totalRows: result.totalRows
+        }
+      }
+      const { message, ...error } = result.error
+      expect(typeof message).toBe('string')
+      return { error }
+    }
+    const seen: string[] = []
     for (const { path, doc } of suite.files) {
       for (const kase of doc.cases) {
         if (kase.withdrawn) {
           continue
         }
         for (const run of kase.runs) {
-          const query = run.query as {
-            filters?: unknown
-            search?: unknown
-          } | null
-          const filters = query?.filters
-          if (!Array.isArray(filters)) {
+          if ((run.options?.profile ?? kase.profile) !== 'tr-1') {
             continue
           }
           const data = suite.data(path, run.data ?? kase.data)
-          type Rule = { field: string; condition: string }
-          const pairOf = (rule: Rule) =>
-            pair(rule.condition, data.dataset.fields[rule.field].type)
-          if ('keys' in run.expect) {
-            const alone =
-              filters.length === 1 &&
-              (query?.search ?? null) === null &&
-              run.options?.paginate !== false
-            const { totalRows } = run.expect
-            if (alone && totalRows > 0 && totalRows < data.rows.length) {
-              accepted.add(pairOf((filters as Rule[])[0]))
-            }
-          } else if (run.expect.error.code === 'unsupported-operator') {
-            refused.add(pairOf((filters as Rule[])[run.expect.error.rule!]))
+          const want = tr2Instead[run.id] ?? outcome(run, data, 'tr-1')
+          if (run.id in tr2Instead) {
+            seen.push(run.id)
           }
+          expect(outcome(run, data, 'tr-2'), run.id).toStrictEqual(want)
         }
       }
     }
-    const want = (keep: boolean) =>
-      rows.flatMap((row, r) =>
-        row.flatMap(condition =>
-          columns.flatMap((column, c) =>
-            allowed[r][c] === keep
-              ? column.map(type => pair(condition, type))
-              : []
-          )
-        )
-      )
-    expect([...accepted].sort()).toEqual(want(true).sort())
-    expect([...refused].sort()).toEqual(want(false).sort())
+    expect(seen.sort()).toEqual(Object.keys(tr2Instead).sort())
   })
 })
 
@@ -346,8 +435,8 @@ describe('C-79 The conformance suite ships [own]', () => {
     expect(validateManifest(manifest)).toBe(true)
     expect(manifest.fixtureFormat).toBe(1)
     expect(manifest.suite).toBe('query-local-conformance')
-    expect(manifest.revision).toBe(1)
-    expect(manifest.profiles).toEqual(['tr-1'])
+    expect(manifest.revision).toBe(2)
+    expect(manifest.profiles).toEqual(['tr-1', 'tr-2'])
     expect(manifest.files.length).toBeGreaterThan(0)
     for (const { doc } of suite.files) {
       expect(validateCaseFile(doc)).toBe(true)

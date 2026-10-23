@@ -8,6 +8,7 @@ import './features/server-query/types'
 
 export { filterInputFeature } from './features/filter-input/filter-input-feature'
 export type {
+  FilterBound,
   FilterInputColumnApi,
   FilterInputColumnDef,
   FilterDrafts,

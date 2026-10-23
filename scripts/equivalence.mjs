@@ -190,7 +190,14 @@ const ADDED_AFTER_BASELINE = [
   // 3.12 addition (C-109..C-111, ADR 0018): keyboard navigation between
   // rows, which a 3.11 build does not have. Without `rowNavigation` the
   // table is the one of 3.11.
-  'tests/contract/browser/row-navigation.browser.spec.ts'
+  'tests/contract/browser/row-navigation.browser.spec.ts',
+  // 3.13 addition (C-112..C-114, ADR 0020): the column's own condition list,
+  // conditions without a value and `Between` in the filter row, which a 3.12
+  // build does not have. Without `filterConditions` the menu is the one of
+  // 3.12, and the other filter tests compare.
+  'tests/contract/unit/filter.spec.ts > C-112 Column filterConditions',
+  'tests/contract/unit/filter.spec.ts > C-113 A condition without a value in the filter row',
+  'tests/contract/unit/filter.spec.ts > C-114 Between in the filter row'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

@@ -6,15 +6,18 @@ import type { Dataset, DatasetField } from './dataset'
 import { fieldOf, isPlainObject, offsetOf } from './dataset'
 import type { Failure } from './errors'
 import { fail } from './errors'
+import type { SemanticsProfile } from './profiles'
 import { profiles, reservedQueryKeys } from './profiles'
 import { parseDate, parseDateTimeRule } from './temporal'
 import { compareOrdinal, isWellFormed, matchKey, trimSearch } from './text'
+import { noValueConditions, rangeConditions } from '../protocol/constants'
 import type { ColumnType } from '../protocol/types'
 
-// Conditions reserved inside the evaluator, refused as extensions (R4).
-const reservedConditions: readonly unknown[] = ['IsNull', 'IsNotNull']
-
-/** A condition that holds on a value; a negative one is its complement. */
+/**
+ * A condition that holds on a value; a negative one is its complement.
+ * `IsNull`, `IsNotNull` and `Between` (tr-2) are positive: none of them is
+ * the complement of another, so none joins a group of negative rules (C-17).
+ */
 type Positive =
   | 'Contains'
   | 'StartsWith'
@@ -24,6 +27,9 @@ type Positive =
   | 'GreaterThanOrEqual'
   | 'LessThan'
   | 'LessThanOrEqual'
+  | 'IsNull'
+  | 'IsNotNull'
+  | 'Between'
 
 const textTypes: readonly ColumnType[] = ['string']
 const anyType: readonly ColumnType[] = [
@@ -41,15 +47,18 @@ const orderedTypes: readonly ColumnType[] = [
   'datetime'
 ]
 
-/**
- * The condition x type matrix (semantics.md#condition-by-type): the types a
- * condition is allowed on, and the positive condition it is evaluated as. A
- * Map, so a condition named like an Object.prototype member is unknown.
- */
-const matrix: ReadonlyMap<
+type Matrix = ReadonlyMap<
   string,
   { readonly types: readonly ColumnType[]; readonly positive: Positive }
-> = /* @__PURE__ */ new Map([
+>
+
+/**
+ * The condition x type matrix of tr-1 (semantics.md#condition-by-type): the
+ * types a condition is allowed on, and the positive condition it is
+ * evaluated as. A Map, so a condition named like an Object.prototype member
+ * is unknown.
+ */
+const matrix1: Matrix = /* @__PURE__ */ new Map([
   ['Contains', { types: textTypes, positive: 'Contains' }],
   ['NotContains', { types: textTypes, positive: 'Contains' }],
   ['StartsWith', { types: textTypes, positive: 'StartsWith' }],
@@ -64,6 +73,42 @@ const matrix: ReadonlyMap<
   ['LessThan', { types: orderedTypes, positive: 'LessThan' }],
   ['LessThanOrEqual', { types: orderedTypes, positive: 'LessThanOrEqual' }]
 ])
+
+/** The matrix of tr-2: tr-1 and the three conditions of ADR 0020. */
+const matrix2: Matrix = /* @__PURE__ */ new Map(matrix1)
+  .set('IsNull', { types: anyType, positive: 'IsNull' })
+  .set('IsNotNull', { types: anyType, positive: 'IsNotNull' })
+  .set('Between', { types: orderedTypes, positive: 'Between' })
+
+/** What a profile changes in the validation of a rule. */
+interface ProfileRules {
+  readonly matrix: Matrix
+  /** Conditions refused as extensions (R4): tr-1 reserves the null predicates. */
+  readonly reserved: readonly unknown[]
+  /**
+   * Whether the condition decides how many values the rule has (tr-2). In
+   * tr-1 every rule has one `value`.
+   */
+  readonly arity: boolean
+}
+
+const profileRules: Readonly<Record<SemanticsProfile, ProfileRules>> = {
+  'tr-1': { matrix: matrix1, reserved: noValueConditions, arity: false },
+  'tr-2': { matrix: matrix2, reserved: [], arity: true }
+}
+
+/** How many values a rule of `condition` has in tr-2. */
+const arityOf = (condition: string): 0 | 1 | 2 =>
+  (noValueConditions as readonly string[]).includes(condition)
+    ? 0
+    : (rangeConditions as readonly string[]).includes(condition)
+      ? 2
+      : 1
+
+const isValue = (value: unknown): boolean => {
+  const type = typeof value
+  return type === 'string' || type === 'number' || type === 'boolean'
+}
 
 /**
  * The value a rule compares with, computed once per evaluation: the match
@@ -81,8 +126,13 @@ export interface PlanRule {
   readonly positive: Positive
   /** `NotEqual` and `NotContains`: the exact complement, true on null. */
   readonly negative: boolean
-  readonly operand: Operand
+  /** `null` for `IsNull` and `IsNotNull`; the lower bound of `Between`. */
+  readonly operand: Operand | null
+  /** The upper bound of `Between`; `null` for every other condition. */
+  readonly operand2: Operand | null
 }
+
+export type { Operand, Positive }
 
 /** The rules of one field (C-17): AND when all are negative, else OR. */
 interface PlanGroup {
@@ -250,6 +300,7 @@ export const validate = (
     )
   }
   const filters: readonly unknown[] = q.filters
+  const meaning = profileRules[profile as SemanticsProfile]
   const rules: { field: string; text: boolean; rule: PlanRule }[] = []
   for (let rule = 0; rule < filters.length; rule++) {
     const path = '/filters/' + String(rule)
@@ -275,17 +326,38 @@ export const validate = (
         'The rule condition is not a string.'
       )
     }
-    const valueType = typeof item.value
-    if (
-      !hasOwn(item, 'value') ||
-      (valueType !== 'string' &&
-        valueType !== 'number' &&
-        valueType !== 'boolean')
-    ) {
+    // The operands' shape, where tr-1 checks its one value: in tr-2 the
+    // condition says how many there are (none, one, or two for Between).
+    const arity = meaning.arity ? arityOf(item.condition) : 1
+    if (arity === 0) {
+      if (item.value !== undefined) {
+        return fail(
+          'invalid-query',
+          { rule, path: path + '/value' },
+          `A rule of ${item.condition} has no value.`
+        )
+      }
+      if (item.value2 !== undefined) {
+        return fail(
+          'invalid-query',
+          { rule, path: path + '/value2' },
+          `A rule of ${item.condition} has no value2.`
+        )
+      }
+    } else if (!hasOwn(item, 'value') || !isValue(item.value)) {
       return fail(
         'invalid-query',
         { rule, path: path + '/value' },
         'The rule value is not a string, number or boolean.'
+      )
+    } else if (
+      arity === 2 &&
+      (!hasOwn(item, 'value2') || !isValue(item.value2))
+    ) {
+      return fail(
+        'invalid-query',
+        { rule, path: path + '/value2' },
+        'The upper bound value2 is not a string, number or boolean.'
       )
     }
     const field = item.field
@@ -304,14 +376,14 @@ export const validate = (
         `The field ${field} is not filterable.`
       )
     }
-    if (reservedConditions.includes(item.condition)) {
+    if (meaning.reserved.includes(item.condition)) {
       return fail(
         'unsupported-extension',
         { name: item.condition, field, rule, path: path + '/condition' },
         `The condition ${item.condition} is reserved and not evaluated.`
       )
     }
-    const allowed = matrix.get(item.condition)
+    const allowed = meaning.matrix.get(item.condition)
     if (!allowed || !allowed.types.includes(definition.type)) {
       return fail(
         'unsupported-operator',
@@ -319,13 +391,28 @@ export const validate = (
         `The condition ${item.condition} is not allowed on the ${definition.type} field ${field}.`
       )
     }
-    const operand = operandOf(definition, item.value, offsetOf(dataset, field))
-    if (!operand) {
-      return fail(
-        'invalid-value',
-        { field, rule, path: path + '/value' },
-        `The rule value does not fit the ${definition.type} field ${field}.`
-      )
+    const offset = offsetOf(dataset, field)
+    let operand: Operand | null = null
+    let operand2: Operand | null = null
+    if (arity > 0) {
+      operand = operandOf(definition, item.value, offset)
+      if (!operand) {
+        return fail(
+          'invalid-value',
+          { field, rule, path: path + '/value' },
+          `The rule value does not fit the ${definition.type} field ${field}.`
+        )
+      }
+    }
+    if (arity === 2) {
+      operand2 = operandOf(definition, item.value2, offset)
+      if (!operand2) {
+        return fail(
+          'invalid-value',
+          { field, rule, path: path + '/value2' },
+          `The upper bound does not fit the ${definition.type} field ${field}.`
+        )
+      }
     }
     rules.push({
       field,
@@ -333,7 +420,8 @@ export const validate = (
       rule: {
         positive: allowed.positive,
         negative: allowed.positive !== item.condition,
-        operand
+        operand,
+        operand2
       }
     })
   }

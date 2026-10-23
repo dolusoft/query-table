@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.12.0
+pnpm add @dolusoft/query-table@3.13.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -317,6 +317,32 @@ import type { CursorQuery, PageCursors } from '@dolusoft/query-table'
 
 const query = ref<CursorQuery>({ cursor: null, pageSize: 20, sort: null, filters: [] })
 const cursors = ref<PageCursors>({ next: null, prev: null })
+```
+
+## No value and ranges
+
+A column offers `IsNull`, `IsNotNull` and `Between` when it lists them in `filterConditions`; the list replaces the conditions of its type in the filter menu, and a column without it keeps the menu of 3.12 (C-112). Picking `IsNull` or `IsNotNull` applies at once and hides the input (C-113). `Between` draws two inputs, named by `labels.filterInputFrom` and `labels.filterInputTo`, and emits one rule once both bounds read; with one bound the last applied filter stays (C-114).
+
+```ts
+const columns: Column[] = [
+  { field: 'due', type: 'date', filterConditions: ['Between', 'Equal', 'IsNull', 'IsNotNull'] }
+]
+// { field: 'due', condition: 'IsNull' }
+// { field: 'due', condition: 'Between', value: '2026-10-01', value2: '2026-10-31' }
+```
+
+Both bounds are inclusive and never swapped. `useLocalQuery` evaluates the three with `profile: 'tr-2'`; a server that follows [the semantics profile](docs/guide/semantics.md#profile-tr-2) does the same ([ADR 0020](docs/decisions/0020-null-and-range-conditions.md)).
+
+**TypeScript, from 3.13.** `FilterRule` is a union by `condition`, so code that builds `{ field, condition, value }` from a variable typed `FilterCondition` no longer type-checks: narrow the condition first, to `ValueCondition` or with a `switch` on it (an `if` with an early return for `IsNull` does not narrow the union). Runtime behavior does not change, and there is no second rule type next to it (ADR 0020, K313-1).
+
+```ts
+import type { FilterRule, ValueCondition } from '@dolusoft/query-table'
+
+const ruleOf = (field: string, condition: ValueCondition, value: string): FilterRule => ({
+  field,
+  condition,
+  value
+})
 ```
 
 ## Filter text without a table

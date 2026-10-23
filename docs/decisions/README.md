@@ -24,5 +24,7 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0016](0016-grouped-rows.md)                | Grouped rows and the sticky group header (3.9)                                  | Accepted |
 | [0017](0017-row-component.md)               | One component per data row (3.11)                                               | Accepted |
 | [0018](0018-row-navigation.md)              | Keyboard navigation between rows (3.12)                                         | Accepted |
+| [0019](0019-release-version-policy.md)      | Release versions: the next minor or the next patch, never a major               | Accepted |
+| [0020](0020-null-and-range-conditions.md)   | Conditions without a value and with two: IsNull, IsNotNull, Between (3.13)      | Accepted |
 
-Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014, K38-n in ADR 0015, K39-n in ADR 0016, K311-n in ADR 0017, K312-n in ADR 0018.
+Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014, K38-n in ADR 0015, K39-n in ADR 0016, K311-n in ADR 0017, K312-n in ADR 0018, K313-n in ADR 0020.
