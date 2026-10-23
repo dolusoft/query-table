@@ -5,6 +5,7 @@
 >
 import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
 
+import { useRowNavigation } from './body/use-row-navigation'
 import { applyWidth, sideOf, type PinSide } from './columns/column-layout'
 import type {
   CellSlotProps,
@@ -64,6 +65,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   rowKey: undefined,
   labels: undefined,
   virtual: false,
+  rowNavigation: false,
   scrollBody: false,
   infinite: false,
   flash: false,
@@ -232,6 +234,22 @@ const rowWindow = useRowWindow<T>({
   isExpanded: expansion.isExpanded,
   groupBy: () => props.groupBy
 })
+// Keyboard navigation between rows (C-109 to C-111). Off, no listener.
+const navigation = useRowNavigation<T>({
+  rowNavigation: () => props.rowNavigation,
+  table: bodyTable,
+  bodyRows: () => state.rowPinning.rows.value,
+  keyOf: expansion.keyOf,
+  hasRowKey: () => props.rowKey !== undefined,
+  virtual: rowWindow.enabled,
+  scrollToIndex: rowWindow.scrollToIndex,
+  reveal: rowWindow.reveal,
+  busy: rowWindow.busy,
+  onFocus: payload => emit('rowFocus', payload)
+})
+/** The `tbody` listener of the navigation: none while it is off (C-111). */
+const navigationListeners = () =>
+  navigation.enabled() ? { keydown: navigation.onKeyDown } : {}
 const infinite = useLoadMore({
   infinite: () => props.infinite,
   rowKey: () => props.rowKey,
@@ -477,6 +495,7 @@ defineExpose(exposed)
               @cell-context-menu="payload => emit('cellContextMenu', payload)"
               @focusin="rowWindow.onFocusIn"
               @focusout="rowWindow.onFocusOut"
+              v-on="navigationListeners()"
             >
               <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
                 <!-- Names are dynamic (cell-<field>); the types only widen here. -->
@@ -572,6 +591,7 @@ defineExpose(exposed)
           @cell-context-menu="payload => emit('cellContextMenu', payload)"
           @focusin="rowWindow.onFocusIn"
           @focusout="rowWindow.onFocusOut"
+          v-on="navigationListeners()"
         >
           <template v-for="name in bodySlotNames()" :key="name" #[name]="p">
             <!-- Names are dynamic (cell-<field>); the types only widen here. -->

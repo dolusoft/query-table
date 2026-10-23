@@ -176,6 +176,19 @@ rows.value = rows.value.map(row => (row.id === changed.id ? changed : row))
 - A row inserted above, or with `virtual` expanded above, draws the rows below (their `data-row-index`, `aria-rowindex` change).
 - A cell slot is called again only when its row is drawn again or a reactive value it read changes, not when its owner renders (C-107; a change of 3.11). Slot props, reactive state read inside the slot and `$attrs` stay current. Stale until the row redraws: non-reactive values (`Date.now()`, plain variables, a plain row mutated in place), values captured from an outer scope (`v-for`, an outer `v-slot`), a `v-if`/`v-else` switch between two `<template #cell-x>` of one name, and handlers closing over such values. Fix: read state inside the slot, keep the condition inside one slot, read current state in the handler at click time.
 
+## Keyboard navigation
+
+```vue
+<QueryTable :rows="rows" row-key="id" virtual :row-navigation="{ focus: '[data-row]', skip: row => row.kind === 'note' }" @row-focus="({ row }) => select(row.id)">
+  <template #cell-title="{ row }"><button type="button" data-row>{{ row.title }}</button></template>
+</QueryTable>
+```
+
+- `rowNavigation`: ↑/↓ to the previous/next row, Home/End to the first/last. The keys act only on a row's focus target (`focus` selector, else the row's first link, button, checkbox or `tabindex` element; text fields, selects and radios keep their keys) and without modifiers; they prevent the default (C-109).
+- Group rows, subtable rows and the rows `skip` names are passed over; pinned rows come in drawing order.
+- With `virtual` the table scrolls an undrawn row in, focuses it by key (by object without `rowKey`) once drawn and puts back a focus that moving nodes dropped; the row is shown whole below a sticky header and a sticky group row (C-110). Remove a consumer `keydown` + `requestAnimationFrame` focus loop.
+- `rowFocus` (`row`, `rowIndex`, `key`): once per key press that moved the focus; not for a click or Tab. No `tabindex`, no listener when off (C-111).
+
 ## useQueryTable()
 
 `QueryTable` is a thin view over it. Options take refs or getters; `onQueryChange(query, reason)` is called once per user action.

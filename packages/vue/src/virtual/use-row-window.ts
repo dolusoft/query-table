@@ -340,11 +340,11 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   /** Frames a `scrollToIndex` waits for its row before it is given up. */
   const pendingFrames = 6
 
-  const viewport = () => {
-    if (container === null || container === window) {
+  const viewport = (target: Container | null = container) => {
+    if (target === null || target === window) {
       return { top: 0, height: globalThis.innerHeight }
     }
-    const element = container as HTMLElement
+    const element = target as HTMLElement
     return {
       top: element.getBoundingClientRect().top + element.clientTop,
       height: element.clientHeight
@@ -367,12 +367,12 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
   // Always instant: with `scroll-behavior: smooth` on the container (or on
   // the root, for the window) a plain assignment animates, the position
   // read right after is the old one and the corrections land wrong.
-  const scrollBy = (delta: number) => {
-    if (Math.abs(delta) < 1 || !container) {
+  const scrollBy = (delta: number, target: Container | null = container) => {
+    if (Math.abs(delta) < 1 || !target) {
       return
     }
-    container.scrollTo({
-      top: scrollTopOf(container) + delta,
+    target.scrollTo({
+      top: scrollTopOf(target) + delta,
       behavior: 'instant'
     })
   }
@@ -382,9 +382,10 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     top: number,
     height: number,
     align: Align,
-    groupCover = 0
+    groupCover = 0,
+    target: Container | null = container
   ) => {
-    const view = viewport()
+    const view = viewport(target)
     // A sticky header that covers the top of the container hides a row
     // aligned to the top; the row goes below it, and below a sticky group
     // row that covers it too (C-104).
@@ -434,6 +435,36 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       : 0
   }
 
+  /**
+   * Scrolls `target` so the drawn row `tr` (at a center position, or `-1`
+   * for a pinned row) is shown as `align` asks, below a sticky header and a
+   * sticky group row (C-87, C-104).
+   */
+  const alignRow = (
+    tbody: HTMLElement,
+    tr: Element,
+    position: number,
+    align: Align,
+    target: Container | null,
+    /** The item with its open subtable row, or the row alone. */
+    whole = true
+  ) => {
+    // The first row of a group is shown with its group row above it.
+    const above = startsGroup(position) ? tr.previousElementSibling : null
+    const head = above?.classList.contains('qt-group-row') ? above : null
+    scrollBy(
+      alignDelta(
+        (head ?? tr).getBoundingClientRect().top,
+        (whole ? itemHeight(tr) : tr.getBoundingClientRect().height) +
+          (head ? head.getBoundingClientRect().height : 0),
+        align,
+        head ? 0 : coverOf(position, tbody),
+        target
+      ),
+      target
+    )
+  }
+
   /** After a render: correct the drift (C-84) or a `scrollToIndex` (C-87). */
   const settle = () => {
     const tbody = body()
@@ -451,17 +482,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       if (tr) {
         const { align, position } = pending
         pending = null
-        // The first row of a group is shown with its group row above it.
-        const above = startsGroup(position) ? tr.previousElementSibling : null
-        const head = above?.classList.contains('qt-group-row') ? above : null
-        scrollBy(
-          alignDelta(
-            (head ?? tr).getBoundingClientRect().top,
-            itemHeight(tr) + (head ? head.getBoundingClientRect().height : 0),
-            align,
-            head ? 0 : coverOf(position, tbody)
-          )
-        )
+        alignRow(tbody, tr, position, align, container)
         return
       }
       // Its row never got drawn (the container could not scroll that far,
@@ -922,6 +943,34 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     schedule()
   }
 
+  /**
+   * Shows the drawn row with this index in `rows` whole, below a sticky
+   * header and a sticky group row, in its scroll container (C-110); with
+   * `virtual` that is the container of C-85, else the nearest scrolling
+   * ancestor of the table or the window. Only the row: an open subtable row
+   * taller than the view would push it out. A `scrollToIndex` still waiting
+   * is dropped, so it cannot move the view away after. A row not drawn does
+   * nothing.
+   */
+  const reveal = (index: number) => {
+    const tbody = body()
+    const table = o.table.value
+    const tr = tbody?.querySelector(`:scope > tr[data-row-index="${index}"]`)
+    if (!tbody || !table || !tr) {
+      return
+    }
+    pending = null
+    const target = enabled() && container ? container : findContainer(table)
+    alignRow(
+      tbody,
+      tr,
+      tr.hasAttribute('data-pinned-row') ? -1 : positionOf(index),
+      'auto',
+      target,
+      false
+    )
+  }
+
   return {
     enabled,
     drawn,
@@ -932,6 +981,9 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     /** Group rows of the body, drawn or not (C-104). */
     groupCount,
     scrollToIndex,
+    reveal,
+    /** A `scrollToIndex` or a window update is still to come (C-110). */
+    busy: () => pending !== null || frame !== 0,
     onFocusIn,
     onFocusOut
   }

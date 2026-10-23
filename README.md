@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.11.1
+pnpm add @dolusoft/query-table@3.12.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -122,6 +122,32 @@ To migrate, read the state inside the slot, keep a condition inside one slot, an
 ```
 
 Here `ownerName` and `account` stand for values captured from an outer scope (a `v-for` variable, an outer slot's prop), `store.ownerName` for reactive state, and `assignToCurrent(row)` reads the current account when it is clicked.
+
+### Keyboard navigation
+
+With `rowNavigation` the arrow keys move the focus between rows: ↑ and ↓ to the previous and next row, Home and End to the first and last. Each row draws its focus target, such as a button in a cell slot, and the table moves the focus from one row's target to the next one's (C-109):
+
+```vue
+<QueryTable
+  :rows="moments"
+  row-key="id"
+  virtual
+  :group-by="moment => moment.session"
+  :row-navigation="{ focus: '[data-row]', skip: moment => moment.kind === 'note' }"
+  @row-focus="({ row }) => select(row.id)"
+>
+  <template #cell-title="{ row }">
+    <button v-if="row.kind !== 'note'" type="button" data-row @click="select(row.id)">{{ row.title }}</button>
+    <span v-else>{{ row.title }}</span>
+  </template>
+</QueryTable>
+```
+
+- The keys act while the focus is on a row's focus target: the first element that matches `focus`, else the first link, button, checkbox or element with a `tabindex` of the row (a selection checkbox or an expand button included). Text fields, selects and radio buttons are never the default target and keep their arrow keys. With a modifier key the keys do nothing.
+- Group rows and subtable rows are passed over, and so are the rows `skip` names. Pinned rows come in the order the body draws them.
+- With `virtual` a row out of view is not in the DOM. The table scrolls to it, waits until it is drawn and focuses it by its key (by its row object without `rowKey`), so a change of `rows` in between does not land on another row, and it puts the focus back when moving rows drops it (C-110). With or without `virtual`, the row is shown whole (vertically, without its open subtable row), below a sticky header and below a sticky group row. A click ends a move that is still waiting.
+- `rowFocus` is emitted once per key press that moved the focus, with `row`, `rowIndex` and `key`. A click or Tab does not emit it; select on click in your own handler, as above.
+- The table writes no `tabindex` and no attribute. Off, it adds no listener (C-111).
 
 ## Pinned columns
 
