@@ -67,6 +67,8 @@ A release is a version in `package.json` and a tag that names it; the `Release` 
 - A patch release (`3.0.1`) is a fix made directly on `main`, in its own pull request, and then merged into `next`.
 - A minor release (`3.1.0`) is the work collected on `next`: `next` is merged into `main` in one pull request (a merge commit) and released from there.
 
+There are no major releases. A breaking need enters as an opt-in addition in a minor ([ADR 0019](docs/decisions/0019-release-version-policy.md)). A version is the next minor (`3.12.0` → `3.13.0`) or the next patch (`3.12.0` → `3.12.1`) of the latest released tag. `scripts/check-release-version.mjs` enforces it: CI runs it on every pull request, and the `version` job of the `Release` workflow runs it with `--release`, which leaves the tag being released out of the comparison, so a re-run of the same tag passes. A version equal to an existing tag (no bump) passes in CI.
+
 1. In the pull request that `main` will release (the fix, or `next` → `main`), set `version` in the root `package.json` and in every `packages/*/package.json` to the new version; the three packages are versioned together (P9). Update the install line of `README.md` to the same version (`tests/repo/package-manifest.spec.ts` fails when they differ).
 2. After the pull request is merged, tag the merge commit on `main` and push the tag:
 

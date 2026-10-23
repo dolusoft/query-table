@@ -14,6 +14,7 @@ Read this before changing anything. It is short on purpose; the details live in 
 - `main` is the released 3.x line. Patch fixes go to `main` directly, in their own pull request, and are then merged into `next`.
 - `next` is the work of the next minor version (now 3.3). Pull requests target `next`; when the minor is released, `next` is merged into `main`.
 - Never force push.
+- No major releases: a version is the next minor or the next patch of the latest release tag (ADR 0019, `scripts/check-release-version.mjs`).
 
 ## v3 layers (P14)
 
