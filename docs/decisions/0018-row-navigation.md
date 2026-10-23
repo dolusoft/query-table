@@ -1,6 +1,6 @@
 # 0018 Keyboard navigation between rows (3.12)
 
-Status: Proposed (2026-10-23), [query-table#134](https://github.com/dolusoft/query-table/issues/134). The focus target (K312-2) and when `rowFocus` is emitted (K312-6) were decided by Enes on 2026-10-23.
+Status: Accepted (2026-10-23), decided by Enes ([query-table#134](https://github.com/dolusoft/query-table/issues/134), [#165](https://github.com/dolusoft/query-table/pull/165); proposed 2026-10-23). The focus target (K312-2) and when `rowFocus` is emitted (K312-6) were decided by Enes on 2026-10-23, before the implementation; the record was accepted for the 3.12.0 release after one independent review (see Consultation).
 
 ## Context
 
