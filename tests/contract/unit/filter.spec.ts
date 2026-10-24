@@ -1287,6 +1287,22 @@ describe('C-116 Text that gives no rule', () => {
     expect(invalid(m, 'age')).toBeUndefined()
   })
 
+  it('does not mark the text of an outside rule, and marks typed text once it removed the rules', async () => {
+    const m = mountIt({
+      ...base,
+      columns: [{ field: 'n', type: 'integer' }],
+      query: makeQuery({ filters: [rule('n', 'Equal', 2.5)] })
+    })
+    await flush()
+    expect((input(m, 'n').element as HTMLInputElement).value).toBe('2.5')
+    expect(invalid(m, 'n')).toBeUndefined()
+    await type(m, 'n', '2,abc')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([])
+    expect(invalid(m, 'n')).toBe('true')
+  })
+
   it('does not mark a text column that reads, a count, a one-bound range or a no-value condition', async () => {
     const m = mountIt(
       {

@@ -61,7 +61,9 @@ const draft = () => filters.draftOf(props.column.field)
 const isMulti = () => filters.multiOf(props.column.field) > 0
 
 // Typed text that gives no rule, such as `80,abc` in a number column (C-116).
+// While the column still has rules, the text shows them, so it is not marked.
 const isInvalid = () =>
+  !isFiltered() &&
   !isMulti() &&
   draft().text.trim() !== '' &&
   filters.labelOf(props.column.field)?.count === 0

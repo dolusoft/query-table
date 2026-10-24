@@ -1213,7 +1213,7 @@
     {
       "id": "C-116",
       "title": "Text that gives no rule",
-      "text": "When the text typed into a text or number filter input gives no rule (`abc` or `80,abc` in a number column, `2.5` in an integer column, a mixed list such as `80,!443`, or only operators such as `*`), the input carries `aria-invalid=\"true\"` until the text reads again or is emptied, so a skin can mark it. The text applies as before: it removes the rules of the column (C-16). A read-only input with a count (C-42), a range with one bound (C-114) and a condition without a value (C-113) are not marked. This is the only DOM contract entry 3.14 adds. Source: own"
+      "text": "When the text typed into a text or number filter input gives no rule (`abc` or `80,abc` in a number column, `2.5` in an integer column, a mixed list such as `80,!443`, or only operators such as `*`), the input carries `aria-invalid=\"true\"` until the text reads again or is emptied, so a skin can mark it. The text applies as before: it removes the rules of the column (C-16), and the mark shows once they are gone. While the column has rules the input is not marked, even when its text does not read back, such as an outside `2.5` in an integer column. A read-only input with a count (C-42), a range with one bound (C-114) and a condition without a value (C-113) are not marked. This is the only DOM contract entry 3.14 adds. Source: own"
     }
   ]
 }

@@ -320,8 +320,11 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
   // count does (C-42).
   if (draft.multi || (arity === 2 && draft.text.includes(','))) {
     // Picking a condition is an explicit edit: the first rule's value
-    // carries over, the other rules go.
-    const first = rulesIn(shownFilters(table), column.id)[0]
+    // carries over, the other rules go. A typed list may not be applied
+    // yet, so its first value is read from the text.
+    const first = draft.multi
+      ? rulesIn(shownFilters(table), column.id)[0]
+      : parseDraft(filterColumnOf(column), draft)[0]
     draft.text = first?.value === undefined ? '' : String(first.value)
     draft.multi = undefined
   }

@@ -299,6 +299,19 @@ describe('C-20 Picking a condition [own]', () => {
       condition: 'Between'
     })
   })
+
+  it('on a number list not applied yet, Between keeps its first value', () => {
+    const t = makeTable({
+      query: start({ filters: [rule('age', 9, 'Equal')] })
+    })
+    const age = t.column('age')
+    age.setFilterInput('5,6')
+    age.setFilterCondition('Between')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '5',
+      condition: 'Between'
+    })
+  })
 })
 
 describe('C-21 Clearing one column [own]', () => {
