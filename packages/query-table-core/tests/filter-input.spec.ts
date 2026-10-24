@@ -275,17 +275,60 @@ describe('C-20 Picking a condition [own]', () => {
     expect(t.query.filters).toEqual([rule('age', 1, 'Equal')])
   })
 
-  it('on a number list, keeps every value with the new condition', () => {
+  it('on a number list, NotEqual keeps every value', () => {
     const t = makeTable({
       query: start({
         filters: [rule('age', 1, 'Equal'), rule('age', 2, 'Equal')]
       })
     })
-    t.column('age').setFilterCondition('GreaterThan')
+    t.column('age').setFilterCondition('NotEqual')
     expect(t.query.filters).toEqual([
-      rule('age', 1, 'GreaterThan'),
-      rule('age', 2, 'GreaterThan')
+      rule('age', 1, 'NotEqual'),
+      rule('age', 2, 'NotEqual')
     ])
+  })
+
+  it('on a ! list, a comparison keeps the list as NotEqual (C-16)', () => {
+    const t = makeTable()
+    const age = t.column('age')
+    age.setFilterInput('!1,!2')
+    vi.runAllTimers()
+    age.setFilterCondition('GreaterThan')
+    expect(age.getFilterInput()).toMatchObject({ text: '!1,!2' })
+    expect(t.query.filters).toEqual([
+      rule('age', 1, 'NotEqual'),
+      rule('age', 2, 'NotEqual')
+    ])
+  })
+
+  it('on a list of bounds that gives no rule, another condition keeps the text', () => {
+    const t = makeTable()
+    const age = t.column('age')
+    age.setFilterCondition('GreaterThan')
+    age.setFilterInput('0,5')
+    vi.runAllTimers()
+    expect(t.query.filters).toEqual([])
+    age.setFilterCondition('GreaterThanOrEqual')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '0,5',
+      condition: 'GreaterThanOrEqual'
+    })
+    expect(t.query.filters).toEqual([])
+  })
+
+  it('on a number list, a comparison keeps the first value (C-16)', () => {
+    const t = makeTable({
+      query: start({
+        filters: [rule('age', 1, 'Equal'), rule('age', 2, 'Equal')]
+      })
+    })
+    const age = t.column('age')
+    age.setFilterCondition('GreaterThan')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '1',
+      condition: 'GreaterThan'
+    })
+    expect(t.query.filters).toEqual([rule('age', 1, 'GreaterThan')])
   })
 
   it('on a typed number list, Between keeps the first value as the lower bound', () => {

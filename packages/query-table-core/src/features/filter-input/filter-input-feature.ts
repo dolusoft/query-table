@@ -316,15 +316,35 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
   }
   let draft = { ...draftOf(table, column.id) }
   const arity = conditionArity(condition)
-  // A bound holds one value: a number list carries its first rule over, as a
-  // count does (C-42).
-  if (draft.multi || (arity === 2 && draft.text.includes(','))) {
+  // A bound holds one value, and a number list takes only `Equal` and
+  // `NotEqual` (C-16): a list carries its first rule over, as a count does
+  // (C-42).
+  const filterColumn = filterColumnOf(column)
+  const type = columnTypeOf(filterColumn)
+  const numeric = type === 'number' || type === 'integer'
+  const typed = parseDraft(filterColumn, draft)
+  // A list of `!` values is `NotEqual` whatever is picked (C-16). Read with
+  // `Equal`, only the typed `!` gives `NotEqual`.
+  const asEqual = numeric
+    ? parseDraft(filterColumn, { ...draft, condition: 'Equal' })
+    : []
+  const negated =
+    asEqual.length > 1 && asEqual.every(rule => rule.condition === 'NotEqual')
+  const keepsList =
+    arity === 1 &&
+    (!numeric || negated || condition === 'Equal' || condition === 'NotEqual')
+  // Text that gives no rule stays as typed, still marked (C-116): there is no
+  // rule to replace, and `0,5` must not turn into `0`.
+  if (
+    draft.multi ||
+    (!keepsList && draft.text.includes(',') && typed.length > 0)
+  ) {
     // Picking a condition is an explicit edit: the first rule's value
     // carries over, the other rules go. A typed list may not be applied
     // yet, so its first value is read from the text.
     const first = draft.multi
       ? rulesIn(shownFilters(table), column.id)[0]
-      : parseDraft(filterColumnOf(column), draft)[0]
+      : typed[0]
     draft.text = first?.value === undefined ? '' : String(first.value)
     draft.multi = undefined
   }

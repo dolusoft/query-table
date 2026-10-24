@@ -363,6 +363,8 @@ parseFilterInput('!80,!443', { field: 'port', type: 'integer' })
 
 From 3.14, a number or integer column reads a list too (`80,443`, one rule per value) and `!` before a value (`NotEqual`). One value that does not read, or a list that mixes `!` and plain values, gives no rule; the input then carries `aria-invalid="true"` (C-116), so a skin can mark it.
 
+From 3.15, a list takes `Equal` or `NotEqual` only. With a comparison it gives no rule: `> 0 or > 5` is `> 0`, and `0,5` typed for 0.5 would have filtered that silently. The comma always separates values; write decimals with a dot (`0.5`). Picking a comparison on a list keeps its first value. The input stays a text input with the full keyboard, since phone number pads cannot type `!` or, on some, `-` and `,`.
+
 ## Advanced usage: `useQueryTable()`
 
 `QueryTable` is a thin view over `useQueryTable()`. Call the composable yourself to draw your own markup with the same behavior: it takes the props as refs or getters, calls `onQueryChange(query, reason)` once per user action and returns the state and actions to draw from, plus the TanStack `table`. It is disposed with the component's scope.

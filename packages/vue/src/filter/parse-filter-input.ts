@@ -10,7 +10,9 @@ import type { Column, FilterCondition, FilterRule } from '../contract'
  *   a segment without an operator uses `condition`.
  * - `number`: one rule per comma-separated number value; a value after `!`
  *   is `NotEqual` (`80,443`, `!80,!443`). A value that is not a finite
- *   number, or a list that mixes `!` and plain values, gives `[]`.
+ *   number, a list that mixes `!` and plain values, or a list without `!`
+ *   whose `condition` is a comparison (`0,5` with `GreaterThan`), gives
+ *   `[]`. The comma always separates; a decimal is written with a dot.
  * - `integer`: the same, but only whole numbers in the safe range; `2.5`
  *   and `9007199254740993` give `[]`.
  * - `bool`: `'true'` or `'false'` gives one rule with a boolean value;
