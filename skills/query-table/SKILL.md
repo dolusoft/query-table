@@ -85,7 +85,7 @@ What a user types in a text column becomes clean `FilterRule`s; the shortcuts ne
 | `!*foo*`, `!foo*`, `!*foo` | `NotContains` (there is no `NotStartsWith` or `NotEndsWith`) |
 | `a,b` | two rules for the same field (OR) |
 
-`*`, `!`, `!*` and empty segments give no rule. There is no escape syntax and a comma always splits. Number and integer columns give number values (`2.5` in an integer column gives no rule) and read lists and negation: `80,443` is two `Equal` rules, `!80,!443` two `NotEqual` rules, and a list with one bad value or with mixed signs (`80,!443`) gives no rule; bool columns give booleans, date and datetime columns give strings, and the default condition of those types is `Equal`. The same function is exported: `parseFilterInput(text, { field, type? }, condition?)`.
+`*`, `!`, `!*` and empty segments give no rule. There is no escape syntax and a comma always splits. Number and integer columns give number values (`2.5` in an integer column gives no rule) and read lists and negation: `80,443` is two `Equal` rules, `!80,!443` two `NotEqual` rules, and a list with one bad value, with mixed signs (`80,!443`) or with a comparison condition (`0,5` with `>`, where a decimal comma would hide) gives no rule; decimals take a dot; bool columns give booleans, date and datetime columns give strings, and the default condition of those types is `Equal`. The same function is exported: `parseFilterInput(text, { field, type? }, condition?)`.
 
 ## Server side
 

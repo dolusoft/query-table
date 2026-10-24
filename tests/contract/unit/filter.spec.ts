@@ -1013,6 +1013,23 @@ describe('C-16 Number lists in the filter input', () => {
     vi.advanceTimersByTime(1000)
     expect(m.events).toEqual([])
   })
+
+  it('shows an outside list of bounds as its count, since it does not read back', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({
+        filters: [
+          rule('age', 'GreaterThan', 20),
+          rule('age', 'GreaterThan', 40)
+        ]
+      })
+    })
+    await flush()
+    expect(ageInput(m).readOnly).toBe(true)
+    expect(ageInput(m).value).toBe('(2)')
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
+  })
 })
 
 describe('C-43 A rule the shortcuts cannot say', () => {

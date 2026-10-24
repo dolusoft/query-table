@@ -202,6 +202,13 @@ describe('C-17 Several rules for one field: a read-only count', () => {
     expect(
       draftFromRules(column('number'), [rule('Equal', '80'), rule('Equal', 2)])
     ).toEqual({ text: '', condition: 'Equal', multi: 2 })
+    // A list of bounds does not read back (C-16).
+    expect(
+      draftFromRules(column('integer'), [
+        rule('GreaterThan', -1),
+        rule('GreaterThan', 2)
+      ])
+    ).toEqual({ text: '', condition: 'GreaterThan', multi: 2 })
   })
 })
 
@@ -214,10 +221,25 @@ describe('C-16 Value types: number lists and negation (C-42 writes them back)', 
       { condition: 'Equal', value: 443 }
     ])
     expect(
-      parseDraft(column('number'), draft(' 1.5 , 2 ', 'GreaterThan'))
+      parseDraft(column('number'), draft(' 1.5 , 2 ', 'NotEqual'))
     ).toEqual([
-      { condition: 'GreaterThan', value: 1.5 },
-      { condition: 'GreaterThan', value: 2 }
+      { condition: 'NotEqual', value: 1.5 },
+      { condition: 'NotEqual', value: 2 }
+    ])
+  })
+
+  it('makes no rule for a list of bounds, where a decimal comma would hide', () => {
+    // `> 0 or > 5` is `> 0`: the list would say only its loosest bound.
+    const shares = column('number')
+    expect(parseDraft(shares, draft('0,5', 'GreaterThan'))).toEqual([])
+    expect(parseDraft(ports, draft('80,443', 'LessThanOrEqual'))).toEqual([])
+    expect(parseDraft(shares, draft('0.5', 'GreaterThan'))).toEqual([
+      { condition: 'GreaterThan', value: 0.5 }
+    ])
+    // The comma always separates values; a decimal is written with a dot.
+    expect(parseDraft(shares, draft('0,5'))).toEqual([
+      { condition: 'Equal', value: 0 },
+      { condition: 'Equal', value: 5 }
     ])
   })
 
@@ -270,8 +292,8 @@ describe('C-16 Value types: number lists and negation (C-42 writes them back)', 
         { text: '80,443', condition: 'Equal' }
       ],
       [
-        [rule('GreaterThan', -1), rule('GreaterThan', 2)],
-        { text: '-1,2', condition: 'GreaterThan' }
+        [rule('Equal', -1), rule('Equal', 2)],
+        { text: '-1,2', condition: 'Equal' }
       ],
       [
         [rule('NotEqual', 80), rule('NotEqual', 443)],
