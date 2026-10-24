@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.13.0
+pnpm add @dolusoft/query-table@3.14.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -355,7 +355,13 @@ import { parseFilterInput } from '@dolusoft/query-table'
 parseFilterInput('ist*,!*mir', { field: 'city' })
 // [{ field: 'city', condition: 'StartsWith', value: 'ist' },
 //  { field: 'city', condition: 'NotContains', value: 'mir' }]
+
+parseFilterInput('!80,!443', { field: 'port', type: 'integer' })
+// [{ field: 'port', condition: 'NotEqual', value: 80 },
+//  { field: 'port', condition: 'NotEqual', value: 443 }]
 ```
+
+From 3.14, a number or integer column reads a list too (`80,443`, one rule per value) and `!` before a value (`NotEqual`). One value that does not read, or a list that mixes `!` and plain values, gives no rule; the input then carries `aria-invalid="true"` (C-116), so a skin can mark it.
 
 ## Advanced usage: `useQueryTable()`
 
