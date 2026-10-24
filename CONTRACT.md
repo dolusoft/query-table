@@ -1178,7 +1178,7 @@ Source: own
 
 #### C-16 Value types
 
-Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`) or a whole number beyond the safe range, ±(2⁵³ − 1), which a JavaScript number cannot hold exactly (`9007199254740993` would become `9007199254740992`); `2.0` is the whole number `2`. A number or integer input also reads a list and negation: `80,443` is one rule per value with the picked condition (`Equal` by default), and a value after `!` is `NotEqual` (`!80`, `!80,!443`). A blank segment is skipped. The list is all or nothing: when one value does not read (`80,abc`, `1.5,2` in an integer column), or when the list mixes negated and plain values (`80,!443`, whose OR reading is almost never what was meant), there is no rule. Date, datetime and bool columns read one value.
+Number and integer columns give number values, bool columns give boolean values, date and datetime columns give string values. Their default condition is `Equal`. A bool column is a select, and picking an option applies at once. Text that is not a number makes no rule, and in an integer column neither does a number with a fraction (`2.5`) or a whole number beyond the safe range, ±(2⁵³ − 1), which a JavaScript number cannot hold exactly (`9007199254740993` would become `9007199254740992`); `2.0` is the whole number `2`. A number or integer input also reads a list and negation: `80,443` is one rule per value with the picked condition (`Equal` by default), and a value after `!` is `NotEqual` (`!80`, `!80,!443`). A blank segment is skipped. The list is all or nothing: when one value does not read (`80,abc`, `1.5,2` in an integer column), or when some values carry `!` and others do not (`80,!443`, whose OR reading is almost never what was meant), there is no rule, whatever condition was picked. A `!` value is `NotEqual` whatever condition was picked. Date, datetime and bool columns read one value.
 
 Source: own
 
@@ -1298,7 +1298,7 @@ The test skin selects only classes and attributes of the DOM contract (besides s
 
 #### C-42 Several rules on a column that is not text
 
-A number, integer, date, datetime or bool column has one input and the input holds one value, or for a number or integer column the list of C-16. Several rules that list can write (number values of one condition, or all `NotEqual`) show as its text, `80,443` or `!80,!443`, and the input stays editable. When `query.filters` holds any other set of rules for such a column (`age > 20` and `age < 40`), the input is read-only and shows the count, `(2)`, and the condition label shows the first condition with the same count. A bool select is disabled. Nothing is emitted and no rule is dropped. The clear action of the column and clear all remove the rules. Picking a condition from the menu, or an `updateValue` of the `filter-datetime` slot, is an explicit edit: it replaces the rules with one (the first rule's value for a pick), and `filter-datetime` receives an empty `value` while the rules stand. Text columns write several rules as `a,b` and are not affected. One `Between` rule is one rule: it fills the two inputs of C-114, not the count.
+A number, integer, date, datetime or bool column has one input and the input holds one value, or for a number or integer column the list of C-16. Several rules that list can write (number values of one condition, or all `NotEqual`) show as its text, `80,443` or `!80,!443`, and the input stays editable; a condition picked then is the condition of the values without `!`, and picking `Between` keeps the first rule's value as the lower bound. When `query.filters` holds any other set of rules for such a column (`age > 20` and `age < 40`), the input is read-only and shows the count, `(2)`, and the condition label shows the first condition with the same count. A bool select is disabled. Nothing is emitted and no rule is dropped. The clear action of the column and clear all remove the rules. Picking a condition from the menu, or an `updateValue` of the `filter-datetime` slot, is an explicit edit: it replaces the rules with one (the first rule's value for a pick), and `filter-datetime` receives an empty `value` while the rules stand. Text columns write several rules as `a,b` and are not affected. One `Between` rule is one rule: it fills the two inputs of C-114, not the count.
 
 #### C-43 A rule the shortcuts cannot say
 
@@ -1714,6 +1714,12 @@ Source: own
 
 Source: own
 
+#### C-116 Text that gives no rule
+
+When the text typed into a text or number filter input gives no rule (`abc` or `80,abc` in a number column, `2.5` in an integer column, a mixed list such as `80,!443`, or only operators such as `*`), the input carries `aria-invalid="true"` until the text reads again or is emptied, so a skin can mark it. The text applies as before: it removes the rules of the column (C-16). A read-only input with a count (C-42), a range with one bound (C-114) and a condition without a value (C-113) are not marked. This is the only DOM contract entry 3.14 adds.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1772,6 +1778,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-drop` | `th` | `before` or `after`: the header cell the dragged column would be placed next to (C-73). |
 | `data-type` | `th[data-field], td[data-field]` | The column type as C-39 reads it (`string`, `number`, `integer`, `date`, `datetime` or `bool`; `string` when missing or unknown), on the header, body and footer cells of a column. The table draws no alignment; a skin aligns by it (C-82). |
 | `data-flash` | `tbody > tr[data-row-index], tbody > tr > td[data-field]` | With `flash`: `a` or `b` on a body row whose key is new and on a data cell whose value changed, while the flash runs (C-94). A flash that starts again switches the value, so an animation keyed on it starts again. The skin draws it and sets its length with `--qt-flash-duration` on `.qt-datatable` or above. |
+| `aria-invalid` | `input.qt-filter-input` | `true` on a text or number filter input whose typed text gives no rule, such as `80,abc` in a number column (C-116). |
 | `aria-sort` | `th` | `ascending` or `descending` on the sorted column. |
 | `aria-rowcount` | `table` | With `virtual`: the number of rows of the table, the ones not drawn included; `-1` while an infinite list of unknown total has more to load (C-86). |
 | `aria-rowcount` | `.qt-table-responsive[role="table"]` | With `scrollBody` and `virtual`: the count of C-86, on the element that is the table for assistive technology (C-102). |

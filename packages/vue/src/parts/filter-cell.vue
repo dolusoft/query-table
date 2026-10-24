@@ -60,6 +60,12 @@ const inputText = () => {
 const draft = () => filters.draftOf(props.column.field)
 const isMulti = () => filters.multiOf(props.column.field) > 0
 
+// Typed text that gives no rule, such as `80,abc` in a number column (C-116).
+const isInvalid = () =>
+  !isMulti() &&
+  draft().text.trim() !== '' &&
+  filters.labelOf(props.column.field)?.count === 0
+
 // Types whose values have an order: the ones `Between` takes.
 const ordered: readonly ColumnType[] = ['number', 'integer', 'date', 'datetime']
 const isDated = () => props.type === 'date' || props.type === 'datetime'
@@ -181,6 +187,7 @@ const pick = (event: Event) => {
       :aria-label="inputName()"
       :value="inputText()"
       :readonly="isMulti()"
+      :aria-invalid="isInvalid() || undefined"
       @input="filters.setInput(column.field, inputValue($event))"
       @keydown.enter="filters.apply(column.field)"
     />
@@ -190,7 +197,8 @@ const pick = (event: Event) => {
       class="qt-filter-input"
       :aria-label="inputName()"
       :value="inputText()"
-      :readonly="filters.multiOf(column.field) > 0"
+      :readonly="isMulti()"
+      :aria-invalid="isInvalid() || undefined"
       @input="filters.setInput(column.field, inputValue($event))"
       @keydown.enter="filters.apply(column.field)"
     />

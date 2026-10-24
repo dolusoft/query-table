@@ -230,12 +230,17 @@ describe('C-18 The input follows outside changes [own]', () => {
     })
   })
 
-  it('labels a negated number list NotEqual', () => {
+  it('C-16 labels a negated number list NotEqual', () => {
     const t = makeTable()
     t.column('age').setFilterInput('!1,!2')
     expect(t.column('age').getFilterLabel()).toEqual({
       condition: 'NotEqual',
       count: 2
+    })
+    t.column('age').setFilterInput(',!1')
+    expect(t.column('age').getFilterLabel()).toEqual({
+      condition: 'NotEqual',
+      count: 1
     })
   })
 })
@@ -281,6 +286,18 @@ describe('C-20 Picking a condition [own]', () => {
       rule('age', 1, 'GreaterThan'),
       rule('age', 2, 'GreaterThan')
     ])
+  })
+
+  it('on a typed number list, Between keeps the first value as the lower bound', () => {
+    const t = makeTable()
+    const age = t.column('age')
+    age.setFilterInput('1,2')
+    vi.runAllTimers()
+    age.setFilterCondition('Between')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '1',
+      condition: 'Between'
+    })
   })
 })
 

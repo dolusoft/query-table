@@ -205,7 +205,7 @@ describe('C-17 Several rules for one field: a read-only count', () => {
   })
 })
 
-describe('C-42 Several rules on a column that is not text: number lists', () => {
+describe('C-16 Value types: number lists and negation (C-42 writes them back)', () => {
   const ports = column('integer')
 
   it('a list gives one rule per value, with the picked condition', () => {
@@ -248,6 +248,19 @@ describe('C-42 Several rules on a column that is not text: number lists', () => 
   it('makes no rule for a mixed list (D-01 of #95)', () => {
     expect(parseDraft(ports, draft('80,!443'))).toEqual([])
     expect(parseDraft(ports, draft('!80,443', 'GreaterThan'))).toEqual([])
+    // Mixed by the typed `!`, not by the conditions it ends up with.
+    expect(parseDraft(ports, draft('80,!443', 'NotEqual'))).toEqual([])
+  })
+
+  it('a ! value is NotEqual whatever condition was picked', () => {
+    expect(parseDraft(ports, draft('!80,!443', 'GreaterThan'))).toEqual([
+      { condition: 'NotEqual', value: 80 },
+      { condition: 'NotEqual', value: 443 }
+    ])
+    expect(parseDraft(ports, draft('80,443', 'NotEqual'))).toEqual([
+      { condition: 'NotEqual', value: 80 },
+      { condition: 'NotEqual', value: 443 }
+    ])
   })
 
   it('a list shows as the text that reads back as it', () => {

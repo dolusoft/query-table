@@ -315,7 +315,10 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
     return
   }
   let draft = { ...draftOf(table, column.id) }
-  if (draft.multi) {
+  const arity = conditionArity(condition)
+  // A bound holds one value: a number list carries its first rule over, as a
+  // count does (C-42).
+  if (draft.multi || (arity === 2 && draft.text.includes(','))) {
     // Picking a condition is an explicit edit: the first rule's value
     // carries over, the other rules go.
     const first = rulesIn(shownFilters(table), column.id)[0]
@@ -323,7 +326,6 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
     draft.multi = undefined
   }
   draft.condition = condition
-  const arity = conditionArity(condition)
   if (arity === 0) {
     // No value to type: the text goes, and the rule applies now (C-113);
     // the commit below cancels a pending text.
@@ -363,20 +365,15 @@ const label = (column: AnyColumn): FilterLabel | null => {
   }
   const type = columnTypeOf(filterColumnOf(column))
   const base = draft.condition ?? defaultConditionFor(type)
-  // A number list after `!` is all `NotEqual`: a mixed one gives no rule (C-16).
-  const negated =
-    (type === 'number' || type === 'integer') &&
-    draft.text.trim().startsWith('!')
+  const parsed = parseDraft(filterColumnOf(column), draft)
+  // A number list after `!` is `NotEqual` whatever was picked (C-16).
   const condition =
     type === 'string'
       ? previewCondition(draft.text, base)
-      : negated
-        ? 'NotEqual'
+      : type === 'number' || type === 'integer'
+        ? (parsed[0]?.condition ?? base)
         : base
-  return {
-    condition,
-    count: draft.multi ?? parseDraft(filterColumnOf(column), draft).length
-  }
+  return { condition, count: draft.multi ?? parsed.length }
 }
 
 const canClearAll = (table: AnyTable): boolean =>

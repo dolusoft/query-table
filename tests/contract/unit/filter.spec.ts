@@ -962,7 +962,7 @@ describe('C-42 Several rules on a column that is not text', () => {
   })
 })
 
-describe('C-42 Number lists in the filter input', () => {
+describe('C-16 Number lists in the filter input', () => {
   const ageInput = (m: Mounted) => input(m, 'age').element as HTMLInputElement
 
   it('is a text input, so a list can be typed', () => {
@@ -1255,5 +1255,63 @@ describe('C-114 Between in the filter row', () => {
       }
     })
     expect(slotsSeen.at(-1)?.bound).toBeNull()
+  })
+})
+
+describe('C-116 Text that gives no rule', () => {
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const slots = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  const invalid = (m: Mounted, field: string) =>
+    m.wrapper
+      .find(`th[data-field="${field}"] .qt-filter-input`)
+      .attributes('aria-invalid')
+
+  it('marks typed text that does not read, and clears the mark once it reads or is emptied', async () => {
+    const m = mountIt(base)
+    expect(invalid(m, 'age')).toBeUndefined()
+    await type(m, 'age', '20,abc')
+    expect(invalid(m, 'age')).toBe('true')
+    await type(m, 'age', 'abc')
+    expect(invalid(m, 'age')).toBe('true')
+    await type(m, 'age', '20,!40')
+    expect(invalid(m, 'age')).toBe('true')
+    await type(m, 'age', '20,40')
+    expect(invalid(m, 'age')).toBeUndefined()
+    await type(m, 'age', 'abc')
+    await type(m, 'age', '')
+    expect(invalid(m, 'age')).toBeUndefined()
+  })
+
+  it('does not mark a text column that reads, a count, a one-bound range or a no-value condition', async () => {
+    const m = mountIt(
+      {
+        ...base,
+        query: makeQuery({
+          filters: [
+            rule('name', 'Contains', 'a'),
+            rule('name', 'Contains', 'b')
+          ]
+        })
+      },
+      { slots }
+    )
+    await flush()
+    expect(invalid(m, 'name')).toBeUndefined()
+    menus.age.setCondition('Between')
+    await flush()
+    await m.wrapper
+      .findAll('th[data-field="age"] .qt-filter-input')[0]
+      .setValue('20')
+    expect(invalid(m, 'age')).toBeUndefined()
+    menus.age.setCondition('IsNull')
+    await flush()
+    expect(
+      m.wrapper.find('th[data-field="age"] .qt-filter-input').exists()
+    ).toBe(false)
   })
 })

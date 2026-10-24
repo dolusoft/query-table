@@ -201,10 +201,13 @@ const ADDED_AFTER_BASELINE = [
   // 3.14 addition (query-table#95): number lists and negation in the filter
   // input of a number or integer column, which a 3.13 build reads as no rule.
   // A single number reads as before, and those cases compare.
-  'tests/contract/unit/filter.spec.ts > C-42 Number lists in the filter input',
-  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser > integer "80,443"',
-  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser > integer "!80"',
-  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser > integer "!80,!443"'
+  // C-116 marks text that gives no rule, which 3.13 does not.
+  'tests/contract/unit/filter.spec.ts > C-16 Number lists in the filter input',
+  'tests/contract/unit/filter.spec.ts > C-116 Text that gives no rule',
+  'tests/contract/browser/dom-contract-filter-invalid.browser.spec.ts',
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "80,443"',
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80"',
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80,!443"'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

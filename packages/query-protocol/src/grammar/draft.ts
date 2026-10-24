@@ -88,8 +88,8 @@ const isNumeric = (type: ColumnType) => type === 'number' || type === 'integer'
 /**
  * The rules of a number or integer draft (C-16): one per comma-separated
  * value, `NotEqual` for a value after `!`. Every value must read, and the
- * values must be all positive or all negative; otherwise there is no rule.
- * A blank segment is skipped, as in text.
+ * values must all carry `!` or none; otherwise there is no rule. A blank
+ * segment is skipped, as in text.
  */
 const parseNumberList = (
   type: ColumnType,
@@ -97,20 +97,21 @@ const parseNumberList = (
   condition: ValueCondition
 ): Parsed => {
   const parsed: Array<WithoutField<ValueFilterRule>> = []
+  let negated = 0
   for (const raw of text.split(',')) {
     const segment = raw.trim()
     if (segment === '') {
       continue
     }
-    const negated = segment.startsWith('!')
-    const value = operandOf(type, negated ? segment.slice(1) : segment)
+    const not = segment.startsWith('!')
+    const value = operandOf(type, not ? segment.slice(1) : segment)
     if (value === null) {
       return []
     }
-    parsed.push({ condition: negated ? 'NotEqual' : condition, value })
+    negated += not ? 1 : 0
+    parsed.push({ condition: not ? 'NotEqual' : condition, value })
   }
-  const negative = parsed.filter(rule => rule.condition === 'NotEqual').length
-  return negative === 0 || negative === parsed.length ? parsed : []
+  return negated === 0 || negated === parsed.length ? parsed : []
 }
 
 /** The rules a draft stands for. */
