@@ -169,7 +169,17 @@ export const harbor: Dataset = {
   },
   parser: {
     text: '*ank*,izmir',
-    examples: ['*ank*', 'ist*,!*mir', '!bursa', '42', 'abc', 'true', '*']
+    examples: [
+      '*ank*',
+      'ist*,!*mir',
+      '!bursa',
+      '42',
+      '42,7',
+      '!42,!7',
+      'abc',
+      'true',
+      '*'
+    ]
   },
   turkish: {
     primary: 'Müşteri',

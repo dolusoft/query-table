@@ -170,7 +170,17 @@ export const ticker: Dataset = {
   },
   parser: {
     text: '*tech*,energy',
-    examples: ['*tech*', 'en*,!*ing', '!mining', '42', 'abc', 'true', '*']
+    examples: [
+      '*tech*',
+      'en*,!*ing',
+      '!mining',
+      '42',
+      '42,7',
+      '!42,!7',
+      'abc',
+      'true',
+      '*'
+    ]
   },
   turkish: {
     primary: 'Sembol',

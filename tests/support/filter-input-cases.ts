@@ -89,6 +89,27 @@ export const filterInputCases: FilterInputCase[] = [
     expected: [['Equal', 9007199254740991]]
   },
   { type: 'integer', text: '9007199254740993', expected: [] },
+  // Number lists and negation (C-16, query-table#95): all or nothing.
+  {
+    type: 'integer',
+    text: '80,443',
+    expected: [
+      ['Equal', 80],
+      ['Equal', 443]
+    ]
+  },
+  { type: 'integer', text: '!80', expected: [['NotEqual', 80]] },
+  {
+    type: 'integer',
+    text: '!80,!443',
+    expected: [
+      ['NotEqual', 80],
+      ['NotEqual', 443]
+    ]
+  },
+  { type: 'integer', text: '80,abc', expected: [] },
+  { type: 'integer', text: '1.5,2', expected: [] },
+  { type: 'integer', text: '80,!443', expected: [] },
   // Bool: the select's values.
   { type: 'bool', text: 'true', expected: [['Equal', true]] },
   { type: 'bool', text: 'false', expected: [['Equal', false]] },

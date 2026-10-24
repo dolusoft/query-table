@@ -83,6 +83,37 @@ const parseRange = (type: ColumnType, draft: Draft): Parsed => {
     : [{ condition: 'Between', value, value2 }]
 }
 
+const isNumeric = (type: ColumnType) => type === 'number' || type === 'integer'
+
+/**
+ * The rules of a number or integer draft (C-16): one per comma-separated
+ * value, `NotEqual` for a value after `!`. Every value must read, and the
+ * values must all carry `!` or none; otherwise there is no rule. A blank
+ * segment is skipped, as in text.
+ */
+const parseNumberList = (
+  type: ColumnType,
+  text: string,
+  condition: ValueCondition
+): Parsed => {
+  const parsed: Array<WithoutField<ValueFilterRule>> = []
+  let negated = 0
+  for (const raw of text.split(',')) {
+    const segment = raw.trim()
+    if (segment === '') {
+      continue
+    }
+    const not = segment.startsWith('!')
+    const value = operandOf(type, not ? segment.slice(1) : segment)
+    if (value === null) {
+      return []
+    }
+    negated += not ? 1 : 0
+    parsed.push({ condition: not ? 'NotEqual' : condition, value })
+  }
+  return negated === 0 || negated === parsed.length ? parsed : []
+}
+
 /** The rules a draft stands for. */
 export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
   const type = columnTypeOf(column)
@@ -101,6 +132,9 @@ export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
     defaultConditionFor(type)) as ValueCondition
   if (type === 'string') {
     return parseShortcuts(text, condition) as WithoutField<ValueFilterRule>[]
+  }
+  if (isNumeric(type)) {
+    return parseNumberList(type, text, condition)
   }
   const value = operandOf(type, text)
   return value === null ? [] : [{ condition, value }]
@@ -147,6 +181,30 @@ const isPlainText = (value: string) =>
   !/[*,]/.test(value) &&
   !value.startsWith('!')
 
+/**
+ * The draft of several rules on a number or integer column, when the list
+ * grammar can write them (C-42): number values of one condition (`80,443`)
+ * or all `NotEqual` (`!80,!443`). `null` for any other set.
+ */
+const numberListOf = (
+  type: ColumnType,
+  rules: readonly FilterRule[]
+): Draft | null => {
+  const [first] = rules
+  const values = rules.map(rule => ('value' in rule ? rule.value : undefined))
+  // A value is written only when its text reads back as the same value.
+  if (
+    !isNumeric(type) ||
+    rules.some(rule => rule.condition !== first.condition) ||
+    values.some(value => operandOf(type, String(value)) !== value)
+  ) {
+    return null
+  }
+  return first.condition === 'NotEqual'
+    ? { text: values.map(value => `!${value}`).join(','), condition: null }
+    : { text: values.join(','), condition: first.condition }
+}
+
 /** The draft that shows `rules` (the inverse of `parseDraft`). */
 export const draftFromRules = (
   column: FilterColumn,
@@ -189,6 +247,10 @@ export const draftFromRules = (
     return { text, condition: base0?.condition ?? null }
   }
   if (rules.length > 1) {
+    const list = numberListOf(columnTypeOf(column), rules)
+    if (list !== null) {
+      return list
+    }
     // One input holds one value: show the count instead of dropping rules.
     return { text: '', condition: first.condition, multi: rules.length }
   }

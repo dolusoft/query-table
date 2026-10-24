@@ -441,7 +441,7 @@ export const pages: PlaygroundPage[] = [
         'FilterDatetimeSlotProps'
       ]
     },
-    rules: ['C-112', 'C-113', 'C-114', 'C-115']
+    rules: ['C-112', 'C-113', 'C-114', 'C-115', 'C-116']
   },
   {
     id: 'query-model',
