@@ -161,7 +161,17 @@ export const vigil: Dataset = {
   },
   parser: {
     text: '*crit*,high',
-    examples: ['*crit*', 'hi*,!*gh', '!info', '42', 'abc', 'true', '*']
+    examples: [
+      '*crit*',
+      'hi*,!*gh',
+      '!info',
+      '42',
+      '42,7',
+      '!42,!7',
+      'abc',
+      'true',
+      '*'
+    ]
   },
   turkish: {
     primary: 'Kullanıcı',

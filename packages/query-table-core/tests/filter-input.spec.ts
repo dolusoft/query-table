@@ -200,17 +200,47 @@ describe('C-18 The input follows outside changes [own]', () => {
   it('shows the rules given at construction', () => {
     const t = makeTable({
       query: start({
-        filters: [rule('age', 1, 'Equal'), rule('age', 2, 'Equal')]
+        filters: [rule('age', 1, 'GreaterThan'), rule('age', 2, 'LessThan')]
       })
     })
     expect(t.column('age').getFilterInput()).toEqual({
       text: '',
-      condition: 'Equal',
+      condition: 'GreaterThan',
       multi: 2
+    })
+    expect(t.column('age').getFilterLabel()).toEqual({
+      condition: 'GreaterThan',
+      count: 2
+    })
+  })
+
+  it('shows a number list given at construction as its text', () => {
+    const t = makeTable({
+      query: start({
+        filters: [rule('age', 1, 'Equal'), rule('age', 2, 'Equal')]
+      })
+    })
+    expect(t.column('age').getFilterInput()).toEqual({
+      text: '1,2',
+      condition: 'Equal'
     })
     expect(t.column('age').getFilterLabel()).toEqual({
       condition: 'Equal',
       count: 2
+    })
+  })
+
+  it('C-16 labels a negated number list NotEqual', () => {
+    const t = makeTable()
+    t.column('age').setFilterInput('!1,!2')
+    expect(t.column('age').getFilterLabel()).toEqual({
+      condition: 'NotEqual',
+      count: 2
+    })
+    t.column('age').setFilterInput(',!1')
+    expect(t.column('age').getFilterLabel()).toEqual({
+      condition: 'NotEqual',
+      count: 1
     })
   })
 })
@@ -238,11 +268,49 @@ describe('C-20 Picking a condition [own]', () => {
   it('on several rules of a non-text column, keeps the first value', () => {
     const t = makeTable({
       query: start({
+        filters: [rule('age', 1, 'GreaterThan'), rule('age', 2, 'LessThan')]
+      })
+    })
+    t.column('age').setFilterCondition('Equal')
+    expect(t.query.filters).toEqual([rule('age', 1, 'Equal')])
+  })
+
+  it('on a number list, keeps every value with the new condition', () => {
+    const t = makeTable({
+      query: start({
         filters: [rule('age', 1, 'Equal'), rule('age', 2, 'Equal')]
       })
     })
     t.column('age').setFilterCondition('GreaterThan')
-    expect(t.query.filters).toEqual([rule('age', 1, 'GreaterThan')])
+    expect(t.query.filters).toEqual([
+      rule('age', 1, 'GreaterThan'),
+      rule('age', 2, 'GreaterThan')
+    ])
+  })
+
+  it('on a typed number list, Between keeps the first value as the lower bound', () => {
+    const t = makeTable()
+    const age = t.column('age')
+    age.setFilterInput('1,2')
+    vi.runAllTimers()
+    age.setFilterCondition('Between')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '1',
+      condition: 'Between'
+    })
+  })
+
+  it('on a number list not applied yet, Between keeps its first value', () => {
+    const t = makeTable({
+      query: start({ filters: [rule('age', 9, 'Equal')] })
+    })
+    const age = t.column('age')
+    age.setFilterInput('5,6')
+    age.setFilterCondition('Between')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '5',
+      condition: 'Between'
+    })
   })
 })
 

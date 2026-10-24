@@ -175,8 +175,113 @@ describe('C-18 The input follows outside changes: a draft shows rules', () => {
 describe('C-17 Several rules for one field: a read-only count', () => {
   it('a non-text column with several rules shows their count, not a value', () => {
     expect(
-      draftFromRules(column('number'), [rule('Equal', 1), rule('Equal', 2)])
+      draftFromRules(column('number'), [
+        rule('GreaterThan', 20),
+        rule('LessThan', 40)
+      ])
+    ).toEqual({ text: '', condition: 'GreaterThan', multi: 2 })
+    expect(
+      draftFromRules(column('date'), [
+        rule('Equal', '2024-01-01'),
+        rule('Equal', '2024-01-02')
+      ])
     ).toEqual({ text: '', condition: 'Equal', multi: 2 })
+  })
+
+  it('a number list the grammar cannot write keeps the count', () => {
+    // Mixed signs, and a value that does not read back in its column.
+    expect(
+      draftFromRules(column('integer'), [
+        rule('Equal', 80),
+        rule('NotEqual', 443)
+      ])
+    ).toEqual({ text: '', condition: 'Equal', multi: 2 })
+    expect(
+      draftFromRules(column('integer'), [rule('Equal', 1.5), rule('Equal', 2)])
+    ).toEqual({ text: '', condition: 'Equal', multi: 2 })
+    expect(
+      draftFromRules(column('number'), [rule('Equal', '80'), rule('Equal', 2)])
+    ).toEqual({ text: '', condition: 'Equal', multi: 2 })
+  })
+})
+
+describe('C-16 Value types: number lists and negation (C-42 writes them back)', () => {
+  const ports = column('integer')
+
+  it('a list gives one rule per value, with the picked condition', () => {
+    expect(parseDraft(ports, draft('80,443'))).toEqual([
+      { condition: 'Equal', value: 80 },
+      { condition: 'Equal', value: 443 }
+    ])
+    expect(
+      parseDraft(column('number'), draft(' 1.5 , 2 ', 'GreaterThan'))
+    ).toEqual([
+      { condition: 'GreaterThan', value: 1.5 },
+      { condition: 'GreaterThan', value: 2 }
+    ])
+  })
+
+  it('a value after ! gives NotEqual, alone or in a list', () => {
+    expect(parseDraft(ports, draft('!80'))).toEqual([
+      { condition: 'NotEqual', value: 80 }
+    ])
+    expect(parseDraft(ports, draft('!80,!443'))).toEqual([
+      { condition: 'NotEqual', value: 80 },
+      { condition: 'NotEqual', value: 443 }
+    ])
+  })
+
+  it('a blank segment is skipped', () => {
+    expect(parseDraft(ports, draft('80,,443,'))).toEqual([
+      { condition: 'Equal', value: 80 },
+      { condition: 'Equal', value: 443 }
+    ])
+  })
+
+  it('makes no rule when one value does not read', () => {
+    expect(parseDraft(ports, draft('80,abc'))).toEqual([])
+    expect(parseDraft(ports, draft('1.5,2'))).toEqual([])
+    expect(parseDraft(ports, draft('80,!'))).toEqual([])
+    expect(parseDraft(column('number'), draft('1.5,2'))).toHaveLength(2)
+  })
+
+  it('makes no rule for a mixed list (D-01 of #95)', () => {
+    expect(parseDraft(ports, draft('80,!443'))).toEqual([])
+    expect(parseDraft(ports, draft('!80,443', 'GreaterThan'))).toEqual([])
+    // Mixed by the typed `!`, not by the conditions it ends up with.
+    expect(parseDraft(ports, draft('80,!443', 'NotEqual'))).toEqual([])
+  })
+
+  it('a ! value is NotEqual whatever condition was picked', () => {
+    expect(parseDraft(ports, draft('!80,!443', 'GreaterThan'))).toEqual([
+      { condition: 'NotEqual', value: 80 },
+      { condition: 'NotEqual', value: 443 }
+    ])
+    expect(parseDraft(ports, draft('80,443', 'NotEqual'))).toEqual([
+      { condition: 'NotEqual', value: 80 },
+      { condition: 'NotEqual', value: 443 }
+    ])
+  })
+
+  it('a list shows as the text that reads back as it', () => {
+    const cases: Array<[ValueFilterRule[], Draft]> = [
+      [
+        [rule('Equal', 80), rule('Equal', 443)],
+        { text: '80,443', condition: 'Equal' }
+      ],
+      [
+        [rule('GreaterThan', -1), rule('GreaterThan', 2)],
+        { text: '-1,2', condition: 'GreaterThan' }
+      ],
+      [
+        [rule('NotEqual', 80), rule('NotEqual', 443)],
+        { text: '!80,!443', condition: null }
+      ]
+    ]
+    for (const [rules, shown] of cases) {
+      expect(draftFromRules(ports, rules)).toEqual(shown)
+      expect(rulesFromDraft(ports, shown)).toEqual(rules)
+    }
   })
 })
 

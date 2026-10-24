@@ -875,7 +875,6 @@ describe('C-42 Several rules on a column that is not text', () => {
     await flush()
     expect(ageInput(m).readOnly).toBe(false)
     expect(ageInput(m).value).toBe('20')
-    expect(ageInput(m).type).toBe('number')
   })
 
   it('is cleared by the clear action of the column', async () => {
@@ -960,6 +959,59 @@ describe('C-42 Several rules on a column that is not text', () => {
     expect(mounted!.wrapper.find('.qt-filter-condition').text()).toContain(
       '(2)'
     )
+  })
+})
+
+describe('C-16 Number lists in the filter input', () => {
+  const ageInput = (m: Mounted) => input(m, 'age').element as HTMLInputElement
+
+  it('is a text input, so a list can be typed', () => {
+    const m = mountIt(base)
+    expect(ageInput(m).type).toBe('text')
+  })
+
+  it('applies a typed list as one rule per value', async () => {
+    const m = mountIt(base)
+    await type(m, 'age', '20,40')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([
+      rule('age', 'Equal', 20),
+      rule('age', 'Equal', 40)
+    ])
+    await type(m, 'age', '!20,!40')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([
+      rule('age', 'NotEqual', 20),
+      rule('age', 'NotEqual', 40)
+    ])
+    expect(
+      m.wrapper.find('th[data-field="age"] .qt-filter-condition').text()
+    ).toBe('Not Equal (≠) (2)')
+  })
+
+  it('emits no rule for a mixed list or a value that does not read', async () => {
+    const m = mountIt(base)
+    await type(m, 'age', '20,!40')
+    vi.advanceTimersByTime(100)
+    await type(m, 'age', '20,abc')
+    vi.advanceTimersByTime(100)
+    expect(m.events).toEqual([])
+  })
+
+  it('shows an outside list as editable text', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({
+        filters: [rule('age', 'Equal', 20), rule('age', 'Equal', 40)]
+      })
+    })
+    await flush()
+    expect(ageInput(m).readOnly).toBe(false)
+    expect(ageInput(m).value).toBe('20,40')
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
   })
 })
 
@@ -1203,5 +1255,79 @@ describe('C-114 Between in the filter row', () => {
       }
     })
     expect(slotsSeen.at(-1)?.bound).toBeNull()
+  })
+})
+
+describe('C-116 Text that gives no rule', () => {
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const slots = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  const invalid = (m: Mounted, field: string) =>
+    m.wrapper
+      .find(`th[data-field="${field}"] .qt-filter-input`)
+      .attributes('aria-invalid')
+
+  it('marks typed text that does not read, and clears the mark once it reads or is emptied', async () => {
+    const m = mountIt(base)
+    expect(invalid(m, 'age')).toBeUndefined()
+    await type(m, 'age', '20,abc')
+    expect(invalid(m, 'age')).toBe('true')
+    await type(m, 'age', 'abc')
+    expect(invalid(m, 'age')).toBe('true')
+    await type(m, 'age', '20,!40')
+    expect(invalid(m, 'age')).toBe('true')
+    await type(m, 'age', '20,40')
+    expect(invalid(m, 'age')).toBeUndefined()
+    await type(m, 'age', 'abc')
+    await type(m, 'age', '')
+    expect(invalid(m, 'age')).toBeUndefined()
+  })
+
+  it('does not mark the text of an outside rule, and marks typed text once it removed the rules', async () => {
+    const m = mountIt({
+      ...base,
+      columns: [{ field: 'n', type: 'integer' }],
+      query: makeQuery({ filters: [rule('n', 'Equal', 2.5)] })
+    })
+    await flush()
+    expect((input(m, 'n').element as HTMLInputElement).value).toBe('2.5')
+    expect(invalid(m, 'n')).toBeUndefined()
+    await type(m, 'n', '2,abc')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([])
+    expect(invalid(m, 'n')).toBe('true')
+  })
+
+  it('does not mark a text column that reads, a count, a one-bound range or a no-value condition', async () => {
+    const m = mountIt(
+      {
+        ...base,
+        query: makeQuery({
+          filters: [
+            rule('name', 'Contains', 'a'),
+            rule('name', 'Contains', 'b')
+          ]
+        })
+      },
+      { slots }
+    )
+    await flush()
+    expect(invalid(m, 'name')).toBeUndefined()
+    menus.age.setCondition('Between')
+    await flush()
+    await m.wrapper
+      .findAll('th[data-field="age"] .qt-filter-input')[0]
+      .setValue('20')
+    expect(invalid(m, 'age')).toBeUndefined()
+    menus.age.setCondition('IsNull')
+    await flush()
+    expect(
+      m.wrapper.find('th[data-field="age"] .qt-filter-input').exists()
+    ).toBe(false)
   })
 })

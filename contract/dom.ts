@@ -16,7 +16,7 @@ export interface ClassEntry {
    * selection adds (`C-64`), C-72 the ones of the 3.1 features, C-82 the
    * column type, C-91 the ones of the 3.2 features and C-95 the ones of
    * the change flash of 3.3 (`C-94`). C-102 checks the ones of
-   * `scrollBody` (`C-101`, `C-102`).
+   * `scrollBody` (`C-101`, `C-102`), and C-116 its own.
    */
   addedBy?: string
 }
@@ -292,6 +292,13 @@ export const domAttributes: AttributeEntry[] = [
     description:
       'With `flash`: `a` or `b` on a body row whose key is new and on a data cell whose value changed, while the flash runs (C-94). A flash that starts again switches the value, so an animation keyed on it starts again. The skin draws it and sets its length with `--qt-flash-duration` on `.qt-datatable` or above.',
     addedBy: 'C-94'
+  },
+  {
+    name: 'aria-invalid',
+    on: 'input.qt-filter-input',
+    description:
+      '`true` on a text or number filter input whose typed text gives no rule, such as `80,abc` in a number column (C-116).',
+    addedBy: 'C-116'
   },
   {
     name: 'aria-sort',
