@@ -875,7 +875,6 @@ describe('C-42 Several rules on a column that is not text', () => {
     await flush()
     expect(ageInput(m).readOnly).toBe(false)
     expect(ageInput(m).value).toBe('20')
-    expect(ageInput(m).type).toBe('number')
   })
 
   it('is cleared by the clear action of the column', async () => {
@@ -960,6 +959,59 @@ describe('C-42 Several rules on a column that is not text', () => {
     expect(mounted!.wrapper.find('.qt-filter-condition').text()).toContain(
       '(2)'
     )
+  })
+})
+
+describe('C-42 Number lists in the filter input', () => {
+  const ageInput = (m: Mounted) => input(m, 'age').element as HTMLInputElement
+
+  it('is a text input, so a list can be typed', () => {
+    const m = mountIt(base)
+    expect(ageInput(m).type).toBe('text')
+  })
+
+  it('applies a typed list as one rule per value', async () => {
+    const m = mountIt(base)
+    await type(m, 'age', '20,40')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([
+      rule('age', 'Equal', 20),
+      rule('age', 'Equal', 40)
+    ])
+    await type(m, 'age', '!20,!40')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect(m.query().filters).toEqual([
+      rule('age', 'NotEqual', 20),
+      rule('age', 'NotEqual', 40)
+    ])
+    expect(
+      m.wrapper.find('th[data-field="age"] .qt-filter-condition').text()
+    ).toBe('Not Equal (≠) (2)')
+  })
+
+  it('emits no rule for a mixed list or a value that does not read', async () => {
+    const m = mountIt(base)
+    await type(m, 'age', '20,!40')
+    vi.advanceTimersByTime(100)
+    await type(m, 'age', '20,abc')
+    vi.advanceTimersByTime(100)
+    expect(m.events).toEqual([])
+  })
+
+  it('shows an outside list as editable text', async () => {
+    const m = mountIt({
+      ...base,
+      query: makeQuery({
+        filters: [rule('age', 'Equal', 20), rule('age', 'Equal', 40)]
+      })
+    })
+    await flush()
+    expect(ageInput(m).readOnly).toBe(false)
+    expect(ageInput(m).value).toBe('20,40')
+    vi.advanceTimersByTime(1000)
+    expect(m.events).toEqual([])
   })
 })
 

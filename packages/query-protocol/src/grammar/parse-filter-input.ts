@@ -11,9 +11,10 @@ import type {
  *
  * - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`);
  *   a segment without an operator uses `condition`.
- * - `number`: one rule with a number value; text that is not a finite number
- *   gives `[]`.
- * - `integer`: the same, but only a whole number in the safe range; `2.5`
+ * - `number`: one rule per comma-separated number value; a value after `!`
+ *   is `NotEqual` (`80,443`, `!80,!443`). A value that is not a finite
+ *   number, or a list that mixes `!` and plain values, gives `[]`.
+ * - `integer`: the same, but only whole numbers in the safe range; `2.5`
  *   and `9007199254740993` give `[]`.
  * - `bool`: `'true'` or `'false'` gives one rule with a boolean value;
  *   anything else gives `[]`.

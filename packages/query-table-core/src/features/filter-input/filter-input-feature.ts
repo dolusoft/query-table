@@ -363,8 +363,16 @@ const label = (column: AnyColumn): FilterLabel | null => {
   }
   const type = columnTypeOf(filterColumnOf(column))
   const base = draft.condition ?? defaultConditionFor(type)
+  // A number list after `!` is all `NotEqual`: a mixed one gives no rule (C-16).
+  const negated =
+    (type === 'number' || type === 'integer') &&
+    draft.text.trim().startsWith('!')
   const condition =
-    type === 'string' ? previewCondition(draft.text, base) : base
+    type === 'string'
+      ? previewCondition(draft.text, base)
+      : negated
+        ? 'NotEqual'
+        : base
   return {
     condition,
     count: draft.multi ?? parseDraft(filterColumnOf(column), draft).length

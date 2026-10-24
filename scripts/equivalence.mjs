@@ -197,7 +197,14 @@ const ADDED_AFTER_BASELINE = [
   // 3.12, and the other filter tests compare.
   'tests/contract/unit/filter.spec.ts > C-112 Column filterConditions',
   'tests/contract/unit/filter.spec.ts > C-113 A condition without a value in the filter row',
-  'tests/contract/unit/filter.spec.ts > C-114 Between in the filter row'
+  'tests/contract/unit/filter.spec.ts > C-114 Between in the filter row',
+  // 3.14 addition (query-table#95): number lists and negation in the filter
+  // input of a number or integer column, which a 3.13 build reads as no rule.
+  // A single number reads as before, and those cases compare.
+  'tests/contract/unit/filter.spec.ts > C-42 Number lists in the filter input',
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser > integer "80,443"',
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser > integer "!80"',
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser > integer "!80,!443"'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

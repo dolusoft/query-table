@@ -186,7 +186,7 @@ const pick = (event: Event) => {
     />
     <input
       v-else-if="type === 'number' || type === 'integer'"
-      :type="filters.multiOf(column.field) ? 'text' : 'number'"
+      type="text"
       class="qt-filter-input"
       :aria-label="inputName()"
       :value="inputText()"
