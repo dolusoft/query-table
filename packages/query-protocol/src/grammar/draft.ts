@@ -86,10 +86,19 @@ const parseRange = (type: ColumnType, draft: Draft): Parsed => {
 const isNumeric = (type: ColumnType) => type === 'number' || type === 'integer'
 
 /**
+ * The conditions a number list may carry (C-16). An OR of bounds is its
+ * loosest bound, so a list of bounds says nothing a single bound does not, and
+ * it hides a decimal comma: `0,5` typed for 0.5 with `>` would filter `> 0`.
+ */
+const takesList = (condition: FilterCondition) =>
+  condition === 'Equal' || condition === 'NotEqual'
+
+/**
  * The rules of a number or integer draft (C-16): one per comma-separated
- * value, `NotEqual` for a value after `!`. Every value must read, and the
- * values must all carry `!` or none; otherwise there is no rule. A blank
- * segment is skipped, as in text.
+ * value, `NotEqual` for a value after `!`. Every value must read, the values
+ * must all carry `!` or none, and a list without `!` takes `Equal` or
+ * `NotEqual` only; otherwise there is no rule. A blank segment is skipped, as
+ * in text.
  */
 const parseNumberList = (
   type: ColumnType,
@@ -110,6 +119,9 @@ const parseNumberList = (
     }
     negated += not ? 1 : 0
     parsed.push({ condition: not ? 'NotEqual' : condition, value })
+  }
+  if (negated === 0 && parsed.length > 1 && !takesList(condition)) {
+    return []
   }
   return negated === 0 || negated === parsed.length ? parsed : []
 }
@@ -183,8 +195,8 @@ const isPlainText = (value: string) =>
 
 /**
  * The draft of several rules on a number or integer column, when the list
- * grammar can write them (C-42): number values of one condition (`80,443`)
- * or all `NotEqual` (`!80,!443`). `null` for any other set.
+ * grammar can write them (C-42): number values of one condition that takes a
+ * list (`80,443`) or all `NotEqual` (`!80,!443`). `null` for any other set.
  */
 const numberListOf = (
   type: ColumnType,
@@ -195,6 +207,7 @@ const numberListOf = (
   // A value is written only when its text reads back as the same value.
   if (
     !isNumeric(type) ||
+    !takesList(first.condition) ||
     rules.some(rule => rule.condition !== first.condition) ||
     values.some(value => operandOf(type, String(value)) !== value)
   ) {
