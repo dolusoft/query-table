@@ -378,7 +378,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       id: column.field,
       accessorFn: (row: T) => valueAt(row, column.field),
       enableSorting: column.sortable !== false,
-      filterType: columnTypeOf(column)
+      filterType: columnTypeOf(column),
+      filterDefaultCondition: column.filterDefaultCondition
     }))
   )
 

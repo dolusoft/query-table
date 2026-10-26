@@ -113,8 +113,15 @@ export const conditionsFor = (column: Column) => {
   }))
 }
 
-const defaultCondition = (column: Column): FilterCondition =>
-  typeOf(column) === 'string' ? 'Contains' : 'Equal'
+// The column's own default when the sheet offers it (C-117), else the type's.
+const defaultCondition = (column: Column): FilterCondition => {
+  const type = typeOf(column)
+  const own = column.filterDefaultCondition
+  if (own !== undefined && conditionsByType[type].includes(own)) {
+    return own
+  }
+  return type === 'string' ? 'Contains' : 'Equal'
+}
 
 /** "City contains ank", "Age greater than 30 or less than 20". */
 export function describeRules(column: Column, rules: FilterRule[]): string {

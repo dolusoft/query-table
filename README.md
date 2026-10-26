@@ -365,6 +365,15 @@ From 3.14, a number or integer column reads a list too (`80,443`, one rule per v
 
 From 3.15, a list takes `Equal` or `NotEqual` only. With a comparison it gives no rule: `> 0 or > 5` is `> 0`, and `0,5` typed for 0.5 would have filtered that silently. The comma always separates values; write decimals with a dot (`0.5`). Picking a comparison on a list keeps its first value. The input stays a text input with the full keyboard, since phone number pads cannot type `!` or, on some, `-` and `,`.
 
+From 3.16, a column can name the condition of text typed without an operator: with `filterDefaultCondition: 'Equal'`, `abc` in a text column is an exact match, while `*abc*`, `abc*`, `*abc` and `!abc` keep their shortcuts and a condition picked in the menu still wins (C-117). `parseFilterInput` reads it from the column. Without it text matches by `Contains`, as before.
+
+```ts
+const columns: Column[] = [{ field: 'status', filterDefaultCondition: 'Equal' }]
+
+parseFilterInput('open', columns[0])
+// [{ field: 'status', condition: 'Equal', value: 'open' }]
+```
+
 ## Advanced usage: `useQueryTable()`
 
 `QueryTable` is a thin view over `useQueryTable()`. Call the composable yourself to draw your own markup with the same behavior: it takes the props as refs or getters, calls `onQueryChange(query, reason)` once per user action and returns the state and actions to draw from, plus the TanStack `table`. It is disposed with the component's scope.

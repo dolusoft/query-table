@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 
+import { parseFilterInput } from '@dolusoft/query-table'
 import type {
   Column,
+  FilterCondition,
   FilterDatetimeSlotProps,
   FilterMenuSlotProps,
   FilterValue,
@@ -1346,5 +1348,94 @@ describe('C-116 Text that gives no rule', () => {
     expect(
       m.wrapper.find('th[data-field="age"] .qt-filter-input').exists()
     ).toBe(false)
+  })
+})
+
+describe('C-117 Column filterDefaultCondition', () => {
+  const exact = (condition: FilterCondition): Column[] =>
+    makeColumns().map(column =>
+      column.field === 'name'
+        ? { ...column, filterDefaultCondition: condition }
+        : column
+    )
+  const label = (m: Mounted, field: string) =>
+    m.wrapper.find(`th[data-field="${field}"] .qt-filter-condition`).text()
+
+  it.each([
+    ['foo', [rule('name', 'Equal', 'foo')]],
+    ['a,b', [rule('name', 'Equal', 'a'), rule('name', 'Equal', 'b')]],
+    ['*foo*', [rule('name', 'Contains', 'foo')]],
+    ['foo*', [rule('name', 'StartsWith', 'foo')]],
+    ['*foo', [rule('name', 'EndsWith', 'foo')]],
+    ['!foo', [rule('name', 'NotEqual', 'foo')]],
+    ['!*foo*', [rule('name', 'NotContains', 'foo')]]
+  ])(
+    'with Equal, %s gives its rules and the shortcuts keep theirs',
+    async (text, expected) => {
+      const m = mountIt({ ...base, columns: exact('Equal') })
+      await type(m, 'name', text)
+      vi.advanceTimersByTime(100)
+      expect(m.events).toHaveLength(1)
+      expect(m.events[0][0].filters).toEqual(expected)
+    }
+  )
+
+  it('names the condition under the input', async () => {
+    const m = mountIt({ ...base, columns: exact('Equal') })
+    await type(m, 'name', 'foo')
+    expect(label(m, 'name')).toBe('Equal (=)')
+  })
+
+  it('gives way to a condition picked in the menu', async () => {
+    const menus: Record<string, FilterMenuSlotProps> = {}
+    const m = mountIt(
+      { ...base, columns: exact('Equal') },
+      {
+        slots: {
+          'filter-menu': (menu: FilterMenuSlotProps) => {
+            menus[menu.column.field] = menu
+            return h(menu.trigger)
+          }
+        }
+      }
+    )
+    await type(m, 'name', 'foo')
+    vi.advanceTimersByTime(100)
+    menus.name.setCondition('Contains')
+    await flush()
+    expect(m.query().filters).toEqual([rule('name', 'Contains', 'foo')])
+  })
+
+  it('shows an outside rule of it as plain text, and a Contains one with its shortcut', async () => {
+    const m = mountIt({ ...base, columns: exact('Equal') })
+    await m.setQuery(makeQuery({ filters: [rule('name', 'Equal', 'bob')] }))
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('bob')
+    await m.setQuery(makeQuery({ filters: [rule('name', 'Contains', 'bob')] }))
+    await flush()
+    expect((input(m, 'name').element as HTMLInputElement).value).toBe('*bob*')
+  })
+
+  it.each<FilterCondition>(['GreaterThan', 'IsNull', 'Between'])(
+    'counts %s on a text column as unset',
+    async condition => {
+      const m = mountIt({ ...base, columns: exact(condition) })
+      await type(m, 'name', 'foo')
+      vi.advanceTimersByTime(100)
+      expect(m.events[0][0].filters).toEqual([rule('name', 'Contains', 'foo')])
+    }
+  )
+
+  it('is read by parseFilterInput from the column it is given', () => {
+    const column: Column = { field: 'name', filterDefaultCondition: 'Equal' }
+    expect(parseFilterInput('foo', column)).toEqual([
+      rule('name', 'Equal', 'foo')
+    ])
+    expect(parseFilterInput('*foo*', column)).toEqual([
+      rule('name', 'Contains', 'foo')
+    ])
+    expect(parseFilterInput('foo', column, 'StartsWith')).toEqual([
+      rule('name', 'StartsWith', 'foo')
+    ])
   })
 })

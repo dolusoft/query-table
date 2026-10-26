@@ -41,6 +41,7 @@ export interface FilterInputColumnApi {
 
 // @public (undocumented)
 export interface FilterInputColumnDef {
+    filterDefaultCondition?: FilterCondition;
     filterType?: ColumnType;
 }
 

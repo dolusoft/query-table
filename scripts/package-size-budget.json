@@ -9,13 +9,14 @@
     "3.3.0 (change flash, 2026-10-07): row-changes 1550 B, the row-change tracker alone (/row-changes entry, ADR 0011). First measured at 1466 B; +84 B for the bounded cycle tracking of sameValue and the query reset that waits for its answer (append keeps the running flashes). Budget 1628 B (measured + 5%), ceiling 2000 B. The other fixtures do not use it and stay in their budgets.",
     "3.13.0 (ADR 0020, #167, 2026-10-23): protocol 1258 B (+206 B), protocol-local 5379 B (+310 B over 5069 B). The conditions IsNull, IsNotNull and Between: their lists (noValueConditions, rangeConditions), conditionArity, the operand shape checked by the condition in the schema, and in the evaluator the profile tr-2 (its matrix rows, the null predicates, the two bounds and the /value2 errors). Budgets set to measure plus 5%; ceilings unchanged.",
     "3.13.0 (ADR 0020, #167, 2026-10-23): filter-input 11809 B (+555 B over the 11254 B measure; it had grown to within 8 B of its budget before this change was measured). The two bounds of a Between draft, the arity of a condition and the no-value rules. Budget set to measure plus 5%; no ceiling.",
-    "3.14.0 (#95, 2026-10-24): protocol 1376 B (+118 B). parseFilterInput reads number lists and negation (`80,443`, `!80,!443`), all or nothing. Budget set to measure plus 5%; ceiling unchanged. filter-input 12054 B stays within its budget."
+    "3.14.0 (#95, 2026-10-24): protocol 1376 B (+118 B). parseFilterInput reads number lists and negation (`80,443`, `!80,!443`), all or nothing. Budget set to measure plus 5%; ceiling unchanged. filter-input 12054 B stays within its budget.",
+    "3.16.0 (#180, 2026-10-27): protocol 1520 B (+144 B over the 1376 B measure of 3.14), core 18554 B (+155 B over the 18399 B of 3.15, which had 43 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, so the parser can tell an offered default from one that counts as unset. Budgets set to measure plus 5%; both are over their ceilings, which are raised as #171 proposed, measure x 1.05 rounded up to the next 500 B (K7: size is not a blocker): protocol 2000 B, core 19500 B. filter-input 12316 B stays within its budget."
   ],
   "fixtures": {
     "protocol": {
-      "measuredGzipBytes": 1376,
-      "maxGzipBytes": 1445,
-      "ceilingGzipBytes": 1500
+      "measuredGzipBytes": 1520,
+      "maxGzipBytes": 1596,
+      "ceilingGzipBytes": 2000
     },
     "protocol-local": {
       "measuredGzipBytes": 5379,
@@ -36,9 +37,9 @@
       "ceilingGzipBytes": 2000
     },
     "core": {
-      "measuredGzipBytes": 17564,
-      "maxGzipBytes": 18442,
-      "ceilingGzipBytes": 18500
+      "measuredGzipBytes": 18554,
+      "maxGzipBytes": 19482,
+      "ceilingGzipBytes": 19500
     }
   }
 }

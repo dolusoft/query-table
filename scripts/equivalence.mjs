@@ -207,7 +207,12 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/dom-contract-filter-invalid.browser.spec.ts',
   'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "80,443"',
   'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80"',
-  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80,!443"'
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80,!443"',
+  // 3.16 addition (query-table#180): a column's own condition for text
+  // without an operator, which a 3.15 build does not read. Without
+  // `filterDefaultCondition` text matches by `Contains`, and the other filter
+  // tests compare.
+  'tests/contract/unit/filter.spec.ts > C-117 Column filterDefaultCondition'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

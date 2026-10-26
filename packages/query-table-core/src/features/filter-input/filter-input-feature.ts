@@ -12,7 +12,7 @@
 import {
   columnTypeOf,
   conditionArity,
-  defaultConditionFor,
+  defaultConditionOf,
   draftFromRules,
   draftHasContent,
   type FilterColumn,
@@ -73,7 +73,8 @@ const instances = new WeakMap<object, Instance>()
 
 const filterColumnOf = (column: AnyColumn): FilterColumn => ({
   field: column.id,
-  type: column.columnDef.filterType
+  type: column.columnDef.filterType,
+  filterDefaultCondition: column.columnDef.filterDefaultCondition
 })
 
 const columnsOf = (table: AnyTable): AnyColumn[] => table.getAllLeafColumns()
@@ -386,9 +387,10 @@ const label = (column: AnyColumn): FilterLabel | null => {
   if (!draftHasContent(draft)) {
     return null
   }
-  const type = columnTypeOf(filterColumnOf(column))
-  const base = draft.condition ?? defaultConditionFor(type)
-  const parsed = parseDraft(filterColumnOf(column), draft)
+  const filterColumn = filterColumnOf(column)
+  const type = columnTypeOf(filterColumn)
+  const base = draft.condition ?? defaultConditionOf(filterColumn)
+  const parsed = parseDraft(filterColumn, draft)
   // A number list after `!` is `NotEqual` whatever was picked (C-16).
   const condition =
     type === 'string'
