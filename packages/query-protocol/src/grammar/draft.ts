@@ -1,5 +1,5 @@
 import { columnTypeOf } from './column-type'
-import { defaultConditionFor } from './conditions'
+import { defaultConditionOf } from './conditions'
 import { hasShortcut, parseShortcuts, serializeFilterRules } from './shortcuts'
 import { conditionArity } from '../protocol/arity'
 import type {
@@ -141,7 +141,7 @@ export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
     return []
   }
   const condition = (draft.condition ??
-    defaultConditionFor(type)) as ValueCondition
+    defaultConditionOf(column)) as ValueCondition
   if (type === 'string') {
     return parseShortcuts(text, condition) as WithoutField<ValueFilterRule>[]
   }
@@ -246,7 +246,8 @@ export const draftFromRules = (
   if (columnTypeOf(column) === 'string') {
     // A rule written without an operator needs its condition as the base.
     const base0 = rules.find(rule => !hasShortcut(rule.condition))
-    const base = base0?.condition ?? defaultConditionFor('string')
+    const fallback = defaultConditionOf(column)
+    const base = base0?.condition ?? fallback
     // A rule of the base condition is written as plain text when the text
     // cannot be read as an operator; the others keep their shortcut.
     const text = rules
@@ -257,7 +258,13 @@ export const draftFromRules = (
           : serializeFilterRules([rule as ValueFilterRule])
       })
       .join(',')
-    return { text, condition: base0?.condition ?? null }
+    // The column's default needs no pick: its plain text reads back the same
+    // (C-117).
+    const picked = base0?.condition
+    return {
+      text,
+      condition: picked === undefined || picked === fallback ? null : picked
+    }
   }
   if (rules.length > 1) {
     const list = numberListOf(columnTypeOf(column), rules)

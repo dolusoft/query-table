@@ -44,6 +44,9 @@ export interface CursorRequest {
 export const defaultConditionFor: (type: ColumnType) => FilterCondition;
 
 // @public
+export const defaultConditionOf: (column: FilterColumn) => FilterCondition;
+
+// @public
 export const draftFromRules: (column: FilterColumn, rules: readonly FilterRule[]) => FilterDraft;
 
 // @public (undocumented)
@@ -52,6 +55,7 @@ export const draftHasContent: (draft: FilterDraft) => boolean;
 // @public
 export interface FilterColumn {
     field: string;
+    filterDefaultCondition?: FilterCondition;
     type?: ColumnType;
 }
 

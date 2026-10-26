@@ -82,6 +82,11 @@ const columns = [
     id: 'note',
     accessorFn: (row: Row) => row.name,
     enableSorting: false
+  },
+  {
+    id: 'code',
+    accessorFn: (row: Row) => row.name,
+    filterDefaultCondition: 'Equal' as const
   }
 ]
 

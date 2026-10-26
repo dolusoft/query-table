@@ -429,3 +429,40 @@ describe('C-114 Between: two bounds, both needed', () => {
     expect(hasContent({ text: '', text2: ' ', condition: null })).toBe(false)
   })
 })
+
+describe('C-117 A column default condition', () => {
+  const exact: FilterColumn = { field: 'f', filterDefaultCondition: 'Equal' }
+
+  it('is the base of text without an operator; shortcuts and a pick keep theirs', () => {
+    expect(parseDraft(exact, draft('foo,*bar*'))).toEqual([
+      { condition: 'Equal', value: 'foo' },
+      { condition: 'Contains', value: 'bar' }
+    ])
+    expect(parseDraft(exact, draft('foo', 'Contains'))).toEqual([
+      { condition: 'Contains', value: 'foo' }
+    ])
+  })
+
+  it('shows its own rules as plain text with no pick, and reads them back', () => {
+    const cases: Array<[ValueFilterRule[], Draft]> = [
+      [[rule('Equal', 'foo')], { text: 'foo', condition: null }],
+      [[rule('Contains', 'foo')], { text: '*foo*', condition: null }],
+      [
+        [rule('Equal', 'a'), rule('NotEqual', 'b')],
+        { text: 'a,!b', condition: null }
+      ],
+      [[rule('StartsWith', 'foo')], { text: 'foo*', condition: null }]
+    ]
+    for (const [rules, shown] of cases) {
+      expect(draftFromRules(exact, rules)).toEqual(shown)
+      expect(rulesFromDraft(exact, shown)).toEqual(rules)
+    }
+  })
+
+  it('without it, an Equal rule still keeps its pick', () => {
+    expect(draftFromRules(column(), [rule('Equal', 'foo')])).toEqual({
+      text: 'foo',
+      condition: 'Equal'
+    })
+  })
+})

@@ -76,6 +76,7 @@ export interface Column {
     field: string;
     filterable?: boolean;
     filterConditions?: FilterCondition[];
+    filterDefaultCondition?: FilterCondition;
     hide?: boolean;
     maxWidth?: number;
     minWidth?: number;

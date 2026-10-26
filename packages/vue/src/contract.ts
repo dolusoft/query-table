@@ -125,6 +125,14 @@ export interface Column {
    * of the type, as in 3.12.
    */
   filterConditions?: FilterCondition[]
+  /**
+   * The condition of text typed without an operator, in place of the type's
+   * default (C-117): with `'Equal'`, `abc` in a text column emits an `Equal`
+   * rule; `*abc*` still emits `Contains`. One the column type does not offer
+   * in `conditionOptions` counts as unset. Unset, text matches by `Contains`
+   * and every other type by `Equal`, as in 3.15.
+   */
+  filterDefaultCondition?: FilterCondition
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
 }
