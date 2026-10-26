@@ -77,7 +77,7 @@ What a user types in a text column becomes clean `FilterRule`s; the shortcuts ne
 
 | Typed | Rule |
 | --- | --- |
-| `foo` | the picked condition, `Contains` by default |
+| `foo` | the picked condition, else the column's `filterDefaultCondition`, else `Contains` |
 | `*foo*` | `Contains` |
 | `foo*` | `StartsWith` |
 | `*foo` | `EndsWith` |

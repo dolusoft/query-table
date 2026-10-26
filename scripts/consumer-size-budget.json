@@ -18,13 +18,14 @@
     "3.11.0 (row component, ADR 0017, 2026-10-19): component 44107 B (+712 B over next at 43395 B; composable and local-composable unchanged). Each data row is a `TableRow` component written with the compiled-template helpers, with its cells and utilities kept by value and the flash marks cached per row (C-106 to C-108). Budget set to measure plus 5%, ceiling rounded up to the next 500 B.",
     "3.13.0 (ADR 0020, #167, 2026-10-23): local-composable 6054 B (+315 B over 5739 B; composable 23284 B and component 46279 B within their budgets). useLocalQuery carries the evaluator, which gains the profile tr-2 (IsNull, IsNotNull, Between). Budget set to measure plus 5%; ceiling unchanged.",
     "3.13.0 (ADR 0020, #167, 2026-10-23): component 46279 B (+2172 B over the 44107 B measure of 3.11; 3.12 row navigation and 3.13 filterConditions, the two range inputs and the no-value conditions). Measure plus 5% is over the 46500 B ceiling, so the budget is the ceiling: 221 B of room. Raising the ceiling is tracked in its own issue.",
-    "3.14.0 (#95, 2026-10-24): component 46497 B (+218 B): number lists and negation in the filter input of a number or integer column (`80,443`, `!80,!443`), parsed and written back. It leaves 3 B under the 46500 B ceiling, so the ceiling is raised as #171 proposed: measure x 1.05 rounded up to the next 500 B, 49000 B (K7: size is not a blocker). Budget set to measure plus 5%."
+    "3.14.0 (#95, 2026-10-24): component 46497 B (+218 B): number lists and negation in the filter input of a number or integer column (`80,443`, `!80,!443`), parsed and written back. It leaves 3 B under the 46500 B ceiling, so the ceiling is raised as #171 proposed: measure x 1.05 rounded up to the next 500 B, 49000 B (K7: size is not a blocker). Budget set to measure plus 5%.",
+    "3.16.0 (#180, 2026-10-27): composable 23805 B (+150 B over the 23655 B of 3.15, which had 130 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, read by the parser. Budget set to measure plus 5%; that is over the 24000 B ceiling, which is raised as #171 proposed, measure x 1.05 rounded up to the next 500 B, 25000 B (K7: size is not a blocker). component 46801 B stays within its budget."
   ],
   "fixtures": {
     "composable": {
-      "measuredGzipBytes": 22652,
-      "maxGzipBytes": 23785,
-      "ceilingGzipBytes": 24000
+      "measuredGzipBytes": 23805,
+      "maxGzipBytes": 24996,
+      "ceilingGzipBytes": 25000
     },
     "component": {
       "measuredGzipBytes": 46497,

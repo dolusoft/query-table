@@ -37,6 +37,15 @@ describe('draftFrom', () => {
     })
   })
 
+  test("no rules: the column's own default condition when the sheet offers it (C-117)", () => {
+    expect(
+      draftFrom({ ...city, filterDefaultCondition: 'Equal' }, [])
+    ).toMatchObject({ condition: 'Equal' })
+    expect(
+      draftFrom({ ...city, filterDefaultCondition: 'GreaterThan' }, [])
+    ).toMatchObject({ condition: 'Contains' })
+  })
+
   test('one rule that types back to itself is edited in the input', () => {
     const rules = [rule('age', 'GreaterThan', 30)]
     const draft = draftFrom(age, rules)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { Button } from '@/ui/button'
 import { Checkbox } from '@/ui/checkbox'
@@ -24,10 +24,19 @@ import {
 // apply. The clear-all button sits in the first utility column of the
 // header, so the right panel column (`has-right-panel`) is turned on to hold
 // it.
+// `filterDefaultCondition: 'Equal'` makes text typed without an operator an
+// exact match on the text columns (C-117); `*ali*` still matches by Contains.
 const data = currentDataset()
-const columns = typedColumns(data)
-const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 const datePicker = ref(false)
+const exactText = ref(false)
+const columns = computed(() =>
+  typedColumns(data).map(column =>
+    exactText.value && (column.type ?? 'string') === 'string'
+      ? { ...column, filterDefaultCondition: 'Equal' as const }
+      : column
+  )
+)
+const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 
 const setFilters = (filters: FilterRule[]) => {
   query.value = { ...query.value, page: 1, filters }
@@ -84,6 +93,10 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
       <Label class="font-normal">
         <Checkbox v-model="datePicker" />
         Date picker (<code>filter-datetime</code> slot)
+      </Label>
+      <Label class="font-normal">
+        <Checkbox v-model="exactText" />
+        Exact text by default (<code>filterDefaultCondition</code>)
       </Label>
     </div>
     <QueryTable

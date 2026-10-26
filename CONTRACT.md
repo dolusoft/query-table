@@ -90,7 +90,7 @@ Exported from the package entry point next to the component.
 
 | Name | Signature | Description |
 | --- | --- | --- |
-| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule per comma-separated number value; a value after `!` is `NotEqual` (`80,443`, `!80,!443`). A value that is not a finite number, a list that mixes `!` and plain values, or a list without `!` whose `condition` is a comparison (`0,5` with `GreaterThan`), gives `[]`. The comma always separates; a decimal is written with a dot. - `integer`: the same, but only whole numbers in the safe range; `2.5` and `9007199254740993` give `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column type's default applies (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
+| `parseFilterInput` | `(text: string, column: Column, condition?: FilterCondition \| null) => FilterRule[]` | The rules the table emits when `text` is typed into the filter input of `column` (C-53): the same grammar and the same coercion per column type. - `string`: operator shortcuts (`*a*`, `a*`, `*a`, `!a`, `!*a*`, `a,b`); a segment without an operator uses `condition`. - `number`: one rule per comma-separated number value; a value after `!` is `NotEqual` (`80,443`, `!80,!443`). A value that is not a finite number, a list that mixes `!` and plain values, or a list without `!` whose `condition` is a comparison (`0,5` with `GreaterThan`), gives `[]`. The comma always separates; a decimal is written with a dot. - `integer`: the same, but only whole numbers in the safe range; `2.5` and `9007199254740993` give `[]`. - `bool`: `'true'` or `'false'` gives one rule with a boolean value; anything else gives `[]`. - `date` and `datetime`: one rule with the trimmed text as its value; the text is not validated, as the input already gives an ISO date. `condition` is the one picked in the filter menu; without it the column's `filterDefaultCondition` applies (C-117), else the type's default (`Contains` for text, `Equal` otherwise). Empty or blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`. Invalid input never throws. Pure: no Vue, no DOM; the column is not written. The grammar is the protocol's (`@dolusoft/query-protocol`). |
 | `useQueryTable` | `(options: UseQueryTableOptions<T, Q>) => QueryTable<T, Q>` | The state and actions of a server-side table: TanStack Table with `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed with the scope (C-62). |
 
 ### Local evaluation (`@dolusoft/query-table/local`)
@@ -233,6 +233,14 @@ export interface Column {
    * of the type, as in 3.12.
    */
   filterConditions?: FilterCondition[]
+  /**
+   * The condition of text typed without an operator, in place of the type's
+   * default (C-117): with `'Equal'`, `abc` in a text column emits an `Equal`
+   * rule; `*abc*` still emits `Contains`. One the column type does not offer
+   * in `conditionOptions` counts as unset. Unset, text matches by `Contains`
+   * and every other type by `Equal`, as in 3.15.
+   */
+  filterDefaultCondition?: FilterCondition
   /** Allow sorting by this column (needs table `sortable`). Defaults to `true`. */
   sortable?: boolean
 }
@@ -1172,7 +1180,7 @@ Source: own
 
 #### C-15 Operator shortcuts
 
-In a text column the table turns shortcuts into clean rules: `*foo*` Contains, `foo*` StartsWith, `*foo` EndsWith, `!foo` NotEqual, `!*foo*` NotContains, `!foo*` and `!*foo` NotContains, `a,b` two rules. `*`, `!`, `!*` and empty segments make no rule. A segment without an operator uses the condition picked in the menu, `Contains` by default. The text in the input is never rewritten while the user types, and shortcuts never reach `query`.
+In a text column the table turns shortcuts into clean rules: `*foo*` Contains, `foo*` StartsWith, `*foo` EndsWith, `!foo` NotEqual, `!*foo*` NotContains, `!foo*` and `!*foo` NotContains, `a,b` two rules. `*`, `!`, `!*` and empty segments make no rule. A segment without an operator uses the condition picked in the menu, else the column's `filterDefaultCondition` (C-117), else `Contains`. The text in the input is never rewritten while the user types, and shortcuts never reach `query`.
 
 Source: own
 
@@ -1342,7 +1350,7 @@ The `header-<field>` slot replaces the label of one column header: the sort butt
 
 #### C-53 Filter parser
 
-`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others (with its number lists and negation), and `condition` (the menu pick, the type's default when left out) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number in the safe range, a bool column's text other than `true` and `false`. With `condition` `IsNull` or `IsNotNull` it returns that rule, without a value and whatever the text; with `Between` it returns `[]`, since one text holds one bound (C-114). Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
+`parseFilterInput(text, column, condition?)`, exported from the package entry, returns the `FilterRule[]` the table emits when `text` is typed into the filter input of `column` and applied: the shortcuts of C-15 for a text column, the coercion of C-16 for the others (with its number lists and negation), and `condition` (the menu pick; when left out, the column's `filterDefaultCondition` of C-117, else the type's default) for a segment without an operator. Input that gives no rule returns `[]` and never throws: blank text, only operators (`*`, `!`, `!*`), a number column's text that is not a finite number, an integer column's text that is not a whole number in the safe range, a bool column's text other than `true` and `false`. With `condition` `IsNull` or `IsNotNull` it returns that rule, without a value and whatever the text; with `Between` it returns `[]`, since one text holds one bound (C-114). Date text is not validated. The function is pure: it imports no Vue and no DOM, and it does not write to `column`.
 
 Source: own
 
@@ -1717,6 +1725,12 @@ Source: own
 #### C-116 Text that gives no rule
 
 When the text typed into a text or number filter input gives no rule (`abc` or `80,abc` in a number column, `2.5` in an integer column, a mixed list such as `80,!443`, a list with a comparison such as `0,5` with `>`, or only operators such as `*`), the input carries `aria-invalid="true"` until the text reads again or is emptied, so a skin can mark it. The text applies as before: it removes the rules of the column (C-16), and the mark shows once they are gone. While the column has rules the input is not marked, even when its text does not read back, such as an outside `2.5` in an integer column. A read-only input with a count (C-42), a range with one bound (C-114) and a condition without a value (C-113) are not marked. This is the only DOM contract entry 3.14 adds.
+
+Source: own
+
+#### C-117 Column filterDefaultCondition
+
+`filterDefaultCondition` on a column is the condition of text typed without an operator when no condition is picked in the menu: with `'Equal'` on a text column, `abc` emits `{ condition: 'Equal', value: 'abc' }`. The shortcuts of C-15 keep their conditions (`*abc*` is still `Contains`, `!abc` still `NotEqual`), and a condition picked in the menu wins over it. The condition label under the input (C-44) names it, and a rule of it from outside shows as plain text, as a `Contains` rule does without the option. A condition the column type does not offer in `conditionOptions` counts as unset, and so do `IsNull`, `IsNotNull` and `Between`. `parseFilterInput` (C-53) reads it from the column it is given. Unset, text matches by `Contains` and every other type by `Equal`, and `update:query` is the one of 3.15.
 
 Source: own
 

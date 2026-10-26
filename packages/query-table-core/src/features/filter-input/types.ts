@@ -37,6 +37,11 @@ export interface FilterInputColumnDef {
    * condition (C-15, C-16). Defaults to `'string'`.
    */
   filterType?: ColumnType
+  /**
+   * The condition of text typed without an operator, in place of the type's
+   * default (C-117). One the type does not offer counts as unset.
+   */
+  filterDefaultCondition?: FilterCondition
 }
 
 /**
