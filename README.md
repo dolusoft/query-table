@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.16.0
+pnpm add @dolusoft/query-table@3.17.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -366,6 +366,8 @@ From 3.14, a number or integer column reads a list too (`80,443`, one rule per v
 From 3.15, a list takes `Equal` or `NotEqual` only. With a comparison it gives no rule: `> 0 or > 5` is `> 0`, and `0,5` typed for 0.5 would have filtered that silently. The comma always separates values; write decimals with a dot (`0.5`). Picking a comparison on a list keeps its first value. The input stays a text input with the full keyboard, since phone number pads cannot type `!` or, on some, `-` and `,`.
 
 From 3.16, a column can name the condition of text typed without an operator: with `filterDefaultCondition: 'Equal'`, `abc` in a text column is an exact match, while `*abc*`, `abc*`, `*abc` and `!abc` keep their shortcuts and a condition picked in the menu still wins (C-117). `parseFilterInput` reads it from the column. Without it text matches by `Contains`, as before.
+
+From 3.17, a column of type `ip` holds IPv4 and IPv6 addresses: its menu offers `Equal` and `NotEqual`, a list and `!` read like a number list (`10.0.0.1,10.0.0.2`, `!10.0.0.1`), and a CIDR prefix typed alone (`10.0.0.0/8`, `2001:db8::/32`) becomes one `Between` on the first and last address of the range. Text that is not an address gives no rule (C-118). The server compares the values as addresses; `useLocalQuery` refuses an `ip` field.
 
 ```ts
 const columns: Column[] = [{ field: 'status', filterDefaultCondition: 'Equal' }]

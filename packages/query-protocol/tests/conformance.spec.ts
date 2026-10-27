@@ -273,7 +273,10 @@ describe('the cases', () => {
 
   it('group every condition and every type of the protocol once', () => {
     expect(rows.flat().sort()).toEqual([...filterConditions].sort())
-    expect(columns.flat().sort()).toEqual([...columnTypes].sort())
+    // An ip field is not evaluated locally (C-118), so it has no column here.
+    expect(columns.flat().sort()).toEqual(
+      columnTypes.filter(type => type !== 'ip').sort()
+    )
   })
 
   it.each(Object.keys(rowsOf) as SemanticsProfile[])(

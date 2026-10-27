@@ -22,7 +22,8 @@ const types: ColumnType[] = [
   'number',
   'date',
   'datetime',
-  'bool'
+  'bool',
+  'ip'
 ]
 const conditions: FilterCondition[] = [
   'Contains',
@@ -36,7 +37,13 @@ const conditions: FilterCondition[] = [
   'LessThan',
   'LessThanOrEqual'
 ]
-const examples = data.parser.examples
+// Addresses read only in an `ip` column: a CIDR prefix becomes one `Between`.
+const examples = [
+  ...data.parser.examples,
+  '10.0.0.0/8',
+  '192.168.1.5,!192.168.1.9',
+  '2001:db8::/32'
+]
 
 const type = ref<ColumnType>('string')
 const condition = ref<FilterCondition | ''>('')
