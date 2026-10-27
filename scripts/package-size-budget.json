@@ -10,13 +10,14 @@
     "3.13.0 (ADR 0020, #167, 2026-10-23): protocol 1258 B (+206 B), protocol-local 5379 B (+310 B over 5069 B). The conditions IsNull, IsNotNull and Between: their lists (noValueConditions, rangeConditions), conditionArity, the operand shape checked by the condition in the schema, and in the evaluator the profile tr-2 (its matrix rows, the null predicates, the two bounds and the /value2 errors). Budgets set to measure plus 5%; ceilings unchanged.",
     "3.13.0 (ADR 0020, #167, 2026-10-23): filter-input 11809 B (+555 B over the 11254 B measure; it had grown to within 8 B of its budget before this change was measured). The two bounds of a Between draft, the arity of a condition and the no-value rules. Budget set to measure plus 5%; no ceiling.",
     "3.14.0 (#95, 2026-10-24): protocol 1376 B (+118 B). parseFilterInput reads number lists and negation (`80,443`, `!80,!443`), all or nothing. Budget set to measure plus 5%; ceiling unchanged. filter-input 12054 B stays within its budget.",
-    "3.16.0 (#180, 2026-10-27): protocol 1520 B (+144 B over the 1376 B measure of 3.14), core 18554 B (+155 B over the 18399 B of 3.15, which had 43 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, so the parser can tell an offered default from one that counts as unset. Budgets set to measure plus 5%; both are over their ceilings, which are raised as #171 proposed, measure x 1.05 rounded up to the next 500 B (K7: size is not a blocker): protocol 2000 B, core 19500 B. filter-input 12316 B stays within its budget."
+    "3.16.0 (#180, 2026-10-27): protocol 1520 B (+144 B over the 1376 B measure of 3.14), core 18554 B (+155 B over the 18399 B of 3.15, which had 43 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, so the parser can tell an offered default from one that counts as unset. Budgets set to measure plus 5%; both are over their ceilings, which are raised as #171 proposed, measure x 1.05 rounded up to the next 500 B (K7: size is not a blocker): protocol 2000 B, core 19500 B. filter-input 12316 B stays within its budget.",
+    "3.17.0 (#184, 2026-10-27): protocol 2218 B (+698 B over the 1520 B of 3.16), filter-input 13108 B (+1299 B over the 11809 B of 3.13, which 3.14 to 3.16 had grown to 12316 B). The column type `ip` (C-118): IPv4 and IPv6 parsing with BigInt, a CIDR prefix to its bounds and back, and the RFC 5952 text of a bound. Budgets set to measure plus 5%; protocol is over its ceiling, raised to measure x 1.05 rounded up to the next 500 B (K7): 2500 B."
   ],
   "fixtures": {
     "protocol": {
-      "measuredGzipBytes": 1520,
-      "maxGzipBytes": 1596,
-      "ceilingGzipBytes": 2000
+      "measuredGzipBytes": 2218,
+      "maxGzipBytes": 2329,
+      "ceilingGzipBytes": 2500
     },
     "protocol-local": {
       "measuredGzipBytes": 5379,
@@ -28,8 +29,8 @@
       "maxGzipBytes": 14360
     },
     "filter-input": {
-      "measuredGzipBytes": 11809,
-      "maxGzipBytes": 12399
+      "measuredGzipBytes": 13108,
+      "maxGzipBytes": 13764
     },
     "row-changes": {
       "measuredGzipBytes": 1550,

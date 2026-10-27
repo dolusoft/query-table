@@ -38,7 +38,9 @@ export const conditionOptions: Record<ColumnType, FilterConditionOption[]> = {
   integer: numeric,
   date: temporal,
   datetime: temporal,
-  bool: equality
+  bool: equality,
+  // An address is matched whole: no text search on it (C-118).
+  ip: equality
 }
 
 /** Text columns match by `Contains`, every other type matches exactly. */
@@ -76,7 +78,8 @@ export const conditionValues: Record<ColumnType, FilterCondition[]> = {
   integer: numericValues,
   date: temporalValues,
   datetime: temporalValues,
-  bool: ['Equal', 'NotEqual']
+  bool: ['Equal', 'NotEqual'],
+  ip: ['Equal', 'NotEqual']
 }
 
 /**

@@ -419,7 +419,7 @@ export const pages: PlaygroundPage[] = [
       functions: ['parseFilterInput'],
       types: ['FilterRule', 'FilterCondition', 'Column', 'ColumnType']
     },
-    rules: ['C-15', 'C-16', 'C-53']
+    rules: ['C-15', 'C-16', 'C-53', 'C-118']
   },
   {
     id: 'nulls-and-ranges',

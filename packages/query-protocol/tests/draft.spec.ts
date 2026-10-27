@@ -11,6 +11,7 @@ import {
 } from '../src/grammar/draft'
 import type {
   FilterColumn,
+  FilterRule,
   FilterValue,
   ValueCondition,
   ValueFilterRule
@@ -464,5 +465,114 @@ describe('C-117 A column default condition', () => {
       text: 'foo',
       condition: 'Equal'
     })
+  })
+})
+
+describe('C-118 IP column: equality, lists, ranges and CIDR', () => {
+  const ip = column('ip')
+  const range = (text: string, text2: string): Draft => ({
+    text,
+    text2,
+    condition: 'Between'
+  })
+
+  it('reads one address as Equal and a list as one rule each', () => {
+    expect(parseDraft(ip, draft(' 10.0.0.1 '))).toEqual([
+      { condition: 'Equal', value: '10.0.0.1' }
+    ])
+    expect(parseDraft(ip, draft('10.0.0.1, fe80::1'))).toEqual([
+      { condition: 'Equal', value: '10.0.0.1' },
+      { condition: 'Equal', value: 'fe80::1' }
+    ])
+    expect(parseDraft(ip, draft('!10.0.0.1,!10.0.0.2'))).toEqual([
+      { condition: 'NotEqual', value: '10.0.0.1' },
+      { condition: 'NotEqual', value: '10.0.0.2' }
+    ])
+    expect(parseDraft(ip, draft('10.0.0.1', 'NotEqual'))).toEqual([
+      { condition: 'NotEqual', value: '10.0.0.1' }
+    ])
+  })
+
+  it('reads a CIDR prefix alone as Between', () => {
+    expect(parseDraft(ip, draft('10.1.0.0/16'))).toEqual([
+      { condition: 'Between', value: '10.1.0.0', value2: '10.1.255.255' }
+    ])
+    expect(parseDraft(ip, draft('fe80::/10', 'Equal'))).toEqual([
+      {
+        condition: 'Between',
+        value: 'fe80::',
+        value2: 'febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff'
+      }
+    ])
+  })
+
+  it('gives no rule for text shortcuts, invalid addresses and mixed lists', () => {
+    for (const text of [
+      '*1.70*',
+      '172.16*',
+      '*.5',
+      '!*10*',
+      '1.70',
+      'abc.def',
+      '10.0.0.1,abc',
+      '10.0.0.1,!10.0.0.2',
+      '10.1.0.0/16,10.2.0.0/16',
+      '10.0.0.1,10.1.0.0/16',
+      '!10.1.0.0/16',
+      '10.1.0.0/33'
+    ]) {
+      expect(parseDraft(ip, draft(text)), text).toEqual([])
+    }
+    expect(parseDraft(ip, draft('10.1.0.0/16', 'NotEqual'))).toEqual([])
+  })
+
+  it('takes Between with two addresses of one family', () => {
+    expect(parseDraft(ip, range('10.0.0.1', '10.0.0.9'))).toEqual([
+      { condition: 'Between', value: '10.0.0.1', value2: '10.0.0.9' }
+    ])
+    expect(parseDraft(ip, range('10.0.0.1', '::1'))).toEqual([])
+    expect(parseDraft(ip, range('10.0.0.0/8', '10.0.0.9'))).toEqual([])
+    expect(parseDraft(ip, range('10.0.0.1', ''))).toEqual([])
+  })
+
+  it('shows its rules as text that reads back the same', () => {
+    const cases: Array<[FilterRule[], Draft]> = [
+      [[rule('Equal', '10.0.0.1')], { text: '10.0.0.1', condition: 'Equal' }],
+      [
+        [rule('Equal', '10.0.0.1'), rule('Equal', '10.0.0.2')],
+        { text: '10.0.0.1,10.0.0.2', condition: 'Equal' }
+      ],
+      [
+        [rule('NotEqual', '10.0.0.1'), rule('NotEqual', '10.0.0.2')],
+        { text: '!10.0.0.1,!10.0.0.2', condition: null }
+      ],
+      [
+        [
+          {
+            field: 'f',
+            condition: 'Between',
+            value: '10.1.0.0',
+            value2: '10.1.255.255'
+          }
+        ],
+        { text: '10.1.0.0/16', condition: null }
+      ]
+    ]
+    for (const [rules, shown] of cases) {
+      expect(draftFromRules(ip, rules)).toEqual(shown)
+      expect(rulesFromDraft(ip, shown)).toEqual(rules)
+    }
+  })
+
+  it('shows a range that is no prefix with its two bounds', () => {
+    const rules: FilterRule[] = [
+      {
+        field: 'f',
+        condition: 'Between',
+        value: '10.0.0.1',
+        value2: '10.0.0.9'
+      }
+    ]
+    expect(draftFromRules(ip, rules)).toEqual(range('10.0.0.1', '10.0.0.9'))
   })
 })

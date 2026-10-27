@@ -94,7 +94,8 @@ const conditionsByType: Record<ColumnType, FilterCondition[]> = {
   ],
   date: ['Equal', 'NotEqual', 'GreaterThan', 'LessThan'],
   datetime: ['Equal', 'NotEqual', 'GreaterThan', 'LessThan'],
-  bool: ['Equal', 'NotEqual']
+  bool: ['Equal', 'NotEqual'],
+  ip: ['Equal', 'NotEqual']
 }
 
 const wordOf = (type: ColumnType, condition: FilterCondition) =>

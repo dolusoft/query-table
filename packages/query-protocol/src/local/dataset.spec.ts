@@ -89,7 +89,17 @@ describe('C-77 Structural errors [own]: a malformed definition throws', () => {
     expect(() => defineDataset(value as Dataset)).toThrow(TypeError)
   })
 
-  it('accepts a null-prototype fields object and every column type', () => {
+  it('C-118 refuses an ip field: the server compares addresses', () => {
+    const value = {
+      key: 'id',
+      fields: { id: { type: 'integer' }, src: { type: 'ip' } }
+    }
+    expect(() => defineDataset(value as Dataset)).toThrow(
+      /an ip field is not evaluated locally/
+    )
+  })
+
+  it('accepts a null-prototype fields object and every other column type', () => {
     const fields = Object.assign(Object.create(null) as object, {
       id: { type: 'string' },
       n: { type: 'number' },

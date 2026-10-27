@@ -322,7 +322,8 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
   // (C-42).
   const filterColumn = filterColumnOf(column)
   const type = columnTypeOf(filterColumn)
-  const numeric = type === 'number' || type === 'integer'
+  // An address list reads like a number list (C-118).
+  const numeric = type === 'number' || type === 'integer' || type === 'ip'
   const typed = parseDraft(filterColumn, draft)
   // A list of `!` values is `NotEqual` whatever is picked (C-16). Read with
   // `Equal`, only the typed `!` gives `NotEqual`.
@@ -391,11 +392,12 @@ const label = (column: AnyColumn): FilterLabel | null => {
   const type = columnTypeOf(filterColumn)
   const base = draft.condition ?? defaultConditionOf(filterColumn)
   const parsed = parseDraft(filterColumn, draft)
-  // A number list after `!` is `NotEqual` whatever was picked (C-16).
+  // A number or address list after `!` is `NotEqual` whatever was picked
+  // (C-16), and a CIDR prefix is `Between` (C-118).
   const condition =
     type === 'string'
       ? previewCondition(draft.text, base)
-      : type === 'number' || type === 'integer'
+      : type === 'number' || type === 'integer' || type === 'ip'
         ? (parsed[0]?.condition ?? base)
         : base
   return { condition, count: draft.multi ?? parsed.length }
