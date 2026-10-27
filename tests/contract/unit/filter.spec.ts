@@ -1439,3 +1439,130 @@ describe('C-117 Column filterDefaultCondition', () => {
     ])
   })
 })
+
+describe('C-118 IP column type', () => {
+  const columns = (filterConditions?: FilterCondition[]): Column[] => [
+    ...makeColumns(),
+    { field: 'src', title: 'Source', type: 'ip', filterConditions }
+  ]
+  const menus: Record<string, FilterMenuSlotProps> = {}
+  const slots = {
+    'filter-menu': ((menu: FilterMenuSlotProps) => {
+      menus[menu.column.field] = menu
+      return h(menu.trigger)
+    }) as never
+  }
+  const label = (m: Mounted) =>
+    m.wrapper.find('th[data-field="src"] .qt-filter-condition').text()
+  const between = (value: string, value2: string) => ({
+    field: 'src',
+    condition: 'Between' as const,
+    value,
+    value2
+  })
+
+  it.each([
+    ['10.0.0.1', [rule('src', 'Equal', '10.0.0.1')]],
+    [
+      '10.0.0.1,fe80::1',
+      [rule('src', 'Equal', '10.0.0.1'), rule('src', 'Equal', 'fe80::1')]
+    ],
+    [
+      '!10.0.0.1,!10.0.0.2',
+      [rule('src', 'NotEqual', '10.0.0.1'), rule('src', 'NotEqual', '10.0.0.2')]
+    ],
+    ['10.1.0.0/16', [between('10.1.0.0', '10.1.255.255')]]
+  ])('%s gives its rules', async (text, expected) => {
+    const m = mountIt({ ...base, columns: columns() })
+    await type(m, 'src', text)
+    vi.advanceTimersByTime(100)
+    expect(m.events).toHaveLength(1)
+    expect(m.events[0][0].filters).toEqual(expected)
+  })
+
+  it.each(['*1.70*', '172.16*', '*.5', '1.70', 'abc', '10.0.0.1,!10.0.0.2'])(
+    '%s gives no rule and marks the input',
+    async text => {
+      const m = mountIt({ ...base, columns: columns() })
+      await type(m, 'src', text)
+      vi.advanceTimersByTime(100)
+      await flush()
+      expect(m.events).toEqual([])
+      expect(input(m, 'src').attributes('aria-invalid')).toBe('true')
+    }
+  )
+
+  it('keeps a typed CIDR prefix in the input and names it Between', async () => {
+    const m = mountIt({ ...base, columns: columns() })
+    await type(m, 'src', '10.1.0.0/16')
+    vi.advanceTimersByTime(100)
+    await flush()
+    expect((input(m, 'src').element as HTMLInputElement).value).toBe(
+      '10.1.0.0/16'
+    )
+    expect(label(m)).toBe('Between')
+  })
+
+  it('shows an outside range that is one prefix as CIDR text', async () => {
+    const m = mountIt({ ...base, columns: columns() })
+    await m.setQuery(
+      makeQuery({ filters: [between('172.16.0.0', '172.31.255.255')] })
+    )
+    await flush()
+    expect((input(m, 'src').element as HTMLInputElement).value).toBe(
+      '172.16.0.0/12'
+    )
+  })
+
+  it('offers Equal and NotEqual, and of a column list no text condition', () => {
+    mountIt({ ...base, columns: columns() }, { slots })
+    expect(menus.src.conditions.map(option => option.value)).toEqual([
+      'Equal',
+      'NotEqual'
+    ])
+    mounted?.wrapper.unmount()
+    mountIt(
+      {
+        ...base,
+        columns: columns([
+          'Equal',
+          'Contains',
+          'StartsWith',
+          'Between',
+          'IsNull'
+        ])
+      },
+      { slots }
+    )
+    expect(menus.src.conditions.map(option => option.value)).toEqual([
+      'Equal',
+      'Between',
+      'IsNull'
+    ])
+  })
+
+  it('takes Between with two text inputs and two addresses', async () => {
+    const m = mountIt({ ...base, columns: columns(['Between']) }, { slots })
+    menus.src.setCondition('Between')
+    await flush()
+    const bounds = m.wrapper.findAll('th[data-field="src"] .qt-filter-input')
+    expect(bounds.map(bound => bound.attributes('type'))).toEqual([
+      'text',
+      'text'
+    ])
+    await bounds[0].setValue('10.0.0.1')
+    await bounds[1].setValue('10.0.0.9')
+    vi.advanceTimersByTime(100)
+    expect(m.events.map(([query]) => query.filters)).toEqual([
+      [between('10.0.0.1', '10.0.0.9')]
+    ])
+  })
+
+  it('parseFilterInput reads an ip column the same way', () => {
+    const column = { field: 'src', type: 'ip' as const }
+    expect(parseFilterInput('10.1.0.0/16', column)).toEqual([
+      between('10.1.0.0', '10.1.255.255')
+    ])
+    expect(parseFilterInput('*1.70*', column)).toEqual([])
+  })
+})

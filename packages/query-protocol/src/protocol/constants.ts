@@ -56,5 +56,6 @@ export const columnTypes = [
   'integer',
   'date',
   'datetime',
-  'bool'
+  'bool',
+  'ip'
 ] as const

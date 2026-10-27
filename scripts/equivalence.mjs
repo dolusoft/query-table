@@ -212,7 +212,10 @@ const ADDED_AFTER_BASELINE = [
   // without an operator, which a 3.15 build does not read. Without
   // `filterDefaultCondition` text matches by `Contains`, and the other filter
   // tests compare.
-  'tests/contract/unit/filter.spec.ts > C-117 Column filterDefaultCondition'
+  'tests/contract/unit/filter.spec.ts > C-117 Column filterDefaultCondition',
+  // 3.17 addition (query-table#184): the column type `ip`, which a 3.16 build
+  // does not know. Columns without it are the ones of 3.16.
+  'tests/contract/unit/filter.spec.ts > C-118 IP column type'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

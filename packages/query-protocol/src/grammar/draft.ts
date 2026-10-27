@@ -1,5 +1,6 @@
 import { columnTypeOf } from './column-type'
 import { defaultConditionOf } from './conditions'
+import { cidrOf, isIp, rangeOfCidr } from './ip'
 import { hasShortcut, parseShortcuts, serializeFilterRules } from './shortcuts'
 import { conditionArity } from '../protocol/arity'
 import type {
@@ -62,6 +63,8 @@ const operandOf = (type: ColumnType, raw: string): FilterValue | null => {
     }
     case 'bool':
       return text === 'true' || text === 'false' ? text === 'true' : null
+    case 'ip':
+      return isIp(text) ? text : null
     default:
       return text
   }
@@ -78,12 +81,20 @@ const parseRange = (type: ColumnType, draft: Draft): Parsed => {
   }
   const value = operandOf(type, draft.text)
   const value2 = operandOf(type, draft.text2 ?? '')
-  return value === null || value2 === null
+  // IPv4 and IPv6 bounds do not make one range (C-118).
+  return value === null ||
+    value2 === null ||
+    (type === 'ip' && isV6(value) !== isV6(value2))
     ? []
     : [{ condition: 'Between', value, value2 }]
 }
 
+const isV6 = (value: FilterValue) => String(value).includes(':')
+
 const isNumeric = (type: ColumnType) => type === 'number' || type === 'integer'
+
+/** Types whose text is a list of exact values (C-16, C-118). */
+const isListed = (type: ColumnType) => isNumeric(type) || type === 'ip'
 
 /**
  * The conditions a number list may carry (C-16). An OR of bounds is its
@@ -94,7 +105,7 @@ const takesList = (condition: FilterCondition) =>
   condition === 'Equal' || condition === 'NotEqual'
 
 /**
- * The rules of a number or integer draft (C-16): one per comma-separated
+ * The rules of a number, integer or ip draft (C-16, C-118): one per comma-separated
  * value, `NotEqual` for a value after `!`. Every value must read, the values
  * must all carry `!` or none, and a list without `!` takes `Equal` or
  * `NotEqual` only; otherwise there is no rule. A blank segment is skipped, as
@@ -145,7 +156,14 @@ export const parseDraft = (column: FilterColumn, draft: Draft): Parsed => {
   if (type === 'string') {
     return parseShortcuts(text, condition) as WithoutField<ValueFilterRule>[]
   }
-  if (isNumeric(type)) {
+  if (type === 'ip' && text.includes('/')) {
+    // A CIDR prefix alone is the range of its addresses (C-118).
+    const bounds = condition === 'Equal' ? rangeOfCidr(text) : null
+    return bounds
+      ? [{ condition: 'Between', value: bounds[0], value2: bounds[1] }]
+      : []
+  }
+  if (isListed(type)) {
     return parseNumberList(type, text, condition)
   }
   const value = operandOf(type, text)
@@ -194,8 +212,8 @@ const isPlainText = (value: string) =>
   !value.startsWith('!')
 
 /**
- * The draft of several rules on a number or integer column, when the list
- * grammar can write them (C-42): number values of one condition that takes a
+ * The draft of several rules on a number, integer or ip column, when the list
+ * grammar can write them (C-42, C-118): values of one condition that takes a
  * list (`80,443`) or all `NotEqual` (`!80,!443`). `null` for any other set.
  */
 const numberListOf = (
@@ -206,7 +224,7 @@ const numberListOf = (
   const values = rules.map(rule => ('value' in rule ? rule.value : undefined))
   // A value is written only when its text reads back as the same value.
   if (
-    !isNumeric(type) ||
+    !isListed(type) ||
     !takesList(first.condition) ||
     rules.some(rule => rule.condition !== first.condition) ||
     values.some(value => operandOf(type, String(value)) !== value)
@@ -235,6 +253,20 @@ export const draftFromRules = (
       return { text: '', condition: first.condition, multi: rules.length }
     }
     if (first.condition === 'Between') {
+      // A range that is one prefix shows as the CIDR text that reads back to
+      // it (C-118); any other keeps its two bounds.
+      const cidr =
+        columnTypeOf(column) === 'ip'
+          ? cidrOf(String(first.value), String(first.value2))
+          : null
+      const bounds = cidr === null ? null : rangeOfCidr(cidr)
+      if (
+        cidr !== null &&
+        bounds?.[0] === first.value &&
+        bounds[1] === first.value2
+      ) {
+        return { text: cidr, condition: null }
+      }
       return {
         text: String(first.value),
         text2: String(first.value2),
