@@ -21,7 +21,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `rowKind` | `(row, index) => string \| null \| undefined`: written as `data-row-kind` on the row, for your CSS (a totals or "Others" row); the table takes no row class or style (C-97). |
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. `labels.filterCondition(condition, type)` names a condition: the label under a filter input and each `label` of the `filter-menu` slot's `conditions` (default: the English names of the protocol's `conditionOptions`). |
-| `virtual` | `true` or `{ rowHeight, estimateRowHeight, overscan, scrollElement }`: draw only the rows in view of the scroll container (C-83). |
+| `virtual` | `true` or `{ rowHeight, estimateRowHeight, overscan, scrollElement, keepAnchor }`: draw only the rows in view of the scroll container (C-83). |
 | `scrollBody` | Draw header, body and footer as three tables in `.qt-table-head`, `.qt-table-body`, `.qt-table-foot`, so only the body scrolls and the vertical scrollbar starts below the header. Give the three `overflow-y: scroll`, the body `overflow-x: auto` and a height, head and foot `overflow-x: hidden; scrollbar-color: transparent transparent` (with `overflow: hidden` their columns end shifted by the scrollbar's width), and the body and footer tables `table-layout: fixed` (C-101, C-102). |
 | `infinite` | `true` or `{ threshold }`: emit the next page action as the end of `rows` comes near; you append the rows (C-88). Needs `rowKey`. |
 | `flash` | `true` or `{ rows, cells }`: mark a new row and a changed cell with `data-flash` while the query stays the same; the skin draws it (C-93, C-94). Off by default. Needs `rowKey`. |
@@ -134,6 +134,7 @@ const cursors = ref<PageCursors>({ next: null, prev: null })
 
 - `virtual` draws the rows in view and `overscan` more (default 10) between two `tr.qt-virtual-spacer` rows that carry an inline `height`. A row and its open subtable row are one item. `data-row-index` and the slots' `rowIndex` stay the index in `rows`. Pinned rows are always drawn (C-83).
 - Heights are measured per key unless `rowHeight` is given; the table moves the scroll position so rows in view do not jump (C-84).
+- `keepAnchor` (with `rowKey`): rows that come in above the view (polling, live rows) leave the first row in view where it is; at the top the new rows show (C-119).
 - The scroll container is `scrollElement()`, else the nearest scrolling ancestor, else the window. Set `table-layout: fixed` or widths on every column; a development build warns otherwise (C-85).
 - `aria-rowcount`/`aria-rowindex` are written; a focused row stays drawn; printing draws every row (C-86, C-87).
 - `infinite` emits `update:query` with reason `page` once per query and row count. Append on `page`, replace on every other reason. More to load: `cursors.next`, or `page < pageCount`, or a full last page with an unknown total (C-90). An empty body draws only the `empty` row, no `load-more` row (C-38, C-89).
