@@ -374,6 +374,12 @@ export interface VirtualOptions {
    * table, else the window (C-85).
    */
   scrollElement?: () => HTMLElement | null
+  /**
+   * When `rows` change, keep the first row wholly in view where it is, found
+   * by `rowKey`, unless the first row is in view (C-119). Needs `rowKey`.
+   * Defaults to `false`.
+   */
+  keepAnchor?: boolean
 }
 
 /** Options of `rowNavigation` (C-109). */
