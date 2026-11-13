@@ -546,6 +546,7 @@ export { ValueFilterRule }
 export interface VirtualOptions {
     estimateRowHeight?: number;
     groupRowHeight?: number;
+    keepAnchor?: boolean;
     overscan?: number;
     rowHeight?: number;
     scrollElement?: () => HTMLElement | null;

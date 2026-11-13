@@ -191,7 +191,7 @@ export const pages: PlaygroundPage[] = [
       slots: ['subtable'],
       types: ['VirtualOptions', 'ScrollToIndexOptions', 'QueryTableExpose']
     },
-    rules: ['C-83', 'C-84', 'C-85', 'C-86', 'C-87', 'C-91']
+    rules: ['C-83', 'C-84', 'C-85', 'C-86', 'C-87', 'C-91', 'C-119']
   },
   {
     id: 'scroll-body',

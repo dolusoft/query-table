@@ -215,7 +215,10 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/filter.spec.ts > C-117 Column filterDefaultCondition',
   // 3.17 addition (query-table#184): the column type `ip`, which a 3.16 build
   // does not know. Columns without it are the ones of 3.16.
-  'tests/contract/unit/filter.spec.ts > C-118 IP column type'
+  'tests/contract/unit/filter.spec.ts > C-118 IP column type',
+  // 3.18 addition (query-table#133): `virtual.keepAnchor`, which a 3.17 build
+  // does not read. Without it a virtual body is the one of 3.17.
+  'tests/contract/browser/keep-anchor.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

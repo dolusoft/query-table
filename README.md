@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.17.0
+pnpm add @dolusoft/query-table@3.18.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -97,6 +97,8 @@ A new object for every row (`rows.value.map(row => ({ ...row }))`) draws every r
 - A cell slot's reactive reads belong to its row: a duration cell that reads a ticking clock draws only the rows whose slot reads it. A reactive value that every row's slot reads draws every row, so read the clock in the cells that show it.
 - A row inserted above others, a group split above them, or with `virtual` a row expanded above them, draws the rows below it again: their `data-row-index` and `aria-rowindex` change.
 - In the Vue DevTools tree every drawn data row is a `TableRow` under the table body; its render count shows which rows a change drew.
+
+From 3.18, a virtual list that gets new rows at the top, from a poll or a live feed, can keep the rows in view where they are: with `:virtual="{ keepAnchor: true }"` and `rowKey`, the first row wholly in view keeps its distance from the top of the scroll container when `rows` change, found again by its key. While the first row is in view nothing is kept, so the new rows show. A consumer that saved the first visible row's key and offset before an update and restored it after can drop that code (C-119). Without the option, or without `rowKey`, a change of `rows` scrolls as before.
 
 What a cell slot can rely on (C-107): it is called again when its row is drawn again, or when a reactive value it read in its last call changes, and not when the component that owns the slot renders. In 3.10 every render of the table called every cell slot, so this is a change of 3.11 (a compatibility exception). Slot props (`row`, `cellValue`, ...), reactive state read inside the slot (refs, `computed`s, stores, injected refs, the locale behind `t()`) and `$attrs` stay current. Until its row is drawn again, a slot keeps showing:
 

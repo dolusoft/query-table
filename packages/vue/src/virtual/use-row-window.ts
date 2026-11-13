@@ -50,6 +50,8 @@ export interface RowWindowOptions<T> {
   /** The rows in drawing order: pinned top, the others, pinned bottom (C-74). */
   bodyRows: () => BodyRow<T>[]
   keyOf: (row: T, index: number) => string | number
+  /** `rowKey` is given: a key names the same row after `rows` change. */
+  hasRowKey?: () => boolean
   isExpanded: (row: T, index: number) => boolean
   /** The `groupBy` prop (C-103); absent, no group is drawn. */
   groupBy?: () =>
@@ -80,7 +82,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       previous.rowHeight === next.rowHeight &&
       previous.estimateRowHeight === next.estimateRowHeight &&
       previous.groupRowHeight === next.groupRowHeight &&
-      previous.scrollElement === next.scrollElement
+      previous.scrollElement === next.scrollElement &&
+      previous.keepAnchor === next.keepAnchor
       ? previous
       : next
   })
@@ -152,9 +155,8 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     aria
   })
 
-  /** Position of a row index among the center rows (ascending), or -1. */
-  const positionOf = (index: number): number => {
-    const rows = center()
+  /** Position of a row index among center rows (ascending), or -1. */
+  const positionIn = (rows: BodyRow<T>[], index: number): number => {
     if (rows[index]?.index === index) {
       return index
     }
@@ -174,6 +176,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     }
     return -1
   }
+  const positionOf = (index: number) => positionIn(center(), index)
 
   // ---- heights (C-84) -------------------------------------------------------
 
@@ -335,8 +338,14 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
    * (it anchors to a spacer when no row is in view); it is put back.
    */
   let expected: number | null = null
-  /** A `scrollToIndex` to correct once its row is drawn (C-87). */
-  let pending: { position: number; align: Align; tries: number } | null = null
+  /**
+   * A row to correct once it is drawn: a `scrollToIndex` (C-87), or an
+   * anchor kept across a change of `rows`, back at its client `top` (C-119).
+   */
+  let pending:
+    | { position: number; align: Align; tries: number }
+    | { position: number; top: number; tries: number }
+    | null = null
   /** Frames a `scrollToIndex` waits for its row before it is given up. */
   const pendingFrames = 6
 
@@ -377,6 +386,14 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     })
   }
 
+  /** Height of a sticky header over the top (client `viewTop`) of the view. */
+  const headCover = (viewTop: number) => {
+    const head = o.table.value?.tHead?.getBoundingClientRect()
+    return head && head.top <= viewTop + 1 && head.bottom > viewTop
+      ? head.bottom - viewTop
+      : 0
+  }
+
   /** How far to scroll to show an item at `top` (client) with `height`. */
   const alignDelta = (
     top: number,
@@ -389,12 +406,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     // A sticky header that covers the top of the container hides a row
     // aligned to the top; the row goes below it, and below a sticky group
     // row that covers it too (C-104).
-    const head = o.table.value?.tHead?.getBoundingClientRect()
-    const cover =
-      head && head.top <= view.top + 1 && head.bottom > view.top
-        ? head.bottom - view.top
-        : 0
-    const viewTop = view.top + cover + groupCover
+    const viewTop = view.top + headCover(view.top) + groupCover
     const viewBottom = view.top + view.height
     const bottom = top + height
     switch (align) {
@@ -465,6 +477,47 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     )
   }
 
+  /**
+   * The anchor of `keepAnchor` in the drawn body, read before it is drawn
+   * again (C-119): the key and client top of the first data row whose top is
+   * in the view, below a sticky header. `null` when nothing is to be kept,
+   * the first center row being that row included.
+   */
+  const anchorOf = (before: BodyRow<T>[]) => {
+    const tbody = body()
+    if (
+      !settings.value?.keepAnchor ||
+      !o.hasRowKey?.() ||
+      !tbody ||
+      !container ||
+      printing.value
+    ) {
+      return null
+    }
+    const view = viewport()
+    const viewTop = view.top + headCover(view.top)
+    for (const tr of tbody.children) {
+      const at = tr.getAttribute('data-row-index')
+      if (at === null || tr.hasAttribute('data-pinned-row')) {
+        continue
+      }
+      const top = tr.getBoundingClientRect().top
+      if (top < viewTop - 0.5) {
+        continue
+      }
+      if (top >= view.top + view.height) {
+        return null
+      }
+      const position = positionIn(before, Number(at))
+      if (position <= 0) {
+        return null
+      }
+      const { row, index } = before[position]
+      return { key: o.keyOf(row, index), top }
+    }
+    return null
+  }
+
   /** After a render: correct the drift (C-84) or a `scrollToIndex` (C-87). */
   const settle = () => {
     const tbody = body()
@@ -480,10 +533,19 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     if (pending) {
       const tr = rowElement(tbody, pending.position)
       if (tr) {
-        const { align, position } = pending
+        const done = pending
         pending = null
-        alignRow(tbody, tr, position, align, container)
+        if ('top' in done) {
+          scrollBy(tr.getBoundingClientRect().top - done.top)
+        } else {
+          alignRow(tbody, tr, done.position, done.align, container)
+        }
         return
+      }
+      if ('top' in pending && pending.tries === 0) {
+        // The anchor is not drawn at its new place: go there by the counted
+        // heights; the window follows and the row is corrected once drawn.
+        scrollBy(itemsTop(tbody) + offsets[pending.position] - pending.top)
       }
       // Its row never got drawn (the container could not scroll that far,
       // say): give up, so the drift correction works again.
@@ -858,7 +920,22 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       () => groupShape(groups.value),
       enabled
     ],
-    rebuild,
+    (now, before) => {
+      // Read before the body is drawn again: the DOM still shows `before`.
+      const old = before?.[0]
+      const keep =
+        old && now[0] !== old && now[5] && before[5] ? anchorOf(old) : null
+      rebuild()
+      if (keep) {
+        const position = center().findIndex(
+          item => o.keyOf(item.row, item.index) === keep.key
+        )
+        if (position >= 0) {
+          anchor = null
+          pending = { position, top: keep.top, tries: 0 }
+        }
+      }
+    },
     { immediate: true }
   )
 
