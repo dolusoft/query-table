@@ -8,6 +8,15 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Fixed
+
+- C-112 said that a column without `filterConditions` never emits a rule with two values. Since 3.17 a CIDR prefix typed into an `ip` column is one `Between` rule with `value` and `value2`, without any opt-in; the rule and the protocol guide now say so. The behavior is unchanged ([C-112](contract/rules.md#c-112-column-filterconditions), [C-118](contract/rules.md#c-118-ip-column-type)).
+- The .NET example of the protocol guide (`Models.cs`) knows `IsNull`, `IsNotNull` and `Between`, and `FilterRule` has an optional `Value2`. A backend that copied the earlier model failed to read these rules.
+
+### Upgrade notes
+
+- A backend that serves an `ip` column must read `value2` of a `Between` rule even when no column lists `filterConditions` (as noted for 3.17). A .NET backend built on the guide's `Models.cs` should take the new model.
+
 ## [3.18.0] - 2026-11-13
 
 A virtual body can keep the rows in view in place while rows arrive above them.

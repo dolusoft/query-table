@@ -1,0 +1,9 @@
+{
+  "page": 1,
+  "pageSize": 20,
+  "sort": null,
+  "filters": [
+    { "field": "joined", "condition": "IsNull" },
+    { "field": "age", "condition": "Between", "value": 18, "value2": 65 }
+  ]
+}

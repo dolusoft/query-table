@@ -104,7 +104,7 @@ An `ip` column holds IPv4 and IPv6 addresses and matches them whole: text that i
 
 An `integer` column never produces a number with a fraction, and text that is not a number produces no rule at all. Date text is **not validated** by the table; it is the string the date input gave, so parse and validate it yourself.
 
-**Conditions without a value and with two (3.13, [ADR 0020](../decisions/0020-null-and-range-conditions.md)).** A column that lists them in `filterConditions` also offers `IsNull` and `IsNotNull`, rules with neither `value` nor `value2` (`{ field, condition: 'IsNull' }`), and on `number`, `integer`, `date`, `datetime` and `ip` `Between`, a rule with a lower `value` and an upper `value2`, both inclusive. Without `filterConditions` the table never sends them, so an endpoint that does not support them sees no change. Their meaning is the profile `tr-2` of the [semantics profile](semantics.md#profile-tr-2).
+**Conditions without a value and with two (3.13, [ADR 0020](../decisions/0020-null-and-range-conditions.md)).** A column that lists them in `filterConditions` also offers `IsNull` and `IsNotNull`, rules with neither `value` nor `value2` (`{ field, condition: 'IsNull' }`), and on `number`, `integer`, `date`, `datetime` and `ip` `Between`, a rule with a lower `value` and an upper `value2`, both inclusive. Without `filterConditions` the table never sends `IsNull` or `IsNotNull`, and sends `Between` only for a CIDR prefix typed into an `ip` column (3.17, C-118), so an endpoint without `ip` columns that does not support them sees no change. Their meaning is the profile `tr-2` of the [semantics profile](semantics.md#profile-tr-2).
 
 The schema accepts all thirteen conditions with any value type, because a query can also come from somewhere else (a saved view, a URL). Refuse the combinations your endpoint does not support (`Contains` on a number, `GreaterThan` on a boolean) with a 400.
 
@@ -333,13 +333,21 @@ Copy `query.schema.json` into your project (from the npm package, or from the re
 public enum FilterCondition
 {
     Contains, NotContains, Equal, NotEqual, StartsWith, EndsWith,
-    GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual
+    GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual,
+    IsNull, IsNotNull, Between
 }
 
 public enum SortDirection { Asc, Desc }       // "asc", "desc"
 public enum CursorDirection { Next, Prev }    // "next", "prev"
 
-public record FilterRule(string Field, FilterCondition Condition, JsonElement Value)
+// The condition says how many values a rule has: IsNull and IsNotNull none,
+// Between two (Value the lower bound, Value2 the upper one, both inclusive),
+// every other condition one. A missing value is left out when written back.
+public record FilterRule(
+    string Field,
+    FilterCondition Condition,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Value = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Value2 = null)
 {
     // Properties the protocol does not know are kept (C-60).
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; init; }
@@ -590,4 +598,4 @@ export function describePaging(query: Query): string {
 - [Using the plugins with TanStack Table](tanstack-plugins.md), for the other side of the wire.
 - [Architecture](architecture.md), for how the three packages fit together.
 - [The `tr-1` semantics profile](semantics.md), for what a query means when it is evaluated: matching, order, paging and errors.
-- `contract/rules.md` in the repository: every behavior of the table as a numbered rule (C-01 to C-91), each covered by a test.
+- `contract/rules.md` in the repository: every behavior of the table as a numbered rule (`C-nn`), each covered by a test.
