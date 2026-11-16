@@ -231,6 +231,7 @@ const rowWindow = useRowWindow<T>({
   table: bodyTable,
   bodyRows: () => state.rowPinning.rows.value,
   keyOf: expansion.keyOf,
+  hasRowKey: () => props.rowKey !== undefined,
   isExpanded: expansion.isExpanded,
   groupBy: () => props.groupBy
 })

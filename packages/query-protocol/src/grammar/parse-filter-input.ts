@@ -23,8 +23,9 @@ import type {
  * - `date` and `datetime`: one rule with the trimmed text as its value; the
  *   text is not validated, as the input already gives an ISO date.
  *
- * `condition` is the one picked in the filter menu; without it the column
- * type's default applies (`Contains` for text, `Equal` otherwise). Empty or
+ * `condition` is the one picked in the filter menu; without it the column's
+ * `filterDefaultCondition` applies (C-117), else the type's default
+ * (`Contains` for text, `Equal` otherwise). Empty or
  * blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`.
  * `IsNull` and `IsNotNull` give their one rule, without a `value`, whatever
  * the text (C-113). `Between` gives `[]`: its two bounds are two inputs, and

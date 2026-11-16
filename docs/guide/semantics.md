@@ -92,6 +92,7 @@ Sorting separates `ı` from `i`; matching does not. These are two separate decis
 | `date`     | `YYYY-MM-DD`, a valid day                                                             | the same form; a `datetime` form is `invalid-value`                            | chronological                                    |
 | `datetime` | the [grammar](#calendar-and-time); without an offset only when the field has `offset` | an instant with an offset; with `offset`, an instant without one or a day only | instant (signed int64 UTC ms)                    |
 
+- An `ip` field (3.17) has no local semantics: `defineDataset` refuses it, since address order is the server's to define (C-118).
 - There is no type conversion: a rule `"25"` on a `number` field is `invalid-value`, a data value `25` on a `string` field is `invalid-data`. Declaring a field `number` does not turn the text `"1072"` into a number; the source must supply a real number. A formatted value (`"1,5 GB"`) is never compared.
 - The filter grammar uses the same `integer` bound: `parseDraft` (`grammar/draft.ts`) makes no rule for a whole number beyond the safe range (C-16), so the table never emits a value the evaluator refuses, nor one that differs from the digits the user typed.
 - In .NET, `number` is read as `double` and `integer` as `long` (with the range check).

@@ -50,7 +50,8 @@ export { columnTypeOf } from './grammar/column-type'
 export {
   conditionLabel,
   conditionOptions,
-  defaultConditionFor
+  defaultConditionFor,
+  defaultConditionOf
 } from './grammar/conditions'
 export {
   type Draft as FilterDraft,

@@ -69,7 +69,13 @@ const isInvalid = () =>
   filters.labelOf(props.column.field)?.count === 0
 
 // Types whose values have an order: the ones `Between` takes.
-const ordered: readonly ColumnType[] = ['number', 'integer', 'date', 'datetime']
+const ordered: readonly ColumnType[] = [
+  'number',
+  'integer',
+  'date',
+  'datetime',
+  'ip'
+]
 const isDated = () => props.type === 'date' || props.type === 'datetime'
 
 // A condition without a value has no input to type in: its label says it
@@ -172,7 +178,7 @@ const pick = (event: Event) => {
         />
         <input
           v-else
-          :type="isDated() ? 'date' : 'number'"
+          :type="isDated() ? 'date' : type === 'ip' ? 'text' : 'number'"
           class="qt-filter-input"
           :aria-label="boundName(bound)"
           :value="boundText(bound)"
@@ -194,7 +200,7 @@ const pick = (event: Event) => {
       @keydown.enter="filters.apply(column.field)"
     />
     <input
-      v-else-if="type === 'number' || type === 'integer'"
+      v-else-if="type === 'number' || type === 'integer' || type === 'ip'"
       type="text"
       class="qt-filter-input"
       :aria-label="inputName()"

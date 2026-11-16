@@ -207,7 +207,18 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/dom-contract-filter-invalid.browser.spec.ts',
   'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "80,443"',
   'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80"',
-  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80,!443"'
+  'tests/contract/unit/parse-filter-input.spec.ts > C-53 Filter parser integer "!80,!443"',
+  // 3.16 addition (query-table#180): a column's own condition for text
+  // without an operator, which a 3.15 build does not read. Without
+  // `filterDefaultCondition` text matches by `Contains`, and the other filter
+  // tests compare.
+  'tests/contract/unit/filter.spec.ts > C-117 Column filterDefaultCondition',
+  // 3.17 addition (query-table#184): the column type `ip`, which a 3.16 build
+  // does not know. Columns without it are the ones of 3.16.
+  'tests/contract/unit/filter.spec.ts > C-118 IP column type',
+  // 3.18 addition (query-table#133): `virtual.keepAnchor`, which a 3.17 build
+  // does not read. Without it a virtual body is the one of 3.17.
+  'tests/contract/browser/keep-anchor.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

@@ -20,8 +20,9 @@ import type { Column, FilterCondition, FilterRule } from '../contract'
  * - `date` and `datetime`: one rule with the trimmed text as its value; the
  *   text is not validated, as the input already gives an ISO date.
  *
- * `condition` is the one picked in the filter menu; without it the column
- * type's default applies (`Contains` for text, `Equal` otherwise). Empty or
+ * `condition` is the one picked in the filter menu; without it the column's
+ * `filterDefaultCondition` applies (C-117), else the type's default
+ * (`Contains` for text, `Equal` otherwise). Empty or
  * blank text, and text that is only operators (`*`, `!`, `!*`), gives `[]`.
  * Invalid input never throws. Pure: no Vue, no DOM; the column is not written.
  * The grammar is the protocol's (`@dolusoft/query-protocol`).

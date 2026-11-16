@@ -177,4 +177,10 @@ export interface FilterColumn {
   field: string
   /** Defaults to `'string'`. Case-insensitive at runtime. */
   type?: ColumnType
+  /**
+   * The condition of text typed without an operator, in place of the type's
+   * default (C-117): `'Equal'` makes `abc` an exact match on a text column.
+   * One the type does not offer in `conditionOptions` counts as unset.
+   */
+  filterDefaultCondition?: FilterCondition
 }

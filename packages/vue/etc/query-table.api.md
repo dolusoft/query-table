@@ -76,6 +76,7 @@ export interface Column {
     field: string;
     filterable?: boolean;
     filterConditions?: FilterCondition[];
+    filterDefaultCondition?: FilterCondition;
     hide?: boolean;
     maxWidth?: number;
     minWidth?: number;
@@ -545,6 +546,7 @@ export { ValueFilterRule }
 export interface VirtualOptions {
     estimateRowHeight?: number;
     groupRowHeight?: number;
+    keepAnchor?: boolean;
     overscan?: number;
     rowHeight?: number;
     scrollElement?: () => HTMLElement | null;

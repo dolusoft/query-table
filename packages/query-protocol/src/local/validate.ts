@@ -545,5 +545,8 @@ const operandOf = (
         ? { kind: 'range', start: read.start, end: read.end }
         : { kind: 'value', value: read.ms }
     }
+    case 'ip':
+      // `defineDataset` refuses an ip field (C-118).
+      return null
   }
 }

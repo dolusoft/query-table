@@ -615,3 +615,35 @@ describe('C-114 Between [own]', () => {
     expect(t.updates).toEqual([])
   })
 })
+
+describe('C-117 Column filterDefaultCondition [own]', () => {
+  it('text without an operator takes it, a shortcut keeps its own', () => {
+    const t = makeTable()
+    const code = t.column('code')
+    code.setFilterInput('abc,*x*')
+    expect(code.getFilterLabel()).toEqual({ condition: 'Equal', count: 2 })
+    vi.runAllTimers()
+    expect(t.query.filters).toEqual([
+      rule('code', 'abc', 'Equal'),
+      rule('code', 'x')
+    ])
+  })
+
+  it('a picked condition wins over it', () => {
+    const t = makeTable()
+    const code = t.column('code')
+    code.setFilterInput('abc')
+    code.setFilterCondition('StartsWith')
+    vi.runAllTimers()
+    expect(t.query.filters).toEqual([rule('code', 'abc', 'StartsWith')])
+  })
+
+  it('an outside rule of it shows as plain text, with no pick', () => {
+    const t = makeTable()
+    t.setQuery(start({ filters: [rule('code', 'abc', 'Equal')] }))
+    expect(t.column('code').getFilterInput()).toEqual({
+      text: 'abc',
+      condition: null
+    })
+  })
+})

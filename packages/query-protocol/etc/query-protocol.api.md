@@ -14,7 +14,7 @@ export type ColumnType = (typeof columnTypes)[number];
 export const columnTypeOf: (column: FilterColumn) => ColumnType;
 
 // @public
-export const columnTypes: readonly ["string", "number", "integer", "date", "datetime", "bool"];
+export const columnTypes: readonly ["string", "number", "integer", "date", "datetime", "bool", "ip"];
 
 // @public
 export const conditionArity: (condition: FilterCondition) => 0 | 1 | 2;
@@ -44,6 +44,9 @@ export interface CursorRequest {
 export const defaultConditionFor: (type: ColumnType) => FilterCondition;
 
 // @public
+export const defaultConditionOf: (column: FilterColumn) => FilterCondition;
+
+// @public
 export const draftFromRules: (column: FilterColumn, rules: readonly FilterRule[]) => FilterDraft;
 
 // @public (undocumented)
@@ -52,6 +55,7 @@ export const draftHasContent: (draft: FilterDraft) => boolean;
 // @public
 export interface FilterColumn {
     field: string;
+    filterDefaultCondition?: FilterCondition;
     type?: ColumnType;
 }
 

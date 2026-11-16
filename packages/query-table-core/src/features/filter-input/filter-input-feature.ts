@@ -12,7 +12,7 @@
 import {
   columnTypeOf,
   conditionArity,
-  defaultConditionFor,
+  defaultConditionOf,
   draftFromRules,
   draftHasContent,
   type FilterColumn,
@@ -73,7 +73,8 @@ const instances = new WeakMap<object, Instance>()
 
 const filterColumnOf = (column: AnyColumn): FilterColumn => ({
   field: column.id,
-  type: column.columnDef.filterType
+  type: column.columnDef.filterType,
+  filterDefaultCondition: column.columnDef.filterDefaultCondition
 })
 
 const columnsOf = (table: AnyTable): AnyColumn[] => table.getAllLeafColumns()
@@ -321,7 +322,8 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
   // (C-42).
   const filterColumn = filterColumnOf(column)
   const type = columnTypeOf(filterColumn)
-  const numeric = type === 'number' || type === 'integer'
+  // An address list reads like a number list (C-118).
+  const numeric = type === 'number' || type === 'integer' || type === 'ip'
   const typed = parseDraft(filterColumn, draft)
   // A list of `!` values is `NotEqual` whatever is picked (C-16). Read with
   // `Equal`, only the typed `!` gives `NotEqual`.
@@ -386,14 +388,16 @@ const label = (column: AnyColumn): FilterLabel | null => {
   if (!draftHasContent(draft)) {
     return null
   }
-  const type = columnTypeOf(filterColumnOf(column))
-  const base = draft.condition ?? defaultConditionFor(type)
-  const parsed = parseDraft(filterColumnOf(column), draft)
-  // A number list after `!` is `NotEqual` whatever was picked (C-16).
+  const filterColumn = filterColumnOf(column)
+  const type = columnTypeOf(filterColumn)
+  const base = draft.condition ?? defaultConditionOf(filterColumn)
+  const parsed = parseDraft(filterColumn, draft)
+  // A number or address list after `!` is `NotEqual` whatever was picked
+  // (C-16), and a CIDR prefix is `Between` (C-118).
   const condition =
     type === 'string'
       ? previewCondition(draft.text, base)
-      : type === 'number' || type === 'integer'
+      : type === 'number' || type === 'integer' || type === 'ip'
         ? (parsed[0]?.condition ?? base)
         : base
   return { condition, count: draft.multi ?? parsed.length }

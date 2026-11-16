@@ -68,6 +68,7 @@ The plugins add typed options, state and APIs to the table through TanStack's de
 | `cursors`                      | server-query  | Cursor mode: the `{ next, prev }` cursors your server answered with for the page shown.                  |
 | `filterDebounce`               | filter-input  | Milliseconds between the last keystroke and applying the text. Defaults to 100, `0` applies each keystroke. |
 | column `filterType`            | filter-input  | The column's data type (`'string'` by default); it picks the grammar and the default condition.          |
+| column `filterDefaultCondition` | filter-input | The condition of text typed without an operator, in place of the type's default (C-117).                |
 
 `rowCount` and `pageCount` are TanStack's own options; the projection below computes `pageCount` for you.
 

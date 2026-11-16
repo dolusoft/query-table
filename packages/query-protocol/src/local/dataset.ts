@@ -96,6 +96,11 @@ export function defineDataset<T>(definition: Dataset<T>): Dataset<T> {
     if (!(columnTypes as readonly unknown[]).includes(field.type)) {
       throw invalid(`field "${name}" has an unknown type`)
     }
+    // An address is compared by the server; the local profiles define no
+    // order or equality for it (C-118).
+    if (field.type === 'ip') {
+      throw invalid(`field "${name}": an ip field is not evaluated locally`)
+    }
     if (field.get !== undefined && typeof field.get !== 'function') {
       throw invalid(`field "${name}": \`get\` is not a function`)
     }

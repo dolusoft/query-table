@@ -5,8 +5,11 @@ import { describe, expect, it } from 'vitest'
 import {
   conditionLabel,
   conditionOptions,
-  defaultConditionFor
+  conditionValues,
+  defaultConditionFor,
+  defaultConditionOf
 } from '../src/grammar/conditions'
+import type { FilterCondition } from '../src/protocol/types'
 
 describe('filter conditions per column type', () => {
   it('no list contains an empty "no filter" entry', () => {
@@ -33,6 +36,43 @@ describe('filter conditions per column type', () => {
     ] as const) {
       expect(defaultConditionFor(type)).toBe('Equal')
     }
+  })
+
+  it('the values without labels are those of conditionOptions, in order', () => {
+    for (const [type, list] of Object.entries(conditionOptions)) {
+      expect(conditionValues[type as keyof typeof conditionValues]).toEqual(
+        list.map(option => option.value)
+      )
+    }
+  })
+
+  it('C-117 a column default the type offers wins, any other counts as unset', () => {
+    expect(defaultConditionOf({ field: 'f' })).toBe('Contains')
+    expect(
+      defaultConditionOf({ field: 'f', filterDefaultCondition: 'Equal' })
+    ).toBe('Equal')
+    expect(
+      defaultConditionOf({
+        field: 'f',
+        type: 'number',
+        filterDefaultCondition: 'GreaterThan'
+      })
+    ).toBe('GreaterThan')
+    for (const own of ['GreaterThan', 'IsNull', 'Between', 'nonsense']) {
+      expect(
+        defaultConditionOf({
+          field: 'f',
+          filterDefaultCondition: own as FilterCondition
+        })
+      ).toBe('Contains')
+    }
+    expect(
+      defaultConditionOf({
+        field: 'f',
+        type: 'number',
+        filterDefaultCondition: 'Contains'
+      })
+    ).toBe('Equal')
   })
 
   it('labels a condition and falls back to its name', () => {

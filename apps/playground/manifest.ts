@@ -107,7 +107,8 @@ export const pages: PlaygroundPage[] = [
       'C-34',
       'C-35',
       'C-42',
-      'C-43'
+      'C-43',
+      'C-117'
     ]
   },
   {
@@ -190,7 +191,7 @@ export const pages: PlaygroundPage[] = [
       slots: ['subtable'],
       types: ['VirtualOptions', 'ScrollToIndexOptions', 'QueryTableExpose']
     },
-    rules: ['C-83', 'C-84', 'C-85', 'C-86', 'C-87', 'C-91']
+    rules: ['C-83', 'C-84', 'C-85', 'C-86', 'C-87', 'C-91', 'C-119']
   },
   {
     id: 'scroll-body',
@@ -418,7 +419,7 @@ export const pages: PlaygroundPage[] = [
       functions: ['parseFilterInput'],
       types: ['FilterRule', 'FilterCondition', 'Column', 'ColumnType']
     },
-    rules: ['C-15', 'C-16', 'C-53']
+    rules: ['C-15', 'C-16', 'C-53', 'C-118']
   },
   {
     id: 'nulls-and-ranges',

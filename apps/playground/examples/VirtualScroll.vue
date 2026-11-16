@@ -28,19 +28,27 @@ import {
 // and the drawn rows keep their index in `rows`. The box is the page's (a
 // `max-height` and `overflow-y: auto`); the table finds it as the nearest
 // scrolling ancestor. `table-layout: fixed` keeps the column widths from
-// following the drawn rows.
+// following the drawn rows. With `keepAnchor` rows added above the view
+// (a poll that brings new records) leave the rows in view where they are;
+// at the top the new rows show.
 const data = currentDataset()
 const base = data.createRows()
 const columns = listColumns(data)
 
 const count = ref(10_000)
+/** Rows added above the others by "Add 5 rows above", newest first. */
+const added = ref(0)
 // The dataset has a few hundred rows; the page repeats them under new keys.
-const allRows = computed<DemoRow[]>(() =>
-  Array.from({ length: count.value }, (_, i) => ({
+const allRows = computed<DemoRow[]>(() => [
+  ...Array.from({ length: added.value }, (_, i) => ({
+    ...base[i % base.length],
+    id: count.value + added.value - i
+  })),
+  ...Array.from({ length: count.value }, (_, i) => ({
     ...base[i % base.length],
     id: i + 1
   }))
-)
+])
 // One page holds every row: the window, not paging, keeps the DOM small.
 const query = ref<TableQuery>(makeQuery({ pageSize: count.value }))
 watch(count, size => {
@@ -49,9 +57,12 @@ watch(count, size => {
 const result = computed(() => queryDemoRows(allRows.value, query.value))
 
 const fixedHeight = ref(false)
-const virtual = computed<VirtualOptions>(() =>
-  fixedHeight.value ? { rowHeight: 41, overscan: 10 } : { overscan: 10 }
-)
+const keepAnchor = ref(true)
+const virtual = computed<VirtualOptions>(() => ({
+  overscan: 10,
+  keepAnchor: keepAnchor.value,
+  ...(fixedHeight.value ? { rowHeight: 41 } : {})
+}))
 
 const table = useTemplateRef<QueryTableExpose>('table')
 const target = ref('5000')
@@ -80,6 +91,18 @@ const jump = () => {
         <Checkbox v-model="fixedHeight" />
         Fixed row height
       </Label>
+      <Label class="font-normal">
+        <Checkbox v-model="keepAnchor" />
+        Keep anchor
+      </Label>
+      <Button
+        variant="outline"
+        size="sm"
+        class="min-h-11 lg:pointer-fine:min-h-0"
+        @click="added += 5"
+      >
+        Add 5 rows above
+      </Button>
       <form class="flex flex-wrap items-center gap-2" @submit.prevent="jump">
         <Label class="font-normal">
           Row
