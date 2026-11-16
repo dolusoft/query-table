@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, effectScope, h } from 'vue'
 
 import type {
   CellContextMenuPayload,
   Column,
   RowExpansionPayload
 } from '@dolusoft/query-table'
-import QueryTable from '@dolusoft/query-table'
+import QueryTable, { useQueryTable } from '@dolusoft/query-table'
 
 import {
   flush,
@@ -15,7 +15,8 @@ import {
   makeRows,
   mountTable,
   propsOf,
-  type Mounted
+  type Mounted,
+  type Row
 } from '../../support/mount-table'
 
 let mounted: Mounted | null = null
@@ -720,14 +721,45 @@ describe('C-122 Telling the consumer about expansion', () => {
     expect(payloads).toHaveLength(1)
   })
 
-  it('emits nothing for a row that cannot expand', async () => {
-    const { m, payloads } = listen({
-      rowExpandable: (_row: unknown, index: number) => index !== 2
-    })
-    expect(m.wrapper.find('tr[data-row-index="2"] .qt-expand').exists()).toBe(
-      false
-    )
-    await buttons(m)[0].trigger('click')
-    expect(payloads).toHaveLength(1)
+  it('useQueryTable calls onRowExpansionChange per toggle, and not for a row that cannot expand', () => {
+    const payloads: RowExpansionPayload<Row>[] = []
+    let calls = 0
+    const scope = effectScope()
+    try {
+      const state = scope.run(() =>
+        useQueryTable<Row>({
+          query: makeQuery(),
+          columns: makeColumns(),
+          rows: makeRows(),
+          rowKey: 'id',
+          hasSubtable: true,
+          // A getter, as every option: it returns the function.
+          rowExpandable: () => (_row: Row, index: number) => {
+            calls++
+            return index !== 2
+          },
+          onQueryChange: () => {},
+          onRowExpansionChange: payload => payloads.push(payload)
+        })
+      )!
+      const rows = makeRows()
+      calls = 0
+      state.expansion.toggle(rows[0], 0)
+      // One press asks the consumer's `rowExpandable` once.
+      expect(calls).toBe(1)
+      expect(payloads).toEqual([
+        { row: rows[0], rowIndex: 0, rowKey: 1, expanded: true }
+      ])
+      state.expansion.toggle(rows[2], 2)
+      expect(state.expansion.isExpanded(rows[2], 2)).toBe(false)
+      expect(payloads).toHaveLength(1)
+      state.expansion.toggle(rows[0], 0)
+      expect(payloads[1]).toMatchObject({ rowKey: 1, expanded: false })
+      state.expansion.expandAll()
+      state.expansion.collapseAll()
+      expect(payloads).toHaveLength(2)
+    } finally {
+      scope.stop()
+    }
   })
 })

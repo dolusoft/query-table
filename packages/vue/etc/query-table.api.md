@@ -534,6 +534,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     hasSubtable?: MaybeRefOrGetter<boolean | undefined>;
     onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void;
     onQueryChange: (query: Q, reason: QueryChangeReason) => void;
+    onRowExpansionChange?: (payload: RowExpansionPayload<T>) => void;
     onRowPinningChange?: (rowPinning: RowPinning) => void;
     onSelectionChange?: (selection: RowSelection) => void;
     pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>;

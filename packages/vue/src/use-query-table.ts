@@ -67,6 +67,7 @@ import type {
   PageCursors,
   PaginationSlotProps,
   QueryChangeReason,
+  RowExpansionPayload,
   RowPinning,
   RowSelection,
   SortDirection,
@@ -150,6 +151,12 @@ export interface UseQueryTableOptions<
   onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void
   /** Called with the new map when the user pins or unpins a row (C-74). */
   onRowPinningChange?: (rowPinning: RowPinning) => void
+  /**
+   * Called once per `expansion.toggle` that opened or closed a row (C-122):
+   * the expand button of `QueryTable`, or yours. The seed, the pruning,
+   * `expandAll` and `collapseAll` do not call it.
+   */
+  onRowExpansionChange?: (payload: RowExpansionPayload<T>) => void
 }
 
 /** A row of the body in drawing order (C-74). */
@@ -236,7 +243,10 @@ export interface QueryTableExpansion<T extends object> {
   /** `hasSubtable` is on and `rowExpandable` lets the row expand (C-98). */
   canExpand: (row: T, index: number) => boolean
   isExpanded: (row: T, index: number) => boolean
-  /** Opens or closes the row; nothing for a row that cannot expand (C-98). */
+  /**
+   * Opens or closes the row and calls `onRowExpansionChange` (C-122);
+   * nothing for a row that cannot expand (C-98).
+   */
   toggle: (row: T, index: number) => void
   collapseAll: () => void
   /** Opens every row given that can expand; nothing is fetched. */
@@ -836,13 +846,22 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
         return
       }
       const id = idOf(row, index)
+      const expanded = !expandedState.value[id]
       setExpanded(state => {
-        if (state[id]) {
-          delete state[id]
-        } else {
+        if (expanded) {
           state[id] = true
+        } else {
+          delete state[id]
         }
         return state
+      })
+      // Only this path tells (C-122): the seed, the pruning, `expandAll` and
+      // `collapseAll` change the state without a press.
+      options.onRowExpansionChange?.({
+        row,
+        rowIndex: index,
+        rowKey: keyOf(row, index),
+        expanded
       })
     },
     collapseAll: () => table.setExpanded({}),
