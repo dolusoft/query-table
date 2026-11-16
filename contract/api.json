@@ -271,6 +271,11 @@
       "name": "rowFocus",
       "type": "[payload: RowFocusPayload<T>]",
       "description": "With `rowNavigation`: a key moved the focus to another row (C-109),\nonce the focus is there. Once per key press; a click or Tab does not\nemit it."
+    },
+    {
+      "name": "rowExpansionChange",
+      "type": "[payload: RowExpansionPayload<T>]",
+      "description": "With `hasSubtable`: the user opened or closed a row with its expand\nbutton (C-122), once per press. The state stays the table's (C-26):\n`isExpanded`, the pruning when `rows` change, `expandAll()`,\n`collapseAll()` and a row leaving the window of a `virtual` body emit\nnothing."
     }
   ],
   "slots": [
@@ -529,6 +534,11 @@
       "name": "RowFocusPayload",
       "kind": "interface",
       "description": "Payload of the `rowFocus` event (C-109)."
+    },
+    {
+      "name": "RowExpansionPayload",
+      "kind": "interface",
+      "description": "Payload of the `rowExpansionChange` event (C-122)."
     },
     {
       "name": "InfiniteOptions",
@@ -1246,6 +1256,11 @@
       "id": "C-121",
       "title": "A table without a header",
       "text": "With `header: false` the table draws no `thead`, and nothing that sits in it: no sort by a click on a header (C-07), no filter row, no resize or reorder handle, no clear-all button (C-22) and no `headerContextMenu` (C-96). The sort and the filters of `query` still apply, `toolbar` still receives `clearFilters()`, and `focusFilter` finds no input. What is measured from the header cells is off: a column's `pinned` is ignored and the columns are drawn unpinned, in the order of `columns` (C-47, C-71); `scrollBody` is ignored and the table is one table, not three (C-101); `autoWidth` draws no width (C-100), and `measureColumnWidths` returns an empty map. A `Column.width` applies through a `colgroup` with one `col` per utility column and per visible column, in drawing order; the `col` of a column without a width has no style. No cell is a column header: a name for the table is the consumer's `aria-label`. With `virtual` the row count has no header row: the first body row is `aria-rowindex` 1 and `aria-rowcount` counts the body and footer rows only (C-86), and `scrollToIndex` and `keepAnchor` align to the top of the view, with no header to cover it (C-87, C-119). Defaults to `true`: with it the table is the one of 3.18. The DOM contract gains no entry. Source: own"
+    },
+    {
+      "id": "C-122",
+      "title": "Telling the consumer about expansion",
+      "text": "With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed, with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without `rowKey` the key is the row's index and every change of `rows` closes every row without an event (C-26), so a list kept from the events holds only until `rows` change. `useQueryTable` calls its `onRowExpansionChange` option the same way, once per `expansion.toggle` that opened or closed a row; the component's `rowExpansionChange` is that call. Without a listener nothing changes. Source: own"
     }
   ]
 }

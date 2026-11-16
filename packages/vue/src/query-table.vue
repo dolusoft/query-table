@@ -116,7 +116,9 @@ const state = useQueryTable<T, Q>({
   onQueryChange: (query, reason) => emit('update:query', query, reason),
   onSelectionChange: selection => emit('update:selection', selection),
   onColumnsChange: (columns, reason) => emit('update:columns', columns, reason),
-  onRowPinningChange: rowPinning => emit('update:rowPinning', rowPinning)
+  onRowPinningChange: rowPinning => emit('update:rowPinning', rowPinning),
+  // A press of a row's expand button (C-122).
+  onRowExpansionChange: payload => emit('rowExpansionChange', payload)
 })
 const { filters, sort, search, expansion } = state
 const rowSelection = state.selection

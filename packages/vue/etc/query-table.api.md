@@ -375,6 +375,14 @@ export { RangeCondition }
 export { RangeFilterRule }
 
 // @public
+export interface RowExpansionPayload<T> {
+    expanded: boolean;
+    row: T;
+    rowIndex: number;
+    rowKey: string | number;
+}
+
+// @public
 export interface RowFocusPayload<T> {
     key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End';
     row: T;
@@ -431,6 +439,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     'update:columns': [columns: Column[], reason: ColumnChangeReason];
     'update:rowPinning': [rowPinning: RowPinning];
     rowFocus: [payload: RowFocusPayload<T>];
+    rowExpansionChange: [payload: RowExpansionPayload<T>];
 };
 
 // @public
@@ -525,6 +534,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     hasSubtable?: MaybeRefOrGetter<boolean | undefined>;
     onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void;
     onQueryChange: (query: Q, reason: QueryChangeReason) => void;
+    onRowExpansionChange?: (payload: RowExpansionPayload<T>) => void;
     onRowPinningChange?: (rowPinning: RowPinning) => void;
     onSelectionChange?: (selection: RowSelection) => void;
     pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>;
