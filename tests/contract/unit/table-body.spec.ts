@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 
-import type { CellContextMenuPayload, Column } from '@dolusoft/query-table'
+import type {
+  CellContextMenuPayload,
+  Column,
+  RowExpansionPayload
+} from '@dolusoft/query-table'
 import QueryTable from '@dolusoft/query-table'
 
 import {
@@ -650,5 +654,80 @@ describe('C-55 expandAll', () => {
     expose(m).expandAll()
     await m.wrapper.setProps({ hasSubtable: true })
     expect(expandedIndexes(m)).toEqual([])
+  })
+})
+
+describe('C-122 Telling the consumer about expansion', () => {
+  const buttons = (m: Mounted) => m.wrapper.findAll('.qt-expand')
+  const listen = (props: Record<string, unknown> = {}) => {
+    const payloads: RowExpansionPayload<unknown>[] = []
+    const m = mountIt(
+      {
+        hasSubtable: true,
+        onRowExpansionChange: (payload: RowExpansionPayload<unknown>) =>
+          payloads.push(payload),
+        ...props
+      },
+      { slots: subtable }
+    )
+    return { m, payloads }
+  }
+
+  it('emits once per press, after the state changed', async () => {
+    const { m, payloads } = listen()
+    await buttons(m)[1].trigger('click')
+    expect(payloads).toEqual([
+      { row: makeRows()[1], rowIndex: 1, rowKey: 1, expanded: true }
+    ])
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(1)
+    await buttons(m)[1].trigger('click')
+    expect(payloads).toHaveLength(2)
+    expect(payloads[1]).toMatchObject({ rowIndex: 1, expanded: false })
+    expect(m.events).toEqual([])
+  })
+
+  it('names the row by rowKey when there is one', async () => {
+    const { m, payloads } = listen({ rowKey: 'id' })
+    await buttons(m)[3].trigger('click')
+    expect(payloads).toEqual([
+      { row: makeRows()[3], rowIndex: 3, rowKey: 4, expanded: true }
+    ])
+  })
+
+  it('emits nothing for the seed, the pruning, expandAll and collapseAll', async () => {
+    const seeded = makeRows().map((row, i) => ({ ...row, isExpanded: i < 2 }))
+    const { m, payloads } = listen({ rowKey: 'id', rows: seeded })
+    await flush()
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(2)
+    const exposed = m.wrapper.vm as unknown as {
+      expandAll(): void
+      collapseAll(): void
+    }
+    exposed.expandAll()
+    await flush()
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(5)
+    exposed.collapseAll()
+    await flush()
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(0)
+    expect(payloads).toEqual([])
+
+    // An open row that leaves `rows` is pruned without an event.
+    await buttons(m)[0].trigger('click')
+    expect(payloads).toHaveLength(1)
+    await m.wrapper.setProps({ rows: makeRows().slice(1) })
+    await flush()
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(0)
+    expect(payloads).toHaveLength(1)
+  })
+
+  it('emits nothing for a row that cannot expand', async () => {
+    const { m, payloads } = listen({
+      rowExpandable: (_row: unknown, index: number) => index !== 2
+    })
+    expect(m.wrapper.find('tr[data-row-index="2"] .qt-expand').exists()).toBe(
+      false
+    )
+    await buttons(m)[0].trigger('click')
+    expect(payloads).toHaveLength(1)
   })
 })

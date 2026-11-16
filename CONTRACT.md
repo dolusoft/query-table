@@ -56,6 +56,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
 | `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
 | `rowFocus` | `[payload: RowFocusPayload<T>]` | With `rowNavigation`: a key moved the focus to another row (C-109), once the focus is there. Once per key press; a click or Tab does not emit it. |
+| `rowExpansionChange` | `[payload: RowExpansionPayload<T>]` | With `hasSubtable`: the user opened or closed a row with its expand button (C-122), once per press. The state stays the table's (C-26): `isExpanded`, the pruning when `rows` change, `expandAll()`, `collapseAll()` and a row leaving the window of a `virtual` body emit nothing. |
 
 ### Slots
 
@@ -530,6 +531,18 @@ export interface RowFocusPayload<T> {
   key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'
 }
 
+/** Payload of the `rowExpansionChange` event (C-122). */
+export interface RowExpansionPayload<T> {
+  /** The row the user opened or closed. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The row's identity in the expansion state: `rowKey`, else its index (C-26). */
+  rowKey: string | number
+  /** The row is open now. */
+  expanded: boolean
+}
+
 /** Options of `infinite` (C-88). */
 export interface InfiniteOptions {
   /** Ask for the next page when the last this many rows come near. Defaults to `5`. */
@@ -720,6 +733,14 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * emit it.
    */
   rowFocus: [payload: RowFocusPayload<T>]
+  /**
+   * With `hasSubtable`: the user opened or closed a row with its expand
+   * button (C-122), once per press. The state stays the table's (C-26):
+   * `isExpanded`, the pruning when `rows` change, `expandAll()`,
+   * `collapseAll()` and a row leaving the window of a `virtual` body emit
+   * nothing.
+   */
+  rowExpansionChange: [payload: RowExpansionPayload<T>]
 }
 
 export interface CellSlotProps<T> {
@@ -1774,6 +1795,12 @@ Source: own
 #### C-121 A table without a header
 
 With `header: false` the table draws no `thead`, and nothing that sits in it: no sort by a click on a header (C-07), no filter row, no resize or reorder handle, no clear-all button (C-22) and no `headerContextMenu` (C-96). The sort and the filters of `query` still apply, `toolbar` still receives `clearFilters()`, and `focusFilter` finds no input. What is measured from the header cells is off: a column's `pinned` is ignored and the columns are drawn unpinned, in the order of `columns` (C-47, C-71); `scrollBody` is ignored and the table is one table, not three (C-101); `autoWidth` draws no width (C-100), and `measureColumnWidths` returns an empty map. A `Column.width` applies through a `colgroup` with one `col` per utility column and per visible column, in drawing order; the `col` of a column without a width has no style. No cell is a column header: a name for the table is the consumer's `aria-label`. With `virtual` the row count has no header row: the first body row is `aria-rowindex` 1 and `aria-rowcount` counts the body and footer rows only (C-86), and `scrollToIndex` and `keepAnchor` align to the top of the view, with no header to cover it (C-87, C-119). Defaults to `true`: with it the table is the one of 3.18. The DOM contract gains no entry.
+
+Source: own
+
+#### C-122 Telling the consumer about expansion
+
+With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed, with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without a listener nothing changes.
 
 Source: own
 

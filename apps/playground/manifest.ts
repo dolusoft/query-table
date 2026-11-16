@@ -143,15 +143,16 @@ export const pages: PlaygroundPage[] = [
     title: 'Row expansion & nested table',
     navTitle: 'Row expansion',
     summary:
-      'Expandable rows with a nested table in the `subtable` slot, kept by `rowKey`; `collapseAll()` closes them.',
+      'Expandable rows with a nested table in the `subtable` slot, kept by `rowKey`; `collapseAll()` closes them. `rowExpansionChange` tells the page about each press of an expand button, so it keeps the list of open rows itself.',
     example: 'RowExpansion',
     api: {
       props: ['hasSubtable', 'rowKey'],
+      emits: ['rowExpansionChange'],
       slots: ['subtable'],
       exposed: ['collapseAll'],
-      types: ['SubtableSlotProps', 'QueryTableExpose']
+      types: ['SubtableSlotProps', 'QueryTableExpose', 'RowExpansionPayload']
     },
-    rules: ['C-26']
+    rules: ['C-26', 'C-122']
   },
   {
     id: 'row-kind',

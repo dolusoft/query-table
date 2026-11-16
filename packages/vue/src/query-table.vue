@@ -270,6 +270,21 @@ const navigation = useRowNavigation<T>({
   onFocus: payload => emit('rowFocus', payload)
 })
 /** The `tbody` listener of the navigation: none while it is off (C-111). */
+// The expand button of a row (C-26): the state stays the table's, and the
+// consumer hears of the press (C-122). Only this path emits; the seed, the
+// pruning, `expandAll()` and `collapseAll()` do not.
+const toggleRow = (row: T, index: number) => {
+  if (!expansion.canExpand(row, index)) {
+    return
+  }
+  expansion.toggle(row, index)
+  emit('rowExpansionChange', {
+    row,
+    rowIndex: index,
+    rowKey: expansion.keyOf(row, index),
+    expanded: expansion.isExpanded(row, index)
+  })
+}
 const navigationListeners = () =>
   navigation.enabled() ? { keydown: navigation.onKeyDown } : {}
 const infinite = useLoadMore({
@@ -510,7 +525,7 @@ defineExpose(exposed)
               :key-of="expansion.keyOf"
               :can-expand="expansion.canExpand"
               :is-expanded="expansion.isExpanded"
-              :toggle="expansion.toggle"
+              :toggle="toggleRow"
               :row-kind="rowKind"
               :labels="labels"
               :has-context-menu-listener="hasContextMenuListener"
@@ -619,7 +634,7 @@ defineExpose(exposed)
           :key-of="expansion.keyOf"
           :can-expand="expansion.canExpand"
           :is-expanded="expansion.isExpanded"
-          :toggle="expansion.toggle"
+          :toggle="toggleRow"
           :row-kind="rowKind"
           :labels="labels"
           :has-context-menu-listener="hasContextMenuListener"

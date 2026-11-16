@@ -421,6 +421,18 @@ export interface RowFocusPayload<T> {
   key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'
 }
 
+/** Payload of the `rowExpansionChange` event (C-122). */
+export interface RowExpansionPayload<T> {
+  /** The row the user opened or closed. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The row's identity in the expansion state: `rowKey`, else its index (C-26). */
+  rowKey: string | number
+  /** The row is open now. */
+  expanded: boolean
+}
+
 /** Options of `infinite` (C-88). */
 export interface InfiniteOptions {
   /** Ask for the next page when the last this many rows come near. Defaults to `5`. */
@@ -611,6 +623,14 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * emit it.
    */
   rowFocus: [payload: RowFocusPayload<T>]
+  /**
+   * With `hasSubtable`: the user opened or closed a row with its expand
+   * button (C-122), once per press. The state stays the table's (C-26):
+   * `isExpanded`, the pruning when `rows` change, `expandAll()`,
+   * `collapseAll()` and a row leaving the window of a `virtual` body emit
+   * nothing.
+   */
+  rowExpansionChange: [payload: RowExpansionPayload<T>]
 }
 
 export interface CellSlotProps<T> {

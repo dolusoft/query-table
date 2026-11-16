@@ -28,7 +28,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `flash` | `true` or `{ rows, cells }`: mark a new row and a changed cell with `data-flash` while the query stays the same; the skin draws it (C-93, C-94). Off by default. Needs `rowKey`. |
 | `rowsUpdate` | What produced `rows`: `live` may flash; `snapshot`, `append` and `reset` never do (C-93). Without it the table guesses from the query and `loading`. |
 
-Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
+Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`, `rowExpansionChange { row, rowIndex, rowKey, expanded }` (one per press of an expand button only; `expandAll`, `collapseAll`, `isExpanded`, pruning and a virtual row leaving the view emit nothing, C-122). The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
 Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `load-more`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
 
