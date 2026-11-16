@@ -60,6 +60,15 @@ For anything the scripts do not answer, attach to the page under test in inspect
 - CDP at `http://127.0.0.1:9333` (`/json/version` lists the browser WebSocket URL; Playwright `chromium.connectOverCDP('http://127.0.0.1:9333')` works). The table and the Vue DevTools hook (`__VUE_DEVTOOLS_GLOBAL_HOOK__`) live in the tester iframe (the frame whose URL carries `iframeId=`), not in the top frame.
 - Inspect mode keeps the loopback-only dev server up until you stop it. Narrow it with a file filter so the table you want stays mounted, e.g. `pnpm test:browser:inspect popovers`.
 
+## Changelog
+
+`CHANGELOG.md` is written for the people who use the packages: an application with the table, or a backend that receives its queries. A pull request that changes what they can observe (a rule of `contract/rules.md`, the API in `contract/api.json`, the markup, an emitted `update:query`, a type) adds its entry under `## [Unreleased]`, in the same pull request (P12). The layout is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
+
+- Subsections `Added`, `Changed`, `Fixed` and `Deprecated`, in that order, only those with entries.
+- Each entry says the behavior in a sentence or two, names the default of a new option ("Off by default") and links its rule (`[C-119](contract/rules.md#c-119-keeping-the-anchor)`), and its ADR when there is one. Pull requests are not linked.
+- `Upgrade notes` closes every version: one line per thing a consumer must check or change when a release changes markup, an emitted update, a public type or behavior a skin or a backend can observe, fixes included. A release that only adds opt-in behavior says `Additive: no change is needed to upgrade.`
+- Changes nobody outside the repository can see (CI, scripts, tests, refactors) have no entry.
+
 ## Releasing
 
 A release is a version in `package.json` and a tag that names it; the `Release` workflow (`.github/workflows/release.yml`) does the rest. Releases are made from `main`, which is the released 3.x line:
@@ -69,7 +78,7 @@ A release is a version in `package.json` and a tag that names it; the `Release` 
 
 There are no major releases. A breaking need enters as an opt-in addition in a minor ([ADR 0019](docs/decisions/0019-release-version-policy.md)). A version is the next minor (`3.12.0` → `3.13.0`) or the next patch (`3.12.0` → `3.12.1`) of the latest released tag. `scripts/check-release-version.mjs` enforces it: CI runs it on every pull request, and the `version` job of the `Release` workflow runs it with `--release`, which leaves the tag being released out of the comparison, so a re-run of the same tag passes. A version equal to an existing tag (no bump) passes in CI.
 
-1. In the pull request that `main` will release (the fix, or `next` → `main`), set `version` in the root `package.json` and in every `packages/*/package.json` to the new version; the three packages are versioned together (P9). Update the install line of `README.md` to the same version (`tests/repo/package-manifest.spec.ts` fails when they differ).
+1. In the pull request that `main` will release (the fix, or `next` → `main`), set `version` in the root `package.json` and in every `packages/*/package.json` to the new version; the three packages are versioned together (P9). Update the install line of `README.md` to the same version (`tests/repo/package-manifest.spec.ts` fails when they differ). In `CHANGELOG.md`, turn `## [Unreleased]` into `## [<version>] - <date>`, add a new empty `## [Unreleased]` above it, and add the compare link of the version at the bottom.
 2. After the pull request is merged, tag the merge commit on `main` and push the tag:
 
    ```bash

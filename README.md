@@ -433,6 +433,10 @@ Every text the table writes itself (accessible names of its buttons and filter i
 />
 ```
 
+## Changelog
+
+[`CHANGELOG.md`](./CHANGELOG.md) lists what each 3.x release added, changed and fixed, with the rule behind each entry, and says what to check when you upgrade. Read the sections between your version and the one you install.
+
 ## Guides
 
 The v3 guides (protocol, TanStack plugins, architecture, migration) are in [`docs/guide/`](./docs/guide/README.md).
