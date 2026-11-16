@@ -122,7 +122,8 @@ export interface Column {
    * `IsNull`, `IsNotNull` and `Between`, which the list of a type leaves
    * out. A condition the column type does not take is left out (`Between`
    * on `string`, `Contains` on `number`). Unset, the menu offers the list
-   * of the type, as in 3.12.
+   * of the type, as in 3.12. A `bool` column has no menu: it adds `IsNull`
+   * and `IsNotNull` of the list to its select (C-120).
    */
   filterConditions?: FilterCondition[]
   /**
