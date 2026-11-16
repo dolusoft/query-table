@@ -8,13 +8,21 @@ namespace QueryTable.Docs;
 public enum FilterCondition
 {
     Contains, NotContains, Equal, NotEqual, StartsWith, EndsWith,
-    GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual
+    GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual,
+    IsNull, IsNotNull, Between
 }
 
 public enum SortDirection { Asc, Desc }       // "asc", "desc"
 public enum CursorDirection { Next, Prev }    // "next", "prev"
 
-public record FilterRule(string Field, FilterCondition Condition, JsonElement Value)
+// The condition says how many values a rule has: IsNull and IsNotNull none,
+// Between two (Value the lower bound, Value2 the upper one, both inclusive),
+// every other condition one. A missing value is left out when written back.
+public record FilterRule(
+    string Field,
+    FilterCondition Condition,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Value = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Value2 = null)
 {
     // Properties the protocol does not know are kept (C-60).
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; init; }

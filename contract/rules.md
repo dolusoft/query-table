@@ -625,7 +625,7 @@ Source: own
 
 ### C-112 Column filterConditions
 
-`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date`, `datetime` and `ip` (C-118), the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value or with two. A `bool` column has no menu (C-34), so the list changes nothing there. The list only drives the menu: `setCondition` of the slot, `setFilterCondition` of the core and `parseFilterInput` take any condition, so calling them with one of the 3.13 conditions is an explicit opt-in.
+`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date`, `datetime` and `ip` (C-118), the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value, nor one with two except the `Between` rule of a CIDR prefix typed into an `ip` column (C-118). A `bool` column has no menu (C-34), so the list changes nothing there. The list only drives the menu: `setCondition` of the slot, `setFilterCondition` of the core and `parseFilterInput` take any condition, so calling them with one of the 3.13 conditions is an explicit opt-in.
 
 Source: own
 
