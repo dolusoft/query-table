@@ -44,6 +44,7 @@ const groups = [
       'row-kind',
       'row-pinning',
       'grouped-rows',
+      'headerless-list',
       'row-rendering',
       'row-navigation',
       'footer-rows'

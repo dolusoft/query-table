@@ -465,6 +465,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     groupBy?: (row: T, index: number) => string | number | null | undefined;
     hasRightPanel?: boolean;
     hasSubtable?: boolean;
+    header?: boolean;
     infinite?: boolean | InfiniteOptions;
     labels?: Partial<TableLabels>;
     loading?: boolean;

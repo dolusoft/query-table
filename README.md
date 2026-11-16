@@ -223,6 +223,22 @@ A sticky header scrolls inside the same container as the rows, so the vertical s
 
 The body and footer tables get a `col` per header cell with the header cell's measured `width`, so with the fixed layout their columns are as wide as the header's. The fixed layout needs a width that is a length or a percentage: under `width: auto` or `max-content` (the `.qt-table` rule above, under Large tables) the browser lays the table out automatically whatever `table-layout` says, a cell wider than its column widens it, and the body drifts from the header as its rows change. With `width: 100%` a fixed table still grows to the sum of its columns. A development build warns once when the body is laid out automatically. The three scroll sideways together: the table keeps the header and footer at the body's `scrollLeft`, and the body at the header's when a filter input out of view takes the focus. Pinned columns, resizing, `virtual`, `scrollToIndex` and infinite scroll work as in one table; `.qt-table-body` is the scroll container a virtual body finds. For assistive technology the three tables are one: `.qt-table-responsive` has `role="table"` and the rows and cells carry ARIA roles (C-101, C-102). The DOM without `scroll-body` is the same as before.
 
+## Without a header
+
+A list that needs no column titles, such as one column of messages, turns the header off with `:header="false"`. The table then draws no `thead` and nothing that sits in it: no sort by a click, no filter row, no resize or reorder handle and no clear-all button. The sort and the filters of `query` still apply, and the `toolbar` slot still clears filters. Pinning, `scroll-body` and `auto-width` measure the header cells, so they are off: pinned columns are drawn unpinned, in `columns` order, in one table. A column `width` goes on a `col` of a `colgroup`. No cell names a column, so give the table its name with `aria-label`. With `virtual` the row count has no header row, and `scrollToIndex` aligns to the top of the view (C-121).
+
+```vue
+<QueryTable
+  v-model:query="query"
+  :columns="[{ field: 'text' }]"
+  :rows="messages"
+  :header="false"
+  aria-label="Messages"
+  virtual
+  row-key="id"
+/>
+```
+
 ## Resizing columns
 
 With `resizable` the table draws a `qt-resize-handle` separator at the right edge of every header cell (opt a column out with `resizable: false`). Drag it, or focus it and use the arrow keys (10 px, 50 px with Shift); Enter or a double click fits the column to its widest rendered content, Escape cancels a drag. Widths stay between `minWidth` (default 40) and `maxWidth`. The table keeps no width: it emits `column-resize` with `{ field, width }` and you write it back:
