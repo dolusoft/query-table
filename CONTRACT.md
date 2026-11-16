@@ -38,6 +38,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `virtual` | `boolean \| VirtualOptions` |  | `false` | Draw only the rows in view of the scroll container, between two spacer rows (C-83). `true` takes the defaults. Give the table `table-layout: fixed` (C-85). Defaults to `false`. |
 | `rowNavigation` | `boolean \| RowNavigationOptions<T>` |  | `false` | Move the focus between rows with the keyboard (C-109, C-110): ↑ and ↓ to the previous and next row, Home and End to the first and last. The keys act while the focus is on a row's focus target (`focus`, else its first focusable element) and land on the next row's, with `virtual` after the row is drawn; the row is shown whole, below a sticky header. Group rows (C-103) and subtable rows are passed over, and so are the rows `skip` names. Each move emits `rowFocus`. Defaults to `false`. |
 | `scrollBody` | `boolean` |  | `false` | Draw the header, the body and the footer as three tables in `.qt-table-head`, `.qt-table-body` and `.qt-table-foot`, so the body scrolls under a header that stays outside it (C-101, C-102). The columns of the body and footer take the widths of the header cells, and the three scroll sideways together. In your CSS give the three wrappers `overflow-y: scroll`, the body a height and `overflow-x: auto`, the header and footer `overflow-x: hidden` and a transparent scrollbar, and the body and footer tables `table-layout: fixed`. Defaults to `false`. |
+| `header` | `boolean` |  | `true` | Draw the header row (C-121). With `false` the table draws no `thead`, so nothing of it either: no sort by a click, no filter row, no resize or reorder handle, no clear-all button, no `headerContextMenu`. The sort and the filters of `query` still apply, and the `toolbar` slot still clears filters. What is measured from the header cells is off: `pinned` (columns are drawn unpinned, in `columns` order), `scrollBody` (one table) and `autoWidth`; `Column.width` applies through a `col`. Defaults to `true`. |
 | `infinite` | `boolean \| InfiniteOptions` |  | `false` | Ask for the next page (`update:query`, reason `page`) when the end of `rows` comes into view (C-88); append the rows of a `page` answer and replace them for any other reason. Needs `rowKey`. `true` takes the defaults. Defaults to `false`. |
 | `flash` | `boolean \| FlashOptions` |  | `false` | Flash the rows that are new and the cells whose value changed while the query stays the same (C-93, C-94). Off by default; needs `rowKey`, and a changed row must be a new object. The table finds the change and marks it with `data-flash`; the skin draws it and sets its length with `--qt-flash-duration`. `true` flashes both; `{ rows, cells }` picks. |
 | `rowsUpdate` | `RowsUpdate` |  | `undefined` | What produced the current `rows`, read when `rows` changes (C-93): `live` may flash; `snapshot` (an answer to a query), `append` (a page added) and `reset` (another source) never do, and `snapshot` and `reset` clear every flash. Without it the table tells an answer from a live change by the query, `loading` and the first rows: a best effort. |
@@ -432,6 +433,17 @@ export interface TableProps<
    * the body and footer tables `table-layout: fixed`. Defaults to `false`.
    */
   scrollBody?: boolean
+  /**
+   * Draw the header row (C-121). With `false` the table draws no `thead`, so
+   * nothing of it either: no sort by a click, no filter row, no resize or
+   * reorder handle, no clear-all button, no `headerContextMenu`. The sort
+   * and the filters of `query` still apply, and the `toolbar` slot still
+   * clears filters. What is measured from the header cells is off:
+   * `pinned` (columns are drawn unpinned, in `columns` order),
+   * `scrollBody` (one table) and `autoWidth`; `Column.width` applies
+   * through a `col`. Defaults to `true`.
+   */
+  header?: boolean
   /**
    * Ask for the next page (`update:query`, reason `page`) when the end of
    * `rows` comes into view (C-88); append the rows of a `page` answer and
@@ -1756,6 +1768,12 @@ Source: own
 #### C-120 No value on a bool column
 
 A `bool` column whose `filterConditions` (C-112) lists `IsNull` or `IsNotNull` offers them in its select after `All`, `True` and `False`, in the order of the list, each named by `labels.filterCondition` (C-44). Picking one applies at once, as in a menu (C-113): one rule `{ field, condition }`, with no `value` key, that replaces the rules of the column. Picking `True` or `False` after it emits one `Equal` rule, and `All` removes the rules of the column, each in one update. An outside rule of such a condition shows as picked; the select draws its option even when the column does not list it. The other conditions of the list change nothing on a `bool` column, and it still renders no `filter-menu` slot (C-34). Without the list the select is the one of 3.18. The DOM contract gains no entry.
+
+Source: own
+
+#### C-121 A table without a header
+
+With `header: false` the table draws no `thead`, and nothing that sits in it: no sort by a click on a header (C-07), no filter row, no resize or reorder handle, no clear-all button (C-22) and no `headerContextMenu` (C-96). The sort and the filters of `query` still apply, `toolbar` still receives `clearFilters()`, and `focusFilter` finds no input. What is measured from the header cells is off: a column's `pinned` is ignored and the columns are drawn unpinned, in the order of `columns` (C-47, C-71); `scrollBody` is ignored and the table is one table, not three (C-101); `autoWidth` draws no width (C-100), and `measureColumnWidths` returns an empty map. A `Column.width` applies through a `colgroup` with one `col` per utility column and per visible column, in drawing order; the `col` of a column without a width has no style. No cell is a column header: a name for the table is the consumer's `aria-label`. With `virtual` the row count has no header row: the first body row is `aria-rowindex` 1 and `aria-rowcount` counts the body and footer rows only (C-86), and `scrollToIndex` and `keepAnchor` align to the top of the view, with no header to cover it (C-87, C-119). Defaults to `true`: with it the table is the one of 3.18. The DOM contract gains no entry.
 
 Source: own
 

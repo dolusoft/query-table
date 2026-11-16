@@ -219,6 +219,17 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-103', 'C-104', 'C-105']
   },
   {
+    id: 'headerless-list',
+    title: 'Without a header',
+    summary:
+      'A message list grouped by day that needs no column titles: `header: false` draws no `thead`, so the sticky group row is the only heading. The sort and filters of the query still apply; pinning, `scrollBody` and `autoWidth` are off, a column width goes on a `col`, and with `virtual` the row count has no header row.',
+    example: 'HeaderlessList',
+    api: {
+      props: ['header']
+    },
+    rules: ['C-121']
+  },
+  {
     id: 'infinite-scroll',
     title: 'Infinite scroll',
     summary:

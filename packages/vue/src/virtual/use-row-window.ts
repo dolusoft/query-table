@@ -56,6 +56,8 @@ export interface RowWindowOptions<T> {
   /** The `groupBy` prop (C-103); absent, no group is drawn. */
   groupBy?: () =>
     ((row: T, index: number) => GroupKey | null | undefined) | undefined
+  /** Rows of the header before the body rows: `0` without it (C-121). */
+  headerRows?: () => number
 }
 
 type Align = NonNullable<ScrollToIndexOptions['align']>
@@ -719,15 +721,17 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     version.value
     const rows = center()
     const before = expandedBefore.value
-    // The header row is 1, the first body row 2; a group row counts as a
-    // row, before the first row of its group (C-104).
+    // The header row is 1, the first body row 2, or 1 without a header
+    // (C-121); a group row counts as a row, before the first row of its
+    // group (C-104).
+    const first = 1 + (o.headerRows?.() ?? 1)
     const headersBefore = (q: number) =>
       q < top
         ? 0
         : q < top + rows.length
           ? groupsThrough(q - top)
           : groupCount()
-    const ariaOf = (q: number) => q + before[q] + headersBefore(q) + 2
+    const ariaOf = (q: number) => q + before[q] + headersBefore(q) + first
     const at = (q: number): DrawnRow<T> => ({ ...all[q], aria: ariaOf(q) })
     const out: Array<BodyItem<T>> = []
     /** The group whose row was drawn last, or -1. */

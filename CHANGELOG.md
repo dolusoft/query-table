@@ -11,6 +11,7 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 ### Added
 
 - A `bool` column offers `IsNull` and `IsNotNull` when its `filterConditions` lists them: they are options of its select, after `All`, `True` and `False`, named by `labels.filterCondition`. Picking one emits one rule without a value; an outside such rule shows as picked instead of as `All`. Opt-in: without the list the select is the one of 3.18 ([C-120](contract/rules.md#c-120-no-value-on-a-bool-column), [C-112](contract/rules.md#c-112-column-filterconditions)).
+- `header: false` draws a table without a `thead`, for a list that needs no column titles. Nothing of the header is drawn (sort click, filter row, resize and reorder handles, clear-all button); the sort and filters of `query` still apply. `pinned`, `scrollBody` and `autoWidth` are off, a column `width` goes on a `col`, and with `virtual` the row count has no header row. Defaults to `true` ([C-121](contract/rules.md#c-121-a-table-without-a-header)).
 
 ### Fixed
 

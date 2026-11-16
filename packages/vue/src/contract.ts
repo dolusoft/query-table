@@ -325,6 +325,17 @@ export interface TableProps<
    */
   scrollBody?: boolean
   /**
+   * Draw the header row (C-121). With `false` the table draws no `thead`, so
+   * nothing of it either: no sort by a click, no filter row, no resize or
+   * reorder handle, no clear-all button, no `headerContextMenu`. The sort
+   * and the filters of `query` still apply, and the `toolbar` slot still
+   * clears filters. What is measured from the header cells is off:
+   * `pinned` (columns are drawn unpinned, in `columns` order),
+   * `scrollBody` (one table) and `autoWidth`; `Column.width` applies
+   * through a `col`. Defaults to `true`.
+   */
+  header?: boolean
+  /**
    * Ask for the next page (`update:query`, reason `page`) when the end of
    * `rows` comes into view (C-88); append the rows of a `page` answer and
    * replace them for any other reason. Needs `rowKey`. `true` takes the
