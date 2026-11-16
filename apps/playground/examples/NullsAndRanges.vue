@@ -25,11 +25,14 @@ import { columnOf, currentDataset, type DemoRow } from '../scenarios'
 // with the profile `tr-2`: null is a missing value, both bounds are
 // inclusive, and a lower bound above the upper one keeps nothing.
 const data = currentDataset()
-const { primary, count, amount, date } = data.fields
+const { primary, count, amount, date, flag } = data.fields
 
-// Some rows have no amount and no date, so the null conditions find them.
+// Some rows have no amount, no date and no flag, so the null conditions find
+// them.
 const missing = (id: number, key: string) =>
-  (key === amount && id % 6 === 0) || (key === date && id % 8 === 0)
+  (key === amount && id % 6 === 0) ||
+  (key === date && id % 8 === 0) ||
+  (key === flag && id % 5 === 0)
 const allRows = shallowRef<DemoRow[]>(
   data
     .createRows()
@@ -55,7 +58,9 @@ const columns: Column[] = [
   columnOf(data, primary),
   { ...columnOf(data, count), filterConditions: ordered },
   { ...columnOf(data, amount), filterConditions: ['Equal', ...nulls] },
-  { ...columnOf(data, date), filterConditions: ordered }
+  { ...columnOf(data, date), filterConditions: ordered },
+  // A bool column has no menu: the null conditions join its select (C-120).
+  { ...columnOf(data, flag), filterConditions: nulls }
 ]
 
 const typeOf = (field: string): ColumnType =>
@@ -67,7 +72,8 @@ const dataset = defineDataset<DemoRow>({
     [primary]: { type: typeOf(primary) },
     [count]: { type: typeOf(count) },
     [amount]: { type: typeOf(amount) },
-    [date]: { type: typeOf(date) }
+    [date]: { type: typeOf(date) },
+    [flag]: { type: typeOf(flag) }
   }
 })
 const query = ref<TableQuery>({
@@ -102,6 +108,10 @@ const presets: Array<{ label: string; filters: FilterRule[] }> = [
   {
     label: `${title(date)} is known`,
     filters: [{ field: date, condition: 'IsNotNull' }]
+  },
+  {
+    label: `No ${title(flag)}`,
+    filters: [{ field: flag, condition: 'IsNull' }]
   }
 ]
 </script>

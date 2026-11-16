@@ -8,6 +8,10 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Added
+
+- A `bool` column offers `IsNull` and `IsNotNull` when its `filterConditions` lists them: they are options of its select, after `All`, `True` and `False`, named by `labels.filterCondition`. Picking one emits one rule without a value; an outside such rule shows as picked instead of as `All`. Opt-in: without the list the select is the one of 3.18 ([C-120](contract/rules.md#c-120-no-value-on-a-bool-column), [C-112](contract/rules.md#c-112-column-filterconditions)).
+
 ### Fixed
 
 - C-112 said that a column without `filterConditions` never emits a rule with two values. Since 3.17 a CIDR prefix typed into an `ip` column is one `Between` rule with `value` and `value2`, without any opt-in; the rule and the protocol guide now say so. The behavior is unchanged ([C-112](contract/rules.md#c-112-column-filterconditions), [C-118](contract/rules.md#c-118-ip-column-type)).
@@ -16,6 +20,7 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 ### Upgrade notes
 
 - A backend that serves an `ip` column must read `value2` of a `Between` rule even when no column lists `filterConditions` (as noted for 3.17). A .NET backend built on the guide's `Models.cs` should take the new model.
+- A `bool` column whose `filterConditions` already listed `IsNull` or `IsNotNull` (where the list did nothing) now offers them in its select, so its backend can receive `IsNull` and `IsNotNull` rules on that field ([C-120](contract/rules.md#c-120-no-value-on-a-bool-column)).
 
 ## [3.18.0] - 2026-11-13
 

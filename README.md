@@ -323,11 +323,12 @@ const cursors = ref<PageCursors>({ next: null, prev: null })
 
 ## No value and ranges
 
-A column offers `IsNull`, `IsNotNull` and `Between` when it lists them in `filterConditions`; the list replaces the conditions of its type in the filter menu, and a column without it keeps the menu of 3.12 (C-112). Picking `IsNull` or `IsNotNull` applies at once and hides the input (C-113). `Between` draws two inputs, named by `labels.filterInputFrom` and `labels.filterInputTo`, and emits one rule once both bounds read; with one bound the last applied filter stays (C-114).
+A column offers `IsNull`, `IsNotNull` and `Between` when it lists them in `filterConditions`; the list replaces the conditions of its type in the filter menu, and a column without it keeps the menu of 3.12 (C-112). Picking `IsNull` or `IsNotNull` applies at once and hides the input (C-113). `Between` draws two inputs, named by `labels.filterInputFrom` and `labels.filterInputTo`, and emits one rule once both bounds read; with one bound the last applied filter stays (C-114). A `bool` column has no menu: its select offers the `IsNull` and `IsNotNull` of the list after `All`, `True` and `False` (C-120).
 
 ```ts
 const columns: Column[] = [
-  { field: 'due', type: 'date', filterConditions: ['Between', 'Equal', 'IsNull', 'IsNotNull'] }
+  { field: 'due', type: 'date', filterConditions: ['Between', 'Equal', 'IsNull', 'IsNotNull'] },
+  { field: 'verified', type: 'bool', filterConditions: ['IsNull', 'IsNotNull'] }
 ]
 // { field: 'due', condition: 'IsNull' }
 // { field: 'due', condition: 'Between', value: '2026-10-01', value2: '2026-10-31' }

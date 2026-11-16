@@ -425,7 +425,7 @@ export const pages: PlaygroundPage[] = [
     id: 'nulls-and-ranges',
     title: 'No value and ranges',
     summary:
-      'A column that lists `IsNull`, `IsNotNull` and `Between` in `filterConditions` offers them: a condition without a value applies when it is picked, `Between` draws a lower and an upper input and emits one rule once both read. `useLocalQuery` evaluates them with the profile `tr-2`.',
+      'A column that lists `IsNull`, `IsNotNull` and `Between` in `filterConditions` offers them (a bool column in its select): a condition without a value applies when it is picked, `Between` draws a lower and an upper input and emits one rule once both read. `useLocalQuery` evaluates them with the profile `tr-2`.',
     example: 'NullsAndRanges',
     api: {
       props: ['columns', 'labels'],
@@ -442,7 +442,7 @@ export const pages: PlaygroundPage[] = [
         'FilterDatetimeSlotProps'
       ]
     },
-    rules: ['C-112', 'C-113', 'C-114', 'C-115', 'C-116']
+    rules: ['C-112', 'C-113', 'C-114', 'C-115', 'C-116', 'C-120']
   },
   {
     id: 'query-model',
