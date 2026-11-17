@@ -69,9 +69,24 @@ const open = ref(false)
 if (open) {}`,
       // A parameter that shadows the ref is not the ref.
       `${head}function f(open: boolean) { if (open) {} }`,
-      `${head}const g = (total: number) => (total ? 1 : 2)`
+      `${head}const g = (total: number) => (total ? 1 : 2)`,
+      // A parameter that shadows the imported factory is not Vue's.
+      `import { ref as makeRef } from 'vue'
+function f(makeRef: () => boolean) { const on = makeRef(); if (on) {} }`
     ],
     invalid: [
+      {
+        code: `import { ref as makeRef } from 'vue'
+const on = makeRef(false)
+if (on) {}`,
+        errors: 1
+      },
+      {
+        code: `import * as vue from 'vue'
+const on = vue.shallowRef(false)
+if (on) {}`,
+        errors: 1
+      },
       { code: `${head}if (open) {}`, errors: 1 },
       { code: `${head}const label = total ? 'a' : 'b'`, errors: 1 },
       { code: `${head}const shut = !open`, errors: 1 },
@@ -92,6 +107,15 @@ copy.push('x')`,
 props.a = 1`,
       `const items: string[] = []
 items.push('x')`,
+      // A parameter that shadows a destructured prop is not the prop.
+      `const { items } = defineProps<{ items: string[] }>()
+function f(items: string[]) { items.push('x') }`,
+      // Another component's prop is not this component's.
+      `const A = defineComponent({ props: ['items'] })
+const B = defineComponent({
+  data: () => ({ items: [] }),
+  methods: { add() { this.items.push(1) } }
+})`,
       // A parameter that shadows the props object is not the props.
       `const props = defineProps<{ items: string[] }>()
 function f(props: { items: string[] }) { props.items.push('x') }`,
@@ -170,6 +194,14 @@ describe('vue-script/require-valid-default-prop', () => {
         {
           code: `defineProps({ meta: { type: Object, default: {} } })`,
           errors: [{ message: /shared object/ }]
+        },
+        {
+          code: `defineProps({ items: { type: Array, default: 1 } })`,
+          errors: [{ message: /is a Number, but the prop is Array/ }]
+        },
+        {
+          code: `defineProps({ meta: { type: Object, default: 'x' } })`,
+          errors: [{ message: /is a String, but the prop is Object/ }]
         },
         {
           code: `defineProps({ count: { type: Number, default: 'one' } })`,

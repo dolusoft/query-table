@@ -26,18 +26,47 @@ const mutatingMethods = new Set([
   'copyWithin'
 ])
 
-/** Local names imported from 'vue', mapped to the imported name. */
-const vueImports = () => {
-  const names = new Map()
+/**
+ * The bindings imported from 'vue', as variables: a named import mapped to
+ * the imported name, and namespace imports (`import * as vue`). A call is
+ * resolved through scopes, so a parameter that shadows `ref` is not Vue's.
+ */
+const vueImports = context => {
+  const named = new Map()
+  const namespaces = new Set()
   return {
-    names,
+    /** The Vue export a call calls (`ref(x)`, `vue.ref(x)`), or null. */
+    called(node) {
+      if (node?.type !== 'CallExpression') {
+        return null
+      }
+      const callee = node.callee
+      if (callee.type === 'Identifier') {
+        return named.get(resolve(context, callee)) ?? null
+      }
+      if (
+        callee.type === 'MemberExpression' &&
+        !callee.computed &&
+        callee.object.type === 'Identifier' &&
+        namespaces.has(resolve(context, callee.object))
+      ) {
+        return callee.property.name
+      }
+      return null
+    },
     ImportDeclaration(node) {
       if (node.source.value !== 'vue') {
         return
       }
       for (const specifier of node.specifiers) {
+        const variable = declared(context, specifier, specifier.local.name)
         if (specifier.type === 'ImportSpecifier') {
-          names.set(specifier.local.name, specifier.imported.name)
+          named.set(
+            variable,
+            specifier.imported.name ?? specifier.imported.value
+          )
+        } else if (specifier.type === 'ImportNamespaceSpecifier') {
+          namespaces.add(variable)
         }
       }
     }
@@ -78,7 +107,7 @@ const noRefAsCondition = {
     }
   },
   create(context) {
-    const imports = vueImports()
+    const imports = vueImports(context)
     const refs = new Set()
     const reported = new Set()
     const check = node => {
@@ -103,10 +132,9 @@ const noRefAsCondition = {
     return {
       ImportDeclaration: imports.ImportDeclaration,
       VariableDeclarator(node) {
-        const name = calleeName(node.init)
         if (
           node.id.type === 'Identifier' &&
-          refFactories.has(imports.names.get(name))
+          refFactories.has(imports.called(node.init))
         ) {
           refs.add(declared(context, node, node.id.name))
         }

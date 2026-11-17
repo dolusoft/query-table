@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -151,6 +151,17 @@ describe('template gate checks', () => {
     expect(unused('<p @click="x++; unusedHelper()" />')).toBe(0)
     expect(unused('<li v-for="r in unusedHelper" :key="r" />')).toBe(0)
     expect(unused('<p />', 'const o = { [unusedHelper]: 1 }')).toBe(0)
+    // Slot binding patterns: defaults and computed keys are references.
+    expect(
+      unused('<Child v-slot="{ label = unusedHelper }">{{ label }}</Child>')
+    ).toBe(0)
+    expect(
+      unused('<Child #item="{ [unusedHelper]: label }">{{ label }}</Child>')
+    ).toBe(0)
+    expect(unused('<Child v-slot="{ unusedHelper }" />')).toBe(0)
+    expect(
+      unused('<Child v-slot="{ label = other }">{{ label }}</Child>')
+    ).toBe(1)
   })
 
   it('reports an import the script and the template both leave unused', () => {
@@ -262,6 +273,26 @@ describe('template gate CLI', () => {
     const result = run()
     expect(result.stdout + result.stderr).toBe('')
     expect(result.status).toBe(0)
+  })
+
+  it('scans the whole repository by default, as **/*.vue did, minus the ignores', () => {
+    // A directory no package or app owns: still in scope.
+    const stray = mkdtempSync(join(root, 'gate-scope-'))
+    // An ignored segment ("fixtures") anywhere below it: out of scope.
+    const ignoredDir = join(stray, 'fixtures')
+    try {
+      writeFileSync(join(stray, 'Stray.vue'), sfc('<div v-html="h" />'))
+      mkdirSync(ignoredDir, { recursive: true })
+      writeFileSync(join(ignoredDir, 'Ignored.vue'), sfc('<div v-html="h" />'))
+      const result = run()
+      expect(result.status).toBe(1)
+      expect(result.stdout).toMatch(
+        /gate-scope-[^/]*\/Stray\.vue:\d+:\d+ no-v-html/
+      )
+      expect(result.stdout).not.toMatch(/Ignored\.vue/)
+    } finally {
+      rmSync(stray, { recursive: true, force: true })
+    }
   })
 
   it('checks the files it is given, as a pre-commit hook passes staged paths', () => {
