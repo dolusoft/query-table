@@ -140,6 +140,7 @@ export const useLoadMore = (o: LoadMoreOptions) => {
       } catch {
         // No `process`: a development build.
       }
+      // oxlint-disable-next-line no-console -- development-only warning to the library user
       console.warn(
         '[QueryTable] `infinite` needs `rowKey`; it is ignored without one (C-88).'
       )
