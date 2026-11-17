@@ -196,6 +196,17 @@ describe('template gate checks', () => {
         '<Child v-slot="{ unusedHelper }"><input :unused-helper /></Child>'
       )
     ).toBe(1)
+    // Slot props of the same element cover only its children, not its
+    // own shorthand: :items reads the import.
+    const listed = (template: string) =>
+      checkSfc(sfc(template, "import { items } from './items'"), 'x.vue', [
+        'no-unused-imports'
+      ]).length
+    expect(listed('<List :items v-slot="{ items }">{{ items }}</List>')).toBe(0)
+    expect(listed('<List v-slot="{ items }" :items>{{ items }}</List>')).toBe(0)
+    expect(listed('<List v-slot="{ items }">{{ items }}</List>')).toBe(1)
+    // A v-for alias of the same element does shadow its shorthand.
+    expect(listed('<Row v-for="items in rows" :key="items" :items />')).toBe(1)
     // <style> v-bind() reads the script.
     const styled = (style: string) =>
       checkSfc(
