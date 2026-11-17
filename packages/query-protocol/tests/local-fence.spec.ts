@@ -9,10 +9,10 @@ import * as local from '../src/local'
 // The local evaluator is a data-source helper, not table behaviour: it has
 // its own entry and the default entry never exposes or imports it. The
 // built module graph is checked by scripts/check-entry-graph.mjs, the
-// imports by the layer rule (tests/repo/eslint-layers.spec.ts). The two
+// imports by the layer rule (tests/repo/layers.spec.ts). The two
 // entries are imported by path, as the other protocol specs do: a package
 // importing itself by name sorts as internal or external depending on
-// whether dist/ exists (see the import-x/order note in eslint.config.js).
+// whether dist/ exists.
 
 const pkgDir = join(import.meta.dirname, '..')
 

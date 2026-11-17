@@ -715,7 +715,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       }
       return out
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    // oxlint-disable-next-line no-unused-expressions
     version.value
     const rows = center()
     const before = expandedBefore.value

@@ -53,7 +53,6 @@ export interface ServerQueryColumnApi {
 
 // The merge targets and their type parameters must match TanStack's
 // declarations exactly, so their names and unused parameters stay.
-/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars */
 declare module '@tanstack/table-core' {
   interface Plugins {
     serverQueryFeature: TableFeature
@@ -77,4 +76,3 @@ declare module '@tanstack/table-core' {
     serverQueryFeature: ServerQueryColumnApi
   }
 }
-/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars */

@@ -475,7 +475,6 @@ describe('C-111 Row navigation off and DOM contract of 3.12 [own]', () => {
   const keydownTargets = async (tableProps: Record<string, unknown>) => {
     const targets: Element[] = []
     // Called back with `apply` and the element as `this`, then restored.
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     const original = EventTarget.prototype.addEventListener
     EventTarget.prototype.addEventListener = function (
       this: EventTarget,

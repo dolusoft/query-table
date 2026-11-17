@@ -4,9 +4,9 @@
 // is generic over its features; `broad` is the one place it is widened.
 import type { Column, Table } from '@tanstack/table-core'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+// oxlint-disable-next-line typescript/no-explicit-any -- see above
 export type AnyTable = Table<any, any>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+// oxlint-disable-next-line typescript/no-explicit-any -- see above
 export type AnyColumn = Column<any, any, any>
 
 /** `table` as TanStack's broad table type. */
