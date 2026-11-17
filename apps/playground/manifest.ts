@@ -11,6 +11,8 @@ export interface PageApi {
   exposed?: string[]
   /** Functions exported from the default and opt-in local entries. */
   functions?: string[]
+  /** Components of the opt-in entries (`DataTable`). */
+  components?: string[]
   /** Exported types of src/contract.ts. */
   types?: string[]
 }
@@ -71,6 +73,24 @@ export const pages: PlaygroundPage[] = [
     example: 'LocalQuery',
     api: { functions: ['useLocalQuery'] },
     rules: ['C-75', 'C-76', 'C-77', 'C-78', 'C-79', 'C-80', 'C-81']
+  },
+  {
+    id: 'data-table',
+    title: 'DataTable',
+    summary:
+      'Every row in the page, no query to wire: DataTable builds the dataset from the columns, holds the query and draws the DOM of QueryTable, here with a search, a filter menu, an accordion and a print view.',
+    example: 'DataTable',
+    api: {
+      components: ['DataTable'],
+      types: [
+        'DataTableProps',
+        'DataTableEmits',
+        'DataTableSlots',
+        'DataTableOmittedProp',
+        'ErrorSlotProps'
+      ]
+    },
+    rules: ['C-124', 'C-125', 'C-126', 'C-127']
   },
   {
     id: 'filtering',

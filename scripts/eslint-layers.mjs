@@ -16,7 +16,9 @@
 //     the entry files (src/*.ts)                   anything in core
 //   vue       packages/vue/src                     the protocol, the core, @tanstack/vue-table and vue
 //     local/                                       itself, vue and the two protocol entries only (C-75)
-//     the rest                                     never local/ nor the local evaluator
+//     data-table/                                  itself, the rest, local/, vue, the protocol and its
+//                                                  local entry (ADR 0021, K319-7)
+//     the rest                                     never local/, data-table/ nor the local evaluator
 import { readFileSync } from 'node:fs'
 import { dirname, posix, relative, resolve, sep } from 'node:path'
 
@@ -57,6 +59,11 @@ const allowedSpecifiers = {
     'vue',
     '@dolusoft/query-protocol',
     '@dolusoft/query-protocol/local'
+  ],
+  'vue:data-table': [
+    'vue',
+    '@dolusoft/query-protocol',
+    '@dolusoft/query-protocol/local'
   ]
 }
 
@@ -74,7 +81,8 @@ const toPosix = path => path.split(sep).join(posix.sep)
 /**
  * Where a file sits: its package, its path under src/ (`rest`) and its part:
  * in query-table-core `shared`, `feature:<name>` or `entry`; in the protocol
- * and vue `local` (src/local/) or `main`. `null` outside packages/*\/src.
+ * and vue `local` (src/local/) or `main`, and in vue `data-table`
+ * (src/data-table/). `null` outside packages/*\/src.
  */
 export const layerOf = file => {
   const path = toPosix(relative(root, resolve(file)))
@@ -83,6 +91,9 @@ export const layerOf = file => {
     return null
   }
   const [, pkg, rest] = match
+  if (pkg === 'vue' && /^data-table(\/|$)/.test(rest)) {
+    return { pkg, rest, part: 'data-table' }
+  }
   if (localParts.has(pkg)) {
     return { pkg, rest, part: /^local(\/|$)/.test(rest) ? 'local' : 'main' }
   }
@@ -116,20 +127,27 @@ export const violation = (file, specifier) => {
     return specifier === '@dolusoft/query-protocol' ? null : rowChanges
   }
   if (isBare(specifier)) {
-    const local = from.part === 'local'
-    const allowed = allowedSpecifiers[local ? `${from.pkg}:local` : from.pkg]
+    const own = from.part === 'local' || from.part === 'data-table'
+    const allowed =
+      allowedSpecifiers[own ? `${from.pkg}:${from.part}` : from.pkg]
     if ((allowed ?? []).includes(specifier)) {
       return null
     }
     if (localEntries.includes(specifier)) {
       return localFence
     }
-    const name = local ? `${from.pkg}/src/local` : from.pkg
+    const name = own ? `${from.pkg}/src/${from.part}` : from.pkg
     return `${name} may import ${allowed?.length ? allowed.join(' and ') : 'no package'}, not "${specifier}"`
   }
   const target = layerOf(resolve(dirname(file), specifier))
   if (!target || target.pkg !== from.pkg) {
     return `"${specifier}" leaves packages/${from.pkg}/src: import another package by its name`
+  }
+  if (target.part === 'data-table' && from.part !== 'data-table') {
+    return `the ${from.part === 'local' ? 'local' : 'main'} part may not import "${specifier}": DataTable is reached only through its own entry (ADR 0021)`
+  }
+  if (from.part === 'data-table') {
+    return null
   }
   if (from.part === 'main') {
     return target.part === 'local' ? localFence : null

@@ -283,9 +283,55 @@ import { useLocalQuery } from './use-local-query'`
           file,
           `import { profiles } from '@dolusoft/query-protocol/local'
 import { useLocalQuery } from '@dolusoft/query-table/local'
-import { QueryTable } from '@dolusoft/query-table'`
+import { QueryTable } from '@dolusoft/query-table'
+import { DataTable } from '@dolusoft/query-table/data-table'`
         )
       ).toEqual([])
+    }
+  })
+})
+
+describe('DataTable layers (ADR 0021, K319-7)', () => {
+  const vue = 'packages/vue/src'
+  const fence: unknown = expect.stringContaining(
+    'DataTable is reached only through its own entry (ADR 0021)'
+  )
+
+  it('lets DataTable import the table, the binding, vue and the protocol entries', () => {
+    expect(
+      lint(
+        `${vue}/data-table/x.ts`,
+        `import { computed } from 'vue'
+import { columnTypeOf } from '@dolusoft/query-protocol'
+import { defineDataset } from '@dolusoft/query-protocol/local'
+import { QueryTable } from '../index'
+import type { Column } from '../contract'
+import { useLocalQuery } from '../local'
+import { datasetOf } from './derive-dataset'`
+      )
+    ).toEqual([])
+    for (const code of [
+      `import { serverQueryFeature } from '@dolusoft/query-table-core'`,
+      `import { useVueTable } from '@tanstack/vue-table'`,
+      `import { useLocalQuery } from '@dolusoft/query-table/local'`
+    ]) {
+      expect(lint(`${vue}/data-table/x.ts`, code), code).toHaveLength(1)
+    }
+  })
+
+  it('keeps the table and the binding away from DataTable', () => {
+    for (const [file, dir] of [
+      [`${vue}/x.ts`, './data-table'],
+      [`${vue}/body/x.ts`, '../data-table'],
+      [`${vue}/local/x.ts`, '../data-table']
+    ]) {
+      for (const code of [
+        `import { DataTable } from '${dir}'`,
+        `export { DataTable } from '${dir}/index'`,
+        `void import('${dir}/data-table.vue')`
+      ]) {
+        expect(lint(file, code), `${file}: ${code}`).toEqual([fence])
+      }
     }
   })
 })

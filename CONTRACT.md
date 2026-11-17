@@ -104,6 +104,24 @@ Opt-in data-source helpers, separate from the component and the default entry.
 | --- | --- | --- |
 | `useLocalQuery` | `(options: UseLocalQueryOptions<T>) => LocalQuery<T>` | Evaluates locally without rerunning filtering, search or sorting for a page-only change. |
 
+### DataTable (`@dolusoft/query-table/data-table`)
+
+Rows held in the page: `useLocalQuery` and `QueryTable` composed (ADR 0021). It takes the surface of `QueryTable` with the props, the left-out props and the slot below (C-124). Its events and exposed methods are those of `QueryTable`. Not taken: `totalRows`, `cursors`, `infinite`, `rowsUpdate`.
+
+| Prop | Type | Required | Description |
+| --- | --- | --- | --- |
+| `query` | `TableQuery` |  | The query, used with `v-model:query`. Optional: without it the table holds the query for as long as it lives (C-125). |
+| `rows` | `readonly T[]` | yes | Every row of the source, not one page. Changes inside a deeply reactive array are seen; replace a shallowRef's array to have them seen. |
+| `rowKey` | `keyof T & string` | yes | The field that identifies a row: a top-level field, a column of type `string` or `integer` (it may be `hide: true`). It breaks sort ties and keys selection and expansion across pages. |
+| `profile` | `SemanticsProfile` |  | The semantics profile of the evaluation. Defaults to `'tr-2'`, and that default never moves. |
+| `search` | `string[]` |  | The fields of the global search: `string` columns (C-126). Defaults to none. |
+| `paginate` | `boolean` |  | `false` draws every matching row and passes no `pagination` slot, so no pagination block is drawn. Defaults to `true`. |
+| `dataset` | `Dataset<T>` |  | Replaces the dataset built from the columns, whole (C-126): for a field that needs `get` or `offset`, or a queryable field with no column. |
+
+| Added slot | Props | Description |
+| --- | --- | --- |
+| `error` | `ErrorSlotProps` | Drawn in the empty row while the evaluator reports an error. Without it the `empty` slot is drawn. |
+
 ## Types
 
 Exported from the package entry point (`packages/vue/src/contract.ts`).
@@ -977,6 +995,95 @@ export interface QueryTableExpose {
 }
 ```
 
+Exported from `@dolusoft/query-table/data-table` (`packages/vue/src/data-table/contract.ts`).
+
+```ts
+import type {
+  Dataset,
+  LocalQueryError,
+  SemanticsProfile
+} from '@dolusoft/query-protocol/local'
+
+import type {
+  TableEmits,
+  TableProps,
+  TableQuery,
+  TableSlots
+} from '../contract'
+
+/**
+ * Public contract of `DataTable` (`@dolusoft/query-table/data-table`,
+ * ADR 0021). Its surface is the one of `QueryTable` with the difference
+ * listed here (C-124); everything it shares with `QueryTable` is described in
+ * `../contract.ts`.
+ */
+
+/**
+ * The props of `QueryTable` that `DataTable` does not take (C-124): it knows
+ * the total, pages by `page` and `pageSize` only, has no next page to ask a
+ * server for and gives the flash its own hint.
+ */
+export type DataTableOmittedProp =
+  'totalRows' | 'cursors' | 'infinite' | 'rowsUpdate'
+
+/** Props of `DataTable`: those of `QueryTable`, with its rows held in the page (C-124). */
+export interface DataTableProps<
+  T extends object = Record<string, unknown>
+> extends Omit<
+  TableProps<T, TableQuery>,
+  'query' | 'rows' | 'rowKey' | DataTableOmittedProp
+> {
+  /**
+   * The query, used with `v-model:query`. Optional: without it the table
+   * holds the query for as long as it lives (C-125).
+   */
+  query?: TableQuery
+  /**
+   * Every row of the source, not one page. Changes inside a deeply reactive
+   * array are seen; replace a shallowRef's array to have them seen.
+   */
+  rows: readonly T[]
+  /**
+   * The field that identifies a row: a top-level field, a column of type
+   * `string` or `integer` (it may be `hide: true`). It breaks sort ties and
+   * keys selection and expansion across pages.
+   */
+  rowKey: keyof T & string
+  /** The semantics profile of the evaluation. Defaults to `'tr-2'`, and that default never moves. */
+  profile?: SemanticsProfile
+  /** The fields of the global search: `string` columns (C-126). Defaults to none. */
+  search?: string[]
+  /**
+   * `false` draws every matching row and passes no `pagination` slot, so no
+   * pagination block is drawn. Defaults to `true`.
+   */
+  paginate?: boolean
+  /**
+   * Replaces the dataset built from the columns, whole (C-126): for a field
+   * that needs `get` or `offset`, or a queryable field with no column.
+   */
+  dataset?: Dataset<T>
+}
+
+/** Events of `DataTable`: those of `QueryTable`. */
+export type DataTableEmits<T> = TableEmits<T, TableQuery>
+
+/** Props of the `error` slot. */
+export interface ErrorSlotProps {
+  /** What the evaluator reported: an invalid query is not an empty result. */
+  error: LocalQueryError
+}
+
+/** Slots of `DataTable`: those of `QueryTable`, and `error`. */
+export interface DataTableSlots<T> extends TableSlots<T> {
+  /**
+   * Drawn in the empty row while the evaluator reports an error. Without it
+   * the `empty` slot is drawn.
+   */
+  error?(props: ErrorSlotProps): unknown
+}
+```
+
 The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.
 
 ```ts
@@ -1820,6 +1927,30 @@ Source: own
 #### C-123 One row open at a time
 
 With `hasSubtable` and `expandMode: 'single'` at most one row is open. A press of a closed row's expand button opens it and closes the open row, in one change of the expansion state; a press of the open row closes it. `rowExpansionChange` (C-122) is emitted for the row that closed, with `expanded: false`, and then for the row that opened, so a list kept from the events never holds two rows. The `isExpanded` seed (C-26) opens the first row of `rows`, in their order, that asks for it, and that row replaces the one that was open; when no row asks, the open row stays open if it is still in `rows`. `expandAll()` does nothing; `collapseAll()` closes the open row (C-55). Turning `expandMode` to `'single'` while several rows are open keeps the first of them in the order of `rows` and closes the others, and emits nothing. A row that leaves `rows` closes as in C-26 and no other row opens in its place. The button, `aria-expanded`, `data-expanded`, the `subtable` slot and the keys are those of C-26, and the DOM contract gains no entry. `useQueryTable` takes the same `expandMode` option. Defaults to `'multiple'`: with it expansion is the one of 3.18.
+
+Source: own
+
+#### C-124 DataTable: the rows it draws
+
+`DataTable`, from `@dolusoft/query-table/data-table`, draws `QueryTable` with the page that `useLocalQuery` (C-81) evaluates from its `rows`, its query (C-125), its dataset (C-126), `profile` (default `'tr-2'`) and `paginate` (default `true`), and with the total of that evaluation as `totalRows`. It takes the props, events, slots and exposed methods of `QueryTable`, with these differences: `rows` is every row of the source; `rowKey` is required and names a top-level field; `query` is optional (C-125); `totalRows`, `cursors`, `infinite` and `rowsUpdate` are not props; `profile`, `search`, `paginate` and `dataset` are new; the slot `error` is new. A prop, listener, class or attribute the consumer gives reaches `QueryTable` as given, and one it leaves out is left out, so `QueryTable` applies its own default. `rowsUpdate` is `'snapshot'` when the query, the dataset, `profile` or `paginate` changed since the page last drawn, and `'live'` when only the source changed, so the flash (C-94) marks rows that changed in the source and not rows a sort or a page moved. While the evaluator reports an error the body has no rows, `totalRows` is `0` and the empty row draws the `error` slot with `{ error }`, or the `empty` slot when there is no `error` slot. `paginate: false` draws every matching row and passes no `pagination` slot, so no pagination block is drawn. The exposed methods are those of `QueryTable` (C-33); `scrollToIndex` takes an index into the drawn rows. `DataTable` never filters, searches, sorts or pages on its own: the evaluator does, with the meaning of the profile (P1, C-76).
+
+Source: own
+
+#### C-125 DataTable: the query it holds
+
+With `query` given (`v-model:query`) the query is the consumer's, as with `QueryTable`: an `update:query` the consumer does not apply changes nothing (C-19). Without it `DataTable` holds the query. It starts at `{ page: 1, pageSize, sort: null, filters: [] }`, where `pageSize` is the first of `pagination.pageSizeOptions` or `10`, and each `update:query` replaces it with the query emitted. `update:query` is emitted in both cases, once per user action. The held query lives as long as the component and is written nowhere (P2). A `query` given later is used from then on and the held query is dropped; when `query` is taken away again, the held query starts again from the start query. The page is never corrected: a page past the end draws no rows (C-76).
+
+Source: own
+
+#### C-126 DataTable: the dataset from the columns
+
+Without `dataset`, `DataTable` builds one with `defineDataset`. `key` is `rowKey`. Each column of `columns`, hidden ones included, is a field named by its `field`, with the column type as C-39 reads it, `sortable` only while the table's `sortable` is on and the column's is not `false`, `filterable` only while the table's `filterable` is on and the column's is not `false`, and the default reader of the dotted path (C-30). The fields named in `search` are the fields of the global search. A second column with the same `field` adds nothing. An `ip` column is not a field, since the local profiles give it no meaning (C-118): a sort or a rule on it is `unsupported-field`. The dataset is built again only when `rowKey`, `search`, the table's `sortable` or `filterable`, or the `field`, type, `sortable` or `filterable` of a column changes; reordering, resizing, hiding or renaming a column keeps it. A `dataset` prop replaces the built one whole. A `rowKey` that is not a column of type `string` or `integer`, and a `search` field that is not a `string` column, throw a `TypeError`, as `defineDataset` does for a malformed definition.
+
+Source: own
+
+#### C-127 DataTable: the DOM of QueryTable
+
+For the same columns, the same page of rows, the same total and the same other props, `DataTable` renders the markup `QueryTable` renders, root included. It adds no element, class, attribute or inline style, and the DOM contract gains no entry.
 
 Source: own
 

@@ -61,6 +61,30 @@ function onUpdate(next: TableQuery) {
 }
 ```
 
+## Rows held in the page: `DataTable`
+
+When every row is already in the page (a list of a few hundred, a lookup table), `DataTable` from `@dolusoft/query-table/data-table` sorts, filters, searches and pages it for you. It is `useLocalQuery` and `QueryTable` composed (ADR 0021): the same props, events, slots, methods and DOM, so the same skin and every feature. It builds the dataset from the columns, and without `v-model:query` it holds the query itself.
+
+```vue
+<script setup lang="ts">
+import { DataTable } from '@dolusoft/query-table/data-table'
+
+const columns = [
+  { field: 'id', title: 'ID', type: 'integer' as const },
+  { field: 'name', title: 'Name' }
+]
+const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Işık' }]
+</script>
+
+<template>
+  <DataTable :columns="columns" :rows="people" row-key="id" :search="['name']" sortable filterable>
+    <template #error="{ error }">Query error: {{ error.code }}</template>
+  </DataTable>
+</template>
+```
+
+`rows` is every row, `rowKey` is required and names a `string` or `integer` column (it may be hidden). It takes no `totalRows`, `cursors`, `infinite` or `rowsUpdate`: it knows the total, and it tells the change flash whether a new page comes from a new query or from changed rows. `profile` (default `'tr-2'`) is the meaning of the evaluation, `paginate: false` draws every match, and `dataset` replaces the built dataset for a field that needs `get` or `offset`. A list too large to hold in the page stays on a server with `QueryTable`. The rules are C-124 to C-127.
+
 ## Sorting
 
 A header click cycles ascending, descending, none: the third click on the same column sets `sort` to `null`. A click on another column starts at ascending. The sort is a single `{ field, direction }`, so "none" is the absence of the entry.

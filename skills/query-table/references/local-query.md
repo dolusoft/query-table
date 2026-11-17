@@ -55,3 +55,35 @@ With `shallowRef`, replace the array (`allRows.value = nextRows`) instead of mut
 Rules on one field are OR unless every rule is negative, in which case they are AND. Different fields are AND; search is AND with the filters and OR across fields marked `search: true`. **`age > 20` and `age < 40` on one field is OR, not a range.** See [composition and search](../../../docs/guide/semantics.md#composition-and-search).
 
 The protocol ships its conformance suite at `@dolusoft/query-protocol/conformance/manifest.json` and `@dolusoft/query-protocol/conformance/*` (physical `dist/conformance/` in the package). A backend claiming `tr-1` must pass the same suite with no applicable failures; passing an allow-list is only partial alignment.
+
+## DataTable
+
+`DataTable` from `@dolusoft/query-table/data-table` is the composition above in one component (ADR 0021): `useLocalQuery` and `QueryTable`, with no markup or table behavior of its own. Its props, events, slots, methods and DOM are those of `QueryTable` (C-124, C-127), so the skin and every feature carry over.
+
+```vue
+<script setup lang="ts">
+import { DataTable } from '@dolusoft/query-table/data-table'
+
+interface Person { id: number; name: string; city: string }
+const people: Person[] = [{ id: 1, name: 'Ada', city: 'İzmir' }]
+const columns = [
+  { field: 'id', title: 'ID', type: 'integer' as const, hide: true },
+  { field: 'name', title: 'Name' },
+  { field: 'city', title: 'City' }
+]
+</script>
+
+<template>
+  <DataTable :columns="columns" :rows="people" row-key="id"
+    :search="['name', 'city']" sortable filterable
+    :pagination="{ pageSizeOptions: [10, 25] }">
+    <template #error="{ error }">Query error: {{ error.code }}</template>
+  </DataTable>
+</template>
+```
+
+- `rows` is every row of the source. `rowKey` is required: a top-level field that is a `string` or `integer` column (it may be `hide: true`).
+- Without `v-model:query` the table holds the query (C-125), starting at page 1 with the first of `pageSizeOptions` (or 10). With it the query is yours, as with `QueryTable`; give it to start with a sort or a filter, or to restore a view.
+- The dataset comes from the columns (C-126): each column a field of its type, sortable and filterable only where the table and the column allow it, the fields of `search` searched. An `ip` column is not a field. Give `dataset` for a field that needs `get` or `offset`, or a queryable field with no column.
+- `profile` defaults to `'tr-2'`. `paginate: false` draws every match and no pagination block. The `error` slot is drawn in the empty row while the query is invalid.
+- `totalRows`, `cursors`, `infinite` and `rowsUpdate` are not props: the table knows the total and tells the flash a new query from changed rows.
