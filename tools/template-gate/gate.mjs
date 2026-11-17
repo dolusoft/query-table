@@ -30,17 +30,18 @@ export class GateParseError extends Error {}
 const isDirective = (prop, name) =>
   prop.type === NodeTypes.DIRECTIVE && prop.name === name
 
+// Only a bound :key counts: a static key="x" is the same for every row.
 const hasKey = element =>
   element.props.some(
     prop =>
-      (prop.type === NodeTypes.ATTRIBUTE && prop.name === 'key') ||
-      (isDirective(prop, 'bind') &&
-        prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION &&
-        prop.arg.isStatic &&
-        prop.arg.content === 'key')
+      isDirective(prop, 'bind') &&
+      prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION &&
+      prop.arg.isStatic &&
+      prop.arg.content === 'key'
   )
 
 const nativeModelTags = new Set(['input', 'select', 'textarea'])
+const nativeModifiers = new Set(['lazy', 'number', 'trim'])
 
 /** The names a v-for declares (`(item, index) in list` -> item, index). */
 const vForAliases = prop => {
@@ -62,6 +63,15 @@ const vModelProblem = (element, prop, aliases) => {
   }
   if (isNative && prop.arg) {
     return 'v-model on a native element takes no argument'
+  }
+  // A component defines its own modifiers; a native element knows three.
+  const unknownModifier = isNative
+    ? (prop.modifiers ?? [])
+        .map(modifier => modifier.content ?? modifier)
+        .find(modifier => !nativeModifiers.has(modifier))
+    : undefined
+  if (unknownModifier) {
+    return `v-model has no modifier ".${unknownModifier}" on <${element.tag}>`
   }
   if (
     element.tag === 'input' &&
@@ -105,20 +115,109 @@ const pascal = name =>
 const camel = name => name.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase())
 
 /**
- * The names a template can reach: identifiers in its expressions (a token
- * scan, so it may count too much but never too little), component tags and
- * custom directives (`v-focus` -> `vFocus`).
+ * Whether an identifier at `key` of `parent` names something rather than a
+ * property: `a.b` and `{ b: 1 }` reference `a` only.
+ */
+const isReference = (parent, key) => {
+  if (!parent) {
+    return true
+  }
+  switch (parent.type) {
+    case 'MemberExpression':
+    case 'OptionalMemberExpression':
+      return key !== 'property' || parent.computed
+    case 'ObjectProperty':
+    case 'ObjectMethod':
+    case 'ClassProperty':
+    case 'ClassMethod':
+    case 'ClassAccessorProperty':
+    case 'TSPropertySignature':
+    case 'TSMethodSignature':
+      return key !== 'key' || parent.computed
+    case 'TSQualifiedName':
+      return key !== 'right'
+    case 'TSEnumMember':
+      return key !== 'id'
+    case 'LabeledStatement':
+    case 'BreakStatement':
+    case 'ContinueStatement':
+      return key !== 'label'
+    default:
+      return true
+  }
+}
+
+/**
+ * Names a Babel AST references outside its import declarations: identifiers
+ * in a reference position, not property names or string contents.
+ */
+const referencedNames = (node, names = new Set(), parent, parentKey) => {
+  if (!node || typeof node.type !== 'string') {
+    return names
+  }
+  if (node.type === 'ImportDeclaration') {
+    return names
+  }
+  if (
+    (node.type === 'Identifier' || node.type === 'JSXIdentifier') &&
+    isReference(parent, parentKey)
+  ) {
+    names.add(node.name)
+  }
+  for (const key of Object.keys(node)) {
+    if (
+      key === 'loc' ||
+      key === 'leadingComments' ||
+      key === 'trailingComments' ||
+      key === 'innerComments'
+    ) {
+      continue
+    }
+    const value = node[key]
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        referencedNames(item, names, node, key)
+      }
+    } else if (value && typeof value === 'object') {
+      referencedNames(value, names, node, key)
+    }
+  }
+  return names
+}
+
+/**
+ * The names a template expression references. An expression that does not
+ * parse (it should not, the compiler accepted it) falls back to a token scan,
+ * which may count too much but never too little.
+ */
+const expressionNames = (source, names) => {
+  const options = { plugins: ['typescript'] }
+  let ast
+  try {
+    ast = parseExpression(source, options)
+  } catch {
+    try {
+      // v-on handlers may hold statements: `a++; b()`.
+      ast = parseScript(source, options).program
+    } catch {
+      for (const name of source.match(identifierPattern) ?? []) {
+        names.add(name)
+      }
+      return
+    }
+  }
+  referencedNames(ast, names)
+}
+
+/**
+ * The names a template can reach: the references in its expressions,
+ * component tags and custom directives (`v-focus` -> `vFocus`).
  */
 const templateNames = root => {
   const names = new Set()
-  const addText = text => {
-    for (const name of text.match(identifierPattern) ?? []) {
-      names.add(name)
-    }
-  }
   const walk = node => {
     if (node.type === NodeTypes.INTERPOLATION) {
-      addText(node.content.content ?? '')
+      expressionNames(node.content.content ?? '', names)
     }
     if (node.type === NodeTypes.ELEMENT) {
       names.add(node.tag)
@@ -130,10 +229,16 @@ const templateNames = root => {
         }
         names.add(camel(`v-${prop.name}`))
         if (prop.exp) {
-          addText(prop.exp.content ?? prop.exp.loc.source)
+          const source = prop.exp.content ?? prop.exp.loc.source
+          // v-for="(item, index) in list": only the list is a reference.
+          const list =
+            prop.name === 'for'
+              ? /\s(?:in|of)\s+([\s\S]*)$/.exec(source)?.[1]
+              : null
+          expressionNames(list ?? source, names)
         }
         if (prop.arg && !prop.arg.isStatic) {
-          addText(prop.arg.content ?? '')
+          expressionNames(prop.arg.content ?? '', names)
         }
       }
     }
@@ -142,37 +247,6 @@ const templateNames = root => {
     }
   }
   walk(root)
-  return names
-}
-
-/** Identifier names used in a Babel AST outside its import declarations. */
-const scriptNames = (node, names = new Set()) => {
-  if (!node || typeof node.type !== 'string') {
-    return names
-  }
-  if (node.type === 'ImportDeclaration') {
-    return names
-  }
-  if (node.type === 'Identifier' || node.type === 'JSXIdentifier') {
-    names.add(node.name)
-  }
-  for (const key of Object.keys(node)) {
-    if (
-      key === 'loc' ||
-      key === 'leadingComments' ||
-      key === 'trailingComments'
-    ) {
-      continue
-    }
-    const value = node[key]
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        scriptNames(item, names)
-      }
-    } else if (value && typeof value === 'object') {
-      scriptNames(value, names)
-    }
-  }
   return names
 }
 
@@ -226,6 +300,7 @@ export const checkSfc = (source, file, gates) => {
       findings.push({
         line: loc.start.line,
         column: loc.start.column,
+        offset: loc.start.offset,
         gate,
         message: detail
           ? `${gateMessages[gate]}: ${detail}`
@@ -234,7 +309,8 @@ export const checkSfc = (source, file, gates) => {
     }
   }
 
-  // Disable comments: each covers the lines of the next sibling element.
+  // Disable comments: each covers the next sibling element, by its offsets,
+  // so a sibling on the same line stays checked.
   const directives = []
   const template = descriptor.template?.ast
   const visit = (node, aliases) => {
@@ -250,8 +326,8 @@ export const checkSfc = (source, file, gates) => {
             loc: child.loc,
             gates: match[1].split(',').map(gate => gate.trim()),
             reason: match[2],
-            from: target?.loc.start.line ?? -1,
-            to: target?.loc.end.line ?? -1,
+            from: target?.loc.start.offset ?? -1,
+            to: target?.loc.end.offset ?? -1,
             used: false
           })
         }
@@ -312,7 +388,7 @@ export const checkSfc = (source, file, gates) => {
     const blocks = [descriptor.script, descriptor.scriptSetup].filter(Boolean)
     const parsed = blocks.map(block => scriptImports(block, file))
     for (const { ast } of parsed) {
-      scriptNames(ast.program, used)
+      referencedNames(ast.program, used)
     }
     // <script setup generic="T extends Query"> uses imports too.
     const generic = String(descriptor.scriptSetup?.attrs.generic ?? '')
@@ -337,14 +413,17 @@ export const checkSfc = (source, file, gates) => {
     const directive = directives.find(
       candidate =>
         candidate.gates.includes(finding.gate) &&
-        finding.line >= candidate.from &&
-        finding.line <= candidate.to
+        finding.offset >= candidate.from &&
+        finding.offset < candidate.to
     )
     if (directive) {
       directive.used = true
     }
     return !directive
   })
+  for (const finding of kept) {
+    delete finding.offset
+  }
   for (const directive of directives) {
     const problem = !directive.reason
       ? 'a disable comment needs a reason after "--"'

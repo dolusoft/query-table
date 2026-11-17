@@ -44,6 +44,25 @@ const vueImports = () => {
   }
 }
 
+/** The variable an identifier refers to, following scopes (null for globals). */
+const resolve = (context, identifier) => {
+  let scope = context.sourceCode.getScope(identifier)
+  while (scope) {
+    const variable = scope.set.get(identifier.name)
+    if (variable) {
+      return variable
+    }
+    scope = scope.upper
+  }
+  return null
+}
+
+/** The variables a declarator or parameter pattern declares, by name. */
+const declared = (context, node, name) =>
+  context.sourceCode
+    .getDeclaredVariables(node)
+    .find(variable => variable.name === name) ?? null
+
 const calleeName = node =>
   node?.type === 'CallExpression' && node.callee.type === 'Identifier'
     ? node.callee.name
@@ -73,7 +92,7 @@ const noRefAsCondition = {
       }
       if (
         node.type === 'Identifier' &&
-        refs.has(node.name) &&
+        refs.has(resolve(context, node)) &&
         !reported.has(node)
       ) {
         reported.add(node)
@@ -89,7 +108,7 @@ const noRefAsCondition = {
           node.id.type === 'Identifier' &&
           refFactories.has(imports.names.get(name))
         ) {
-          refs.add(node.id.name)
+          refs.add(declared(context, node, node.id.name))
         }
       },
       IfStatement: test,
@@ -131,9 +150,52 @@ const noMutatingProps = {
     }
   },
   create(context) {
-    // Whole-props objects (props.a.b) and destructured props (a.b).
+    // Whole-props objects (props.a.b) and destructured props (a.b), as
+    // variables so that a shadowing parameter of the same name is not a prop.
     const objects = new Set()
     const destructured = new Set()
+    /** The names an Options API component declares in `props`. */
+    const optionProps = component => {
+      const props = component.properties.find(
+        property =>
+          property.type === 'Property' && propertyName(property) === 'props'
+      )?.value
+      if (props?.type === 'ArrayExpression') {
+        return props.elements
+          .filter(element => typeof element?.value === 'string')
+          .map(element => element.value)
+      }
+      if (props?.type === 'ObjectExpression') {
+        return props.properties
+          .filter(property => property.type === 'Property')
+          .map(propertyName)
+      }
+      return []
+    }
+    /** The defineComponent({ ... }) options a `this` belongs to, or null. */
+    const thisComponent = node => {
+      let current = node.parent
+      while (current) {
+        if (
+          current.type === 'FunctionExpression' ||
+          current.type === 'FunctionDeclaration'
+        ) {
+          // A method of the options or of a nested object in them
+          // (methods: { ... }, computed: { ... }, watch: { ... }).
+          let owner = current.parent
+          while (owner && owner.type !== 'CallExpression') {
+            owner = owner.parent
+          }
+          return owner &&
+            calleeName(owner) === 'defineComponent' &&
+            owner.arguments[0]?.type === 'ObjectExpression'
+            ? owner.arguments[0]
+            : null
+        }
+        current = current.parent
+      }
+      return null
+    }
     /** The prop a member chain changes, or null. */
     const propOf = (node, minDepth) => {
       let depth = 0
@@ -142,17 +204,29 @@ const noMutatingProps = {
         depth++
         current = current.object
       }
-      if (current.type !== 'Identifier') {
-        return null
-      }
-      if (objects.has(current.name) && depth >= minDepth + 1) {
+      const firstProperty = () => {
         let first = node
         while (first.object.type === 'MemberExpression') {
           first = first.object
         }
-        return first.property.name ?? current.name
+        return first.property.name ?? first.property.value
       }
-      if (destructured.has(current.name) && depth >= minDepth) {
+      if (current.type === 'ThisExpression') {
+        if (depth < minDepth + 1) {
+          return null
+        }
+        const component = thisComponent(current)
+        const name = firstProperty()
+        return component && optionProps(component).includes(name) ? name : null
+      }
+      if (current.type !== 'Identifier') {
+        return null
+      }
+      const variable = resolve(context, current)
+      if (objects.has(variable) && depth >= minDepth + 1) {
+        return firstProperty() ?? current.name
+      }
+      if (destructured.has(variable) && depth >= minDepth) {
         return current.name
       }
       return null
@@ -170,7 +244,7 @@ const noMutatingProps = {
           return
         }
         if (node.id.type === 'Identifier') {
-          objects.add(node.id.name)
+          objects.add(declared(context, node, node.id.name))
         } else if (node.id.type === 'ObjectPattern') {
           for (const property of node.id.properties) {
             const value =
@@ -178,7 +252,7 @@ const noMutatingProps = {
                 ? property.value.left
                 : property.value
             if (value?.type === 'Identifier') {
-              destructured.add(value.name)
+              destructured.add(declared(context, node, value.name))
             }
           }
         }
@@ -193,7 +267,7 @@ const noMutatingProps = {
             fn?.type === 'ArrowFunctionExpression') &&
           fn.params[0]?.type === 'Identifier'
         ) {
-          objects.add(fn.params[0].name)
+          objects.add(declared(context, fn, fn.params[0].name))
         }
       },
       AssignmentExpression(node) {
@@ -245,6 +319,17 @@ const literalKind = node => {
 const isFunction = node =>
   node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression'
 
+/** The expression a factory returns: `() => x`, or a body of one `return x`. */
+const factoryResult = fn => {
+  if (fn.body.type !== 'BlockStatement') {
+    return fn.body
+  }
+  const returns = fn.body.body.filter(
+    statement => statement.type === 'ReturnStatement'
+  )
+  return returns.length === 1 ? returns[0].argument : null
+}
+
 const propertyName = property =>
   property.key?.type === 'Identifier' ? property.key.name : property.key?.value
 
@@ -265,6 +350,22 @@ const requireValidDefaultProp = {
   create(context) {
     const checkDefault = (name, value, types) => {
       if (isFunction(value)) {
+        // A factory: what it returns must match the prop type, unless the
+        // prop is a function itself.
+        const returned = factoryResult(value)
+        const kind = returned && literalKind(returned)
+        if (
+          kind &&
+          types &&
+          !types.includes('Function') &&
+          !types.includes(kind)
+        ) {
+          context.report({
+            node: returned,
+            messageId: 'type',
+            data: { name, kind, types: types.join(' | ') }
+          })
+        }
         return
       }
       const kind = literalKind(value)

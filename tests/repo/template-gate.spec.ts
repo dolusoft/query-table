@@ -52,7 +52,7 @@ describe('template gate checks', () => {
     ).toEqual([])
     expect(
       gatesOf(sfc('<li v-for="row in rows" key="static">{{ row }}</li>'))
-    ).toEqual([])
+    ).toEqual(['require-v-for-key'])
   })
 
   it('accepts a template v-for keyed on itself, on its children, or holding only slots', () => {
@@ -125,6 +125,32 @@ describe('template gate checks', () => {
         '<div v-for="r in rows" :key="r.id"><input v-model="r.name" /></div>'
       )
     ).toEqual([])
+    expect(problems('<input v-model.bogus="a" />')).toEqual([
+      expect.stringContaining('no modifier ".bogus"')
+    ])
+    expect(
+      problems('<input v-model.lazy.number="a" /><Field v-model.custom="b" />')
+    ).toEqual([])
+  })
+
+  it('does not count a string or a property name as a use of an import', () => {
+    const unused = (template: string, script = '') =>
+      checkSfc(
+        sfc(template, `import { unusedHelper } from './helpers'\n${script}`),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(unused(`<p>{{ 'unusedHelper' }}</p>`)).toBe(1)
+    expect(unused('<p>{{ state.unusedHelper }}</p>')).toBe(1)
+    expect(unused('<p :a="{ unusedHelper: 1 }" />')).toBe(1)
+    expect(
+      unused('<p />', 'const o = { unusedHelper: 1 }; o.unusedHelper')
+    ).toBe(1)
+    expect(unused('<p>{{ unusedHelper() }}</p>')).toBe(0)
+    expect(unused('<p :a="{ unusedHelper }" />')).toBe(0)
+    expect(unused('<p @click="x++; unusedHelper()" />')).toBe(0)
+    expect(unused('<li v-for="r in unusedHelper" :key="r" />')).toBe(0)
+    expect(unused('<p />', 'const o = { [unusedHelper]: 1 }')).toBe(0)
   })
 
   it('reports an import the script and the template both leave unused', () => {
@@ -175,6 +201,15 @@ describe('template gate disable comments', () => {
         sfc(`<!-- template-gate-disable-next-line no-v-html -- trusted markup -->
 <div v-html="a" />
 <div v-html="b" />`)
+      )
+    ).toEqual(['no-v-html'])
+  })
+
+  it('leaves a sibling on the same line checked', () => {
+    expect(
+      gatesOf(
+        sfc(`<!-- template-gate-disable-next-line no-v-html -- trusted markup -->
+<div v-html="a" /><div v-html="b" />`)
       )
     ).toEqual(['no-v-html'])
   })
@@ -264,6 +299,17 @@ describe('template gate CLI', () => {
   it('exits with 2 on a bad configuration', () => {
     const config = write('config.json', '{ "gates": ["no-such-gate"] }')
     expect(run('--config', config).status).toBe(2)
+    for (const [name, content] of [
+      ['string-gates.json', '{ "gates": "no-v-html" }'],
+      ['number-gate.json', '{ "gates": [1] }'],
+      ['string-ignore.json', '{ "gates": ["no-v-html"], "ignore": "dist" }'],
+      ['array.json', '[]'],
+      ['null.json', 'null']
+    ]) {
+      const result = run('--config', write(name, content))
+      expect(result.status).toBe(2)
+      expect(result.stderr).toMatch(/^template-gate: /)
+    }
     expect(run('--format=xml').status).toBe(2)
     expect(run(join(dir, 'missing.vue')).status).toBe(2)
   })

@@ -66,7 +66,10 @@ const total = computed(() => 1)
       // A ref() that is not Vue's is not a ref.
       `const ref = (x: boolean) => x
 const open = ref(false)
-if (open) {}`
+if (open) {}`,
+      // A parameter that shadows the ref is not the ref.
+      `${head}function f(open: boolean) { if (open) {} }`,
+      `${head}const g = (total: number) => (total ? 1 : 2)`
     ],
     invalid: [
       { code: `${head}if (open) {}`, errors: 1 },
@@ -88,7 +91,16 @@ copy.push('x')`,
       `const props = defineProps<{ a: number }>()
 props.a = 1`,
       `const items: string[] = []
-items.push('x')`
+items.push('x')`,
+      // A parameter that shadows the props object is not the props.
+      `const props = defineProps<{ items: string[] }>()
+function f(props: { items: string[] }) { props.items.push('x') }`,
+      // Options API: data, not a prop, may change in place.
+      `export default defineComponent({
+  props: { items: Array },
+  data: () => ({ rows: [] }),
+  methods: { add() { this.rows.push(1) } }
+})`
     ],
     invalid: [
       {
@@ -118,6 +130,20 @@ items.sort()`,
   }
 })`,
         errors: 1
+      },
+      {
+        code: `export default defineComponent({
+  props: { items: Array },
+  methods: { add() { this.items.push(1) } }
+})`,
+        errors: [{ message: /"items"/ }]
+      },
+      {
+        code: `export default defineComponent({
+  props: ['meta'],
+  watch: { x() { this.meta.a = 1 } }
+})`,
+        errors: 1
       }
     ]
   })
@@ -132,7 +158,9 @@ describe('vue-script/require-valid-default-prop', () => {
         `withDefaults(defineProps<{ items?: string[] }>(), { items: () => [] })`,
         `defineProps({ name: { type: String, default: 'x' } })`,
         `defineProps({ list: { type: Array, default: () => [] } })`,
-        `defineProps({ size: { type: [Number, String], default: 'auto' } })`
+        `defineProps({ size: { type: [Number, String], default: 'auto' } })`,
+        `defineProps({ meta: { type: Object, default() { return {} } } })`,
+        `defineProps({ fn: { type: Function, default: () => 'x' } })`
       ],
       invalid: [
         {
@@ -149,6 +177,14 @@ describe('vue-script/require-valid-default-prop', () => {
         },
         {
           code: `defineComponent({ props: { on: { type: Boolean, default: 1 } } })`,
+          errors: 1
+        },
+        {
+          code: `defineProps({ list: { type: Array, default: () => ({}) } })`,
+          errors: [{ message: /is a Object, but the prop is Array/ }]
+        },
+        {
+          code: `defineProps({ meta: { type: Object, default() { return [] } } })`,
           errors: 1
         }
       ]

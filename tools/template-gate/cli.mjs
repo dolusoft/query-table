@@ -44,8 +44,19 @@ try {
 } catch (error) {
   fail(`cannot read the configuration: ${error.message}`)
 }
-const unknown = (config.gates ?? []).filter(gate => !(gate in gateMessages))
-if (!Array.isArray(config.gates) || unknown.length) {
+const isStringList = value =>
+  Array.isArray(value) && value.every(item => typeof item === 'string')
+if (!config || typeof config !== 'object' || Array.isArray(config)) {
+  fail('the configuration must be a JSON object')
+}
+if (!isStringList(config.gates)) {
+  fail('"gates" must be a list of gate names')
+}
+if (config.ignore !== undefined && !isStringList(config.ignore)) {
+  fail('"ignore" must be a list of paths')
+}
+const unknown = config.gates.filter(gate => !Object.hasOwn(gateMessages, gate))
+if (unknown.length) {
   fail(`"gates" must list known gates; unknown: ${unknown.join(', ')}`)
 }
 
