@@ -285,7 +285,7 @@ Source: own
 
 ### C-55 expandAll
 
-`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
+`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable` or with `expandMode: 'single'` (C-123). It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
 
 ### C-56 Cursor paging
 
@@ -685,6 +685,12 @@ Source: own
 
 ### C-122 Telling the consumer about expansion
 
-With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed, with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without `rowKey` the key is the row's index and every change of `rows` closes every row without an event (C-26), so a list kept from the events holds only until `rows` change. `useQueryTable` calls its `onRowExpansionChange` option the same way, once per `expansion.toggle` that opened or closed a row; the component's `rowExpansionChange` is that call. Without a listener nothing changes.
+With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed (with `expandMode: 'single'` a press that also closes the open row emits for that row first, C-123), with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without `rowKey` the key is the row's index and every change of `rows` closes every row without an event (C-26), so a list kept from the events holds only until `rows` change. `useQueryTable` calls its `onRowExpansionChange` option the same way, once per `expansion.toggle` that opened or closed a row; the component's `rowExpansionChange` is that call. Without a listener nothing changes.
+
+Source: own
+
+### C-123 One row open at a time
+
+With `hasSubtable` and `expandMode: 'single'` at most one row is open. A press of a closed row's expand button opens it and closes the open row, in one change of the expansion state; a press of the open row closes it. `rowExpansionChange` (C-122) is emitted for the row that closed, with `expanded: false`, and then for the row that opened, so a list kept from the events never holds two rows. The `isExpanded` seed (C-26) opens the first row of `rows`, in their order, that asks for it, and that row replaces the one that was open; when no row asks, the open row stays open if it is still in `rows`. `expandAll()` does nothing; `collapseAll()` closes the open row (C-55). Turning `expandMode` to `'single'` while several rows are open keeps the first of them in the order of `rows` and closes the others, and emits nothing. A row that leaves `rows` closes as in C-26 and no other row opens in its place. The button, `aria-expanded`, `data-expanded`, the `subtable` slot and the keys are those of C-26, and the DOM contract gains no entry. `useQueryTable` takes the same `expandMode` option. Defaults to `'multiple'`: with it expansion is the one of 3.18.
 
 Source: own

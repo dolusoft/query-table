@@ -436,6 +436,8 @@ Pass `row-key` when rows can reorder or change between pages and you use `has-su
 
 The expanded state stays the table's. To know which rows are open, listen to `rowExpansionChange`: each press of an expand button emits `{ row, rowIndex, rowKey, expanded }` once. Nothing else emits it, so keep your list in step with what you do yourself (`expandAll()`, `collapseAll()`, `isExpanded`, a page change that closes rows). Give `row-key` when you keep such a list: without it `rowKey` in the payload is the row's index, and every change of `rows` (a sort, a refetch of the same page) closes every row without an event, so the list must be emptied then. With `virtual` a row that scrolls out of view unmounts its `subtable` content but stays open and emits nothing, so do not read the open rows from that content (C-122).
 
+For an accordion pass `expand-mode="single"`: opening a row closes the one that was open. One press then emits twice, first `expanded: false` for the row that closed, then `expanded: true` for the row that opened, so a list kept from the events never holds two rows. `isExpanded` opens only the first row that asks, `expandAll()` does nothing and `collapseAll()` closes the open row (C-123).
+
 A row may carry an `isExpanded` boolean to start open or closed (a print or report view opens every row this way): each time `rows` changes, `true` opens the row, `false` closes it and a row without the field keeps its state. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again.
 
 ## Labels
