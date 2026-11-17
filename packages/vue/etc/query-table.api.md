@@ -130,6 +130,9 @@ export { _default as QueryTable }
 export default _default;
 
 // @public
+export type ExpandMode = 'multiple' | 'single';
+
+// @public
 export type FilterBound = 'lower' | 'upper';
 
 export { FilterCondition }
@@ -467,6 +470,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     autoWidthMax?: number;
     columns: Column[];
     cursors?: PageCursors | null;
+    expandMode?: ExpandMode;
     filterable?: boolean;
     filterDebounce?: number;
     flash?: boolean | FlashOptions;
@@ -530,6 +534,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(op
 export interface UseQueryTableOptions<T extends object, Q extends Query = TableQuery> {
     columns: MaybeRefOrGetter<Column[]>;
     cursors?: MaybeRefOrGetter<PageCursors | null | undefined>;
+    expandMode?: MaybeRefOrGetter<ExpandMode | undefined>;
     filterDebounce?: MaybeRefOrGetter<number | undefined>;
     hasSubtable?: MaybeRefOrGetter<boolean | undefined>;
     onColumnsChange?: (columns: Column[], reason: ColumnChangeReason) => void;

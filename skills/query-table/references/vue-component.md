@@ -18,6 +18,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages, and for row pinning. |
 | `hasSubtable`, `hasRightPanel` | Expand button with the `subtable` slot; a button that emits `rowRightPanelClick`. |
 | `rowExpandable` | `(row, index) => boolean`, with `hasSubtable`: a row it returns `false` for has no expand button and never opens (C-98). |
+| `expandMode` | `'multiple'` (default) or `'single'`, with `hasSubtable`: `'single'` is an accordion, opening a row closes the open one and `rowExpansionChange` tells the closed row first; `expandAll()` does nothing (C-123). |
 | `rowKind` | `(row, index) => string \| null \| undefined`: written as `data-row-kind` on the row, for your CSS (a totals or "Others" row); the table takes no row class or style (C-97). |
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. `labels.filterCondition(condition, type)` names a condition: the label under a filter input and each `label` of the `filter-menu` slot's `conditions` (default: the English names of the protocol's `conditionOptions`). |

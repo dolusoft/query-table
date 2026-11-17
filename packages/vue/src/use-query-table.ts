@@ -63,6 +63,7 @@ import type {
   Column,
   ColumnChangeReason,
   ColumnControl,
+  ExpandMode,
   FilterCondition,
   PageCursors,
   PaginationSlotProps,
@@ -138,6 +139,11 @@ export interface UseQueryTableOptions<
    * function is read as a getter.
    */
   rowExpandable?: MaybeRefOrGetter<TableProps<T>['rowExpandable']>
+  /**
+   * `'single'` keeps at most one row open: opening a row closes the open one
+   * (C-123). Defaults to `'multiple'`.
+   */
+  expandMode?: MaybeRefOrGetter<ExpandMode | undefined>
   /** Page sizes offered. Defaults to `[10, 20, 30, 50, 100]`. */
   pageSizeOptions?: MaybeRefOrGetter<number[] | undefined>
   /** Called once per user action that changes the query, with a new object. */
@@ -245,11 +251,15 @@ export interface QueryTableExpansion<T extends object> {
   isExpanded: (row: T, index: number) => boolean
   /**
    * Opens or closes the row and calls `onRowExpansionChange` (C-122);
-   * nothing for a row that cannot expand (C-98).
+   * nothing for a row that cannot expand (C-98). With `expandMode: 'single'`
+   * opening a row closes the open one, which is told first (C-123).
    */
   toggle: (row: T, index: number) => void
   collapseAll: () => void
-  /** Opens every row given that can expand; nothing is fetched. */
+  /**
+   * Opens every row given that can expand; nothing is fetched. Does nothing
+   * with `expandMode: 'single'` (C-123).
+   */
   expandAll: () => void
 }
 
@@ -835,6 +845,16 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   ) => {
     table.setExpanded(old => update(old === true ? {} : { ...old }))
   }
+  // C-123: with `'single'` at most one row is open.
+  const single = () => toValue(options.expandMode) === 'single'
+  // The open row that comes first in `rows` stays, the others close.
+  const keepFirstOpen = (
+    state: Record<string, boolean>,
+    current: readonly T[]
+  ) => {
+    const first = current.map(idOf).find(id => state[id])
+    return first === undefined ? {} : { [first]: true }
+  }
 
   const expansion: QueryTableExpansion<T> = {
     keyOf,
@@ -847,8 +867,22 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       }
       const id = idOf(row, index)
       const expanded = !expandedState.value[id]
+      // C-123: opening a row in single mode closes the open one, in the same
+      // state change, and tells about it first.
+      const closed: Array<{ row: T; index: number }> = []
+      if (expanded && single()) {
+        rows().forEach((other, otherIndex) => {
+          const otherId = idOf(other, otherIndex)
+          if (otherId !== id && expandedState.value[otherId]) {
+            closed.push({ row: other, index: otherIndex })
+          }
+        })
+      }
       setExpanded(state => {
         if (expanded) {
+          if (single()) {
+            return { [id]: true }
+          }
           state[id] = true
         } else {
           delete state[id]
@@ -857,6 +891,14 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
       })
       // Only this path tells (C-122): the seed, the pruning, `expandAll` and
       // `collapseAll` change the state without a press.
+      for (const other of closed) {
+        options.onRowExpansionChange?.({
+          row: other.row,
+          rowIndex: other.index,
+          rowKey: keyOf(other.row, other.index),
+          expanded: false
+        })
+      }
       options.onRowExpansionChange?.({
         row,
         rowIndex: index,
@@ -866,7 +908,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     },
     collapseAll: () => table.setExpanded({}),
     expandAll: () => {
-      if (hasSubtable()) {
+      // C-123: in single mode there is no "every row open".
+      if (hasSubtable() && !single()) {
         setExpanded(state => {
           rows().forEach((row, index) => {
             if (canExpand(row, index)) {
@@ -896,6 +939,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
             }
           }
         }
+        // C-123: in single mode the first row that asks to start open wins.
+        let firstSeeded: string | undefined
         if (hasSubtable()) {
           current.forEach((row, index) => {
             const seeded = (row as { isExpanded?: unknown }).isExpanded
@@ -904,16 +949,29 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
               delete state[idOf(row, index)]
             } else if (seeded === true) {
               state[idOf(row, index)] = true
+              firstSeeded ??= idOf(row, index)
             } else if (seeded === false) {
               delete state[idOf(row, index)]
             }
           })
+        }
+        if (single()) {
+          return firstSeeded === undefined
+            ? keepFirstOpen(state, current)
+            : { [firstSeeded]: true }
         }
         return state
       })
     },
     { immediate: true }
   )
+
+  // C-123: turning single mode on keeps the first open row of `rows`.
+  watch(single, isSingle => {
+    if (isSingle) {
+      setExpanded(state => keepFirstOpen(state, rows()))
+    }
+  })
 
   // ---- selection (C-59) -----------------------------------------------------
 
