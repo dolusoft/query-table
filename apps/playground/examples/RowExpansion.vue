@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue'
 
 import { Button } from '@/ui/button'
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
 import {
   QueryTable,
   type QueryTableExpose,
@@ -25,11 +27,15 @@ import {
 // (C-122), so it keeps the open rows it needs, for an export say, without
 // watching the `subtable` content mount. Calls the page makes itself, such
 // as `collapseAll()`, emit nothing: the page updates its own list.
+// `expand-mode="single"` makes it an accordion (C-123): opening a row closes
+// the open one, and the closed row is told first, so the list never holds
+// two rows.
 const data = currentDataset()
 const columns = listColumns(data)
 const { query, result } = useFakeServer(data.createRows(), { pageSize: 10 })
 const table = ref<QueryTableExpose | null>(null)
 const open = ref(new Set<string | number>())
+const accordion = ref(false)
 const onExpansion = ({ rowKey, expanded }: RowExpansionPayload<DemoRow>) => {
   const next = new Set(open.value)
   if (expanded) {
@@ -63,6 +69,10 @@ const detailColumns = data.detail.columns()
       <Button variant="outline" size="sm" @click="collapseAll()">
         Collapse all
       </Button>
+      <Label class="font-normal">
+        <Checkbox v-model="accordion" />
+        One row at a time
+      </Label>
       <span class="text-muted-foreground">Open rows: {{ openKeys }}</span>
     </div>
     <QueryTable
@@ -75,6 +85,7 @@ const detailColumns = data.detail.columns()
       :auto-width-max="240"
       row-key="id"
       has-subtable
+      :expand-mode="accordion ? 'single' : 'multiple'"
       sortable
       @row-expansion-change="onExpansion"
     >

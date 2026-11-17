@@ -763,3 +763,147 @@ describe('C-122 Telling the consumer about expansion', () => {
     }
   })
 })
+
+describe('C-123 One row open at a time', () => {
+  const buttons = (m: Mounted) => m.wrapper.findAll('.qt-expand')
+  const openIndexes = (m: Mounted) =>
+    m.wrapper
+      .findAll('tr[data-expanded]')
+      .map(row => row.attributes('data-row-index'))
+  const listen = (props: Record<string, unknown> = {}) => {
+    const payloads: RowExpansionPayload<unknown>[] = []
+    const m = mountIt(
+      {
+        hasSubtable: true,
+        expandMode: 'single',
+        onRowExpansionChange: (payload: RowExpansionPayload<unknown>) =>
+          payloads.push(payload),
+        ...props
+      },
+      { slots: subtable }
+    )
+    return { m, payloads }
+  }
+
+  it('opening a row closes the open one, and tells the closed row first', async () => {
+    const { m, payloads } = listen({ rowKey: 'id' })
+    await buttons(m)[1].trigger('click')
+    await buttons(m)[3].trigger('click')
+    expect(openIndexes(m)).toEqual(['3'])
+    expect(m.wrapper.findAll('.qt-subtable-row')).toHaveLength(1)
+    expect(buttons(m)[1].attributes('aria-expanded')).toBe('false')
+    expect(payloads).toEqual([
+      { row: makeRows()[1], rowIndex: 1, rowKey: 2, expanded: true },
+      { row: makeRows()[1], rowIndex: 1, rowKey: 2, expanded: false },
+      { row: makeRows()[3], rowIndex: 3, rowKey: 4, expanded: true }
+    ])
+    expect(m.events).toEqual([])
+  })
+
+  it('a press of the open row closes it, with one event', async () => {
+    const { m, payloads } = listen()
+    await buttons(m)[0].trigger('click')
+    await buttons(m)[0].trigger('click')
+    expect(openIndexes(m)).toEqual([])
+    expect(payloads.map(p => [p.rowIndex, p.expanded])).toEqual([
+      [0, true],
+      [0, false]
+    ])
+  })
+
+  it('the seed opens the first row that asks, and replaces the open row', async () => {
+    const seeded = makeRows().map((row, i) => ({
+      ...row,
+      isExpanded: i === 2 || i === 4
+    }))
+    const { m, payloads } = listen({ rowKey: 'id', rows: seeded })
+    await flush()
+    expect(openIndexes(m)).toEqual(['2'])
+
+    // No row asks: the open row stays.
+    await m.wrapper.setProps({ rows: makeRows() })
+    expect(openIndexes(m)).toEqual(['2'])
+
+    // Row 1 asks: it replaces row 2.
+    await m.wrapper.setProps({
+      rows: makeRows().map((row, i) => ({ ...row, isExpanded: i === 1 }))
+    })
+    expect(openIndexes(m)).toEqual(['1'])
+    expect(payloads).toEqual([])
+  })
+
+  it('expandAll does nothing; collapseAll closes the open row', async () => {
+    const { m, payloads } = listen({ rowKey: 'id' })
+    const exposed = m.wrapper.vm as unknown as {
+      expandAll(): void
+      collapseAll(): void
+    }
+    exposed.expandAll()
+    await flush()
+    expect(openIndexes(m)).toEqual([])
+    await buttons(m)[2].trigger('click')
+    exposed.expandAll()
+    await flush()
+    expect(openIndexes(m)).toEqual(['2'])
+    exposed.collapseAll()
+    await flush()
+    expect(openIndexes(m)).toEqual([])
+    expect(payloads).toHaveLength(1)
+  })
+
+  it('turning single on keeps the first open row of rows, without an event', async () => {
+    const { m, payloads } = listen({ rowKey: 'id', expandMode: 'multiple' })
+    await buttons(m)[3].trigger('click')
+    await buttons(m)[1].trigger('click')
+    expect(openIndexes(m)).toEqual(['1', '3'])
+    await m.wrapper.setProps({ expandMode: 'single' })
+    expect(openIndexes(m)).toEqual(['1'])
+    expect(payloads).toHaveLength(2)
+  })
+
+  it('a row that leaves rows closes, and no other row opens', async () => {
+    const { m } = listen({ rowKey: 'id' })
+    await buttons(m)[0].trigger('click')
+    await m.wrapper.setProps({ rows: makeRows().slice(1) })
+    await flush()
+    expect(openIndexes(m)).toEqual([])
+  })
+
+  it('multiple stays the default: two rows open', async () => {
+    const { m } = listen({ expandMode: undefined })
+    await buttons(m)[0].trigger('click')
+    await buttons(m)[1].trigger('click')
+    expect(openIndexes(m)).toEqual(['0', '1'])
+  })
+
+  it('useQueryTable takes expandMode and tells the closed row first', () => {
+    const payloads: RowExpansionPayload<Row>[] = []
+    const scope = effectScope()
+    try {
+      const state = scope.run(() =>
+        useQueryTable<Row>({
+          query: makeQuery(),
+          columns: makeColumns(),
+          rows: makeRows(),
+          rowKey: 'id',
+          hasSubtable: true,
+          expandMode: 'single',
+          onQueryChange: () => {},
+          onRowExpansionChange: payload => payloads.push(payload)
+        })
+      )!
+      const rows = makeRows()
+      state.expansion.toggle(rows[0], 0)
+      state.expansion.toggle(rows[4], 4)
+      expect(state.expansion.isExpanded(rows[0], 0)).toBe(false)
+      expect(state.expansion.isExpanded(rows[4], 4)).toBe(true)
+      expect(payloads.map(p => [p.rowKey, p.expanded])).toEqual([
+        [1, true],
+        [1, false],
+        [5, true]
+      ])
+    } finally {
+      scope.stop()
+    }
+  })
+})

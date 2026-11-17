@@ -30,6 +30,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. A row can start expanded with its `isExpanded` field (see `rows`). Defaults to `false`. |
 | `rowExpandable` | `((row: T, index: number) => boolean)` |  | `undefined` | Which rows can expand, with `hasSubtable` (C-98): called with the row and its index in `rows`. A row it returns `false` for gets an empty expand cell (no button), never draws the `subtable` slot, is skipped by `expandAll()` and ignores its `isExpanded` field. Absent, every row can expand. |
+| `expandMode` | `ExpandMode` |  | `"multiple"` | How many rows may be open, with `hasSubtable` (C-123). `'single'` is an accordion: opening a row closes the open one (`rowExpansionChange` tells the closed row first), the `isExpanded` seed opens only the first row that asks, and `expandAll()` does nothing. Defaults to `'multiple'`. |
 | `rowKind` | `((row: T, index: number) => string \| null \| undefined)` |  | `undefined` | A kind for a row, written as `data-row-kind` on its `tr` (C-97): called with the row and its index in `rows`. Data, not styling: the table draws nothing by it, and the consumer's CSS selects `tr[data-row-kind="total"]`. An empty string, `null` or `undefined` writes no attribute. |
 | `groupBy` | `((row: T, index: number) => string \| number \| null \| undefined)` |  | `undefined` | Group the rows (C-103): called with each row that is not pinned and its index in `rows`, it returns the row's group key. A run of consecutive rows with the same key is one group, drawn under one `tr.qt-group-row` that holds the `group` slot; the table never reorders, so sort the rows by group yourself. `null` or `undefined` puts a row in no group. Group rows are not rows of `rows`: indexes, the selection and `scrollToIndex` count only the rows given. |
 | `hasRightPanel` | `boolean` |  | `false` | Add a column with a button that emits `rowRightPanelClick`. Defaults to `false`. |
@@ -56,7 +57,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `update:columns` | `[columns: Column[], reason: ColumnChangeReason]` | The user changed the layout: visibility, order, pinning or a width (C-68). A new array; changed columns are new objects, the others are yours. Apply it with `v-model:columns`, or the table draws the old one. |
 | `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
 | `rowFocus` | `[payload: RowFocusPayload<T>]` | With `rowNavigation`: a key moved the focus to another row (C-109), once the focus is there. Once per key press; a click or Tab does not emit it. |
-| `rowExpansionChange` | `[payload: RowExpansionPayload<T>]` | With `hasSubtable`: the user opened or closed a row with its expand button (C-122), once per press. The state stays the table's (C-26): `isExpanded`, the pruning when `rows` change, `expandAll()`, `collapseAll()` and a row leaving the window of a `virtual` body emit nothing. |
+| `rowExpansionChange` | `[payload: RowExpansionPayload<T>]` | With `hasSubtable`: the user opened or closed a row with its expand button (C-122), once per press; with `expandMode: 'single'` a press that closes the open row emits for it first (C-123). The state stays the table's (C-26): `isExpanded`, the pruning when `rows` change, `expandAll()`, `collapseAll()` and a row leaving the window of a `virtual` body emit nothing. |
 
 ### Slots
 
@@ -373,6 +374,13 @@ export interface TableProps<
    */
   rowExpandable?: (row: T, index: number) => boolean
   /**
+   * How many rows may be open, with `hasSubtable` (C-123). `'single'` is an
+   * accordion: opening a row closes the open one (`rowExpansionChange` tells
+   * the closed row first), the `isExpanded` seed opens only the first row
+   * that asks, and `expandAll()` does nothing. Defaults to `'multiple'`.
+   */
+  expandMode?: ExpandMode
+  /**
    * A kind for a row, written as `data-row-kind` on its `tr` (C-97): called
    * with the row and its index in `rows`. Data, not styling: the table draws
    * nothing by it, and the consumer's CSS selects
@@ -530,6 +538,9 @@ export interface RowFocusPayload<T> {
   /** The key that moved the focus. */
   key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'
 }
+
+/** How many rows may be open at once (C-123). */
+export type ExpandMode = 'multiple' | 'single'
 
 /** Payload of the `rowExpansionChange` event (C-122). */
 export interface RowExpansionPayload<T> {
@@ -735,7 +746,9 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
   rowFocus: [payload: RowFocusPayload<T>]
   /**
    * With `hasSubtable`: the user opened or closed a row with its expand
-   * button (C-122), once per press. The state stays the table's (C-26):
+   * button (C-122), once per press; with `expandMode: 'single'` a press
+   * that closes the open row emits for it first (C-123). The state stays
+   * the table's (C-26):
    * `isExpanded`, the pruning when `rows` change, `expandAll()`,
    * `collapseAll()` and a row leaving the window of a `virtual` body emit
    * nothing.
@@ -1400,7 +1413,7 @@ Source: own
 
 #### C-55 expandAll
 
-`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
+`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable` or with `expandMode: 'single'` (C-123). It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing.
 
 #### C-56 Cursor paging
 
@@ -1800,7 +1813,13 @@ Source: own
 
 #### C-122 Telling the consumer about expansion
 
-With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed, with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without `rowKey` the key is the row's index and every change of `rows` closes every row without an event (C-26), so a list kept from the events holds only until `rows` change. `useQueryTable` calls its `onRowExpansionChange` option the same way, once per `expansion.toggle` that opened or closed a row; the component's `rowExpansionChange` is that call. Without a listener nothing changes.
+With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed (with `expandMode: 'single'` a press that also closes the open row emits for that row first, C-123), with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without `rowKey` the key is the row's index and every change of `rows` closes every row without an event (C-26), so a list kept from the events holds only until `rows` change. `useQueryTable` calls its `onRowExpansionChange` option the same way, once per `expansion.toggle` that opened or closed a row; the component's `rowExpansionChange` is that call. Without a listener nothing changes.
+
+Source: own
+
+#### C-123 One row open at a time
+
+With `hasSubtable` and `expandMode: 'single'` at most one row is open. A press of a closed row's expand button opens it and closes the open row, in one change of the expansion state; a press of the open row closes it. `rowExpansionChange` (C-122) is emitted for the row that closed, with `expanded: false`, and then for the row that opened, so a list kept from the events never holds two rows. The `isExpanded` seed (C-26) opens the first row of `rows`, in their order, that asks for it, and that row replaces the one that was open; when no row asks, the open row stays open if it is still in `rows`. `expandAll()` does nothing; `collapseAll()` closes the open row (C-55). Turning `expandMode` to `'single'` while several rows are open keeps the first of them in the order of `rows` and closes the others, and emits nothing. A row that leaves `rows` closes as in C-26 and no other row opens in its place. The button, `aria-expanded`, `data-expanded`, the `subtable` slot and the keys are those of C-26, and the DOM contract gains no entry. `useQueryTable` takes the same `expandMode` option. Defaults to `'multiple'`: with it expansion is the one of 3.18.
 
 Source: own
 
