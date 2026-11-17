@@ -291,8 +291,12 @@ const templateNames = root => {
       names.add(pascal(node.tag))
       names.add(camel(node.tag))
       // <Form.Input />: a namespaced component uses its root binding.
+      // <form-parts.Input /> resolves to FormParts: count every spelling.
       if (node.tag.includes('.')) {
-        names.add(node.tag.split('.')[0])
+        const rootName = node.tag.split('.')[0]
+        names.add(rootName)
+        names.add(pascal(rootName))
+        names.add(camel(rootName))
       }
       // v-for aliases cover the element itself; slot props its children.
       let own = shadowed

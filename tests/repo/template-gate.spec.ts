@@ -181,6 +181,15 @@ describe('template gate checks', () => {
       ).length
     expect(namespaced('<Form.Input />')).toBe(0)
     expect(namespaced('<Other.Input />')).toBe(1)
+    const kebab = (template: string, local: string) =>
+      checkSfc(
+        sfc(template, `import * as ${local} from './form-components'`),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(kebab('<form-parts.Input />', 'FormParts')).toBe(0)
+    expect(kebab('<form-parts.Input />', 'formParts')).toBe(0)
+    expect(kebab('<other-parts.Input />', 'FormParts')).toBe(1)
     // Outside the slot the name is the import again.
     expect(
       unused(
