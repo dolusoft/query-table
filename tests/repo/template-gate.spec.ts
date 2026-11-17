@@ -172,6 +172,15 @@ describe('template gate checks', () => {
         '<li v-for="unusedHelper in rows" :key="unusedHelper">{{ unusedHelper }}</li>'
       )
     ).toBe(1)
+    // A namespaced component tag uses the root of its name.
+    const namespaced = (template: string) =>
+      checkSfc(
+        sfc(template, "import * as Form from './form-components'"),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(namespaced('<Form.Input />')).toBe(0)
+    expect(namespaced('<Other.Input />')).toBe(1)
     // Outside the slot the name is the import again.
     expect(
       unused(

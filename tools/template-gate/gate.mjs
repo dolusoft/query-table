@@ -290,6 +290,10 @@ const templateNames = root => {
       names.add(node.tag)
       names.add(pascal(node.tag))
       names.add(camel(node.tag))
+      // <Form.Input />: a namespaced component uses its root binding.
+      if (node.tag.includes('.')) {
+        names.add(node.tag.split('.')[0])
+      }
       // v-for aliases cover the element itself; slot props its children.
       let own = shadowed
       const vFor = node.props.find(prop => isDirective(prop, 'for'))
