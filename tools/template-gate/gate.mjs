@@ -210,43 +210,129 @@ const expressionNames = (source, names) => {
 }
 
 /**
- * The names a template can reach: the references in its expressions,
+ * What a binding pattern (a slot's props, a v-for alias) declares, and the
+ * names its default values and computed keys reference. A pattern that does
+ * not parse declares nothing and references every token in it.
+ */
+const patternScope = source => {
+  const bound = new Set()
+  const references = new Set()
+  let params
+  try {
+    params = parseExpression(`(${source}) => 0`, {
+      plugins: ['typescript']
+    }).params
+  } catch {
+    for (const name of source.match(identifierPattern) ?? []) {
+      references.add(name)
+    }
+    return { bound, references }
+  }
+  const walk = node => {
+    switch (node?.type) {
+      case 'Identifier':
+        bound.add(node.name)
+        break
+      case 'AssignmentPattern':
+        walk(node.left)
+        referencedNames(node.right, references)
+        break
+      case 'ObjectPattern':
+        for (const property of node.properties) {
+          if (property.type === 'RestElement') {
+            walk(property.argument)
+            continue
+          }
+          if (property.computed) {
+            referencedNames(property.key, references)
+          }
+          walk(property.value)
+        }
+        break
+      case 'ArrayPattern':
+        node.elements.forEach(walk)
+        break
+      case 'RestElement':
+        walk(node.argument)
+        break
+      default:
+    }
+  }
+  params.forEach(walk)
+  return { bound, references }
+}
+
+/**
+ * The names a template can reach from the script: the references in its
+ * expressions that no slot binding or v-for alias around them shadows,
  * component tags and custom directives (`v-focus` -> `vFocus`).
  */
 const templateNames = root => {
   const names = new Set()
-  const walk = node => {
-    if (node.type === NodeTypes.INTERPOLATION) {
-      expressionNames(node.content.content ?? '', names)
+  const addFrom = (found, shadowed) => {
+    for (const name of found) {
+      if (!shadowed.has(name)) {
+        names.add(name)
+      }
     }
+  }
+  const expression = (source, shadowed) => {
+    const found = new Set()
+    expressionNames(source, found)
+    addFrom(found, shadowed)
+  }
+  const walk = (node, shadowed) => {
+    if (node.type === NodeTypes.INTERPOLATION) {
+      expression(node.content.content ?? '', shadowed)
+    }
+    let inner = shadowed
     if (node.type === NodeTypes.ELEMENT) {
       names.add(node.tag)
       names.add(pascal(node.tag))
       names.add(camel(node.tag))
+      // v-for aliases cover the element itself; slot props its children.
+      let own = shadowed
+      const vFor = node.props.find(prop => isDirective(prop, 'for'))
+      if (vFor?.exp) {
+        const source = vFor.exp.content ?? vFor.exp.loc.source
+        const match = /^\s*([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)$/.exec(source)
+        if (match) {
+          const alias = match[1].replace(/^\(([\s\S]*)\)$/, '$1')
+          const scope = patternScope(alias)
+          addFrom(scope.references, shadowed)
+          expression(match[2], shadowed)
+          own = new Set([...shadowed, ...scope.bound])
+        } else {
+          expression(source, shadowed)
+        }
+      }
+      inner = own
       for (const prop of node.props) {
         if (prop.type !== NodeTypes.DIRECTIVE) {
           continue
         }
         names.add(camel(`v-${prop.name}`))
-        if (prop.exp) {
-          const source = prop.exp.content ?? prop.exp.loc.source
-          // v-for="(item, index) in list": only the list is a reference.
-          const list =
-            prop.name === 'for'
-              ? /\s(?:in|of)\s+([\s\S]*)$/.exec(source)?.[1]
-              : null
-          expressionNames(list ?? source, names)
-        }
         if (prop.arg && !prop.arg.isStatic) {
-          expressionNames(prop.arg.content ?? '', names)
+          expression(prop.arg.content ?? '', own)
         }
+        if (!prop.exp || prop.name === 'for') {
+          continue
+        }
+        const source = prop.exp.content ?? prop.exp.loc.source
+        if (prop.name === 'slot') {
+          const scope = patternScope(source)
+          addFrom(scope.references, own)
+          inner = new Set([...inner, ...scope.bound])
+          continue
+        }
+        expression(source, own)
       }
     }
     for (const child of node.children ?? []) {
-      walk(child)
+      walk(child, inner)
     }
   }
-  walk(root)
+  walk(root, new Set())
   return names
 }
 

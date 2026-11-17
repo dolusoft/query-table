@@ -158,7 +158,26 @@ describe('template gate checks', () => {
     expect(
       unused('<Child #item="{ [unusedHelper]: label }">{{ label }}</Child>')
     ).toBe(0)
-    expect(unused('<Child v-slot="{ unusedHelper }" />')).toBe(0)
+    // A slot prop of the same name shadows the import inside the slot.
+    expect(
+      unused('<Child v-slot="{ unusedHelper }">{{ unusedHelper }}</Child>')
+    ).toBe(1)
+    expect(
+      unused(
+        '<Child><template #row="{ unusedHelper }">{{ unusedHelper }}</template></Child>'
+      )
+    ).toBe(1)
+    expect(
+      unused(
+        '<li v-for="unusedHelper in rows" :key="unusedHelper">{{ unusedHelper }}</li>'
+      )
+    ).toBe(1)
+    // Outside the slot the name is the import again.
+    expect(
+      unused(
+        '<div><Child v-slot="{ unusedHelper }">{{ unusedHelper }}</Child>{{ unusedHelper }}</div>'
+      )
+    ).toBe(0)
     expect(
       unused('<Child v-slot="{ label = other }">{{ label }}</Child>')
     ).toBe(1)

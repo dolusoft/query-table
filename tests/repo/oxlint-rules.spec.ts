@@ -87,6 +87,13 @@ const on = vue.shallowRef(false)
 if (on) {}`,
         errors: 1
       },
+      // The import may stand anywhere in the file.
+      {
+        code: `function f() { if (on) {} }
+const on = ref(false)
+import { ref } from 'vue'`,
+        errors: 1
+      },
       { code: `${head}if (open) {}`, errors: 1 },
       { code: `${head}const label = total ? 'a' : 'b'`, errors: 1 },
       { code: `${head}const shut = !open`, errors: 1 },
@@ -110,6 +117,17 @@ items.push('x')`,
       // A parameter that shadows a destructured prop is not the prop.
       `const { items } = defineProps<{ items: string[] }>()
 function f(items: string[]) { items.push('x') }`,
+      // A setup() of an object that is not a component.
+      `export const service = { setup(state) { state.items.push('x') } }`,
+      // A nested object's method: its this is that object.
+      `export default defineComponent({
+  props: ['items'],
+  methods: { helper: { run() { this.items.push(1) } } }
+})`,
+      `export default defineComponent({
+  props: ['items'],
+  data() { return { box: { add() { this.items.push(1) } } } }
+})`,
       // Another component's prop is not this component's.
       `const A = defineComponent({ props: ['items'] })
 const B = defineComponent({
@@ -168,6 +186,17 @@ items.sort()`,
   watch: { x() { this.meta.a = 1 } }
 })`,
         errors: 1
+      },
+      {
+        code: `export default defineComponent({
+  props: ['items'],
+  computed: { first: { get() { return this.items.pop() } } }
+})`,
+        errors: 1
+      },
+      {
+        code: `export default { props: ['list'], setup(props) { props.list.push(1) } }`,
+        errors: 1
       }
     ]
   })
@@ -184,7 +213,9 @@ describe('vue-script/require-valid-default-prop', () => {
         `defineProps({ list: { type: Array, default: () => [] } })`,
         `defineProps({ size: { type: [Number, String], default: 'auto' } })`,
         `defineProps({ meta: { type: Object, default() { return {} } } })`,
-        `defineProps({ fn: { type: Function, default: () => 'x' } })`
+        `defineProps({ fn: { type: Function, default: () => 'x' } })`,
+        // A nested function's return is not the factory's.
+        `defineProps({ meta: { type: Object, default() { const f = () => []; return {} } } })`
       ],
       invalid: [
         {
@@ -218,6 +249,10 @@ describe('vue-script/require-valid-default-prop', () => {
         {
           code: `defineProps({ meta: { type: Object, default() { return [] } } })`,
           errors: 1
+        },
+        {
+          code: `defineProps({ meta: { type: Object, default(a) { if (a) { return [] } return {} } } })`,
+          errors: [{ message: /is a Array, but the prop is Object/ }]
         }
       ]
     }

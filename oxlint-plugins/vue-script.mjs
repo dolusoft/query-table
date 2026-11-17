@@ -109,7 +109,7 @@ const noRefAsCondition = {
   create(context) {
     const imports = vueImports(context)
     const refs = new Set()
-    const reported = new Set()
+    const candidates = new Set()
     const check = node => {
       if (!node) {
         return
@@ -119,18 +119,33 @@ const noRefAsCondition = {
         check(node.right)
         return
       }
-      if (
-        node.type === 'Identifier' &&
-        refs.has(resolve(context, node)) &&
-        !reported.has(node)
-      ) {
-        reported.add(node)
-        context.report({ node, messageId: 'ref', data: { name: node.name } })
+      // Decided at the end: a ref may be declared after a function that
+      // tests it.
+      if (node.type === 'Identifier') {
+        candidates.add(node)
       }
     }
     const test = node => check(node.test)
     return {
-      ImportDeclaration: imports.ImportDeclaration,
+      // Imports first, wherever they stand in the file.
+      Program(node) {
+        for (const statement of node.body) {
+          if (statement.type === 'ImportDeclaration') {
+            imports.ImportDeclaration(statement)
+          }
+        }
+      },
+      'Program:exit'() {
+        for (const node of candidates) {
+          if (refs.has(resolve(context, node))) {
+            context.report({
+              node,
+              messageId: 'ref',
+              data: { name: node.name }
+            })
+          }
+        }
+      },
       VariableDeclarator(node) {
         if (
           node.id.type === 'Identifier' &&
@@ -154,6 +169,90 @@ const noRefAsCondition = {
       }
     }
   }
+}
+
+/** Options a Vue component object may carry besides `setup`. */
+const componentOptionNames = new Set([
+  'props',
+  'emits',
+  'components',
+  'directives',
+  'template',
+  'render',
+  'data',
+  'computed',
+  'methods',
+  'watch',
+  'inject',
+  'provide',
+  'expose',
+  'slots',
+  'name'
+])
+
+/**
+ * Whether an object is the options of a Vue component: the argument of
+ * defineComponent(), the default export of a .vue file, or an object with
+ * component options besides `setup`.
+ */
+const isComponentOptions = (context, object) => {
+  if (object?.type !== 'ObjectExpression') {
+    return false
+  }
+  const parent = object.parent
+  if (
+    parent?.type === 'CallExpression' &&
+    calleeName(parent) === 'defineComponent' &&
+    parent.arguments[0] === object
+  ) {
+    return true
+  }
+  if (
+    parent?.type === 'ExportDefaultDeclaration' &&
+    context.filename.endsWith('.vue')
+  ) {
+    return true
+  }
+  return object.properties.some(
+    property =>
+      property.type === 'Property' &&
+      componentOptionNames.has(propertyName(property))
+  )
+}
+
+/** Option groups whose methods run with the component as `this`. */
+const methodGroups = new Set(['methods', 'computed', 'watch'])
+
+/**
+ * The component options a method belongs to: a method of the options
+ * (`mounted() {}`), of a group (`methods: { add() {} }`), or of a computed
+ * or watch entry (`computed: { x: { get() {} } }`). Null for any other
+ * object's method.
+ */
+const methodComponent = (context, fn) => {
+  const path = []
+  let node = fn
+  while (path.length < 3) {
+    const property = node.parent
+    const object = property?.parent
+    if (
+      property?.type !== 'Property' ||
+      property.value !== node ||
+      object?.type !== 'ObjectExpression'
+    ) {
+      return null
+    }
+    path.unshift(propertyName(property))
+    if (isComponentOptions(context, object)) {
+      const fits =
+        path.length === 1 ||
+        (path.length === 2 && methodGroups.has(path[0])) ||
+        (path.length === 3 && (path[0] === 'computed' || path[0] === 'watch'))
+      return fits ? object : null
+    }
+    node = object
+  }
+  return null
 }
 
 /** The props object of a component: defineProps() or setup(props). */
@@ -200,25 +299,18 @@ const noMutatingProps = {
       }
       return []
     }
-    /** The defineComponent({ ... }) options a `this` belongs to, or null. */
+    /** The component options a `this` belongs to, or null. */
     const thisComponent = node => {
       let current = node.parent
       while (current) {
+        if (current.type === 'FunctionExpression') {
+          return methodComponent(context, current)
+        }
         if (
-          current.type === 'FunctionExpression' ||
-          current.type === 'FunctionDeclaration'
+          current.type === 'FunctionDeclaration' ||
+          current.type === 'ClassBody'
         ) {
-          // A method of the options or of a nested object in them
-          // (methods: { ... }, computed: { ... }, watch: { ... }).
-          let owner = current.parent
-          while (owner && owner.type !== 'CallExpression') {
-            owner = owner.parent
-          }
-          return owner &&
-            calleeName(owner) === 'defineComponent' &&
-            owner.arguments[0]?.type === 'ObjectExpression'
-            ? owner.arguments[0]
-            : null
+          return null
         }
         current = current.parent
       }
@@ -291,6 +383,7 @@ const noMutatingProps = {
         if (
           node.key.type === 'Identifier' &&
           node.key.name === 'setup' &&
+          isComponentOptions(context, node.parent) &&
           (fn?.type === 'FunctionExpression' ||
             fn?.type === 'ArrowFunctionExpression') &&
           fn.params[0]?.type === 'Identifier'
@@ -347,15 +440,47 @@ const literalKind = node => {
 const isFunction = node =>
   node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression'
 
-/** The expression a factory returns: `() => x`, or a body of one `return x`. */
-const factoryResult = fn => {
+/**
+ * The expressions a factory returns: `() => x`, or every `return x` of its
+ * body, not counting the returns of functions nested in it.
+ */
+const factoryResults = fn => {
   if (fn.body.type !== 'BlockStatement') {
-    return fn.body
+    return [fn.body]
   }
-  const returns = fn.body.body.filter(
-    statement => statement.type === 'ReturnStatement'
-  )
-  return returns.length === 1 ? returns[0].argument : null
+  const results = []
+  const walk = node => {
+    if (!node || typeof node.type !== 'string') {
+      return
+    }
+    if (
+      node.type === 'FunctionExpression' ||
+      node.type === 'FunctionDeclaration' ||
+      node.type === 'ArrowFunctionExpression' ||
+      node.type === 'ClassBody'
+    ) {
+      return
+    }
+    if (node.type === 'ReturnStatement') {
+      if (node.argument) {
+        results.push(node.argument)
+      }
+      return
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'parent') {
+        continue
+      }
+      const value = node[key]
+      if (Array.isArray(value)) {
+        value.forEach(walk)
+      } else if (value && typeof value === 'object') {
+        walk(value)
+      }
+    }
+  }
+  fn.body.body.forEach(walk)
+  return results
 }
 
 const propertyName = property =>
@@ -380,19 +505,20 @@ const requireValidDefaultProp = {
       if (isFunction(value)) {
         // A factory: what it returns must match the prop type, unless the
         // prop is a function itself.
-        const returned = factoryResult(value)
-        const kind = returned && literalKind(returned)
-        if (
-          kind &&
-          types &&
-          !types.includes('Function') &&
-          !types.includes(kind)
-        ) {
-          context.report({
-            node: returned,
-            messageId: 'type',
-            data: { name, kind, types: types.join(' | ') }
-          })
+        for (const returned of factoryResults(value)) {
+          const kind = literalKind(returned)
+          if (
+            kind &&
+            types &&
+            !types.includes('Function') &&
+            !types.includes(kind)
+          ) {
+            context.report({
+              node: returned,
+              messageId: 'type',
+              data: { name, kind, types: types.join(' | ') }
+            })
+          }
         }
         return
       }
