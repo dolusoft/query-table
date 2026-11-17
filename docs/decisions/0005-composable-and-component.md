@@ -1,6 +1,6 @@
 # 0005 `useQueryTable` and `QueryTable`, and the consumer fence
 
-Status: Accepted (2026-10-06)
+Status: Accepted (2026-10-06); the first sentence of the Fence clause is superseded by [0021](0021-data-table.md), under which frontendx may also use `DataTable` (`@dolusoft/query-table/data-table`); the rule against `useQueryTable` and `@tanstack/*` stays.
 
 ## Context
 
