@@ -323,6 +323,16 @@ const templateNames = root => {
         if (prop.arg && !prop.arg.isStatic) {
           expression(prop.arg.content ?? '', own)
         }
+        // Same-name shorthand: <input :value /> reads `value`,
+        // :item-label reads `itemLabel`.
+        if (
+          !prop.exp &&
+          prop.name === 'bind' &&
+          prop.arg?.isStatic &&
+          prop.arg.content
+        ) {
+          addFrom([camel(prop.arg.content)], own)
+        }
         if (!prop.exp || prop.name === 'for') {
           continue
         }
@@ -479,6 +489,10 @@ export const checkSfc = (source, file, gates) => {
 
   if (enabled.has('no-unused-imports')) {
     const used = template ? templateNames(template) : new Set()
+    // <style> v-bind(brandColor) reads the script too.
+    for (const cssVar of descriptor.cssVars ?? []) {
+      expressionNames(cssVar, used)
+    }
     const blocks = [descriptor.script, descriptor.scriptSetup].filter(Boolean)
     const parsed = blocks.map(block => scriptImports(block, file))
     for (const { ast } of parsed) {

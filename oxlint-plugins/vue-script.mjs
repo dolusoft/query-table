@@ -385,10 +385,23 @@ const noMutatingProps = {
           node.key.name === 'setup' &&
           isComponentOptions(context, node.parent) &&
           (fn?.type === 'FunctionExpression' ||
-            fn?.type === 'ArrowFunctionExpression') &&
-          fn.params[0]?.type === 'Identifier'
+            fn?.type === 'ArrowFunctionExpression')
         ) {
-          objects.add(declared(context, fn, fn.params[0].name))
+          const param = fn.params[0]
+          if (param?.type === 'Identifier') {
+            objects.add(declared(context, fn, param.name))
+          } else if (param?.type === 'ObjectPattern') {
+            // setup({ items }) { ... }
+            for (const property of param.properties) {
+              const value =
+                property.value?.type === 'AssignmentPattern'
+                  ? property.value.left
+                  : property.value
+              if (value?.type === 'Identifier') {
+                destructured.add(declared(context, fn, value.name))
+              }
+            }
+          }
         }
       },
       AssignmentExpression(node) {
@@ -589,9 +602,7 @@ const requireValidDefaultProp = {
         if (
           propertyName(node) === 'props' &&
           node.value.type === 'ObjectExpression' &&
-          node.parent?.type === 'ObjectExpression' &&
-          node.parent.parent?.type === 'CallExpression' &&
-          calleeName(node.parent.parent) === 'defineComponent'
+          isComponentOptions(context, node.parent)
         ) {
           checkRuntime(node.value)
         }

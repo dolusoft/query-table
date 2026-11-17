@@ -117,6 +117,10 @@ items.push('x')`,
       // A parameter that shadows a destructured prop is not the prop.
       `const { items } = defineProps<{ items: string[] }>()
 function f(items: string[]) { items.push('x') }`,
+      // A destructured setup parameter shadowed in a nested function.
+      `export default defineComponent({
+  setup({ items }) { const f = (items: string[]) => items.push('x') }
+})`,
       // A setup() of an object that is not a component.
       `export const service = { setup(state) { state.items.push('x') } }`,
       // A nested object's method: its this is that object.
@@ -197,6 +201,14 @@ items.sort()`,
       {
         code: `export default { props: ['list'], setup(props) { props.list.push(1) } }`,
         errors: 1
+      },
+      {
+        code: `export default defineComponent({ setup({ items }) { items?.push('x') } })`,
+        errors: [{ message: /"items"/ }]
+      },
+      {
+        code: `export default defineComponent({ setup({ meta = {} }) { meta.a = 1 } })`,
+        errors: 1
       }
     ]
   })
@@ -214,6 +226,7 @@ describe('vue-script/require-valid-default-prop', () => {
         `defineProps({ size: { type: [Number, String], default: 'auto' } })`,
         `defineProps({ meta: { type: Object, default() { return {} } } })`,
         `defineProps({ fn: { type: Function, default: () => 'x' } })`,
+        `export default { props: { items: { type: Array, default: () => [] } } }`,
         // A nested function's return is not the factory's.
         `defineProps({ meta: { type: Object, default() { const f = () => []; return {} } } })`
       ],
@@ -225,6 +238,10 @@ describe('vue-script/require-valid-default-prop', () => {
         {
           code: `defineProps({ meta: { type: Object, default: {} } })`,
           errors: [{ message: /shared object/ }]
+        },
+        {
+          code: `export default { props: { items: { type: Array, default: [] } } }`,
+          errors: [{ message: /shared array/ }]
         },
         {
           code: `defineProps({ items: { type: Array, default: 1 } })`,

@@ -181,6 +181,35 @@ describe('template gate checks', () => {
       ).length
     expect(namespaced('<Form.Input />')).toBe(0)
     expect(namespaced('<Other.Input />')).toBe(1)
+    // Same-name bind shorthand, camelCased, and its scope.
+    expect(unused('<input :value />'.replace(/value/g, 'unusedHelper'))).toBe(0)
+    expect(
+      checkSfc(
+        sfc('<Child :item-label />', "import { itemLabel } from './labels'"),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    ).toBe(0)
+    expect(unused('<input :other />')).toBe(1)
+    expect(
+      unused(
+        '<Child v-slot="{ unusedHelper }"><input :unused-helper /></Child>'
+      )
+    ).toBe(1)
+    // <style> v-bind() reads the script.
+    const styled = (style: string) =>
+      checkSfc(
+        `${sfc('<p />', "import { brandColor } from './theme'")}
+<style scoped>
+${style}
+</style>
+`,
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(styled('p { color: v-bind(brandColor); }')).toBe(0)
+    expect(styled("p { color: v-bind('brandColor.main'); }")).toBe(0)
+    expect(styled('p { color: v-bind(other); }')).toBe(1)
     const kebab = (template: string, local: string) =>
       checkSfc(
         sfc(template, `import * as ${local} from './form-components'`),
