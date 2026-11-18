@@ -1,9 +1,12 @@
-// The default entries never reach the local evaluator (C-75, P1, P14).
+// The default entries never reach the local evaluator (C-75, P1, P14), nor
+// DataTable, which composes it with the table (ADR 0021, K319-7).
 //   1. dist: from each default entry's file, follow its static and dynamic
 //      imports through dist/*.js; no chunk on the way has a source map
-//      `sources` entry under src/local/, and none names a /local entry.
-//   2. fixtures: the size fixtures that use no /local entry bundle no module
-//      of packages/*/dist/local.js or of a chunk only it imports.
+//      `sources` entry under src/local/ or src/data-table/, and none names a
+//      /local or /data-table entry.
+//   2. fixtures: the size fixtures that use no /local or /data-table entry
+//      bundle no module of packages/*/dist/local.js, of
+//      packages/vue/dist/data-table.js or of a chunk only they import.
 // Run after `pnpm build`. Searching the output for the word "local" is not
 // evidence; module ids and source maps are.
 //
@@ -17,10 +20,11 @@ import { specifiersOf } from './specifiers.mjs'
 const root = join(import.meta.dirname, '..')
 const rel = path => relative(root, path).split(sep).join('/')
 
-/** The entries of the local evaluator and of its Vue binding. */
+/** The entries of the local evaluator, of its Vue binding and of DataTable. */
 const localEntries = [
   '@dolusoft/query-protocol/local',
-  '@dolusoft/query-table/local'
+  '@dolusoft/query-table/local',
+  '@dolusoft/query-table/data-table'
 ]
 
 // Relative specifiers of the built ES modules: `import … from './x.js'`,
@@ -46,7 +50,9 @@ const localSources = file => {
     return null
   }
   const { sources = [] } = JSON.parse(readFileSync(map, 'utf8'))
-  return sources.filter(source => /(^|\/)src\/local\//.test(source))
+  return sources.filter(source =>
+    /(^|\/)src\/(local|data-table)\//.test(source)
+  )
 }
 
 const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
@@ -102,9 +108,12 @@ for (const dir of packages) {
 
 // 2. The size fixtures that use only default entries.
 const localFiles = packages
-  .map(dir => join(dir, 'dist', 'local.js'))
+  .flatMap(dir => [
+    join(dir, 'dist', 'local.js'),
+    join(dir, 'dist', 'data-table.js')
+  ])
   .filter(file => existsSync(file))
-/** The chunks of the dist that only the local entry imports. */
+/** The chunks of the dist that only the local and DataTable entries import. */
 const localOnly = new Set(localFiles)
 for (const dir of packages) {
   const dist = join(dir, 'dist')
@@ -173,14 +182,30 @@ if (control.length === 0) {
   )
 }
 
+// The binding's code is in dist/local.js, or, since DataTable shares it, in a
+// chunk that only dist/local.js and dist/data-table.js import; a re-export
+// file such as dist/local.js then leaves no module of its own in a bundle.
+const vueDist = join(root, 'packages', 'vue', 'dist')
+const dataTableFile = join(vueDist, 'data-table.js')
+const bindingFile = file => file !== dataTableFile && dirname(file) === vueDist
 const bindingControl = await localModulesOf('local-composable', 'consumer')
-if (
-  !bindingControl.some(
-    file => file === join(root, 'packages', 'vue', 'dist', 'local.js')
+if (!bindingControl.some(bindingFile)) {
+  problems.push(
+    'fixture local-composable bundles no Vue binding file: the binding control is missing'
   )
+}
+if (bindingControl.includes(dataTableFile)) {
+  problems.push('fixture local-composable bundles Vue dist/data-table.js')
+}
+
+// DataTable reaches both: its own entry and the binding.
+const dataTableControl = await localModulesOf('data-table', 'consumer')
+if (
+  !dataTableControl.includes(dataTableFile) ||
+  !dataTableControl.some(bindingFile)
 ) {
   problems.push(
-    'fixture local-composable bundles no Vue dist/local.js: the binding control is missing'
+    'fixture data-table bundles no Vue dist/data-table.js and binding chunk: the DataTable control is missing'
   )
 }
 if (problems.length > 0) {

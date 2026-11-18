@@ -18,6 +18,10 @@
     "./local": {
       "types": "./dist/types/local/index.d.ts",
       "default": "./dist/local.js"
+    },
+    "./data-table": {
+      "types": "./dist/types/data-table/index.d.ts",
+      "default": "./dist/data-table.js"
     }
   },
   "engines": {

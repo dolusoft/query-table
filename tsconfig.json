@@ -32,7 +32,10 @@
       "@dolusoft/query-table-core/*": [
         "./packages/query-table-core/src/features/*/index.ts"
       ],
-      "@dolusoft/query-table/local": ["./packages/vue/src/local/index.ts"]
+      "@dolusoft/query-table/local": ["./packages/vue/src/local/index.ts"],
+      "@dolusoft/query-table/data-table": [
+        "./packages/vue/src/data-table/index.ts"
+      ]
     }
   },
   "include": [

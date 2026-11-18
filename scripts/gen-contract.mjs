@@ -354,6 +354,66 @@ const functionEntries = [
 const functions = functionEntries.flat()
 
 // ---------------------------------------------------------------------------
+// DataTable (`@dolusoft/query-table/data-table`, ADR 0021): its surface is the
+// component's with the difference declared in src/data-table/contract.ts
+// (C-124); that difference is listed here.
+// ---------------------------------------------------------------------------
+
+const dataTablePath = at('packages', 'vue', 'src', 'data-table', 'contract.ts')
+const dataTableText = read(dataTablePath)
+const dataTableFile = ts.createSourceFile(
+  dataTablePath,
+  dataTableText,
+  ts.ScriptTarget.ES2022,
+  true
+)
+const dataTableDeclaration = name => {
+  const found = dataTableFile.statements.find(
+    statement => isDeclaredType(statement) && statement.name.text === name
+  )
+  if (!found) {
+    throw new Error(`src/data-table/contract.ts declares no ${name}`)
+  }
+  return found
+}
+const dataTableMembersOf = name =>
+  dataTableDeclaration(name).members.map(member => ({
+    name: nameOf(member),
+    type: ts.isMethodSignature(member)
+      ? `(${member.parameters.map(parameter => parameter.getText()).join(', ')}) => ${member.type?.getText() ?? 'void'}`
+      : (member.type?.getText() ?? 'unknown'),
+    required: !member.questionToken,
+    description: docOf(member)
+  }))
+const omittedProps = dataTableDeclaration(
+  'DataTableOmittedProp'
+).type.types.map(type => type.literal.text)
+const dataTable = {
+  name: 'DataTable',
+  entry: '@dolusoft/query-table/data-table',
+  description:
+    'Rows held in the page: `useLocalQuery` and `QueryTable` composed (ADR 0021). It takes the surface of `QueryTable` with the props, the left-out props and the slot below (C-124).',
+  props: dataTableMembersOf('DataTableProps'),
+  omitted: omittedProps,
+  slots: dataTableMembersOf('DataTableSlots').map(
+    ({ name, type, description }) => ({
+      name,
+      props: type.replace(/^\(props: (.*)\) => unknown$/, '$1'),
+      description
+    })
+  )
+}
+const dataTableTypes = dataTableFile.statements
+  .filter(
+    statement =>
+      isDeclaredType(statement) &&
+      statement.modifiers?.some(
+        modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
+      )
+  )
+  .map(typeEntry)
+
+// ---------------------------------------------------------------------------
 // Markdown
 // ---------------------------------------------------------------------------
 
@@ -432,9 +492,30 @@ const sections = [
       item.description
     ])
   ),
+  '### DataTable (`@dolusoft/query-table/data-table`)',
+  `${dataTable.description} Its events and exposed methods are those of \`QueryTable\`. Not taken: ${dataTable.omitted.map(code).join(', ')}.`,
+  table(
+    ['Prop', 'Type', 'Required', 'Description'],
+    dataTable.props.map(prop => [
+      code(prop.name),
+      code(prop.type),
+      prop.required ? 'yes' : '',
+      prop.description
+    ])
+  ),
+  table(
+    ['Added slot', 'Props', 'Description'],
+    dataTable.slots.map(slot => [
+      code(slot.name),
+      code(slot.props),
+      slot.description
+    ])
+  ),
   '## Types',
   'Exported from the package entry point (`packages/vue/src/contract.ts`).',
   '```ts\n' + contractText.trim() + '\n```',
+  'Exported from `@dolusoft/query-table/data-table` (`packages/vue/src/data-table/contract.ts`).',
+  '```ts\n' + dataTableText.trim() + '\n```',
   'The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.',
   '```ts\n' +
     reexported.map(statement => statement.getFullText().trim()).join('\n\n') +
@@ -561,7 +642,8 @@ const api = {
     description
   })),
   functions,
-  types,
+  components: [dataTable],
+  types: [...types, ...dataTableTypes],
   rules: ruleEntries
 }
 

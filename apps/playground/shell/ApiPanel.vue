@@ -71,6 +71,44 @@ const groups = computed(() => {
       rows: pick(contractApi.functions, props.members.functions)
     },
     {
+      kind: 'components' as const,
+      title: 'Components',
+      typeLabel: 'Entry',
+      rows: pick(contractApi.components, props.members.components).map<Row>(
+        component => ({
+          name: component.name,
+          type: component.entry,
+          description: `${component.description} Not taken: ${component.omitted.map(name => `\`${name}\``).join(', ')}.`
+        })
+      )
+    },
+    // A component of an opt-in entry lists the props and slots it adds to
+    // the surface of QueryTable.
+    ...pick(contractApi.components, props.members.components).flatMap(
+      component => [
+        {
+          kind: 'components' as const,
+          title: `${component.name} props`,
+          typeLabel: 'Type',
+          rows: component.props.map<Row>(prop => ({
+            name: `${component.name}.${prop.name}`,
+            type: prop.type,
+            description: `${prop.required ? 'Required. ' : ''}${prop.description}`
+          }))
+        },
+        {
+          kind: 'components' as const,
+          title: `${component.name} slots`,
+          typeLabel: 'Slot props',
+          rows: component.slots.map<Row>(slot => ({
+            name: `${component.name}.${slot.name}`,
+            type: slot.props,
+            description: slot.description
+          }))
+        }
+      ]
+    ),
+    {
       kind: 'types' as const,
       title: 'Types',
       typeLabel: 'Kind',
