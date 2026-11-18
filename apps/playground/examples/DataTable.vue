@@ -42,6 +42,9 @@ const onQuery = (query: TableQuery, reason: QueryChangeReason) => {
 }
 const detailQuery = makeQuery({ pageSize: 10 })
 const detailColumns = data.detail.columns()
+// product.html: the product's design (#203) on its own skin, without this
+// page's shadcn-vue skin.
+const productSkinUrl = `${import.meta.env.BASE_URL}product.html`
 </script>
 
 <template>
@@ -56,6 +59,9 @@ const detailColumns = data.detail.columns()
         One row at a time
       </Label>
       <span class="text-muted-foreground">Last change: {{ last }}</span>
+      <a class="ml-auto underline" :href="productSkinUrl" target="_blank"
+        >The same table in the product skin</a
+      >
     </div>
     <DataTable
       :columns="columns"
