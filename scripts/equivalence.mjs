@@ -218,7 +218,19 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/filter.spec.ts > C-118 IP column type',
   // 3.18 addition (query-table#133): `virtual.keepAnchor`, which a 3.17 build
   // does not read. Without it a virtual body is the one of 3.17.
-  'tests/contract/browser/keep-anchor.browser.spec.ts'
+  'tests/contract/browser/keep-anchor.browser.spec.ts',
+  // 3.19 additions, none of which a 3.18 build has. Without the opt-in each
+  // table is the one of 3.18, and the other tests compare:
+  // `IsNull`/`IsNotNull` in a bool column's select (C-120), `header: false`
+  // (C-121), `rowExpansionChange` (C-122), `expandMode: 'single'` (C-123)
+  // and `DataTable` (C-124 to C-127, ADR 0021).
+  'tests/contract/unit/filter.spec.ts > C-120 No value on a bool column',
+  'tests/contract/unit/headerless.spec.ts',
+  'tests/contract/browser/headerless.browser.spec.ts',
+  'tests/contract/unit/table-body.spec.ts > C-122 Telling the consumer about expansion',
+  'tests/contract/unit/table-body.spec.ts > C-123 One row open at a time',
+  'tests/contract/browser/row-expansion-event.browser.spec.ts',
+  'tests/contract/unit/data-table.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
