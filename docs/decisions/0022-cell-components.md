@@ -1,6 +1,6 @@
 # 0022 Cell components: one markup for the cells the product's tables share (3.20)
 
-Status: Proposed, [query-table#203](https://github.com/dolusoft/query-table/issues/203) under [query-table#201](https://github.com/dolusoft/query-table/issues/201). Decided by Enes on 2026-11-18: the cell patterns are unstyled components of the package with their own DOM hooks, as #203 D-01 ([comment](https://github.com/dolusoft/query-table/issues/203#issuecomment-6978239112)).
+Status: Accepted (2026-11-18), [query-table#203](https://github.com/dolusoft/query-table/issues/203) under [query-table#201](https://github.com/dolusoft/query-table/issues/201). Decided by Enes on 2026-11-18: the cell patterns are unstyled components of the package with their own DOM hooks, as #203 D-01 ([comment](https://github.com/dolusoft/query-table/issues/203#issuecomment-6978239112)).
 
 ## Context
 
