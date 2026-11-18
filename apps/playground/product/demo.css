@@ -1,0 +1,319 @@
+/*
+ * The page around the table and the content its slots draw (toolbar, cell
+ * content, pager). This is consumer CSS, not the skin: it uses the skin's
+ * tokens so it follows the theme. The cell patterns move to the cell
+ * components of ADR 0022 and their `qt-cell-*` hooks.
+ */
+
+:root {
+  --qt-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --demo-button-height: 1.75rem;
+  --demo-chip-bg: #f0f0f0;
+  --demo-badge-warning-bg: #f6b04b;
+  --demo-badge-warning-fg: #3d2600;
+  --demo-edit: #2b8fd6;
+  --demo-primary-bg: #0a0a0a;
+  --demo-primary-fg: #fafafa;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --demo-chip-bg: #1c1c1c;
+    --demo-primary-bg: #fafafa;
+    --demo-primary-fg: #0a0a0a;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --demo-chip-bg: #1c1c1c;
+  --demo-primary-bg: #fafafa;
+  --demo-primary-fg: #0a0a0a;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--qt-font-family);
+  color: var(--qt-fg);
+  background-color: var(--qt-bg);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100vh;
+  padding: 1rem;
+}
+
+.sites {
+  flex: 1 1 auto;
+}
+
+.theme-switch {
+  display: flex;
+  gap: 0.25rem;
+  align-self: flex-end;
+}
+
+.theme-switch button {
+  padding: 0.25rem 0.625rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--qt-muted);
+  background: none;
+  border: 1px solid var(--qt-border);
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+.theme-switch button[aria-pressed='true'] {
+  color: var(--qt-fg-strong);
+  border-color: var(--qt-control-border);
+}
+
+.status {
+  min-height: 1rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--qt-muted);
+}
+
+svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.toolbar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--qt-fg-strong);
+}
+
+.toolbar-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: var(--qt-small-font-size);
+  font-weight: 600;
+  background-color: var(--demo-chip-bg);
+  border-radius: 999px;
+}
+
+.divider {
+  width: 1px;
+  height: 0.875rem;
+  background-color: var(--qt-control-border);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: var(--demo-button-height);
+  padding: 0 0.625rem;
+  font: inherit;
+  font-weight: 500;
+  color: var(--qt-fg);
+  white-space: nowrap;
+  background-color: var(--qt-control-bg);
+  border: 1px solid var(--qt-control-border);
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+.button:disabled {
+  color: var(--qt-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.button-primary {
+  color: var(--demo-primary-fg);
+  background-color: var(--demo-primary-bg);
+  border-color: var(--demo-primary-bg);
+}
+
+.button-edit {
+  color: #ffffff;
+  background-color: var(--demo-edit);
+  border-color: var(--demo-edit);
+}
+
+.button-danger {
+  color: #ffffff;
+  background-color: var(--qt-danger);
+  border-color: var(--qt-danger);
+}
+
+.button-icon {
+  justify-content: center;
+  min-width: var(--demo-button-height);
+  padding: 0 0.5rem;
+}
+
+.button-icon[aria-current='page'] {
+  color: var(--demo-primary-fg);
+  background-color: var(--demo-primary-bg);
+  border-color: var(--demo-primary-bg);
+}
+
+/* ----------------------------------------------------------- cell content */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.stack strong {
+  font-weight: 600;
+  color: var(--qt-fg-strong);
+}
+
+.stack small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--qt-small-font-size);
+  color: var(--qt-fg);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.5rem;
+  padding: 0 0.25rem 0 0.5rem;
+  white-space: nowrap;
+  background-color: var(--demo-chip-bg);
+  border-radius: 999px;
+}
+
+.chip code {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.chip button {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  color: var(--qt-icon);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip button:hover {
+  color: var(--qt-fg-strong);
+}
+
+.chip svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  font-size: var(--qt-small-font-size);
+  font-weight: 500;
+  border-radius: 999px;
+}
+
+.badge[data-tone='warning'] {
+  color: var(--demo-badge-warning-fg);
+  background-color: var(--demo-badge-warning-bg);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+
+.sites :is(th, td)[data-field='actions'] {
+  width: 1px;
+  text-align: center;
+}
+
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin: 0;
+}
+
+.details dt {
+  font-size: var(--qt-small-font-size);
+  color: var(--qt-muted);
+}
+
+.details dd {
+  margin: 0;
+  color: var(--qt-fg-strong);
+}
+
+/* ------------------------------------------------------------------ pager */
+
+.sites .qt-pagination {
+  justify-content: space-between;
+}
+
+.pager-size,
+.pager-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pager-size select {
+  height: 2rem;
+  min-width: 4.5rem;
+  padding: 0 0.5rem;
+  font: inherit;
+  color: var(--qt-fg);
+  background-color: var(--qt-control-bg);
+  border: 1px solid var(--qt-control-border);
+  border-radius: var(--qt-control-radius);
+}
