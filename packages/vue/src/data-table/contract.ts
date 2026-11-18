@@ -60,7 +60,9 @@ export interface DataTableProps<
   paginate?: boolean
   /**
    * Replaces the dataset built from the columns, whole (C-126): for a field
-   * that needs `get` or `offset`, or a queryable field with no column.
+   * that needs `get` or `offset`, or a queryable field with no column. Keep
+   * the same object: a new one evaluates every row again and is a new
+   * context for the flash.
    */
   dataset?: Dataset<T>
 }

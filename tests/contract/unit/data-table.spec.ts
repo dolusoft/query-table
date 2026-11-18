@@ -8,10 +8,11 @@ import {
 import { DataTable } from '@dolusoft/query-table/data-table'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h, nextTick, type Component } from 'vue'
+import { h, nextTick, toRaw, type Component } from 'vue'
 
 import QueryTable, {
   type Column,
+  type HeaderSlotProps,
   type PaginationSlotProps,
   type QueryTableExpose,
   type TableQuery
@@ -224,6 +225,42 @@ describe('C-124 DataTable: the rows it draws', () => {
     expect(wrapper.find('.bad').exists()).toBe(false)
   })
 
+  it('passes an attribute that is not a prop under the name it was given', () => {
+    const { wrapper } = mountData({
+      'data-testid': 'people',
+      'aria-label': 'People',
+      id: 'list'
+    })
+    const root = wrapper.find('.qt-datatable')
+    expect(root.attributes('data-testid')).toBe('people')
+    expect(root.attributes('aria-label')).toBe('People')
+    expect(root.attributes('id')).toBe('list')
+    expect(root.attributes('datatestid')).toBeUndefined()
+  })
+
+  it('calls a .once listener of update:query once', async () => {
+    const once = vi.fn()
+    const { wrapper, box } = mountData({
+      pagination: { pageSizeOptions: [2] },
+      'onUpdate:queryOnce': once
+    })
+    box.pagination!.nextPage()
+    await nextTick()
+    box.pagination!.nextPage()
+    await nextTick()
+    expect(once).toHaveBeenCalledOnce()
+    expect(wrapper.emitted('update:query')).toHaveLength(2)
+  })
+
+  it('compares the query by value for the flash hint', async () => {
+    const { wrapper } = mountData({ query: query({ pageSize: 3 }) })
+    await wrapper.setProps({
+      query: query({ pageSize: 3 }),
+      rows: [...people, { ...people[0], id: 7 }]
+    })
+    expect(innerProp(wrapper, 'rowsUpdate')).toBe('live')
+  })
+
   it('draws every match and no pagination block with paginate false', () => {
     const { wrapper, box } = mountData({
       query: query({ pageSize: 2 }),
@@ -297,6 +334,19 @@ describe('C-125 DataTable: the query it holds', () => {
     expect(events).toHaveLength(1)
     expect(events[0]).toEqual([query({ page: 2, pageSize: 2 }), 'page'])
     expect(ids(wrapper)).toEqual([3, 4])
+  })
+
+  it('follows pageSizeOptions that arrive later until the first update', async () => {
+    const { wrapper, box } = mountData()
+    expect(box.pagination?.pageSize).toBe(10)
+    await wrapper.setProps({ pagination: { pageSizeOptions: [2, 4] } })
+    expect(box.pagination?.pageSize).toBe(2)
+    expect(ids(wrapper)).toEqual([1, 2])
+    box.pagination!.nextPage()
+    await nextTick()
+    await wrapper.setProps({ pagination: { pageSizeOptions: [3] } })
+    expect(box.pagination?.pageSize).toBe(2)
+    expect(box.pagination?.page).toBe(2)
   })
 
   it('starts at ten rows without pageSizeOptions', () => {
@@ -483,6 +533,58 @@ describe('C-126 DataTable: the dataset from the columns', () => {
       'the search field "nope" is not a column'
     )
     expect(() => mountData({ search: ['age'] })).toThrow(TypeError)
+    const nested: Column[] = [
+      ...makeColumns(),
+      { field: 'meta.id', type: 'integer' }
+    ]
+    expect(() => mountData({ columns: nested, rowKey: 'meta.id' })).toThrow(
+      'the rowKey "meta.id" is not a top-level field'
+    )
+    const withIp: Column[] = [
+      ...makeColumns(),
+      { field: 'address', type: 'ip' }
+    ]
+    expect(() => mountData({ columns: withIp, search: ['address'] })).toThrow(
+      'the search field "address" is an ip column'
+    )
+  })
+
+  it('draws an ip column without sort and filter, and gives its own flags back', async () => {
+    const columns: Column[] = [
+      ...makeColumns(),
+      { field: 'address', title: 'Address', type: 'ip' }
+    ]
+    let hide: (() => void) | null = null
+    const { wrapper } = mountData(
+      { columns, sortable: true, filterable: true },
+      {
+        'header-address': ({ control }: HeaderSlotProps) => {
+          hide = control.hide
+          return 'Address'
+        }
+      }
+    )
+    const header = (field: string) => wrapper.find(`th[data-field="${field}"]`)
+    expect(header('name').attributes('data-sortable')).toBeDefined()
+    expect(header('address').attributes('data-sortable')).toBeUndefined()
+    // id, name and age; city is hidden.
+    expect(wrapper.findAll('input.qt-filter-input').length).toBe(3)
+    expect(
+      wrapper.find('[data-field="address"] input.qt-filter-input').exists()
+    ).toBe(false)
+
+    hide!()
+    await nextTick()
+    const [next] = wrapper.emitted('update:columns')![0] as [Column[]]
+    expect(
+      next.slice(0, 4).every((column, i) => toRaw(column) === columns[i])
+    ).toBe(true)
+    expect(next[4]).toEqual({
+      field: 'address',
+      title: 'Address',
+      type: 'ip',
+      hide: true
+    })
   })
 })
 

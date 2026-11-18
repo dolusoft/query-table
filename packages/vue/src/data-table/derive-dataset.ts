@@ -17,6 +17,8 @@ export interface DatasetSpec {
     sortable: boolean
     filterable: boolean
   }>
+  /** The `ip` columns, left out of the fields (C-118). */
+  ip: string[]
 }
 
 export interface DatasetSource {
@@ -33,6 +35,7 @@ export interface DatasetSource {
  */
 export const datasetSpecOf = (source: DatasetSource): DatasetSpec => {
   const fields: DatasetSpec['fields'] = []
+  const ip: string[] = []
   const seen = new Set<string>()
   for (const column of source.columns) {
     if (seen.has(column.field)) {
@@ -41,6 +44,7 @@ export const datasetSpecOf = (source: DatasetSource): DatasetSpec => {
     seen.add(column.field)
     const type = columnTypeOf(column)
     if (type === 'ip') {
+      ip.push(column.field)
       continue
     }
     fields.push({
@@ -57,7 +61,8 @@ export const datasetSpecOf = (source: DatasetSource): DatasetSpec => {
   return {
     key: source.rowKey,
     search: [...new Set(source.search ?? [])].sort(byName),
-    fields
+    fields,
+    ip: ip.sort(byName)
   }
 }
 
@@ -67,6 +72,13 @@ export const sameSpec = (a: DatasetSpec, b: DatasetSpec): boolean =>
 
 /** The dataset of a spec. Throws a `TypeError` for a malformed one (C-126). */
 export const datasetOf = <T>(spec: DatasetSpec): Dataset<T> => {
+  // QueryTable reads `row[rowKey]` (C-26) while the evaluator reads a dotted
+  // path: only a top-level name means the same field to both.
+  if (spec.key.includes('.')) {
+    throw new TypeError(
+      `DataTable: the rowKey "${spec.key}" is not a top-level field`
+    )
+  }
   // No prototype: a field named `__proto__` or `toString` stays a field.
   const fields = Object.create(null) as Record<string, DatasetField<T>>
   for (const field of spec.fields) {
@@ -79,7 +91,9 @@ export const datasetOf = <T>(spec: DatasetSpec): Dataset<T> => {
   for (const name of spec.search) {
     if (!Object.prototype.hasOwnProperty.call(fields, name)) {
       throw new TypeError(
-        `DataTable: the search field "${name}" is not a column`
+        spec.ip.includes(name)
+          ? `DataTable: the search field "${name}" is an ip column; only string columns are searched`
+          : `DataTable: the search field "${name}" is not a column`
       )
     }
     fields[name] = { ...fields[name], search: true }

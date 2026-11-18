@@ -84,6 +84,6 @@ const columns = [
 
 - `rows` is every row of the source. `rowKey` is required: a top-level field that is a `string` or `integer` column (it may be `hide: true`).
 - Without `v-model:query` the table holds the query (C-125), starting at page 1 with the first of `pageSizeOptions` (or 10). With it the query is yours, as with `QueryTable`; give it to start with a sort or a filter, or to restore a view.
-- The dataset comes from the columns (C-126): each column a field of its type, sortable and filterable only where the table and the column allow it, the fields of `search` searched. An `ip` column is not a field. Give `dataset` for a field that needs `get` or `offset`, or a queryable field with no column.
+- The dataset comes from the columns (C-126): each column a field of its type, sortable and filterable only where the table and the column allow it, the fields of `search` searched. An `ip` column is not a field: it is drawn without sort and filter. `rowKey` must be a top-level name, not a dotted path. Give `dataset` for a field that needs `get` or `offset`, or a queryable field with no column.
 - `profile` defaults to `'tr-2'`. `paginate: false` draws every match and no pagination block. The `error` slot is drawn in the empty row while the query is invalid.
 - `totalRows`, `cursors`, `infinite` and `rowsUpdate` are not props: the table knows the total and tells the flash a new query from changed rows.

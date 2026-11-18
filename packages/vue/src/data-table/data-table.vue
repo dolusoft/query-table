@@ -1,4 +1,6 @@
 <script setup lang="ts" generic="T extends object">
+import { columnTypeOf, sameQuery } from '@dolusoft/query-protocol'
+import type { Dataset, SemanticsProfile } from '@dolusoft/query-protocol/local'
 import {
   camelize,
   computed,
@@ -16,6 +18,8 @@ import {
   type DatasetSpec
 } from './derive-dataset'
 import type {
+  Column,
+  ColumnChangeReason,
   QueryChangeReason,
   QueryTableExpose,
   RowsUpdate,
@@ -40,24 +44,25 @@ const emit = defineEmits<DataTableEmits<T>>()
 
 const slots = defineSlots<DataTableSlots<T>>()
 
-// The query (C-125): the consumer's when given, else held here. While the
-// consumer gives one, the held query is dropped back to the start query.
-const startQuery = (): TableQuery => ({
-  page: 1,
-  pageSize: props.pagination?.pageSizeOptions?.[0] ?? 10,
-  sort: null,
-  filters: []
+// The query (C-125): the consumer's when given, else held here. Until the
+// first update the held query is the start query, which follows
+// `pageSizeOptions`; while the consumer gives one, the held query is dropped.
+const start = computed<TableQuery>(previous => {
+  const pageSize = props.pagination?.pageSizeOptions?.[0] ?? 10
+  return previous?.pageSize === pageSize
+    ? previous
+    : { page: 1, pageSize, sort: null, filters: [] }
 })
-const held = shallowRef<TableQuery>(startQuery())
+const held = shallowRef<TableQuery | null>(null)
 watch(
   () => props.query !== undefined,
   given => {
     if (given) {
-      held.value = startQuery()
+      held.value = null
     }
   }
 )
-const query = computed(() => props.query ?? held.value)
+const query = computed(() => props.query ?? held.value ?? start.value)
 const onQuery = (next: TableQuery, reason: QueryChangeReason) => {
   if (props.query === undefined) {
     held.value = next
@@ -92,20 +97,78 @@ const local = useLocalQuery<T>({
 })
 
 // The flash hint (C-124): a new context is a snapshot; a new page in the
-// same context comes from the source.
-let context: readonly unknown[] = []
-const drawn = computed(() => {
-  const rows = local.rows.value
-  const next = [query.value, dataset.value, props.profile, props.paginate]
-  const same = next.every((value, index) => value === context[index])
-  context = next
-  const hint: RowsUpdate = same ? 'live' : 'snapshot'
-  return { rows, hint }
-})
+// same context comes from the source. The query is compared by value, so a
+// new but equal query object is the same context.
+interface Context {
+  query: TableQuery
+  dataset: Dataset<T>
+  profile: SemanticsProfile
+  paginate: boolean
+}
+const drawn = computed<{ rows: T[]; hint: RowsUpdate; context: Context }>(
+  previous => {
+    const context: Context = {
+      query: query.value,
+      dataset: dataset.value,
+      profile: props.profile,
+      paginate: props.paginate
+    }
+    const before = previous?.context
+    const same =
+      before !== undefined &&
+      sameQuery(before.query, context.query) &&
+      before.dataset === context.dataset &&
+      before.profile === context.profile &&
+      before.paginate === context.paginate
+    return { rows: local.rows.value, hint: same ? 'live' : 'snapshot', context }
+  }
+)
+
+// An `ip` column is not a field (C-118, C-126), so the table offers no sort
+// and no filter on it. `update:columns` gives the consumer's own `sortable`
+// and `filterable` back, so the change never reaches the consumer's columns.
+const isIp = (column: Column) => columnTypeOf(column) === 'ip'
+const closed = (column: Column) =>
+  isIp(column) && (column.sortable !== false || column.filterable !== false)
+const columns = computed(() =>
+  props.columns.some(closed)
+    ? props.columns.map(column =>
+        closed(column)
+          ? { ...column, sortable: false, filterable: false }
+          : column
+      )
+    : props.columns
+)
+const onColumns = (next: Column[], reason: ColumnChangeReason) => {
+  const drawnColumns = columns.value
+  const originals = new Map(
+    props.columns.filter(closed).map(column => [column.field, column])
+  )
+  const restored = next.map(column => {
+    const original = originals.get(column.field)
+    if (!original || !isIp(column)) {
+      return column
+    }
+    if (drawnColumns.includes(column)) {
+      return original
+    }
+    const copy: Column = { ...column }
+    for (const key of ['sortable', 'filterable'] as const) {
+      if (key in original) {
+        copy[key] = original[key]
+      } else {
+        delete copy[key]
+      }
+    }
+    return copy
+  })
+  emit('update:columns', restored, reason)
+}
 
 // What the consumer gave reaches QueryTable as given; what it left out is
 // left out, so QueryTable applies its own default (C-124). A declared prop
-// is passed as Vue read it (`sortable=""` is `true`).
+// is passed as Vue read it (`sortable=""` is `true`); any other attribute
+// keeps its name (`data-testid`, `aria-label`).
 const instance = getCurrentInstance()!
 const own = new Set([
   'columns',
@@ -118,8 +181,7 @@ const own = new Set([
   'totalRows',
   'cursors',
   'infinite',
-  'rowsUpdate',
-  'onUpdate:query'
+  'rowsUpdate'
 ])
 const reserved = new Set(['key', 'ref', 'ref_for', 'ref_key'])
 const passed = (): Record<string, unknown> => {
@@ -130,11 +192,23 @@ const passed = (): Record<string, unknown> => {
     if (reserved.has(key) || key.startsWith('onVnode')) {
       continue
     }
-    const name = /^on[A-Z]/.test(key) ? key : camelize(key)
+    if (/^on[A-Z]/.test(key)) {
+      // `update:query` and `update:columns`, `.once` included, are emitted
+      // by DataTable itself.
+      if (!/^onUpdate:(query|columns)/.test(key)) {
+        out[key] = raw[key]
+      }
+      continue
+    }
+    const name = camelize(key)
     if (own.has(name)) {
       continue
     }
-    out[name] = name in declared ? declared[name] : raw[key]
+    if (name in declared) {
+      out[name] = declared[name]
+    } else {
+      out[key] = raw[key]
+    }
   }
   return out
 }
@@ -174,6 +248,7 @@ defineExpose(exposed)
     :total-rows="local.totalRows.value"
     :rows-update="drawn.hint"
     @update:query="onQuery"
+    @update:columns="onColumns"
   >
     <template v-for="name in slotNames()" :key="name" #[name]="scope">
       <slot :name="name" v-bind="scope ?? {}" />
