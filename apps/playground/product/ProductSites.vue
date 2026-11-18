@@ -102,6 +102,22 @@ const sites: Site[] = [
   }
 ]
 
+// `?rows=5000` repeats the sites up to that many rows, to see how the skin
+// and `DataTable` hold up with a large list held in the page.
+const asked = Number(new URLSearchParams(location.search).get('rows'))
+const rows: Site[] =
+  Number.isSafeInteger(asked) && asked > sites.length
+    ? Array.from({ length: asked }, (_, index) => {
+        const site = sites[index % sites.length]
+        return {
+          ...site,
+          id: index + 1,
+          name: `${site.name}-${index + 1}`,
+          mappingId: `${site.mappingId.slice(0, 28)}${String(index).padStart(8, '0')}`
+        }
+      })
+    : sites
+
 const columns: Column[] = [
   { field: 'id', type: 'integer', hide: true },
   { field: 'name', title: 'Ad' },
@@ -157,8 +173,21 @@ const range = (page: PaginationSlotProps) => {
   const last = Math.min(page.page * page.pageSize, total)
   return `${total} satırdan ${first} - ${last}`
 }
-const pages = (page: PaginationSlotProps) =>
-  Array.from({ length: page.pageCount ?? 1 }, (_, index) => index + 1)
+// The first and the last page, the current one and its neighbours; a gap
+// between them is one `…`. A pager button per page would draw thousands.
+const pages = (page: PaginationSlotProps): Array<number | '…'> => {
+  const count = page.pageCount ?? 1
+  const shown = [
+    ...new Set([1, page.page - 1, page.page, page.page + 1, count])
+  ]
+    .filter(number => number >= 1 && number <= count)
+    .sort((a, b) => a - b)
+  return shown.flatMap((number, index) =>
+    index > 0 && number - shown[index - 1] > 1
+      ? (['…', number] as const)
+      : [number]
+  )
+}
 </script>
 
 <template>
@@ -179,7 +208,7 @@ const pages = (page: PaginationSlotProps) =>
       v-model:selection="selection"
       class="sites"
       :columns="columns"
-      :rows="sites"
+      :rows="rows"
       row-key="id"
       :labels="labels"
       :pagination="{ pageSizeOptions: [10, 25, 50] }"
@@ -190,7 +219,7 @@ const pages = (page: PaginationSlotProps) =>
       <template #toolbar>
         <div class="toolbar">
           <span class="toolbar-title"
-            >Kayıtlar <span class="count">{{ sites.length }}</span></span
+            >Kayıtlar <span class="count">{{ rows.length }}</span></span
           >
           <span class="toolbar-actions">
             <button type="button" class="button" :disabled="selected === 0">
@@ -337,16 +366,19 @@ const pages = (page: PaginationSlotProps) =>
               <path d="M10 3.5 5.5 8l4.5 4.5" />
             </svg>
           </button>
-          <button
-            v-for="number in pages(page)"
-            :key="number"
-            type="button"
-            class="button button-icon"
-            :aria-current="number === page.page ? 'page' : undefined"
-            @click="page.setPage(number)"
-          >
-            {{ number }}
-          </button>
+          <template v-for="(number, index) in pages(page)" :key="index">
+            <span v-if="number === '…'" class="gap" aria-hidden="true">…</span>
+            <button
+              v-else
+              type="button"
+              class="button button-icon"
+              :aria-label="`Sayfa ${number}`"
+              :aria-current="number === page.page ? 'page' : undefined"
+              @click="page.setPage(number)"
+            >
+              {{ number }}
+            </button>
+          </template>
           <button
             type="button"
             class="button button-icon"

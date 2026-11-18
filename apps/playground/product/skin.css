@@ -25,6 +25,9 @@
   --qt-cell-padding-block: 0.75rem;
   --qt-cell-padding-inline: 0.75rem;
   --qt-utility-padding-inline: 0.5rem;
+  --qt-expand-padding-inline-start: 0.75rem;
+  --qt-select-padding-inline-end: 1.875rem;
+  --qt-cell-white-space: nowrap;
   --qt-radius: 0.375rem;
   --qt-control-radius: 0.1875rem;
   --qt-control-size: 1.125rem;
@@ -40,13 +43,15 @@
   --qt-row-hover: #f5f5f5;
   --qt-row-selected: #eff6ff;
   --qt-subtable-bg: #fafafa;
-  --qt-icon: #a3a3a3;
+  /* The icon and the control border keep 3:1 against the background, the
+     danger color 4.5:1 against white text (WCAG 1.4.11, 1.4.3). */
+  --qt-icon: #8a8a8a;
   --qt-icon-active: #0a0a0a;
   --qt-control-bg: #ffffff;
-  --qt-control-border: #d4d4d4;
+  --qt-control-border: #8f8f8f;
   --qt-accent: #2b8fd6;
   --qt-accent-fg: #ffffff;
-  --qt-danger: #e04848;
+  --qt-danger: #c93434;
   --qt-flash: rgb(43 143 214 / 0.18);
   --qt-flash-duration: 1500ms;
 }
@@ -64,7 +69,7 @@
     --qt-icon: #737373;
     --qt-icon-active: #fafafa;
     --qt-control-bg: #141414;
-    --qt-control-border: #404040;
+    --qt-control-border: #666666;
     --qt-flash: rgb(43 143 214 / 0.22);
   }
 }
@@ -81,7 +86,7 @@
   --qt-icon: #737373;
   --qt-icon-active: #fafafa;
   --qt-control-bg: #141414;
-  --qt-control-border: #404040;
+  --qt-control-border: #666666;
   --qt-flash: rgb(43 143 214 / 0.22);
 }
 
@@ -173,9 +178,13 @@ th[data-sort] .qt-sort-icon {
 
 /* ------------------------------------------------------------------- body */
 
+/* A cell keeps one line; a table wider than its box scrolls sideways
+   instead of breaking a name over lines (`--qt-cell-white-space: normal`
+   lets text wrap). */
 .qt-table td {
   padding: var(--qt-cell-padding-block) var(--qt-cell-padding-inline);
   vertical-align: middle;
+  white-space: var(--qt-cell-white-space);
   background-color: var(--qt-bg);
   border-block-end: 1px solid var(--qt-border);
 }
@@ -208,6 +217,16 @@ th[data-sort] .qt-sort-icon {
 .qt-table :is(th, td):has(> :is(.qt-expand, .qt-select-row, .qt-select-all, .qt-right-panel-button)) {
   width: 1px;
   padding-inline: var(--qt-utility-padding-inline);
+}
+
+/* The design's rhythm: the open arrow off the edge, the checkbox close to
+   it and a wider gap before the first column of data. */
+.qt-table td:has(> .qt-expand) {
+  padding-inline: var(--qt-expand-padding-inline-start) 0.25rem;
+}
+
+.qt-table :is(th, td):has(> :is(.qt-select-row, .qt-select-all)) {
+  padding-inline: 0.25rem var(--qt-select-padding-inline-end);
 }
 
 .qt-expand,

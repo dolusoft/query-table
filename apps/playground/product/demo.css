@@ -11,7 +11,8 @@
   --demo-chip-bg: #f0f0f0;
   --demo-badge-warning-bg: #f6b04b;
   --demo-badge-warning-fg: #3d2600;
-  --demo-edit: #2b8fd6;
+  /* 4.5:1 against white text; the design's #2b8fd6 gives 3.5:1. */
+  --demo-edit: #1f78b4;
   --demo-primary-bg: #0a0a0a;
   --demo-primary-fg: #fafafa;
   color-scheme: light;
@@ -197,7 +198,6 @@ svg {
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
 }
 
 .stack strong {
@@ -210,6 +210,7 @@ svg {
   align-items: center;
   gap: 0.25rem;
   font-size: var(--qt-small-font-size);
+  line-height: 1rem;
   color: var(--qt-fg);
 }
 
@@ -305,6 +306,10 @@ svg {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.pager-pages .gap {
+  color: var(--qt-muted);
 }
 
 .pager-size select {
