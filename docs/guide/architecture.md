@@ -1,6 +1,6 @@
 # Architecture
 
-Query Table v3 is three packages in three layers, built on [TanStack Table](https://tanstack.com/table) v9. This page shows how they fit together, who owns which state, how the two plugins stay independent, and how size is kept in check. The reasons behind each choice are in the [decision records](../decisions/README.md); this page links to them instead of repeating them.
+Query Table v3 is three packages in three layers, built on [TanStack Table](https://tanstack.com/table) v9, and a reference skin beside them. This page shows how they fit together, who owns which state, how the two plugins stay independent, and how size is kept in check. The reasons behind each choice are in the [decision records](../decisions/README.md); this page links to them instead of repeating them.
 
 ![Query Table v3 architecture: consumers, the Vue package, the core plugins with shared/, the protocol, TanStack and the backend](../../apps/playground/public/architecture.svg)
 
@@ -21,6 +21,8 @@ The playground sits on top of all three and is never part of a package.
 - **Vue.** The component and the composable. `QueryTable` is built on `useQueryTable()` and holds no state logic of its own. (Until frontendx decides on its shadcn table, frontendx uses `QueryTable` only; a lint rule there holds the fence, ADR 0005.)
 
 A new package is opened only when it has a different dependency set or a different consumer. The three are versioned together; 3.0.0 was their first release and 3.19.0 is the current minor ([ADR 0002](../decisions/0002-three-packages.md), [ADR 0006](../decisions/0006-release-3.md)).
+
+The reference skin, `@dolusoft/query-table-skin`, is outside the layers: one stylesheet for the DOM contract, with no JavaScript and no dependencies, that no package imports. It is versioned and released with the three, and dresses the DOM of the same version ([ADR 0023](../decisions/0023-skin-package.md)).
 
 ### Dependency direction
 

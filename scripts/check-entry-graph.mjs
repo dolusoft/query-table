@@ -57,9 +57,15 @@ const localSources = file => {
   )
 }
 
+// The packages with a default script entry: the reference skin (ADR 0023)
+// exports only a stylesheet, and no script reaches it.
 const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
   .filter(entry => entry.isDirectory())
   .map(entry => join(root, 'packages', entry.name))
+  .filter(
+    dir =>
+      '.' in JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).exports
+  )
 
 // 1. The built module graph of each default entry.
 let visitedFiles = 0

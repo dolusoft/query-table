@@ -1,5 +1,7 @@
-// The CSS leak scan (P5): no package ships styles in any form, not only as
-// a `.css` file (scripts/check-no-css.mjs). Every file of each package's
+// The CSS leak scan (P5): no table package ships styles in any form, not
+// only as a `.css` file (scripts/check-no-css.mjs). The reference skin
+// (packages/query-table-skin, ADR 0023) is left out: it is the stylesheet.
+// Every file of each table package's
 // `dist/` and of its tarball is searched for the marks of a stylesheet or an
 // animation written by script: a keyframes block, a style element, a rule
 // inserted into a sheet, a constructed sheet, a Web Animations call and the
@@ -51,8 +53,10 @@ const tarballFiles = dir => {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = join(import.meta.dirname, '..')
   const rel = path => relative(root, path).split(sep).join('/')
+  // The table packages only: the reference skin (ADR 0023) is a stylesheet,
+  // where a flash's keyframes belong. check-no-css.mjs holds it to CSS alone.
   const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
+    .filter(entry => entry.isDirectory() && entry.name !== 'query-table-skin')
     .map(entry => join(root, 'packages', entry.name))
   const leaks = []
   let checked = 0

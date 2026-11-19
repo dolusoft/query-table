@@ -2,7 +2,8 @@
  * The page around the table and what its toolbar, subtable and pagination
  * slots draw. This is consumer CSS, not the skin: it uses the skin's tokens
  * so it follows the theme. The cells are the cell components of ADR 0022,
- * dressed by skin.css through their `qt-cell-*` hooks.
+ * dressed by the reference skin (`@dolusoft/query-table-skin`) through their
+ * `qt-cell-*` hooks.
  */
 
 :root {
