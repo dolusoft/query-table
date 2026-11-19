@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import {
+  CellAction,
+  CellActions,
+  CellBadge,
+  CellCopy,
+  CellPreview,
+  CellStack,
+  CellValue
+} from '@dolusoft/query-table/cells'
 import { DataTable } from '@dolusoft/query-table/data-table'
 import { computed, ref } from 'vue'
 
@@ -9,10 +18,9 @@ import type {
   TableLabels
 } from '@dolusoft/query-table'
 
-// The sites list of the product, drawn with `DataTable` and the product skin
-// (skin.css). The cell content (two lines, chips, the badge, the dash and the
-// action buttons) is slot markup styled by demo.css until the cell
-// components of ADR 0022 give it hooks of its own.
+// The sites list of the product, drawn with `DataTable`, the cell components
+// of `/cells` (ADR 0022) and the product skin (skin.css). Only the toolbar
+// and the pager are this page's own markup (demo.css).
 
 interface Site {
   id: number
@@ -133,7 +141,10 @@ const labels: Partial<TableLabels> = {
   expandRow: 'Satırı aç',
   selectRow: 'Satırı seç',
   selectAllRows: 'Tüm satırları seç',
-  clearAllFilters: 'Tüm filtreleri temizle'
+  clearAllFilters: 'Tüm filtreleri temizle',
+  copyValue: value => `${value} kopyala`,
+  previewValue: text => `${text} önizle`,
+  emptyValue: '-'
 }
 
 const selection = ref<RowSelection>({})
@@ -153,15 +164,19 @@ const setTheme = (next: Theme) => {
 }
 setTheme('dark')
 
-// Copying is the consumer's (ADR 0022, K320-4): the table only asks.
-const copied = ref<string | null>(null)
+// Copying and previewing are the page's (ADR 0022, K320-4): the cell
+// components only ask.
+const status = ref('')
 const copy = async (value: string) => {
   try {
     await navigator.clipboard.writeText(value)
-    copied.value = value
+    status.value = `Kopyalandı: ${value}`
   } catch {
-    copied.value = null
+    status.value = `Kopyalanamadı: ${value}`
   }
+}
+const preview = (text: string) => {
+  status.value = `Önizleme: ${text}`
 }
 
 const range = (page: PaginationSlotProps) => {
@@ -241,76 +256,50 @@ const pages = (page: PaginationSlotProps): Array<number | '…'> => {
       </template>
 
       <template #cell-name="{ row }">
-        <span class="stack">
-          <strong>{{ row.name }}</strong>
-          <small>{{ row.note }}</small>
-        </span>
+        <CellStack :primary="row.name" :secondary="row.note" />
       </template>
 
       <template #cell-provider="{ row }">
-        <span class="stack">
-          <strong>{{ row.provider }}</strong>
-          <small
+        <CellStack :primary="row.provider">
+          <template #secondary
             >{{ row.vendor }}
-            <span v-if="row.unsupported" class="badge" data-tone="warning"
-              >Desteklenmiyor</span
-            ></small
+            <CellBadge v-if="row.unsupported" tone="warning"
+              >Desteklenmiyor</CellBadge
+            ></template
           >
-        </span>
+        </CellStack>
       </template>
 
       <template #cell-mappingId="{ row }">
-        <span class="chip">
-          <code>{{ row.mappingId }}</code>
-          <button
-            type="button"
-            :aria-label="`${row.mappingId} kopyala`"
-            @click="copy(row.mappingId)"
-          >
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <rect x="5" y="5" width="8" height="8" rx="1.5" />
-              <path d="M3.5 10.5V4a.5.5 0 0 1 .5-.5h6.5" />
-            </svg>
-          </button>
-        </span>
+        <CellCopy :value="row.mappingId" @copy="copy" />
       </template>
 
       <template #cell-template="{ row }">
-        <span class="chip">
-          <span>{{ row.template }}</span>
-          <button type="button" :aria-label="`${row.template} önizle`">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path
-                d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"
-              />
-              <circle cx="8" cy="8" r="1.75" />
-            </svg>
-          </button>
-        </span>
+        <CellPreview :text="row.template" @preview="preview" />
       </template>
 
-      <template #cell-deviceSetup="{ row }">{{
-        row.deviceSetup ?? '-'
-      }}</template>
-      <template #cell-apiVariable="{ row }">{{
-        row.apiVariable ?? '-'
-      }}</template>
+      <template #cell-deviceSetup="{ row }">
+        <CellValue :value="row.deviceSetup" />
+      </template>
+      <template #cell-apiVariable="{ row }">
+        <CellValue :value="row.apiVariable" />
+      </template>
 
-      <template #cell-actions>
-        <span class="actions">
-          <button type="button" class="button button-edit">
+      <template #cell-actions="{ row }">
+        <CellActions>
+          <CellAction kind="primary" :aria-label="`${row.name} düzenle`">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M9.5 3.5h-6v9h9v-6M7 9l.5-2 5-5 1.5 1.5-5 5L7 9Z" />
             </svg>
             Düzenle
-          </button>
-          <button type="button" class="button button-danger">
+          </CellAction>
+          <CellAction kind="danger" :aria-label="`${row.name} sil`">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M3 4h10M6 4V2.5h4V4M4.5 4l.5 9.5h6l.5-9.5" />
             </svg>
             Sil
-          </button>
-        </span>
+          </CellAction>
+        </CellActions>
       </template>
 
       <template #subtable="{ row }">
@@ -395,7 +384,7 @@ const pages = (page: PaginationSlotProps): Array<number | '…'> => {
     </DataTable>
 
     <p class="status" role="status">
-      {{ copied ? `Kopyalandı: ${copied}` : '' }}
+      {{ status }}
     </p>
   </main>
 </template>
