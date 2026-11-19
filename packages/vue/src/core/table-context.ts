@@ -32,7 +32,7 @@ export interface TableContext {
   labels: () => ResolvedLabels
 }
 
-const tableContextKey: InjectionKey<TableContext> = Symbol('query-table')
+export const tableContextKey: InjectionKey<TableContext> = Symbol('query-table')
 
 export const provideTableContext = (context: TableContext) => {
   provide(tableContextKey, context)

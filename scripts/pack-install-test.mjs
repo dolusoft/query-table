@@ -183,8 +183,11 @@ import { parseFilterInput as parseRules } from '@dolusoft/query-protocol'
 import { QueryTable, type Column, type CursorQuery, type RowSelection } from '@dolusoft/query-table'
 import { serverQueryFeature } from '@dolusoft/query-table-core'
 import { DataTable } from '@dolusoft/query-table/data-table'
+import { CellCopy, CellStack, type CellBadgeTone } from '@dolusoft/query-table/cells'
 
 const columns: Column[] = [{ field: 'name', title: 'Name' }]
+const copied = ref('')
+const tone: CellBadgeTone = 'info'
 const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Işık' }]
 const keyed: Column[] = [{ field: 'id', type: 'integer', hide: true }, ...columns]
 const query = ref<CursorQuery>({ cursor: null, pageSize: 10, sort: null, filters: [] })
@@ -211,7 +214,7 @@ const parsed = parseRules('a*', { field: 'name' }).length + Object.keys(serverQu
     </template>
   </QueryTable>
   <DataTable class="dt" :columns="keyed" :rows="people" row-key="id" :search="['name']" sortable>
-    <template #cell-name="{ row }">{{ row.name.toUpperCase() }}</template>
+    <template #cell-name="{ row }"><CellStack :primary="row.name.toUpperCase()" :secondary="tone" /><CellCopy :value="row.id" @copy="copied = $event" /></template>
   </DataTable>
 </template>
 `

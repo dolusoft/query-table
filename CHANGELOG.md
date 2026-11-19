@@ -8,6 +8,15 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Added
+
+- Cell components from the new entry `@dolusoft/query-table/cells`: `CellStack` (two lines), `CellCopy` (a value and a copy button), `CellPreview` (a text and a preview button), `CellBadge` (a status with `tone`), `CellValue` (a value, or `-` when there is none), `CellActions` and `CellAction` (the row's buttons, with `kind`). They are unstyled and draw `qt-cell-*` hooks of the DOM contract, so a skin dresses them in every table. `CellCopy` and `CellPreview` emit `copy` and `preview`; the clipboard and the preview are the consumer's. The default entry, `/local` and `/data-table` do not import them ([C-128](contract/rules.md#c-128-cell-components-markup-and-dom), [C-129](contract/rules.md#c-129-cell-components-events-and-labels)).
+- `labels.copyValue`, `labels.previewValue` and `labels.emptyValue`: the names of the copy and preview buttons and the empty-value text of the cell components, read from the table they sit in. Optional, so a complete `TableLabels` of 3.19 still type-checks ([C-129](contract/rules.md#c-129-cell-components-events-and-labels), [C-44](contract/rules.md#c-44-labels)).
+
+### Changed
+
+- The default entry and `/cells` share one more small chunk of the built Vue package (`table-context-*.js`: the table context and the default cell labels, about 1 kB, importing only `vue`). The exports and their behavior are unchanged.
+
 ## [3.19.0] - 2026-11-19
 
 A table for rows held in the page (`DataTable`), one row open at a time, a table without a header, and `IsNull` and `IsNotNull` on a bool column.

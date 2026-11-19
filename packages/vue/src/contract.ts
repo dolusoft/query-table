@@ -527,6 +527,22 @@ export interface TableLabels {
   selectRow: string
   /** Name of the checkbox that selects every row of the page. Default `'Select all rows'`. */
   selectAllRows: string
+  /**
+   * Name of the copy button of `CellCopy` (`/cells`, C-129). Default
+   * `` value => `Copy ${value}` ``. Optional (3.20), so a complete
+   * `TableLabels` of 3.19 still type-checks.
+   */
+  copyValue?: (value: string) => string
+  /**
+   * Name of the preview button of `CellPreview` (`/cells`, C-129). Default
+   * `` text => `Preview ${text}` ``. Optional (3.20), like `copyValue`.
+   */
+  previewValue?: (text: string) => string
+  /**
+   * The text `CellValue` (`/cells`, C-129) draws for an empty value. Default
+   * `'-'`. Optional (3.20), like `copyValue`.
+   */
+  emptyValue?: string
 }
 
 /** Payload of the `cellContextMenu` event. */

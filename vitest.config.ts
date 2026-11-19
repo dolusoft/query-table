@@ -38,6 +38,10 @@ export default defineConfig(({ mode }) => {
       replacement: resolve(packages, 'vue/src/data-table/index.ts')
     },
     {
+      find: /^@dolusoft\/query-table\/cells$/,
+      replacement: resolve(packages, 'vue/src/cells/index.ts')
+    },
+    {
       find: /^@dolusoft\/query-protocol$/,
       replacement: resolve(packages, 'query-protocol/src/index.ts')
     },
