@@ -36,6 +36,7 @@ const warn = (message: string) => {
   } catch {
     // No `process`: a development build.
   }
+  // oxlint-disable-next-line no-console -- development-only warning to the library user
   console.warn(`[QueryTable] ${message}`)
 }
 

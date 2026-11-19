@@ -30,7 +30,7 @@ protocol  →  core  →  vue  →  playground
 
 A package imports only from the layers before it. Inside core, a feature imports only `shared/` and the protocol, never another feature. Two checks hold this, both in CI:
 
-- the ESLint rule `layers/boundaries` (`scripts/eslint-layers.mjs`) reads every import, re-export, dynamic `import()`, type import and package sub-path;
+- the oxlint rule `layers/boundaries` (`oxlint-plugins/layers.mjs`) reads every import, re-export, dynamic `import()`, type import and package sub-path;
 - `scripts/check-deps.mjs` keeps a dependency allow-list per package, for the manifest, the sources and the built files.
 
 TanStack lives only in core and Vue, at an exact version; nothing else is added as a runtime dependency (P11, [ADR 0001](../decisions/0001-tanstack-v9.md)).

@@ -65,6 +65,7 @@ export const useScrollBody = (options: ScrollBodyOptions) => {
           isDevelopment()
         ) {
           clamped = true
+          // oxlint-disable-next-line no-console -- development-only warning to the library user
           console.warn(
             '[QueryTable] `scrollBody`: `.qt-table-head` or `.qt-table-foot` cannot scroll sideways as far as `.qt-table-body`, so its columns end shifted. Give it a vertical scrollbar as wide as that of the body (`overflow-y: scroll`; a transparent `scrollbar-color` hides it) (C-101).'
           )
@@ -115,6 +116,7 @@ export const useScrollBody = (options: ScrollBodyOptions) => {
         getComputedStyle(table).tableLayout !== 'fixed'
       ) {
         warned = true
+        // oxlint-disable-next-line no-console -- development-only warning to the library user
         console.warn(automaticLayout)
       }
     },
@@ -156,6 +158,7 @@ export const useScrollBody = (options: ScrollBodyOptions) => {
       1
     ) {
       warned = true
+      // oxlint-disable-next-line no-console -- development-only warning to the library user
       console.warn(automaticLayout)
     }
   }

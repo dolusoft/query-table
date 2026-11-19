@@ -349,7 +349,6 @@ describe('C-108 Row component and DOM contract of 3.11 [own]', () => {
 async function listenersOnRowsAndCells(extra: Record<string, unknown>) {
   const targets: string[] = []
   // Called back with `apply` and the element as `this`, then restored.
-  // eslint-disable-next-line @typescript-eslint/unbound-method
   const original = EventTarget.prototype.addEventListener
   EventTarget.prototype.addEventListener = function (
     this: EventTarget,

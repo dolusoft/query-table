@@ -63,9 +63,8 @@ const { copy, copied } = useClipboard({ copiedDuring: 1500 })
       :viewport-attrs="{ 'aria-label': `${file} source` }"
       class="font-mono text-sm leading-relaxed [&_pre]:w-max [&_pre]:min-w-full [&_pre]:bg-transparent! [&_pre]:px-4 [&_pre]:py-3.5"
     >
-      <!-- eslint-disable vue/no-v-html -- shiki's escaped output of our own example file -->
+      <!-- template-gate-disable-next-line no-v-html -- shiki's escaped output of our own example file -->
       <div v-if="html" v-html="html" />
-      <!-- eslint-enable vue/no-v-html -->
       <pre v-else><code>{{ source }}</code></pre>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>

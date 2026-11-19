@@ -137,6 +137,7 @@ export function useLocalQuery<T>(
       const key = JSON.stringify([value.code, value.path, value.field])
       if (isDevelopment() && key !== last) {
         last = key
+        // oxlint-disable-next-line no-console -- development-only warning to the library user
         console.error('[useLocalQuery]', value)
       }
     },

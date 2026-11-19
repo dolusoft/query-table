@@ -717,7 +717,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       }
       return out
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    // oxlint-disable-next-line no-unused-expressions
     version.value
     const rows = center()
     const before = expandedBefore.value
@@ -878,6 +878,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       getComputedStyle(table).tableLayout !== 'fixed'
     ) {
       warned = true
+      // oxlint-disable-next-line no-console -- development-only warning to the library user
       console.warn(
         '[QueryTable] `virtual` with `table-layout: auto`: column widths follow the drawn rows. Set `table-layout: fixed` (C-85).'
       )

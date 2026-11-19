@@ -1,0 +1,18 @@
+{
+  "gates": [
+    "no-v-html",
+    "require-v-for-key",
+    "no-v-if-with-v-for",
+    "valid-v-model",
+    "no-unused-imports"
+  ],
+  "ignore": [
+    "dist",
+    "coverage",
+    "temp",
+    "fixtures",
+    ".vitest",
+    ".equivalence",
+    "apps/playground/skin/ui"
+  ]
+}

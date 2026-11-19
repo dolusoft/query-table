@@ -5,6 +5,7 @@
       "entry": [
         "contract/dom.ts",
         "scripts/*.mjs",
+        "oxlint-plugins/*.mjs",
         "apps/playground/examples/*.vue",
         "apps/playground/skin/gen-skin.ts",
         "apps/playground/product/main.ts",
@@ -15,6 +16,8 @@
         "docs/guide/**/*.ts",
         "contract/**/*.ts",
         "scripts/*.mjs",
+        "oxlint-plugins/*.mjs",
+        "tools/template-gate/*.mjs",
         "tests/**/*.ts",
         "apps/playground/**/*.{ts,vue,css}",
         "fixtures/packages/*.ts"

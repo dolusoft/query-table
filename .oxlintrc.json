@@ -1,0 +1,658 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "typescript",
+    "vue",
+    "import"
+  ],
+  "jsPlugins": [
+    {
+      "name": "layers",
+      "specifier": "./oxlint-plugins/layers.mjs"
+    },
+    {
+      "name": "fences",
+      "specifier": "./oxlint-plugins/fences.mjs"
+    },
+    {
+      "name": "vue-script",
+      "specifier": "./oxlint-plugins/vue-script.mjs"
+    }
+  ],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "temp",
+    "fixtures",
+    ".vitest",
+    "apps/playground/skin/ui",
+    "apps/playground/skin/lib/utils.ts",
+    "apps/playground/dist",
+    ".equivalence",
+    "packages/*/dist"
+  ],
+  "rules": {
+    "curly": [
+      "error",
+      "all"
+    ],
+    "eqeqeq": [
+      "error",
+      "always"
+    ],
+    "for-direction": "error",
+    "no-array-constructor": "error",
+    "no-async-promise-executor": "error",
+    "no-case-declarations": "error",
+    "no-compare-neg-zero": "error",
+    "no-cond-assign": "error",
+    "no-constant-binary-expression": "error",
+    "no-constant-condition": "error",
+    "no-control-regex": "error",
+    "no-delete-var": "error",
+    "no-dupe-else-if": "error",
+    "no-duplicate-case": "error",
+    "no-empty": "error",
+    "no-empty-character-class": "error",
+    "no-empty-pattern": "error",
+    "no-empty-static-block": "error",
+    "no-ex-assign": "error",
+    "no-extra-boolean-cast": "error",
+    "no-fallthrough": "error",
+    "no-global-assign": "error",
+    "no-invalid-regexp": "error",
+    "no-irregular-whitespace": "error",
+    "no-loss-of-precision": "error",
+    "no-misleading-character-class": "error",
+    "no-nonoctal-decimal-escape": "error",
+    "no-prototype-builtins": "error",
+    "no-regex-spaces": "error",
+    "no-self-assign": "error",
+    "no-shadow": "error",
+    "no-shadow-restricted-names": "error",
+    "no-sparse-arrays": "error",
+    "no-unassigned-vars": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-optional-chaining": "error",
+    "no-unused-expressions": "error",
+    "no-unused-labels": "error",
+    "no-unused-private-class-members": "error",
+    "no-unused-vars": "error",
+    "no-useless-backreference": "error",
+    "no-useless-catch": "error",
+    "no-useless-escape": "error",
+    "preserve-caught-error": "error",
+    "require-yield": "error",
+    "typescript/ban-ts-comment": "error",
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports",
+        "fixStyle": "inline-type-imports"
+      }
+    ],
+    "typescript/no-duplicate-enum-values": "error",
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "typescript/no-misused-new": "error",
+    "typescript/no-namespace": "error",
+    "typescript/no-non-null-asserted-optional-chain": "error",
+    "typescript/no-require-imports": "error",
+    "typescript/no-this-alias": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-unsafe-declaration-merging": "error",
+    "typescript/no-unsafe-function-type": "error",
+    "typescript/no-wrapper-object-types": "error",
+    "typescript/prefer-as-const": "error",
+    "typescript/prefer-namespace-keyword": "error",
+    "typescript/triple-slash-reference": "error",
+    "use-isnan": "error",
+    "valid-typeof": "error",
+    "vue/component-definition-name-casing": "warn",
+    "vue/no-arrow-functions-in-watch": "error",
+    "vue/no-async-in-computed-properties": "error",
+    "vue/no-computed-properties-in-data": "error",
+    "vue/no-deprecated-data-object-declaration": "error",
+    "vue/no-deprecated-delete-set": "error",
+    "vue/no-deprecated-destroyed-lifecycle": "error",
+    "vue/no-deprecated-events-api": "error",
+    "vue/no-deprecated-model-definition": "error",
+    "vue/no-deprecated-props-default-this": "error",
+    "vue/no-deprecated-vue-config-keycodes": "error",
+    "vue/no-dupe-keys": "error",
+    "vue/no-export-in-script-setup": "error",
+    "vue/no-expose-after-await": "error",
+    "vue/no-lifecycle-after-await": "error",
+    "vue/no-multiple-slot-args": "warn",
+    "vue/no-required-prop-with-default": "warn",
+    "vue/no-reserved-component-names": "error",
+    "vue/no-reserved-keys": "error",
+    "vue/no-reserved-props": "error",
+    "vue/no-shared-component-data": "error",
+    "vue/no-side-effects-in-computed-properties": "error",
+    "vue/no-watch-after-await": "error",
+    "vue/prefer-import-from-vue": "error",
+    "vue/prop-name-casing": "warn",
+    "vue/require-default-prop": "warn",
+    "vue/require-prop-type-constructor": "error",
+    "vue/require-prop-types": "warn",
+    "vue/require-render-return": "error",
+    "vue/require-slots-as-functions": "error",
+    "vue/return-in-computed-property": "error",
+    "vue/return-in-emits-validator": "error",
+    "vue/valid-define-emits": "error",
+    "vue/valid-define-options": "error",
+    "vue/valid-define-props": "error",
+    "vue/valid-next-tick": "error",
+    "vue-script/no-ref-as-condition": "error",
+    "vue-script/no-mutating-props": "error",
+    "vue-script/require-valid-default-prop": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "packages/*/src/**"
+      ],
+      "rules": {
+        "no-console": "error",
+        "no-debugger": "error"
+      }
+    },
+    {
+      "files": [
+        "**/*.ts"
+      ],
+      "rules": {
+        "no-var": "error",
+        "prefer-const": "error",
+        "prefer-rest-params": "error",
+        "prefer-spread": "error"
+      }
+    },
+    {
+      "files": [
+        "**/*.{js,mjs,vue}"
+      ],
+      "rules": {
+        "constructor-super": "error",
+        "getter-return": "error",
+        "no-class-assign": "error",
+        "no-const-assign": "error",
+        "no-dupe-class-members": "error",
+        "no-dupe-keys": "error",
+        "no-func-assign": "error",
+        "no-import-assign": "error",
+        "no-new-native-nonconstructor": "error",
+        "no-obj-calls": "error",
+        "no-redeclare": "error",
+        "no-setter-return": "error",
+        "no-this-before-super": "error",
+        "no-unreachable": "error",
+        "no-unsafe-negation": "error",
+        "no-with": "error"
+      }
+    },
+    {
+      "files": [
+        "**/*.{js,mjs}",
+        "*.config.ts",
+        "apps/playground/vite.config.ts"
+      ],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": [
+        "tests/**",
+        "apps/playground/**",
+        "packages/vue/src/**/*.spec.ts",
+        "packages/*/tests/**"
+      ],
+      "env": {
+        "browser": true,
+        "node": true
+      }
+    },
+    {
+      "files": [
+        "packages/*/src/**/*.{ts,vue}"
+      ],
+      "rules": {
+        "layers/boundaries": "error",
+        "import/no-cycle": "error"
+      }
+    },
+    {
+      "files": [
+        "packages/vue/src/**",
+        "contract/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/tests/**",
+                  "**/tests",
+                  "tests/**",
+                  "**/playground/**",
+                  "**/playground"
+                ],
+                "message": "Library code must not import from tests/ or playground/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/*/src/**",
+        "contract/**"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "XMLHttpRequest",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "WebSocket",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "EventSource",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "localStorage",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "sessionStorage",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "indexedDB",
+            "message": "The table does not persist state; the consumer does (P1)."
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "fetch",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "fetch",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "XMLHttpRequest",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "XMLHttpRequest",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "XMLHttpRequest",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "localStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "localStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "localStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "sessionStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "sessionStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "sessionStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "indexedDB",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "indexedDB",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "indexedDB",
+            "message": "No network or storage access in the library (P1)."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/query-protocol/src/local/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "XMLHttpRequest",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "WebSocket",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "EventSource",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "localStorage",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "sessionStorage",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "indexedDB",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "Intl",
+            "message": "tr-1 uses its own tables, not a locale (semantics.md#text)."
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "fetch",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "fetch",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "XMLHttpRequest",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "XMLHttpRequest",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "XMLHttpRequest",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "localStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "localStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "localStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "sessionStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "sessionStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "sessionStorage",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "window",
+            "property": "indexedDB",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "globalThis",
+            "property": "indexedDB",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "object": "self",
+            "property": "indexedDB",
+            "message": "No network or storage access in the library (P1)."
+          },
+          {
+            "property": "normalize",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "localeCompare",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "toLowerCase",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "toUpperCase",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "toLocaleLowerCase",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "toLocaleUpperCase",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "trim",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "trimStart",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "trimEnd",
+            "message": "tr-1 uses its own tables, not the runtime (semantics.md#text)."
+          },
+          {
+            "property": "codePointAt",
+            "message": "Iterate UTF-16 code units with an index (semantics.md#text)."
+          },
+          {
+            "property": "fromCodePoint",
+            "message": "Iterate UTF-16 code units with an index (semantics.md#text)."
+          },
+          {
+            "object": "Date",
+            "property": "UTC",
+            "message": "tr-1 checks and counts the calendar by hand (semantics.md#time)."
+          },
+          {
+            "object": "Date",
+            "property": "parse",
+            "message": "tr-1 checks and counts the calendar by hand (semantics.md#time)."
+          },
+          {
+            "object": "window",
+            "property": "Intl",
+            "message": "tr-1 uses its own tables, not a locale (semantics.md#text)."
+          },
+          {
+            "object": "globalThis",
+            "property": "Intl",
+            "message": "tr-1 uses its own tables, not a locale (semantics.md#text)."
+          },
+          {
+            "object": "self",
+            "property": "Intl",
+            "message": "tr-1 uses its own tables, not a locale (semantics.md#text)."
+          },
+          {
+            "object": "Array",
+            "property": "from",
+            "message": "Array.from splits a string by code point. Iterate UTF-16 code units with an index (semantics.md#text)."
+          }
+        ],
+        "fences/tr1-local-syntax": "error"
+      }
+    },
+    {
+      "files": [
+        "packages/query-table-core/src/row-changes/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "XMLHttpRequest",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "WebSocket",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "EventSource",
+            "message": "The table does not fetch; the consumer does (P1)."
+          },
+          {
+            "name": "localStorage",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "sessionStorage",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "indexedDB",
+            "message": "The table does not persist state; the consumer does (P1)."
+          },
+          {
+            "name": "document",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          },
+          {
+            "name": "window",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          },
+          {
+            "name": "performance",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          },
+          {
+            "name": "setTimeout",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          },
+          {
+            "name": "setInterval",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          },
+          {
+            "name": "requestAnimationFrame",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          },
+          {
+            "name": "queueMicrotask",
+            "message": "The row-change tracker has no DOM, clock or timer (C-92)."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/*/src/**/*.spec.ts"
+      ],
+      "rules": {
+        "layers/boundaries": "off",
+        "import/no-cycle": "off",
+        "no-restricted-imports": "off",
+        "no-restricted-globals": "off",
+        "no-restricted-properties": "off",
+        "fences/tr1-local-syntax": "off"
+      }
+    }
+  ]
+}
