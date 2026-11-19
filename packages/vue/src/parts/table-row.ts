@@ -118,7 +118,6 @@ const selectDynamic = ['aria-label', 'checked', 'onChange']
 /** Text of a cell, whole: the table never cuts it. */
 const cellText = (row: object, column: Column) =>
   // A cell value may be any type; its string form is what the table shows.
-  // eslint-disable-next-line @typescript-eslint/no-base-to-string
   String(valueAt(row, column.field) ?? '')
 
 /**

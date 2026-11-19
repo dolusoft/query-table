@@ -1,0 +1,424 @@
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+import { afterAll, describe, expect, it } from 'vitest'
+
+// The template gate (tools/template-gate): the Vue <template> checks oxlint
+// cannot make, and the unused imports of an SFC.
+
+interface Finding {
+  line: number
+  column: number
+  gate: string
+  message: string
+}
+
+const root = join(import.meta.dirname, '..', '..')
+const gateDir = join(root, 'tools', 'template-gate')
+const { checkSfc, GateParseError } = (await import(
+  pathToFileURL(join(gateDir, 'gate.mjs')).href
+)) as {
+  checkSfc: (source: string, file: string, gates: string[]) => Finding[]
+  GateParseError: new (message: string) => Error
+}
+
+const allGates = [
+  'no-v-html',
+  'require-v-for-key',
+  'no-v-if-with-v-for',
+  'valid-v-model',
+  'no-unused-imports'
+]
+const sfc = (template: string, script = '') =>
+  `<script setup lang="ts">\n${script}\n</script>\n\n<template>\n${template}\n</template>\n`
+const gatesOf = (source: string) =>
+  checkSfc(source, 'x.vue', allGates).map(finding => finding.gate)
+
+describe('template gate checks', () => {
+  it('reports v-html', () => {
+    expect(gatesOf(sfc('<div v-html="html" />'))).toEqual(['no-v-html'])
+    expect(gatesOf(sfc('<div v-text="html" />'))).toEqual([])
+  })
+
+  it('reports a v-for without a key', () => {
+    expect(gatesOf(sfc('<li v-for="row in rows">{{ row }}</li>'))).toEqual([
+      'require-v-for-key'
+    ])
+    expect(
+      gatesOf(sfc('<li v-for="row in rows" :key="row.id">{{ row }}</li>'))
+    ).toEqual([])
+    expect(
+      gatesOf(sfc('<li v-for="row in rows" key="static">{{ row }}</li>'))
+    ).toEqual(['require-v-for-key'])
+  })
+
+  it('accepts a template v-for keyed on itself, on its children, or holding only slots', () => {
+    expect(
+      gatesOf(
+        sfc(
+          '<template v-for="r in rows" :key="r.id"><li>{{ r }}</li></template>'
+        )
+      )
+    ).toEqual([])
+    expect(
+      gatesOf(
+        sfc(
+          '<template v-for="r in rows"><li :key="r.id">{{ r }}</li></template>'
+        )
+      )
+    ).toEqual([])
+    expect(
+      gatesOf(
+        sfc(
+          '<Table><template v-for="(_, name) in $slots" #[name]="p"><slot :name="name" v-bind="p" /></template></Table>'
+        )
+      )
+    ).toEqual([])
+    expect(
+      gatesOf(sfc('<template v-for="r in rows"><li>{{ r }}</li></template>'))
+    ).toEqual(['require-v-for-key'])
+  })
+
+  it('reports v-if and v-for on one element', () => {
+    expect(
+      gatesOf(sfc('<li v-for="r in rows" v-if="r.on" :key="r.id">{{ r }}</li>'))
+    ).toEqual(['no-v-if-with-v-for'])
+    expect(
+      gatesOf(
+        sfc(
+          '<template v-if="show"><li v-for="r in rows" :key="r.id">{{ r }}</li></template>'
+        )
+      )
+    ).toEqual([])
+  })
+
+  it('reports an invalid v-model', () => {
+    const problems = (template: string) =>
+      checkSfc(sfc(template), 'x.vue', ['valid-v-model']).map(
+        finding => finding.message
+      )
+    expect(problems('<span v-model="x" />')).toEqual([
+      expect.stringContaining('not supported on <span>')
+    ])
+    expect(problems(`<input v-model="'text'" />`)).toEqual([
+      expect.stringContaining('assignable expression')
+    ])
+    expect(problems('<input v-model="f()" />')).toEqual([
+      expect.stringContaining('assignable expression')
+    ])
+    expect(problems('<input type="file" v-model="x" />')).toEqual([
+      expect.stringContaining('type="file"')
+    ])
+    expect(
+      problems('<div v-for="r in rows" :key="r"><input v-model="r" /></div>')
+    ).toEqual([expect.stringContaining('the v-for variable "r"')])
+    expect(
+      problems(
+        '<input v-model="a" /><input v-model.trim="state.b" /><select v-model="c" /><textarea v-model="d!" /><Field v-model:value="e" />'
+      )
+    ).toEqual([])
+    expect(
+      problems(
+        '<div v-for="r in rows" :key="r.id"><input v-model="r.name" /></div>'
+      )
+    ).toEqual([])
+    expect(problems('<input v-model.bogus="a" />')).toEqual([
+      expect.stringContaining('no modifier ".bogus"')
+    ])
+    expect(
+      problems('<input v-model.lazy.number="a" /><Field v-model.custom="b" />')
+    ).toEqual([])
+  })
+
+  it('does not count a string or a property name as a use of an import', () => {
+    const unused = (template: string, script = '') =>
+      checkSfc(
+        sfc(template, `import { unusedHelper } from './helpers'\n${script}`),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(unused(`<p>{{ 'unusedHelper' }}</p>`)).toBe(1)
+    expect(unused('<p>{{ state.unusedHelper }}</p>')).toBe(1)
+    expect(unused('<p :a="{ unusedHelper: 1 }" />')).toBe(1)
+    expect(
+      unused('<p />', 'const o = { unusedHelper: 1 }; o.unusedHelper')
+    ).toBe(1)
+    expect(unused('<p>{{ unusedHelper() }}</p>')).toBe(0)
+    expect(unused('<p :a="{ unusedHelper }" />')).toBe(0)
+    expect(unused('<p @click="x++; unusedHelper()" />')).toBe(0)
+    expect(unused('<li v-for="r in unusedHelper" :key="r" />')).toBe(0)
+    expect(unused('<p />', 'const o = { [unusedHelper]: 1 }')).toBe(0)
+    // Slot binding patterns: defaults and computed keys are references.
+    expect(
+      unused('<Child v-slot="{ label = unusedHelper }">{{ label }}</Child>')
+    ).toBe(0)
+    expect(
+      unused('<Child #item="{ [unusedHelper]: label }">{{ label }}</Child>')
+    ).toBe(0)
+    // A slot prop of the same name shadows the import inside the slot.
+    expect(
+      unused('<Child v-slot="{ unusedHelper }">{{ unusedHelper }}</Child>')
+    ).toBe(1)
+    expect(
+      unused(
+        '<Child><template #row="{ unusedHelper }">{{ unusedHelper }}</template></Child>'
+      )
+    ).toBe(1)
+    expect(
+      unused(
+        '<li v-for="unusedHelper in rows" :key="unusedHelper">{{ unusedHelper }}</li>'
+      )
+    ).toBe(1)
+    // A namespaced component tag uses the root of its name.
+    const namespaced = (template: string) =>
+      checkSfc(
+        sfc(template, "import * as Form from './form-components'"),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(namespaced('<Form.Input />')).toBe(0)
+    expect(namespaced('<Other.Input />')).toBe(1)
+    // Same-name bind shorthand, camelCased, and its scope.
+    expect(unused('<input :value />'.replace(/value/g, 'unusedHelper'))).toBe(0)
+    expect(
+      checkSfc(
+        sfc('<Child :item-label />', "import { itemLabel } from './labels'"),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    ).toBe(0)
+    expect(unused('<input :other />')).toBe(1)
+    expect(
+      unused(
+        '<Child v-slot="{ unusedHelper }"><input :unused-helper /></Child>'
+      )
+    ).toBe(1)
+    // Slot props of the same element cover only its children, not its
+    // own shorthand: :items reads the import.
+    const listed = (template: string) =>
+      checkSfc(sfc(template, "import { items } from './items'"), 'x.vue', [
+        'no-unused-imports'
+      ]).length
+    expect(listed('<List :items v-slot="{ items }">{{ items }}</List>')).toBe(0)
+    expect(listed('<List v-slot="{ items }" :items>{{ items }}</List>')).toBe(0)
+    expect(listed('<List v-slot="{ items }">{{ items }}</List>')).toBe(1)
+    // A v-for alias of the same element does shadow its shorthand.
+    expect(listed('<Row v-for="items in rows" :key="items" :items />')).toBe(1)
+    // <style> v-bind() reads the script.
+    const styled = (style: string) =>
+      checkSfc(
+        `${sfc('<p />', "import { brandColor } from './theme'")}
+<style scoped>
+${style}
+</style>
+`,
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(styled('p { color: v-bind(brandColor); }')).toBe(0)
+    expect(styled("p { color: v-bind('brandColor.main'); }")).toBe(0)
+    expect(styled('p { color: v-bind(other); }')).toBe(1)
+    const kebab = (template: string, local: string) =>
+      checkSfc(
+        sfc(template, `import * as ${local} from './form-components'`),
+        'x.vue',
+        ['no-unused-imports']
+      ).length
+    expect(kebab('<form-parts.Input />', 'FormParts')).toBe(0)
+    expect(kebab('<form-parts.Input />', 'formParts')).toBe(0)
+    expect(kebab('<other-parts.Input />', 'FormParts')).toBe(1)
+    // Outside the slot the name is the import again.
+    expect(
+      unused(
+        '<div><Child v-slot="{ unusedHelper }">{{ unusedHelper }}</Child>{{ unusedHelper }}</div>'
+      )
+    ).toBe(0)
+    expect(
+      unused('<Child v-slot="{ label = other }">{{ label }}</Child>')
+    ).toBe(1)
+  })
+
+  it('reports an import the script and the template both leave unused', () => {
+    const findings = checkSfc(
+      sfc(
+        '<Child v-focus :items="list" @pick="onPick" /><my-part />',
+        `import { ref } from 'vue'
+import Child from './Child.vue'
+import MyPart from './MyPart.vue'
+import { vFocus } from './focus'
+import { onPick, unusedHelper } from './helpers'
+import type { Row, Unused } from './types'
+const list = ref<Row[]>([])`
+      ),
+      'x.vue',
+      ['no-unused-imports']
+    )
+    expect(findings.map(finding => [finding.line, finding.message])).toEqual([
+      [6, expect.stringContaining('"unusedHelper"')],
+      [7, expect.stringContaining('"Unused"')]
+    ])
+  })
+
+  it('counts an import used only by the generic attribute', () => {
+    const source = `<script setup lang="ts" generic="Q extends Query">
+import type { Query } from './query'
+defineProps<{ query: Q }>()
+</script>
+
+<template><p /></template>
+`
+    expect(gatesOf(source)).toEqual([])
+  })
+
+  it('runs only the gates it is given', () => {
+    expect(
+      checkSfc(sfc('<div v-html="h" /><li v-for="r in rows" />'), 'x.vue', [
+        'no-v-html'
+      ]).map(finding => finding.gate)
+    ).toEqual(['no-v-html'])
+  })
+})
+
+describe('template gate disable comments', () => {
+  it('silences the named gate on the next element only', () => {
+    expect(
+      gatesOf(
+        sfc(`<!-- template-gate-disable-next-line no-v-html -- trusted markup -->
+<div v-html="a" />
+<div v-html="b" />`)
+      )
+    ).toEqual(['no-v-html'])
+  })
+
+  it('leaves a sibling on the same line checked', () => {
+    expect(
+      gatesOf(
+        sfc(`<!-- template-gate-disable-next-line no-v-html -- trusted markup -->
+<div v-html="a" /><div v-html="b" />`)
+      )
+    ).toEqual(['no-v-html'])
+  })
+
+  it('reports a disable comment without a reason, an unknown gate, or nothing to silence', () => {
+    const messages = (template: string) =>
+      checkSfc(sfc(template), 'x.vue', allGates).map(
+        finding => `${finding.gate}: ${finding.message}`
+      )
+    expect(
+      messages(`<!-- template-gate-disable-next-line no-v-html -->
+<div v-html="a" />`)
+    ).toEqual([expect.stringContaining('needs a reason')])
+    expect(
+      messages(`<!-- template-gate-disable-next-line no-such-gate -- x -->
+<div />`)
+    ).toEqual([expect.stringContaining('unknown gate')])
+    expect(
+      messages(`<!-- template-gate-disable-next-line no-v-html -- x -->
+<div />`)
+    ).toEqual([expect.stringContaining('nothing is reported')])
+  })
+})
+
+describe('template gate parse errors', () => {
+  it('throws on a broken template', () => {
+    expect(() => gatesOf(sfc('<div><span></div>'))).toThrow(GateParseError)
+  })
+
+  it('throws on a script that does not parse', () => {
+    expect(() => gatesOf(sfc('<p />', 'import { from'))).toThrow(GateParseError)
+  })
+})
+
+describe('template gate CLI', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'template-gate-'))
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+  const write = (name: string, content: string) => {
+    const file = join(dir, name)
+    writeFileSync(file, content)
+    return file
+  }
+  const run = (...args: string[]) =>
+    spawnSync(process.execPath, [join(gateDir, 'cli.mjs'), ...args], {
+      cwd: root,
+      encoding: 'utf8'
+    })
+
+  it('passes the repository', () => {
+    const result = run()
+    expect(result.stdout + result.stderr).toBe('')
+    expect(result.status).toBe(0)
+  })
+
+  it('scans the whole repository by default, as **/*.vue did, minus the ignores', () => {
+    // A directory no package or app owns: still in scope.
+    const stray = mkdtempSync(join(root, 'gate-scope-'))
+    // An ignored segment ("fixtures") anywhere below it: out of scope.
+    const ignoredDir = join(stray, 'fixtures')
+    try {
+      writeFileSync(join(stray, 'Stray.vue'), sfc('<div v-html="h" />'))
+      mkdirSync(ignoredDir, { recursive: true })
+      writeFileSync(join(ignoredDir, 'Ignored.vue'), sfc('<div v-html="h" />'))
+      const result = run()
+      expect(result.status).toBe(1)
+      expect(result.stdout).toMatch(
+        /gate-scope-[^/]*\/Stray\.vue:\d+:\d+ no-v-html/
+      )
+      expect(result.stdout).not.toMatch(/Ignored\.vue/)
+    } finally {
+      rmSync(stray, { recursive: true, force: true })
+    }
+  })
+
+  it('checks the files it is given, as a pre-commit hook passes staged paths', () => {
+    const file = write('Bad.vue', sfc('<div v-html="h" />'))
+    const clean = write('Good.vue', sfc('<p>{{ 1 }}</p>'))
+    const result = run(file, clean)
+    expect(result.status).toBe(1)
+    expect(result.stdout).toMatch(
+      /Bad\.vue:6:6 no-v-html v-html renders raw HTML/
+    )
+    expect(result.stdout).not.toMatch(/Good\.vue/)
+  })
+
+  it('prints JSON', () => {
+    const file = write('Json.vue', sfc('<li v-for="r in rows" />'))
+    const result = run('--format=json', file)
+    expect(result.status).toBe(1)
+    const report = JSON.parse(result.stdout) as {
+      files: number
+      findings: (Finding & { file: string })[]
+    }
+    expect(report.files).toBe(1)
+    expect(report.findings.map(finding => finding.gate)).toEqual([
+      'require-v-for-key'
+    ])
+  })
+
+  it('exits with 2 on an SFC that does not parse', () => {
+    const file = write('Broken.vue', sfc('<div><span></div>'))
+    const result = run(file)
+    expect(result.status).toBe(2)
+    expect(result.stderr).toMatch(/parse error: .*Broken\.vue/)
+  })
+
+  it('exits with 2 on a bad configuration', () => {
+    const config = write('config.json', '{ "gates": ["no-such-gate"] }')
+    expect(run('--config', config).status).toBe(2)
+    for (const [name, content] of [
+      ['string-gates.json', '{ "gates": "no-v-html" }'],
+      ['number-gate.json', '{ "gates": [1] }'],
+      ['string-ignore.json', '{ "gates": ["no-v-html"], "ignore": "dist" }'],
+      ['array.json', '[]'],
+      ['null.json', 'null']
+    ]) {
+      const result = run('--config', write(name, content))
+      expect(result.status).toBe(2)
+      expect(result.stderr).toMatch(/^template-gate: /)
+    }
+    expect(run('--format=xml').status).toBe(2)
+    expect(run(join(dir, 'missing.vue')).status).toBe(2)
+  })
+})

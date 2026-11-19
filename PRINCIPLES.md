@@ -16,7 +16,7 @@ A consumer that already holds every row of the resolved source context may evalu
 
 Why: data logic inside the table would become a second source of truth next to the data source. A separate evaluator with a written, tested meaning lets a table move between the browser and a server without changing what it shows.
 
-Check: ESLint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in `src/`; C-61 pins the manual row-model settings; `layers/boundaries` and the built entry graph keep the evaluator out of the default entries; `packages/query-protocol/tests/conformance.spec.ts` runs the suite; C-127 (added with the implementation of ADR 0021) holds that `DataTable` draws the DOM `QueryTable` draws for the same page.
+Check: oxlint forbids `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `localStorage`, `sessionStorage` and `indexedDB` in `src/`; C-61 pins the manual row-model settings; `layers/boundaries` and the built entry graph keep the evaluator out of the default entries; `packages/query-protocol/tests/conformance.spec.ts` runs the suite; C-127 (added with the implementation of ADR 0021) holds that `DataTable` draws the DOM `QueryTable` draws for the same page.
 
 ## P2 Lasting state is controlled; internal state is short-lived
 
@@ -122,7 +122,7 @@ protocol → core → vue → playground. A package imports only from the layers
 
 Why: a layer that imports upward cannot be used without the one above it, and two features that import each other are one feature.
 
-Check: the ESLint layer rule `layers/boundaries` (`scripts/eslint-layers.mjs`, tested in `tests/repo/eslint-layers.spec.ts`, extended to the row-change module with the implementation of ADR 0011, to `data-table/` with the implementation of ADR 0021, and to `cells/` with the implementation of ADR 0022) over imports, re-exports, dynamic imports, type imports and package sub-paths; `scripts/check-deps.mjs`; `scripts/check-entry-graph.mjs` over the built entries.
+Check: the oxlint layer rule `layers/boundaries` (`oxlint-plugins/layers.mjs`, tested in `tests/repo/layers.spec.ts`, extended to the row-change module with the implementation of ADR 0011, to `data-table/` with the implementation of ADR 0021, and to `cells/` with the implementation of ADR 0022) over imports, re-exports, dynamic imports, type imports and package sub-paths; `scripts/check-deps.mjs`; `scripts/check-entry-graph.mjs` over the built entries.
 
 ## P15 TanStack holds the table; we add only what it lacks
 

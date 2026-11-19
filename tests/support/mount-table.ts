@@ -101,8 +101,8 @@ export const mountTable = (
 
   // Declared first because the `onUpdate:query` handler below reads it, so
   // `const` cannot be used.
+  // oxlint-disable-next-line prefer-const -- reported on the declaration
   let wrapper: VueWrapper
-  // eslint-disable-next-line prefer-const
   wrapper = mount(QueryTable as unknown as Component, {
     props: {
       columns: makeColumns(),
