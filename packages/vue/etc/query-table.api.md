@@ -451,6 +451,8 @@ export interface TableLabels {
     boolFalse: string;
     boolTrue: string;
     clearAllFilters: string;
+    copyValue?: (value: string) => string;
+    emptyValue?: string;
     expandRow: string;
     filterCondition: (condition: FilterCondition, type: ColumnType) => string;
     filterInput: (column: string) => string;
@@ -459,6 +461,7 @@ export interface TableLabels {
     filterOptions: (column: string) => string;
     moveColumn: (column: string) => string;
     openRightPanel: string;
+    previewValue?: (text: string) => string;
     resizeColumn: (column: string) => string;
     selectAllRows: string;
     selectRow: string;

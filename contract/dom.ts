@@ -185,6 +185,95 @@ export const domClasses: ClassEntry[] = [
     name: 'qt-pagination',
     on: 'div',
     description: 'Block around the `pagination` slot.'
+  },
+  // The cell components of `/cells` (ADR 0022): drawn by a component in a
+  // cell slot, not by the table (P6).
+  {
+    name: 'qt-cell-stack',
+    on: 'span',
+    description: '`CellStack`: a primary line over a secondary one (C-128).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-primary',
+    on: '.qt-cell-stack > span',
+    description: 'The first line of a `CellStack`.',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-secondary',
+    on: '.qt-cell-stack > span',
+    description: 'The second line of a `CellStack`, when there is one.',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-copy',
+    on: 'span',
+    description: '`CellCopy`: a value with a copy button (C-128).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-copy-text',
+    on: '.qt-cell-copy > code',
+    description: 'The value of a `CellCopy`.',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-copy-button',
+    on: '.qt-cell-copy > button',
+    description:
+      'The copy button of a `CellCopy`; a press emits `copy` (C-129).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-preview',
+    on: 'span',
+    description: '`CellPreview`: a text with a preview button (C-128).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-preview-text',
+    on: '.qt-cell-preview > span',
+    description: 'The text of a `CellPreview`.',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-preview-button',
+    on: '.qt-cell-preview > button',
+    description:
+      'The preview button of a `CellPreview`; a press emits `preview` (C-129).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-icon',
+    on: 'button > svg',
+    description: 'The icon of a copy or preview button.',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-badge',
+    on: 'span',
+    description: '`CellBadge`: a short status with `data-tone` (C-128).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-empty',
+    on: 'span',
+    description:
+      '`CellValue` with no value: holds `labels.emptyValue` (C-128, C-129).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-actions',
+    on: 'span',
+    description: '`CellActions`: the group of `CellAction` buttons (C-128).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'qt-cell-action',
+    on: 'button',
+    description: '`CellAction`: one button of the group, with `data-kind`.',
+    addedBy: 'C-128'
   }
 ]
 
@@ -325,6 +414,20 @@ export const domAttributes: AttributeEntry[] = [
     description:
       'With `virtual`: the position of a drawn header, body or footer row among all rows, from 1 (C-86).',
     addedBy: 'C-86'
+  },
+  {
+    name: 'data-tone',
+    on: 'span.qt-cell-badge',
+    description:
+      'What a `CellBadge` says: `neutral`, `info`, `success`, `warning` or `danger` (C-128).',
+    addedBy: 'C-128'
+  },
+  {
+    name: 'data-kind',
+    on: 'button.qt-cell-action',
+    description:
+      'What a `CellAction` does: `default`, `primary` or `danger` (C-128).',
+    addedBy: 'C-128'
   }
 ]
 

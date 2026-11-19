@@ -424,3 +424,50 @@ import { datasetOf } from './derive-dataset'`
     }
   )
 })
+
+describe('cell component layers (ADR 0022, K320-6)', () => {
+  const cellsFence =
+    'the cell components are reached only through their own entry (ADR 0022)'
+
+  tester.run(
+    'lets the cell components import vue, themselves and core/table-labels only',
+    layers.rules.boundaries,
+    {
+      valid: [
+        ok(
+          `${vue}/cells/x.ts`,
+          `import { computed } from 'vue'
+import type { CellBadgeTone } from './contract'
+import { useTableLabels } from '../core/table-labels'`
+        )
+      ],
+      invalid: [
+        `import { resolveLabels } from '../core/labels'`,
+        `import { QueryTable } from '../index'`,
+        `import { DataTable } from '../data-table'`,
+        `import { useLocalQuery } from '../local'`,
+        `import { columnTypeOf } from '@dolusoft/query-protocol'`,
+        `import { useVueTable } from '@tanstack/vue-table'`
+      ].map(code => bad(`${vue}/cells/x.ts`, code, 1))
+    }
+  )
+
+  tester.run(
+    'keeps the table, the binding and DataTable away from the cell components',
+    layers.rules.boundaries,
+    {
+      valid: [],
+      invalid: [
+        [`${vue}/x.ts`, './cells'],
+        [`${vue}/body/x.ts`, '../cells'],
+        [`${vue}/local/x.ts`, '../cells'],
+        [`${vue}/data-table/x.ts`, '../cells']
+      ].flatMap(([file, dir]) =>
+        [
+          `import { CellCopy } from '${dir}'`,
+          `export { CellCopy } from '${dir}/index'`
+        ].map(code => bad(file, code, cellsFence))
+      )
+    }
+  )
+})

@@ -1,12 +1,13 @@
 // The default entries never reach the local evaluator (C-75, P1, P14), nor
-// DataTable, which composes it with the table (ADR 0021, K319-7).
+// DataTable, which composes it with the table (ADR 0021, K319-7), nor the
+// cell components (ADR 0022, K320-6).
 //   1. dist: from each default entry's file, follow its static and dynamic
 //      imports through dist/*.js; no chunk on the way has a source map
-//      `sources` entry under src/local/ or src/data-table/, and none names a
-//      /local or /data-table entry.
-//   2. fixtures: the size fixtures that use no /local or /data-table entry
-//      bundle no module of packages/*/dist/local.js, of
-//      packages/vue/dist/data-table.js or of a chunk only they import.
+//      `sources` entry under src/local/, src/data-table/ or src/cells/, and
+//      none names a /local, /data-table or /cells entry.
+//   2. fixtures: the size fixtures that use none of those entries bundle no
+//      module of packages/*/dist/local.js, of packages/vue/dist/data-table.js
+//      or packages/vue/dist/cells.js, or of a chunk only they import.
 // Run after `pnpm build`. Searching the output for the word "local" is not
 // evidence; module ids and source maps are.
 //
@@ -20,11 +21,12 @@ import { specifiersOf } from './specifiers.mjs'
 const root = join(import.meta.dirname, '..')
 const rel = path => relative(root, path).split(sep).join('/')
 
-/** The entries of the local evaluator, of its Vue binding and of DataTable. */
+/** The opt-in entries: the evaluator, its binding, DataTable and the cells. */
 const localEntries = [
   '@dolusoft/query-protocol/local',
   '@dolusoft/query-table/local',
-  '@dolusoft/query-table/data-table'
+  '@dolusoft/query-table/data-table',
+  '@dolusoft/query-table/cells'
 ]
 
 // Relative specifiers of the built ES modules: `import … from './x.js'`,
@@ -51,7 +53,7 @@ const localSources = file => {
   }
   const { sources = [] } = JSON.parse(readFileSync(map, 'utf8'))
   return sources.filter(source =>
-    /(^|\/)src\/(local|data-table)\//.test(source)
+    /(^|\/)src\/(local|data-table|cells)\//.test(source)
   )
 }
 
@@ -110,10 +112,11 @@ for (const dir of packages) {
 const localFiles = packages
   .flatMap(dir => [
     join(dir, 'dist', 'local.js'),
-    join(dir, 'dist', 'data-table.js')
+    join(dir, 'dist', 'data-table.js'),
+    join(dir, 'dist', 'cells.js')
   ])
   .filter(file => existsSync(file))
-/** The chunks of the dist that only the local and DataTable entries import. */
+/** The chunks of the dist that only the opt-in entries import. */
 const localOnly = new Set(localFiles)
 for (const dir of packages) {
   const dist = join(dir, 'dist')
@@ -187,15 +190,19 @@ if (control.length === 0) {
 // file such as dist/local.js then leaves no module of its own in a bundle.
 const vueDist = join(root, 'packages', 'vue', 'dist')
 const dataTableFile = join(vueDist, 'data-table.js')
-const bindingFile = file => file !== dataTableFile && dirname(file) === vueDist
+const cellsFile = join(vueDist, 'cells.js')
+const bindingFile = file =>
+  file !== dataTableFile && file !== cellsFile && dirname(file) === vueDist
 const bindingControl = await localModulesOf('local-composable', 'consumer')
 if (!bindingControl.some(bindingFile)) {
   problems.push(
     'fixture local-composable bundles no Vue binding file: the binding control is missing'
   )
 }
-if (bindingControl.includes(dataTableFile)) {
-  problems.push('fixture local-composable bundles Vue dist/data-table.js')
+for (const file of [dataTableFile, cellsFile]) {
+  if (bindingControl.includes(file)) {
+    problems.push(`fixture local-composable bundles ${rel(file)}`)
+  }
 }
 
 // DataTable reaches both: its own entry and the binding.
@@ -207,6 +214,29 @@ if (
   problems.push(
     'fixture data-table bundles no Vue dist/data-table.js and binding chunk: the DataTable control is missing'
   )
+}
+if (dataTableControl.includes(cellsFile)) {
+  problems.push('fixture data-table bundles Vue dist/cells.js')
+}
+
+// The cell components reach their own entry and nothing of the evaluator.
+const cellsControl = await localModulesOf('cells', 'consumer')
+if (!cellsControl.includes(cellsFile)) {
+  problems.push(
+    'fixture cells bundles no Vue dist/cells.js: the cells control is missing'
+  )
+}
+for (const file of cellsControl.filter(id => id !== cellsFile)) {
+  problems.push(`fixture cells bundles ${rel(file)}`)
+}
+// Nor the protocol: their labels come from a module that imports only types
+// (K320-6). The layer rule sees direct imports only, so the bundle is read.
+const protocolDist = join(root, 'packages', 'query-protocol', 'dist')
+const cellsModules = (await buildFixture('cells', 'consumer'))
+  .flatMap(chunk => chunk.moduleIds)
+  .map(moduleId => resolve(moduleId.split('?')[0]))
+for (const id of cellsModules.filter(file => file.startsWith(protocolDist))) {
+  problems.push(`fixture cells bundles ${rel(id)} of the protocol`)
 }
 if (problems.length > 0) {
   for (const problem of problems) {

@@ -395,6 +395,8 @@ const dataTable = {
     'Rows held in the page: `useLocalQuery` and `QueryTable` composed (ADR 0021). It takes the surface of `QueryTable` with the props, the left-out props and the slot below (C-124).',
   props: dataTableMembersOf('DataTableProps'),
   omitted: omittedProps,
+  // Its events are those of QueryTable: none of its own.
+  emits: [],
   slots: dataTableMembersOf('DataTableSlots').map(
     ({ name, type, description }) => ({
       name,
@@ -403,15 +405,119 @@ const dataTable = {
     })
   )
 }
-const dataTableTypes = dataTableFile.statements
-  .filter(
+const exportedTypesOf = file =>
+  file.statements
+    .filter(
+      statement =>
+        isDeclaredType(statement) &&
+        statement.modifiers?.some(
+          modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
+        )
+    )
+    .map(typeEntry)
+const dataTableTypes = exportedTypesOf(dataTableFile)
+
+// ---------------------------------------------------------------------------
+// The cell components (`@dolusoft/query-table/cells`, ADR 0022): their props
+// from src/cells/contract.ts, their events and slots as C-128 and C-129 say.
+// ---------------------------------------------------------------------------
+
+const cellsPath = at('packages', 'vue', 'src', 'cells', 'contract.ts')
+const cellsText = read(cellsPath)
+const cellsFile = ts.createSourceFile(
+  cellsPath,
+  cellsText,
+  ts.ScriptTarget.ES2022,
+  true
+)
+const cellPropsOf = name => {
+  const found = cellsFile.statements.find(
     statement =>
-      isDeclaredType(statement) &&
-      statement.modifiers?.some(
-        modifier => modifier.kind === ts.SyntaxKind.ExportKeyword
-      )
+      ts.isInterfaceDeclaration(statement) && statement.name.text === name
   )
-  .map(typeEntry)
+  if (!found) {
+    throw new Error(`src/cells/contract.ts declares no ${name}`)
+  }
+  return found.members.map(member => ({
+    name: nameOf(member),
+    type: member.type?.getText() ?? 'unknown',
+    required: !member.questionToken,
+    description: docOf(member)
+  }))
+}
+/**
+ * The events of a cell component, read from the `defineEmits` type literal of
+ * its SFC (each member with its JSDoc), so the contract follows the source.
+ */
+const cellEmitsOf = name => {
+  const file = `${name.replace(/^Cell/, 'cell-').toLowerCase()}.vue`
+  const source = read(at('packages', 'vue', 'src', 'cells', file))
+  const block = /defineEmits<\{([\s\S]*?)\}>\(\)/.exec(source)
+  if (!block) {
+    return []
+  }
+  return [
+    ...block[1].matchAll(/\/\*\*([\s\S]*?)\*\/\s*(\w+):\s*\[([^\]]*)\]/g)
+  ].map(([, doc, event, args]) => ({
+    name: event,
+    type: `[${args.trim()}]`,
+    description: doc.replace(/\s*\n\s*\*?\s*/g, ' ').trim()
+  }))
+}
+const cellComponent = (name, propsType, description, cellSlots = []) => ({
+  name,
+  entry: '@dolusoft/query-table/cells',
+  description,
+  props: propsType ? cellPropsOf(propsType) : [],
+  omitted: [],
+  emits: cellEmitsOf(name),
+  slots: cellSlots
+})
+const cellComponents = [
+  cellComponent(
+    'CellStack',
+    'CellStackProps',
+    'Two lines: `span.qt-cell-stack` with `.qt-cell-primary` and, when given, `.qt-cell-secondary` (C-128).',
+    [
+      { name: 'primary', props: '', description: 'Replaces `primary`.' },
+      { name: 'secondary', props: '', description: 'Replaces `secondary`.' }
+    ]
+  ),
+  cellComponent(
+    'CellCopy',
+    'CellCopyProps',
+    "A value in `code.qt-cell-copy-text` and `button.qt-cell-copy-button`, named by `labels.copyValue`. A press emits `copy` with the value as a string; the clipboard is the consumer's (C-128, C-129)."
+  ),
+  cellComponent(
+    'CellPreview',
+    'CellPreviewProps',
+    'A text in `span.qt-cell-preview-text` and `button.qt-cell-preview-button`, named by `labels.previewValue`. A press emits `preview` with the text as a string (C-128, C-129).'
+  ),
+  cellComponent(
+    'CellBadge',
+    'CellBadgeProps',
+    'A short status: `span.qt-cell-badge` with `data-tone` (C-128).',
+    [{ name: 'default', props: '', description: 'Replaces `text`.' }]
+  ),
+  cellComponent(
+    'CellValue',
+    'CellValueProps',
+    "The value as a cell draws it, or `span.qt-cell-empty` with `labels.emptyValue` for `null`, `undefined` and `''` (C-128, C-129)."
+  ),
+  cellComponent(
+    'CellActions',
+    null,
+    'The group of actions: `span.qt-cell-actions` around its slot (C-128).',
+    [{ name: 'default', props: '', description: 'The `CellAction` buttons.' }]
+  ),
+  cellComponent(
+    'CellAction',
+    'CellActionProps',
+    'One action: `button.qt-cell-action` with `type="button"` and `data-kind`; attributes and listeners go to the button (C-128).',
+    [{ name: 'default', props: '', description: "The button's text." }]
+  )
+]
+const cellsTypes = exportedTypesOf(cellsFile)
 
 // ---------------------------------------------------------------------------
 // Markdown
@@ -511,11 +617,31 @@ const sections = [
       slot.description
     ])
   ),
+  '### Cell components (`@dolusoft/query-table/cells`)',
+  'Unstyled components for a `cell-<field>` slot or any other place (ADR 0022). Their texts come from the `labels` of the table they sit in (C-129).',
+  table(
+    ['Component', 'Props', 'Events', 'Description'],
+    cellComponents.map(component => [
+      code(component.name),
+      component.props
+        .map(
+          prop =>
+            `${code(`${prop.name}${prop.required ? '' : '?'}: ${prop.type}`)}`
+        )
+        .join(', '),
+      component.emits
+        .map(event => code(`${event.name}: ${event.type}`))
+        .join(', '),
+      component.description
+    ])
+  ),
   '## Types',
   'Exported from the package entry point (`packages/vue/src/contract.ts`).',
   '```ts\n' + contractText.trim() + '\n```',
   'Exported from `@dolusoft/query-table/data-table` (`packages/vue/src/data-table/contract.ts`).',
   '```ts\n' + dataTableText.trim() + '\n```',
+  'Exported from `@dolusoft/query-table/cells` (`packages/vue/src/cells/contract.ts`).',
+  '```ts\n' + cellsText.trim() + '\n```',
   'The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.',
   '```ts\n' +
     reexported.map(statement => statement.getFullText().trim()).join('\n\n') +
@@ -642,8 +768,8 @@ const api = {
     description
   })),
   functions,
-  components: [dataTable],
-  types: [...types, ...dataTableTypes],
+  components: [dataTable, ...cellComponents],
+  types: [...types, ...dataTableTypes, ...cellsTypes],
   rules: ruleEntries
 }
 

@@ -93,6 +93,36 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-124', 'C-125', 'C-126', 'C-127']
   },
   {
+    id: 'cell-components',
+    title: 'Cell components',
+    navTitle: 'Cells',
+    summary:
+      'Unstyled components for what a cell draws: two lines, a value to copy, a text to preview, a status badge, an empty value and the row actions, each with qt-cell-* hooks for the skin and its texts from the table labels.',
+    example: 'CellComponents',
+    api: {
+      components: [
+        'CellStack',
+        'CellCopy',
+        'CellPreview',
+        'CellBadge',
+        'CellValue',
+        'CellActions',
+        'CellAction'
+      ],
+      types: [
+        'CellBadgeTone',
+        'CellActionKind',
+        'CellStackProps',
+        'CellCopyProps',
+        'CellPreviewProps',
+        'CellBadgeProps',
+        'CellValueProps',
+        'CellActionProps'
+      ]
+    },
+    rules: ['C-128', 'C-129']
+  },
+  {
     id: 'filtering',
     title: 'Filtering',
     summary:

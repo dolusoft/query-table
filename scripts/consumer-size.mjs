@@ -5,7 +5,8 @@
 // (`vue-only`): what is left is the package with TanStack, the core and the
 // protocol, Vue excluded. The fixtures: `composable` (`useQueryTable()` with
 // the consumer's own markup), `component` (`QueryTable`), `local-composable`
-// (`useLocalQuery`) and `data-table` (`DataTable`, ADR 0021). Writes
+// (`useLocalQuery`), `data-table` (`DataTable`, ADR 0021) and `cells` (the
+// cell components, ADR 0022). Writes
 // node_modules/.cache/measure/consumer-size.json. Run after `pnpm build`
 // (the package script does).
 //
@@ -54,6 +55,10 @@ const buildApp = async name => {
           replacement: join(vuePackage, 'dist', 'data-table.js')
         },
         {
+          find: /^@dolusoft\/query-table\/cells$/,
+          replacement: join(vuePackage, 'dist', 'cells.js')
+        },
+        {
           find: /^@dolusoft\/query-table$/,
           replacement: join(vuePackage, 'dist', 'query-table.js')
         }
@@ -96,7 +101,13 @@ const buildApp = async name => {
   }
 }
 
-const names = ['composable', 'component', 'local-composable', 'data-table']
+const names = [
+  'composable',
+  'component',
+  'local-composable',
+  'data-table',
+  'cells'
+]
 const baseline = await buildApp('vue-only')
 const apps = {}
 const costs = {}

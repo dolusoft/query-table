@@ -25,6 +25,7 @@ The packages are on npm (`@dolusoft/query-table`; the protocol and the core come
 | Only the query types, the grammar or the schema (a backend, a URL codec) | `@dolusoft/query-protocol` |
 | Evaluate a query over all rows already loaded in the browser | `defineDataset` + `useLocalQuery` from the opt-in `/local` entries; [local query reference](references/local-query.md) |
 | A table for rows already in the page, with no query or dataset to wire | `DataTable` from `@dolusoft/query-table/data-table`; [local query reference](references/local-query.md#datatable) |
+| Common cell content (two lines, an ID to copy, a status badge, a dash for no value, row actions) | `CellStack`, `CellCopy`, `CellPreview`, `CellBadge`, `CellValue`, `CellActions` and `CellAction` from `@dolusoft/query-table/cells`, in a `cell-<field>` slot; [component reference](references/vue-component.md#cell-components) |
 
 Start with `QueryTable`. Move to `useQueryTable()` when the markup must be yours; move to the TanStack path when there is no Vue component layer at all. Details: [references/vue-component.md](references/vue-component.md), [references/tanstack-path.md](references/tanstack-path.md).
 

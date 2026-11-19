@@ -230,7 +230,12 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/table-body.spec.ts > C-122 Telling the consumer about expansion',
   'tests/contract/unit/table-body.spec.ts > C-123 One row open at a time',
   'tests/contract/browser/row-expansion-event.browser.spec.ts',
-  'tests/contract/unit/data-table.spec.ts'
+  'tests/contract/unit/data-table.spec.ts',
+  // 3.20 addition (ADR 0022, #203): the cell components of `/cells` and the
+  // labels they read from the table (C-128, C-129), which a 3.19 build does
+  // not have. The table draws nothing new.
+  'tests/contract/unit/cells.spec.ts',
+  'tests/contract/browser/dom-contract-cells.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

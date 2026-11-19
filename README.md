@@ -85,6 +85,33 @@ const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Işık' }]
 
 `rows` is every row, `rowKey` is required and names a `string` or `integer` column (it may be hidden). It takes no `totalRows`, `cursors`, `infinite` or `rowsUpdate`: it knows the total, and it tells the change flash whether a new page comes from a new query or from changed rows. `profile` (default `'tr-2'`) is the meaning of the evaluation, `paginate: false` draws every match, and `dataset` replaces the built dataset for a field that needs `get` or `offset`. A list too large to hold in the page stays on a server with `QueryTable`. The rules are C-124 to C-127.
 
+## Cell components
+
+The cells of a product's tables repeat a few patterns: a bold line over a small one, an ID to copy, a text to preview, a status, a dash for no value, the row's actions. `@dolusoft/query-table/cells` draws them as unstyled components with `qt-cell-*` hooks, so one skin dresses them in every table (ADR 0022).
+
+```vue
+<script setup lang="ts">
+import { CellAction, CellActions, CellBadge, CellCopy, CellStack, CellValue } from '@dolusoft/query-table/cells'
+</script>
+
+<template>
+  <DataTable :columns="columns" :rows="sites" row-key="id">
+    <template #cell-name="{ row }"><CellStack :primary="row.name" :secondary="row.note" /></template>
+    <template #cell-mappingId="{ row }"><CellCopy :value="row.mappingId" @copy="copyToClipboard" /></template>
+    <template #cell-status="{ row }"><CellBadge tone="warning" :text="row.status" /></template>
+    <template #cell-api="{ row }"><CellValue :value="row.api" /></template>
+    <template #cell-actions="{ row }">
+      <CellActions>
+        <CellAction kind="primary" @click="edit(row)">Edit</CellAction>
+        <CellAction kind="danger" @click="remove(row)">Delete</CellAction>
+      </CellActions>
+    </template>
+  </DataTable>
+</template>
+```
+
+They draw only what their props give them and hold no state. `CellCopy` and `CellPreview` emit `copy` and `preview`; writing the clipboard or opening a preview is yours. Their button names and the empty-value text come from the table's `labels` (`copyValue`, `previewValue`, `emptyValue`). `tone` and `kind` say what a badge or an action means; how that looks is the skin's. The rules are C-128 and C-129.
+
 ## Sorting
 
 A header click cycles ascending, descending, none: the third click on the same column sets `sort` to `null`. A click on another column starts at ascending. The sort is a single `{ field, direction }`, so "none" is the absence of the entry.

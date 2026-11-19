@@ -35,7 +35,8 @@
       "@dolusoft/query-table/local": ["./packages/vue/src/local/index.ts"],
       "@dolusoft/query-table/data-table": [
         "./packages/vue/src/data-table/index.ts"
-      ]
+      ],
+      "@dolusoft/query-table/cells": ["./packages/vue/src/cells/index.ts"]
     }
   },
   "include": [
