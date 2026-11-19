@@ -8,6 +8,10 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+## [3.19.0] - 2026-11-19
+
+A table for rows held in the page (`DataTable`), one row open at a time, a table without a header, and `IsNull` and `IsNotNull` on a bool column.
+
 ### Added
 
 - A `bool` column offers `IsNull` and `IsNotNull` when its `filterConditions` lists them: they are options of its select, after `All`, `True` and `False`, named by `labels.filterCondition`. Picking one emits one rule without a value; an outside such rule shows as picked instead of as `All`. Opt-in: without the list the select is the one of 3.18 ([C-120](contract/rules.md#c-120-no-value-on-a-bool-column), [C-112](contract/rules.md#c-112-column-filterconditions)).
@@ -425,7 +429,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.18.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.19.0...HEAD
+[3.19.0]: https://github.com/dolusoft/query-table/compare/v3.18.0...v3.19.0
 [3.18.0]: https://github.com/dolusoft/query-table/compare/v3.17.0...v3.18.0
 [3.17.0]: https://github.com/dolusoft/query-table/compare/v3.16.0...v3.17.0
 [3.16.0]: https://github.com/dolusoft/query-table/compare/v3.15.0...v3.16.0
