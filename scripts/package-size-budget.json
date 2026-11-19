@@ -1,5 +1,5 @@
 {
-  "note": "Budget for `node scripts/package-size.mjs --check` (CI, P8): the cost, minified + gzip, of an app built from each fixture in fixtures/packages, TanStack included, minus the empty app. `measuredGzipBytes` is the value when the budget was last set; `maxGzipBytes` is that plus 5%, capped at `ceilingGzipBytes`. Ceilings guard against silent drift: a check above one fails. A deliberate growth raises the budget (and the ceiling when needed) in the same change, with a one-line reason in `history`.",
+  "note": "Budget for `node scripts/package-size.mjs --check` (CI, P8): the cost, minified + gzip, of an app built from each fixture in fixtures/packages, TanStack included, minus the empty app. `measuredGzipBytes` is the value when the budget was last set; `maxGzipBytes` is that plus 5%, capped at `ceilingGzipBytes`. Ceilings guard against silent drift: a check above one fails. A deliberate growth raises the budget (and the ceiling when needed) in the same change, with a one-line reason in `history`. `skin` is the reference skin's built stylesheet, measured as it is (ADR 0023).",
   "history": [
     "3.0.0-next.0 (PR-B): first measurement. The core fixture has five stock features (sorting, pagination, column filtering, global filtering, row selection; no sizing, D10) and both plugins. Its +5% (18344 B) was over the 17500 B ceiling of the spike, so the budget was the ceiling: 30 B of room.",
     "3.0.0-next.0 (PR-B review): core 17564 B (+94 B: same-text search, cursor-mode setPageIndex, per-emit microtask reset). K7 (Zahid, 2026-10-06): size is not a blocker; the core ceiling is 18500 B and the budget is the measure plus 5%.",
@@ -11,7 +11,8 @@
     "3.13.0 (ADR 0020, #167, 2026-10-23): filter-input 11809 B (+555 B over the 11254 B measure; it had grown to within 8 B of its budget before this change was measured). The two bounds of a Between draft, the arity of a condition and the no-value rules. Budget set to measure plus 5%; no ceiling.",
     "3.14.0 (#95, 2026-10-24): protocol 1376 B (+118 B). parseFilterInput reads number lists and negation (`80,443`, `!80,!443`), all or nothing. Budget set to measure plus 5%; ceiling unchanged. filter-input 12054 B stays within its budget.",
     "3.16.0 (#180, 2026-10-27): protocol 1520 B (+144 B over the 1376 B measure of 3.14), core 18554 B (+155 B over the 18399 B of 3.15, which had 43 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, so the parser can tell an offered default from one that counts as unset. Budgets set to measure plus 5%; both are over their ceilings, which are raised as #171 proposed, measure x 1.05 rounded up to the next 500 B (K7: size is not a blocker): protocol 2000 B, core 19500 B. filter-input 12316 B stays within its budget.",
-    "3.17.0 (#184, 2026-10-27): protocol 2218 B (+698 B over the 1520 B of 3.16), filter-input 13108 B (+1299 B over the 11809 B of 3.13, which 3.14 to 3.16 had grown to 12316 B). The column type `ip` (C-118): IPv4 and IPv6 parsing with BigInt, a CIDR prefix to its bounds and back, and the RFC 5952 text of a bound. Budgets set to measure plus 5%; protocol is over its ceiling, raised to measure x 1.05 rounded up to the next 500 B (K7): 2500 B."
+    "3.17.0 (#184, 2026-10-27): protocol 2218 B (+698 B over the 1520 B of 3.16), filter-input 13108 B (+1299 B over the 11809 B of 3.13, which 3.14 to 3.16 had grown to 12316 B). The column type `ip` (C-118): IPv4 and IPv6 parsing with BigInt, a CIDR prefix to its bounds and back, and the RFC 5952 text of a bound. Budgets set to measure plus 5%; protocol is over its ceiling, raised to measure x 1.05 rounded up to the next 500 B (K7): 2500 B.",
+    "3.20.0 (ADR 0023, #99, 2026-11-19): skin 4470 B, the reference skin's stylesheet (`@dolusoft/query-table-skin/table.css`, 18418 B raw) measured as it is: no app is built, the file is what a consumer downloads. 52 tokens, the table's own parts and the cell components, light and dark. Budget 4694 B (measure plus 5%), ceiling 5500 B (measure times 1.2 rounded up to 500 B)."
   ],
   "fixtures": {
     "protocol": {
@@ -41,6 +42,11 @@
       "measuredGzipBytes": 18554,
       "maxGzipBytes": 19482,
       "ceilingGzipBytes": 19500
+    },
+    "skin": {
+      "measuredGzipBytes": 4470,
+      "maxGzipBytes": 4694,
+      "ceilingGzipBytes": 5500
     }
   }
 }

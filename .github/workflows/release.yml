@@ -1,6 +1,7 @@
 name: Release
 
-# Publishes a version of the three packages together: push a tag
+# Publishes a version of the four packages together (the three table
+# packages and the reference skin, ADR 0023): push a tag
 # `v<version>` that equals the `version` of the root and of every
 # packages/*/package.json (see CONTRIBUTING.md, "Releasing").
 #
@@ -33,7 +34,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The three packages are released together under one version: fails in
+  # The four packages are released together under one version: fails in
   # seconds, before any check runs, when the tag and a package.json differ.
   version:
     runs-on: ubuntu-latest
@@ -106,15 +107,16 @@ jobs:
       - name: Pack
         run: |
           mkdir -p release
-          for dir in packages/query-protocol packages/query-table-core packages/vue; do
+          for dir in packages/query-protocol packages/query-table-core packages/vue packages/query-table-skin; do
             (cd "$dir" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/release")
           done
           count="$(find release -maxdepth 1 -name '*.tgz' | wc -l)"
-          if [ "$count" -ne 3 ]; then
-            echo "::error::Expected three tarballs in release/, found $count."
+          if [ "$count" -ne 4 ]; then
+            echo "::error::Expected four tarballs in release/, found $count."
             exit 1
           fi
           test -f "release/dolusoft-query-table-${{ needs.version.outputs.version }}.tgz"
+          test -f "release/dolusoft-query-table-skin-${{ needs.version.outputs.version }}.tgz"
           # The conformance suite as an asset of its own, pinned by the notes.
           node scripts/pack-conformance.mjs release-extra
           test -f release-extra/release-notes.md
@@ -158,6 +160,9 @@ jobs:
       id-token: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      # Dependencies first, then the reference skin, which depends on nothing
+      # and dresses the table of the same version (ADR 0023).
+      PACKAGES: query-protocol query-table-core query-table query-table-skin
     steps:
       # The artifact keeps the common root of its paths: release/ and
       # release-extra/ land side by side in the workspace.
@@ -174,11 +179,28 @@ jobs:
       # Trusted publishing needs npm 11.5.1 or later.
       - run: npm install --global npm@latest
 
-      # Dependencies first. A version already on npm is skipped, so a re-run
-      # is safe.
+      # Trusted publishing cannot create a package: the first version of a new
+      # one is published by hand from this run's tarball, and its trusted
+      # publisher set, before this job is approved (CONTRIBUTING.md,
+      # "Releasing"). Checked before anything is published, so a release is
+      # never half out.
+      - name: Every package is on npm
+        run: |
+          for pkg in $PACKAGES; do
+            if ! out="$(npm view "@dolusoft/$pkg" name 2>&1)"; then
+              if printf '%s' "$out" | grep -q E404; then
+                echo "::error::@dolusoft/$pkg is not on npm: publish its first version by hand (CONTRIBUTING.md, Releasing)."
+              else
+                printf '%s\n' "$out"
+              fi
+              exit 1
+            fi
+          done
+
+      # A version already on npm is skipped, so a re-run is safe.
       - name: Publish
         run: |
-          for pkg in query-protocol query-table-core query-table; do
+          for pkg in $PACKAGES; do
             if npm view "@dolusoft/$pkg@$VERSION" version > /dev/null 2>&1; then
               echo "@dolusoft/$pkg@$VERSION is already published: skipped."
               continue

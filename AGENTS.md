@@ -24,6 +24,8 @@ protocol → core → vue → playground. Imports point only that way.
 - `@dolusoft/query-table-core`: `@tanstack/table-core` + protocol. Two plugins, `serverQueryFeature` and `filterInputFeature`, and `shared/`; pure core modules behind their own entries (P10), such as `/row-changes` (ADR 0011).
 - `@dolusoft/query-table`: Vue. `useQueryTable` + `QueryTable`; public API and DOM contract as in 2.2.x.
 
+`@dolusoft/query-table-skin` is outside the layers: one stylesheet, `table.css`, over the DOM contract; no JavaScript, no dependencies, and no package imports it. Its `--qt-*` tokens are public surface and never renamed or removed (ADR 0023).
+
 ## Plugin contract (ADR 0003, ADR 0004)
 
 - A plugin implements TanStack's `TableFeature`. It never imports another plugin; shared code is `core/src/shared/` only (`beforeAction`, `dispatch(action, reason)`, `dispose`).
@@ -34,7 +36,7 @@ protocol → core → vue → playground. Imports point only that way.
 ## Do not
 
 - Add a runtime dependency, or loosen the exact TanStack version pin (P11).
-- Ship CSS or a styling prop (P5); add an unlisted DOM hook (P6).
+- Ship CSS or a styling prop from a table package (P5); the look ships only in `@dolusoft/query-table-skin`. Add an unlisted DOM hook (P6).
 - Fetch or touch storage in library code (P1).
 - Edit `CONTRACT.md` or `contract/api.json` by hand (`pnpm contract:gen`).
 - Change `PRINCIPLES.md`, `docs/decisions/`, `contract/rules.md`, the lint layer config, the budgets or `.github/` without a code owner's review (`.github/CODEOWNERS`).

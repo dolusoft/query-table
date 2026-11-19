@@ -1,10 +1,12 @@
-// `pnpm pack-install`: installs the three packed tarballs into a new app
-// outside the workspace to simulate an npm install, then
-// typechecks and builds that app, and runs the conformance suite of the
-// installed protocol tarball (fixtures/pack-install/conformance.mjs: every
-// hash of its manifest, two runs). Catches what the workspace hides: a
-// `workspace:*` range left in a manifest, a file missing from `files`, a type
-// that only resolves through the workspace `paths`, a stale README version.
+// `pnpm pack-install`: installs the four packed tarballs (the three table
+// packages and the reference skin, ADR 0023) into a new app outside the
+// workspace to simulate an npm install, then typechecks and builds that app,
+// and runs the conformance suite of the installed protocol tarball
+// (fixtures/pack-install/conformance.mjs: every hash of its manifest, two
+// runs). Catches what the workspace hides: a `workspace:*` range left in a
+// manifest, a file missing from `files`, a type that only resolves through
+// the workspace `paths`, a stylesheet export that does not resolve, a stale
+// README version.
 //
 //   node scripts/pack-install-test.mjs   (after `pnpm build`)
 //
@@ -61,7 +63,12 @@ mkdirSync(join(app, 'src'), { recursive: true })
 try {
   // 1. Pack: pnpm turns `workspace:*` into the version.
   const packed = {}
-  for (const dir of ['query-protocol', 'query-table-core', 'vue']) {
+  for (const dir of [
+    'query-protocol',
+    'query-table-core',
+    'vue',
+    'query-table-skin'
+  ]) {
     const before = new Set(readdirSync(tarballs))
     run(
       'pnpm',
@@ -78,14 +85,22 @@ try {
     packed[manifest.name] = { file, version: manifest.version, manifest }
   }
 
-  // 2. The README installs the Vue package by name at the packed version.
+  // 2. The README installs the Vue package and the skin by name at the
+  // packed version.
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
   const vue = packed['@dolusoft/query-table']
+  const skin = packed['@dolusoft/query-table-skin']
   const installs = [
     ...readme.matchAll(/^pnpm add @dolusoft\/query-table@(\S+)$/gm)
   ]
   if (installs.length !== 1 || installs[0][1] !== vue.version) {
     fail(`README.md must install @dolusoft/query-table@${vue.version}`)
+  }
+  const skinInstalls = [
+    ...readme.matchAll(/^pnpm add @dolusoft\/query-table-skin@(\S+)$/gm)
+  ]
+  if (skinInstalls.length !== 1 || skinInstalls[0][1] !== skin.version) {
+    fail(`README.md must install @dolusoft/query-table-skin@${skin.version}`)
   }
   const internal = Object.keys(vue.manifest.dependencies ?? {}).filter(name =>
     name.startsWith('@dolusoft/')
@@ -113,6 +128,7 @@ try {
         dependencies: {
           ...Object.fromEntries(internal.map(name => [name, tarball(name)])),
           '@dolusoft/query-table': tarball('@dolusoft/query-table'),
+          '@dolusoft/query-table-skin': tarball('@dolusoft/query-table-skin'),
           vue: tools.vue
         },
         devDependencies: {
@@ -163,6 +179,9 @@ try {
   writeFileSync(
     join(app, 'src', 'env.d.ts'),
     [
+      // A Vite app types its stylesheet imports through vite/client.
+      '/// <reference types="vite/client" />',
+      '',
       "declare module '*.vue' {",
       "  import type { DefineComponent } from 'vue'",
       '  const component: DefineComponent',
@@ -226,6 +245,7 @@ const parsed = parseRules('a*', { field: 'name' }).length + Object.keys(serverQu
 import { defineDataset, type LocalQueryResult } from '@dolusoft/query-protocol/local'
 import { useLocalQuery } from '@dolusoft/query-table/local'
 import QueryTableDefault, { parseFilterInput, useQueryTable, type TableQuery } from '@dolusoft/query-table'
+import '@dolusoft/query-table-skin/table.css'
 
 import App from './App.vue'
 
@@ -273,6 +293,14 @@ createApp({
   run('pnpm', ['install', '--prefer-offline'], app)
   run('pnpm', ['exec', 'vue-tsc', '--noEmit'], app)
   run('pnpm', ['exec', 'vite', 'build'], app)
+  // The skin's stylesheet reached the build, its tokens with it.
+  const assets = join(app, 'dist', 'assets')
+  const built = readdirSync(assets)
+    .filter(name => name.endsWith('.css'))
+    .map(name => readFileSync(join(assets, name), 'utf8'))
+  if (!built.some(css => css.includes('--qt-radius'))) {
+    fail('the build has no stylesheet with the tokens of the skin')
+  }
   run('node', ['conformance.mjs'], app)
   // No bundler replacement and no process global: error reporting must not throw.
   writeFileSync(
@@ -301,6 +329,28 @@ console.log('[pack-install] no process global: invalid-page returned and logged 
     configFile: join(app, 'vite.config.ts'),
     server: { host: '127.0.0.1', port: 0 }
   })
+  // The skin is applied: its tokens are on :root and its rules match the
+  // table's DOM (a table's own border-spacing is 2px, the skin's is 0).
+  const checkSkin = async (page, where) => {
+    const seen = await page.evaluate(() => {
+      const table = document.querySelector('#app .qt-table')
+      return {
+        radius: getComputedStyle(document.documentElement)
+          .getPropertyValue('--qt-radius')
+          .trim(),
+        spacing: table ? getComputedStyle(table).borderSpacing : null
+      }
+    })
+    // The minifier writes `.375rem`; Chromium writes `0px` for both axes.
+    if (
+      !/^0?\.375rem$/.test(seen.radius) ||
+      !['0px', '0px 0px'].includes(seen.spacing)
+    ) {
+      throw new Error(
+        `${where}: the reference skin is not applied (${JSON.stringify(seen)})`
+      )
+    }
+  }
   let browser
   try {
     await server.listen()
@@ -328,8 +378,9 @@ console.log('[pack-install] no process global: invalid-page returned and logged 
     if (diagnostics.length !== 1) {
       throw new Error('consumer dev server: expected one diagnostic')
     }
+    await checkSkin(page, 'consumer dev server')
     console.log(
-      '[pack-install] consumer dev server: mounted, invalid-page logged once, no page errors'
+      '[pack-install] consumer dev server: mounted, invalid-page logged once, skin applied, no page errors'
     )
     const production = await preview({
       root: app,
@@ -347,8 +398,9 @@ console.log('[pack-install] no process global: invalid-page returned and logged 
       if (errors.length || diagnostics.length) {
         throw new Error('production consumer: unexpected error or diagnostic')
       }
+      await checkSkin(page, 'production consumer')
       console.log(
-        '[pack-install] production browser: invalid-page returned, no console.error, no process global'
+        '[pack-install] production browser: invalid-page returned, skin applied, no console.error, no process global'
       )
     } finally {
       await new Promise((resolve, reject) =>

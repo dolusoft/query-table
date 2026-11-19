@@ -2,18 +2,24 @@
 
 A thin Vue 3 table for server-side data. It renders the rows you give it and tells you, through `v-model:query`, what the user asked for: a page, a page size, a sort or a filter. Fetching and ordering the data is up to you.
 
-The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system.
+The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system, or import the [reference skin](#reference-skin).
 
 ![Query Table v3 architecture: the Vue package on the core features, the core on the protocol and TanStack Table, and the two consumer paths](apps/playground/public/architecture.svg)
 
-Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)).
+Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)). A fourth package, `@dolusoft/query-table-skin`, is the reference skin: one stylesheet and no code, which a consumer adds by choice.
 
 ## Install
 
-The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
+The packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
 pnpm add @dolusoft/query-table@3.19.0
+```
+
+The table ships no CSS. For the product's table design, add the reference skin at the same version and import its stylesheet once (see [Reference skin](#reference-skin)):
+
+```bash
+pnpm add @dolusoft/query-table-skin@3.19.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -111,6 +117,16 @@ import { CellAction, CellActions, CellBadge, CellCopy, CellStack, CellValue } fr
 ```
 
 They draw only what their props give them and hold no state. `CellCopy` and `CellPreview` emit `copy` and `preview`; writing the clipboard or opening a preview is yours. Their button names and the empty-value text come from the table's `labels` (`copyValue`, `previewValue`, `emptyValue`). `tone` and `kind` say what a badge or an action means; how that looks is the skin's. The rules are C-128 and C-129.
+
+## Reference skin
+
+`@dolusoft/query-table-skin` is the product's table design as one stylesheet: plain CSS over the `qt-*` DOM contract, a light and a dark theme, for `QueryTable`, `DataTable` and the cell components (ADR 0023). It has no JavaScript and no dependencies; the table packages never import it.
+
+```ts
+import '@dolusoft/query-table-skin/table.css'
+```
+
+Every color, size and font is a `--qt-*` custom property on `:root`; map your design system onto them and the rules stay. The theme follows the operating system unless `data-theme="light"` or `"dark"` is set on `<html>`; a dark color of yours goes under both of the skin's dark selectors (see the [skin's README](packages/query-table-skin/README.md#theme)). The tokens and their defaults are listed in [`packages/query-table-skin/etc/tokens.md`](packages/query-table-skin/etc/tokens.md); a token is never renamed or removed. Use the skin of the same version as the table: it dresses that version's DOM. The playground's `product.html` page draws with it alone.
 
 ## Sorting
 

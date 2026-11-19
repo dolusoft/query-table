@@ -1,16 +1,18 @@
 /*
- * Product skin: the design of the product's tables drawn on the table's DOM
- * contract (contract/dom.ts, #203). Plain CSS, no build step and no utility
- * classes: every color, size and font is a `--qt-*` token on `:root`, so a
- * design system maps its own values onto the tokens and keeps the rules.
+ * @dolusoft/query-table-skin/table.css: the reference skin of
+ * @dolusoft/query-table, the product's table design drawn on the table's DOM
+ * contract (contract/dom.ts, ADR 0023). Plain CSS, no build step and no
+ * utility classes: every color, size and font is a `--qt-*` token on
+ * `:root`, so a design system maps its own values onto the tokens and keeps
+ * the rules. A token is never renamed or removed (etc/tokens.md).
  *
  * It selects only what the DOM contract lists (C-41), plus `:root` for the
  * tokens and `data-theme` on <html> for a fixed theme. The theme follows the
  * OS (`prefers-color-scheme`) unless `data-theme` says `light` or `dark`.
  *
- * Out of the skin: what slots draw (the toolbar, the pager's controls, the
- * cell content). Those are the consumer's markup; the cell patterns get
- * hooks of their own with the cell components of ADR 0022.
+ * It dresses the table's own parts and the cell components of
+ * `@dolusoft/query-table/cells` (ADR 0022). What other slots draw (the
+ * toolbar, the pager's controls) is the consumer's markup and CSS.
  */
 
 /* ---------------------------------------------------------------- tokens */
@@ -660,7 +662,7 @@ th[data-drop] {
 
 /* -------------------------------------------------------------------- flash */
 
-@keyframes qt-product-flash {
+@keyframes qt-skin-flash {
   from {
     background-color: var(--qt-flash);
   }
@@ -668,7 +670,7 @@ th[data-drop] {
 
 .qt-table > tbody > tr[data-flash] > td,
 .qt-table > tbody > tr > td[data-flash] {
-  animation: qt-product-flash var(--qt-flash-duration) ease-out;
+  animation: qt-skin-flash var(--qt-flash-duration) ease-out;
   animation-delay: calc(-1 * var(--qt-flash-elapsed, 0ms));
 }
 
