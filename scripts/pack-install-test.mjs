@@ -171,8 +171,9 @@ try {
       ''
     ].join('\n')
   )
-  // Both entry points of the Vue package, the cursor query, the protocol
-  // and the core by name (the TanStack path), typed end to end.
+  // The entry points of the Vue package (DataTable included), the cursor
+  // query, the protocol and the core by name (the TanStack path), typed end
+  // to end.
   writeFileSync(
     join(app, 'src', 'App.vue'),
     `<script setup lang="ts">
@@ -181,8 +182,11 @@ import { ref } from 'vue'
 import { parseFilterInput as parseRules } from '@dolusoft/query-protocol'
 import { QueryTable, type Column, type CursorQuery, type RowSelection } from '@dolusoft/query-table'
 import { serverQueryFeature } from '@dolusoft/query-table-core'
+import { DataTable } from '@dolusoft/query-table/data-table'
 
 const columns: Column[] = [{ field: 'name', title: 'Name' }]
+const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Işık' }]
+const keyed: Column[] = [{ field: 'id', type: 'integer', hide: true }, ...columns]
 const query = ref<CursorQuery>({ cursor: null, pageSize: 10, sort: null, filters: [] })
 const selection = ref<RowSelection>({})
 const rows = [{ id: 1, name: 'a' }]
@@ -206,6 +210,9 @@ const parsed = parseRules('a*', { field: 'name' }).length + Object.keys(serverQu
       {{ parsed }}
     </template>
   </QueryTable>
+  <DataTable class="dt" :columns="keyed" :rows="people" row-key="id" :search="['name']" sortable>
+    <template #cell-name="{ row }">{{ row.name.toUpperCase() }}</template>
+  </DataTable>
 </template>
 `
   )
@@ -308,7 +315,10 @@ console.log('[pack-install] no process global: invalid-page returned and logged 
     })
     page.on('pageerror', error => errors.push(error.message))
     await page.goto(server.resolvedUrls.local[0])
-    await page.locator('#app .qt-table').waitFor()
+    await page.locator('#app .qt-table').first().waitFor()
+    await page
+      .locator('#app .dt td[data-field="name"]', { hasText: 'ADA' })
+      .waitFor()
     if (errors.length) {
       fail('consumer dev server: ' + errors.join('; '))
     }
@@ -327,7 +337,10 @@ console.log('[pack-install] no process global: invalid-page returned and logged 
       errors.length = 0
       diagnostics.length = 0
       await page.goto(production.resolvedUrls.local[0])
-      await page.locator('#app .qt-table').waitFor()
+      await page.locator('#app .qt-table').first().waitFor()
+      await page
+        .locator('#app .dt td[data-field="name"]', { hasText: 'ADA' })
+        .waitFor()
       if (errors.length || diagnostics.length) {
         throw new Error('production consumer: unexpected error or diagnostic')
       }

@@ -165,6 +165,48 @@ const pick = (event: Event) => {
   filters.setInput(props.column.field, inputValue(event))
   filters.apply(props.column.field)
 }
+
+const noValue = (
+  condition: FilterCondition | null
+): condition is FilterCondition =>
+  condition !== null && conditionArity(condition) === 0
+
+// The conditions without a value a bool select offers (C-120): those of the
+// column's `filterConditions`, in its order, and the one that stands, so an
+// outside `IsNull` shows as picked.
+const boolNulls = (): FilterCondition[] => {
+  const listed = props.column.filterConditions ? offered().filter(noValue) : []
+  const { condition } = draft()
+  return noValue(condition) && !listed.includes(condition)
+    ? [...listed, condition]
+    : listed
+}
+
+const boolValue = () => {
+  const { condition, text } = draft()
+  return noValue(condition) ? condition : text
+}
+
+// One pick, one update. `All` clears the column; a condition without a value
+// is picked like in a menu (C-113). `True` or `False` after one: the text is
+// set first, which changes no rule while that condition stands, then `Equal`
+// applies it.
+const pickBool = (event: Event) => {
+  const { field } = props.column
+  const value = inputValue(event)
+  if (value === '') {
+    filters.clear(field)
+  } else if (value === 'true' || value === 'false') {
+    if (noValue(draft().condition)) {
+      filters.setInput(field, value)
+      filters.setCondition(field, 'Equal')
+    } else {
+      pick(event)
+    }
+  } else {
+    filters.setCondition(field, value as FilterCondition)
+  }
+}
 </script>
 
 <template>
@@ -214,13 +256,20 @@ const pick = (event: Event) => {
       <select
         class="qt-filter-input"
         :aria-label="inputName()"
-        :value="filters.draftOf(column.field).text"
+        :value="boolValue()"
         :disabled="filters.multiOf(column.field) > 0"
-        @change="pick($event)"
+        @change="pickBool($event)"
       >
         <option value="">{{ labels().boolAll }}</option>
         <option value="true">{{ labels().boolTrue }}</option>
         <option value="false">{{ labels().boolFalse }}</option>
+        <option
+          v-for="condition in boolNulls()"
+          :key="condition"
+          :value="condition"
+        >
+          {{ labels().filterCondition(condition, 'bool') }}
+        </option>
       </select>
     </template>
     <template v-else>

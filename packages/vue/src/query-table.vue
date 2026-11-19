@@ -59,6 +59,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   filterDebounce: 100,
   hasSubtable: false,
   rowExpandable: undefined,
+  expandMode: 'multiple',
   rowKind: undefined,
   groupBy: undefined,
   hasRightPanel: false,
@@ -67,6 +68,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   virtual: false,
   rowNavigation: false,
   scrollBody: false,
+  header: true,
   infinite: false,
   flash: false,
   rowsUpdate: undefined
@@ -77,11 +79,29 @@ const emit = defineEmits<TableEmits<T, Q>>()
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
+// Without the header nothing measures the pin offsets, the widths of the
+// split tables or the automatic widths, so those are off (C-121). The columns
+// go to the composable unpinned: they keep `columns` order. No layout update
+// can come from them, since the controls that emit one sit in the header.
+const split = () => props.header && props.scrollBody
+/** Rows of the header in the row count (C-86): none without it. */
+const headerRows = () => (props.header ? 1 : 0)
+const unpinned = computed(() =>
+  props.columns.map(column => {
+    if (!column.pinned) {
+      return column
+    }
+    const copy = { ...column }
+    delete copy.pinned
+    return copy
+  })
+)
+
 // Every piece of state lives in the composable; the component draws it. The
 // table never writes to its props.
 const state = useQueryTable<T, Q>({
   query: () => props.query,
-  columns: () => props.columns,
+  columns: () => (props.header ? props.columns : unpinned.value),
   rows: () => props.rows,
   totalRows: () => props.totalRows,
   cursors: () => props.cursors,
@@ -93,11 +113,14 @@ const state = useQueryTable<T, Q>({
   rowKey: () => props.rowKey,
   hasSubtable: () => props.hasSubtable,
   rowExpandable: () => props.rowExpandable,
+  expandMode: () => props.expandMode,
   pageSizeOptions: () => props.pagination?.pageSizeOptions,
   onQueryChange: (query, reason) => emit('update:query', query, reason),
   onSelectionChange: selection => emit('update:selection', selection),
   onColumnsChange: (columns, reason) => emit('update:columns', columns, reason),
-  onRowPinningChange: rowPinning => emit('update:rowPinning', rowPinning)
+  onRowPinningChange: rowPinning => emit('update:rowPinning', rowPinning),
+  // A press of a row's expand button (C-122).
+  onRowExpansionChange: payload => emit('rowExpansionChange', payload)
 })
 const { filters, sort, search, expansion } = state
 const rowSelection = state.selection
@@ -155,7 +178,7 @@ const footWrap = shallowRef<HTMLElement | null>(null)
 /** The table of the body rows. */
 const bodyTable = computed(() => bodyTableEl.value ?? tableEl.value)
 /** With `scrollBody`, the body table to measure apart from the header. */
-const splitBody = () => (props.scrollBody ? bodyTableEl.value : null)
+const splitBody = () => (split() ? bodyTableEl.value : null)
 const {
   widths,
   tableWidth,
@@ -174,9 +197,10 @@ const {
     }))
   ],
   active: () =>
-    props.scrollBody ||
+    split() ||
     entries.value.some(entry => sideOf(entry.column) !== false) ||
-    (props.resizable &&
+    (props.header &&
+      props.resizable &&
       entries.value.some(entry => entry.column.resizable !== false))
 })
 /** The `col` widths of the body and footer tables (C-101), in pixels. */
@@ -184,7 +208,7 @@ const colWidths = computed(() =>
   Array.from({ length: columnCount.value }, (_, i) => cellWidths.value[i])
 )
 useScrollBody({
-  enabled: () => props.scrollBody,
+  enabled: split,
   wrappers: () => ({
     head: headWrap.value,
     body: bodyWrap.value,
@@ -213,7 +237,7 @@ const resize = useColumnResize({
 // Automatic widths of the columns without a width (C-100): drawn on the
 // header cells, never emitted.
 const autoWidth = useAutoWidth({
-  enabled: () => props.autoWidth,
+  enabled: () => props.header && props.autoWidth,
   max: () => props.autoWidthMax,
   table: tableEl,
   body: splitBody,
@@ -233,7 +257,8 @@ const rowWindow = useRowWindow<T>({
   keyOf: expansion.keyOf,
   hasRowKey: () => props.rowKey !== undefined,
   isExpanded: expansion.isExpanded,
-  groupBy: () => props.groupBy
+  groupBy: () => props.groupBy,
+  headerRows: () => headerRows()
 })
 // Keyboard navigation between rows (C-109 to C-111). Off, no listener.
 const navigation = useRowNavigation<T>({
@@ -290,7 +315,7 @@ const ariaRowCount = computed(() => {
   }
   const rows = growing() && total !== null ? total : props.rows.length
   return (
-    1 +
+    headerRows() +
     rows +
     rowWindow.expandedCount() +
     rowWindow.groupCount() +
@@ -301,7 +326,11 @@ const ariaRowCount = computed(() => {
 const footerRowIndex = computed(() =>
   !rowWindow.enabled() || growing()
     ? undefined
-    : 2 + props.rows.length + rowWindow.expandedCount() + rowWindow.groupCount()
+    : 1 +
+      headerRows() +
+      props.rows.length +
+      rowWindow.expandedCount() +
+      rowWindow.groupCount()
 )
 
 // The change flash (C-93 to C-95). Off, one watcher of `flash` and nothing
@@ -415,12 +444,12 @@ defineExpose(exposed)
     <slot name="toolbar" v-bind="toolbarProps()" />
     <div
       class="qt-table-responsive"
-      :role="scrollBody ? 'table' : undefined"
-      :aria-rowcount="scrollBody ? ariaRowCount : undefined"
+      :role="split() ? 'table' : undefined"
+      :aria-rowcount="split() ? ariaRowCount : undefined"
     >
       <!-- C-101: three tables, so the body scrolls under the header; the
            body and footer columns take the widths of the header cells. -->
-      <template v-if="scrollBody">
+      <template v-if="split()">
         <div ref="headWrap" class="qt-table-head">
           <table ref="tableEl" class="qt-table" role="presentation">
             <thead role="rowgroup" @contextmenu="onHeaderContextMenu">
@@ -534,7 +563,19 @@ defineExpose(exposed)
         class="qt-table"
         :aria-rowcount="ariaRowCount"
       >
-        <thead @contextmenu="onHeaderContextMenu">
+        <!-- C-121: without the header a column width has no header cell to
+             sit on; a `col` carries it. -->
+        <colgroup v-if="!header">
+          <col v-for="utility in utilities" :key="utility" />
+          <col
+            v-for="entry in entries"
+            :key="entry.column.field"
+            :style="
+              entry.column.width ? { width: entry.column.width } : undefined
+            "
+          />
+        </colgroup>
+        <thead v-else @contextmenu="onHeaderContextMenu">
           <table-header
             :columns="visibleColumns"
             :query="query"

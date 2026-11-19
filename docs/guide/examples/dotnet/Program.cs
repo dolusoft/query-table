@@ -38,6 +38,12 @@ foreach (var file in Directory.GetFiles(Path.Combine(examples, "valid"), "*.json
             Check(query.Filters[0].Extra?["label"].GetString() == "Name", "unknown rule property kept");
             Check(JsonSerializer.Serialize(query, QueryValidator.Json).Contains("\"tenant\""), "unknown key written back");
             break;
+        case "page-null-and-range.json":
+            Check(query!.Filters[0] is { Condition: FilterCondition.IsNull, Value: null, Value2: null }, "IsNull has no value");
+            Check(query.Filters[1] is { Condition: FilterCondition.Between, Value: { } lower, Value2: { } upper }
+                && lower.GetInt32() == 18 && upper.GetInt32() == 65, "Between has value and value2");
+            Check(!JsonSerializer.Serialize(query.Filters[0], QueryValidator.Json).Contains("value"), "IsNull written back without a value");
+            break;
         case "cursor-first.json":
             Check(query is CursorQuery { Cursor: null }, "cursor mode, first page");
             break;

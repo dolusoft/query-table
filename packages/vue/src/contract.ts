@@ -122,7 +122,8 @@ export interface Column {
    * `IsNull`, `IsNotNull` and `Between`, which the list of a type leaves
    * out. A condition the column type does not take is left out (`Between`
    * on `string`, `Contains` on `number`). Unset, the menu offers the list
-   * of the type, as in 3.12.
+   * of the type, as in 3.12. A `bool` column has no menu: it adds `IsNull`
+   * and `IsNotNull` of the list to its select (C-120).
    */
   filterConditions?: FilterCondition[]
   /**
@@ -262,6 +263,13 @@ export interface TableProps<
    */
   rowExpandable?: (row: T, index: number) => boolean
   /**
+   * How many rows may be open, with `hasSubtable` (C-123). `'single'` is an
+   * accordion: opening a row closes the open one (`rowExpansionChange` tells
+   * the closed row first), the `isExpanded` seed opens only the first row
+   * that asks, and `expandAll()` does nothing. Defaults to `'multiple'`.
+   */
+  expandMode?: ExpandMode
+  /**
    * A kind for a row, written as `data-row-kind` on its `tr` (C-97): called
    * with the row and its index in `rows`. Data, not styling: the table draws
    * nothing by it, and the consumer's CSS selects
@@ -323,6 +331,17 @@ export interface TableProps<
    * the body and footer tables `table-layout: fixed`. Defaults to `false`.
    */
   scrollBody?: boolean
+  /**
+   * Draw the header row (C-121). With `false` the table draws no `thead`, so
+   * nothing of it either: no sort by a click, no filter row, no resize or
+   * reorder handle, no clear-all button, no `headerContextMenu`. The sort
+   * and the filters of `query` still apply, and the `toolbar` slot still
+   * clears filters. What is measured from the header cells is off:
+   * `pinned` (columns are drawn unpinned, in `columns` order),
+   * `scrollBody` (one table) and `autoWidth`; `Column.width` applies
+   * through a `col`. Defaults to `true`.
+   */
+  header?: boolean
   /**
    * Ask for the next page (`update:query`, reason `page`) when the end of
    * `rows` comes into view (C-88); append the rows of a `page` answer and
@@ -407,6 +426,21 @@ export interface RowFocusPayload<T> {
   rowIndex: number
   /** The key that moved the focus. */
   key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End'
+}
+
+/** How many rows may be open at once (C-123). */
+export type ExpandMode = 'multiple' | 'single'
+
+/** Payload of the `rowExpansionChange` event (C-122). */
+export interface RowExpansionPayload<T> {
+  /** The row the user opened or closed. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The row's identity in the expansion state: `rowKey`, else its index (C-26). */
+  rowKey: string | number
+  /** The row is open now. */
+  expanded: boolean
 }
 
 /** Options of `infinite` (C-88). */
@@ -599,6 +633,16 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * emit it.
    */
   rowFocus: [payload: RowFocusPayload<T>]
+  /**
+   * With `hasSubtable`: the user opened or closed a row with its expand
+   * button (C-122), once per press; with `expandMode: 'single'` a press
+   * that closes the open row emits for it first (C-123). The state stays
+   * the table's (C-26):
+   * `isExpanded`, the pruning when `rows` change, `expandAll()`,
+   * `collapseAll()` and a row leaving the window of a `virtual` body emit
+   * nothing.
+   */
+  rowExpansionChange: [payload: RowExpansionPayload<T>]
 }
 
 export interface CellSlotProps<T> {

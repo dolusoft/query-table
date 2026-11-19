@@ -1,7 +1,9 @@
 name: PR body
 
 # The pull request template asks for an `İlkeler:` and a `Katman:` line; this
-# job fails when either is missing (scripts/check-pr-body.mjs).
+# job fails when either is missing (scripts/check-pr-body.mjs), when a rule or
+# the API changes without a CHANGELOG.md entry (scripts/check-changelog.mjs),
+# or when a commit credits an AI co-author.
 
 on:
   pull_request:
@@ -24,6 +26,14 @@ jobs:
           node-version: 24
       - run: node scripts/check-pr-body.mjs
         env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+      # A change to contract/rules.md or contract/api.json comes with a
+      # CHANGELOG.md entry, or a `Changelog: yok` line in the body
+      # (scripts/check-changelog.mjs). Editing the body re-runs it.
+      - run: git diff --name-only "$BASE...$HEAD" | node scripts/check-changelog.mjs
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
           PR_BODY: ${{ github.event.pull_request.body }}
       # GitHub lists every co-author trailer as a contributor; an AI one fails
       # the job (scripts/check-commit-trailers.mjs).

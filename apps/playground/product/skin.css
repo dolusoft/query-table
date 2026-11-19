@@ -1,0 +1,519 @@
+/*
+ * Product skin: the design of the product's tables drawn on the table's DOM
+ * contract (contract/dom.ts, #203). Plain CSS, no build step and no utility
+ * classes: every color, size and font is a `--qt-*` token on `:root`, so a
+ * design system maps its own values onto the tokens and keeps the rules.
+ *
+ * It selects only what the DOM contract lists (C-41), plus `:root` for the
+ * tokens and `data-theme` on <html> for a fixed theme. The theme follows the
+ * OS (`prefers-color-scheme`) unless `data-theme` says `light` or `dark`.
+ *
+ * Out of the skin: what slots draw (the toolbar, the pager's controls, the
+ * cell content). Those are the consumer's markup; the cell patterns get
+ * hooks of their own with the cell components of ADR 0022.
+ */
+
+/* ---------------------------------------------------------------- tokens */
+
+:root {
+  --qt-font-family: inherit;
+  --qt-font-size: 0.75rem;
+  --qt-line-height: 1.125rem;
+  --qt-small-font-size: 0.6875rem;
+  --qt-header-font-weight: 600;
+  --qt-header-height: 3rem;
+  --qt-cell-padding-block: 0.75rem;
+  --qt-cell-padding-inline: 0.75rem;
+  --qt-utility-padding-inline: 0.5rem;
+  --qt-expand-padding-inline-start: 0.75rem;
+  --qt-select-padding-inline-end: 1.875rem;
+  --qt-cell-white-space: nowrap;
+  --qt-radius: 0.375rem;
+  --qt-control-radius: 0.1875rem;
+  --qt-control-size: 1.125rem;
+  --qt-input-height: 1.75rem;
+  --qt-focus-width: 2px;
+  --qt-subtable-indent: 4.75rem;
+
+  /* The sort icon's shape, as a mask: unsorted, ascending and descending.
+     The default is the design's pair of arrows; set the three to other
+     images (triangles, a design system's icons) to change the shape. The
+     color stays `--qt-icon` and `--qt-icon-active`. */
+  --qt-sort-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4'/%3E%3C/svg%3E");
+  --qt-sort-icon-asc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20V4M6 10l6-6 6 6'/%3E%3C/svg%3E");
+  --qt-sort-icon-desc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v16M6 14l6 6 6-6'/%3E%3C/svg%3E");
+
+  --qt-bg: #ffffff;
+  --qt-fg: #262626;
+  --qt-fg-strong: #0a0a0a;
+  --qt-muted: #737373;
+  --qt-border: #e5e5e5;
+  --qt-row-hover: #f5f5f5;
+  --qt-row-selected: #eff6ff;
+  --qt-subtable-bg: #fafafa;
+  /* The icon and the control border keep 3:1 against the background, the
+     danger color 4.5:1 against white text (WCAG 1.4.11, 1.4.3). */
+  --qt-icon: #8a8a8a;
+  --qt-icon-active: #0a0a0a;
+  --qt-control-bg: #ffffff;
+  --qt-control-border: #8f8f8f;
+  --qt-accent: #2b8fd6;
+  --qt-accent-fg: #ffffff;
+  --qt-danger: #c93434;
+  --qt-flash: rgb(43 143 214 / 0.18);
+  --qt-flash-duration: 1500ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --qt-bg: #0e0e0e;
+    --qt-fg: #e5e5e5;
+    --qt-fg-strong: #fafafa;
+    --qt-muted: #a3a3a3;
+    --qt-border: #262626;
+    --qt-row-hover: #161616;
+    --qt-row-selected: #14202e;
+    --qt-subtable-bg: #121212;
+    --qt-icon: #737373;
+    --qt-icon-active: #fafafa;
+    --qt-control-bg: #141414;
+    --qt-control-border: #666666;
+    --qt-flash: rgb(43 143 214 / 0.22);
+  }
+}
+
+:root[data-theme='dark'] {
+  --qt-bg: #0e0e0e;
+  --qt-fg: #e5e5e5;
+  --qt-fg-strong: #fafafa;
+  --qt-muted: #a3a3a3;
+  --qt-border: #262626;
+  --qt-row-hover: #161616;
+  --qt-row-selected: #14202e;
+  --qt-subtable-bg: #121212;
+  --qt-icon: #737373;
+  --qt-icon-active: #fafafa;
+  --qt-control-bg: #141414;
+  --qt-control-border: #666666;
+  --qt-flash: rgb(43 143 214 / 0.22);
+}
+
+/* ------------------------------------------------------------------ frame */
+
+/* The root is the frame: the toolbar slot, the table and the pager sit in
+   one bordered box. Given a height, the table takes what the toolbar and the
+   pager leave, so the pager stays at the bottom. */
+.qt-datatable {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-family: var(--qt-font-family);
+  font-size: var(--qt-font-size);
+  line-height: var(--qt-line-height);
+  color: var(--qt-fg);
+  background-color: var(--qt-bg);
+  border: 1px solid var(--qt-border);
+  border-radius: var(--qt-radius);
+  overflow: hidden;
+}
+
+.qt-table-responsive {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--qt-border) transparent;
+}
+
+/* A line between the toolbar (or anything else above) and the table. */
+.qt-datatable > * + .qt-table-responsive {
+  border-block-start: 1px solid var(--qt-border);
+}
+
+.qt-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* ----------------------------------------------------------------- header */
+
+.qt-table th {
+  position: relative;
+  height: var(--qt-header-height);
+  padding: 0 var(--qt-cell-padding-inline);
+  text-align: start;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-weight: var(--qt-header-font-weight);
+  color: var(--qt-fg-strong);
+  background-color: var(--qt-bg);
+  border-block-end: 1px solid var(--qt-border);
+}
+
+/* The utility header cells that hold no control are `td`s (C-45). */
+.qt-table > thead td {
+  padding: 0 var(--qt-utility-padding-inline);
+  background-color: var(--qt-bg);
+  border-block-end: 1px solid var(--qt-border);
+}
+
+.qt-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+/* The table draws its own triangles; the skin hides them and paints the
+   shape of the `--qt-sort-icon*` tokens in the icon's color instead. */
+.qt-sort-icon {
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--qt-icon);
+  background-color: currentColor;
+  -webkit-mask: var(--qt-sort-icon) center / contain no-repeat;
+  mask: var(--qt-sort-icon) center / contain no-repeat;
+}
+
+.qt-sort-icon > * {
+  display: none;
+}
+
+th[data-sort='asc'] .qt-sort-icon {
+  -webkit-mask-image: var(--qt-sort-icon-asc);
+  mask-image: var(--qt-sort-icon-asc);
+}
+
+th[data-sort='desc'] .qt-sort-icon {
+  -webkit-mask-image: var(--qt-sort-icon-desc);
+  mask-image: var(--qt-sort-icon-desc);
+}
+
+.qt-sort:hover .qt-sort-icon,
+th[data-sort] .qt-sort-icon {
+  color: var(--qt-icon-active);
+}
+
+/* ------------------------------------------------------------------- body */
+
+/* A cell keeps one line; a table wider than its box scrolls sideways
+   instead of breaking a name over lines (`--qt-cell-white-space: normal`
+   lets text wrap). */
+.qt-table td {
+  padding: var(--qt-cell-padding-block) var(--qt-cell-padding-inline);
+  vertical-align: middle;
+  white-space: var(--qt-cell-white-space);
+  background-color: var(--qt-bg);
+  border-block-end: 1px solid var(--qt-border);
+}
+
+.qt-table > tbody > tr:last-child > td {
+  border-block-end: 0;
+}
+
+.qt-table > tbody > tr[data-row-index]:hover > td {
+  background-color: var(--qt-row-hover);
+}
+
+.qt-table > tbody > tr[data-selected] > td {
+  background-color: var(--qt-row-selected);
+}
+
+/* An open row runs on into its subtable without a line between them. */
+.qt-table > tbody > tr[data-expanded] > td {
+  border-block-end-color: transparent;
+}
+
+/* Numbers end, with digits of one width. */
+.qt-table :is(th, td):is([data-type='number'], [data-type='integer']) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- utility columns */
+
+.qt-table :is(th, td):has(> :is(.qt-expand, .qt-select-row, .qt-select-all, .qt-right-panel-button)) {
+  width: 1px;
+  padding-inline: var(--qt-utility-padding-inline);
+}
+
+/* The design's rhythm: the open arrow off the edge, the checkbox close to
+   it and a wider gap before the first column of data. */
+.qt-table td:has(> .qt-expand) {
+  padding-inline: var(--qt-expand-padding-inline-start) 0.25rem;
+}
+
+.qt-table :is(th, td):has(> :is(.qt-select-row, .qt-select-all)) {
+  padding-inline: 0.25rem var(--qt-select-padding-inline-end);
+}
+
+.qt-expand,
+.qt-right-panel-button {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--qt-fg);
+  background: none;
+  border: 0;
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+.qt-expand:hover,
+.qt-right-panel-button:hover {
+  background-color: var(--qt-row-hover);
+}
+
+.qt-expand svg,
+.qt-right-panel-button svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.qt-select-row,
+.qt-select-all {
+  appearance: none;
+  display: block;
+  width: var(--qt-control-size);
+  height: var(--qt-control-size);
+  margin: 0;
+  background-color: var(--qt-control-bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 0.75rem;
+  border: 1px solid var(--qt-control-border);
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+.qt-select-row:checked,
+.qt-select-all:checked {
+  background-color: var(--qt-accent);
+  border-color: var(--qt-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E");
+}
+
+.qt-select-all:indeterminate {
+  background-color: var(--qt-accent);
+  border-color: var(--qt-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'%3E%3Cline x1='4' y1='8' x2='12' y2='8'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------------------------------------- subtable */
+
+.qt-subtable-row > td {
+  padding-block: var(--qt-cell-padding-block);
+  padding-inline: var(--qt-subtable-indent) var(--qt-cell-padding-inline);
+  background-color: var(--qt-subtable-bg);
+}
+
+.qt-table > tbody > .qt-subtable-row:hover > td {
+  background-color: var(--qt-subtable-bg);
+}
+
+/* -------------------------------------------------- empty, loading, more */
+
+.qt-empty-row > td {
+  padding-block: 3rem;
+  text-align: center;
+  color: var(--qt-muted);
+}
+
+.qt-loading-row > td,
+.qt-load-more-row > td {
+  padding-block: 1rem;
+  text-align: center;
+  color: var(--qt-muted);
+}
+
+.qt-datatable[data-loading] .qt-table > tbody > tr[data-row-index] {
+  opacity: 0.6;
+}
+
+.qt-virtual-spacer > td {
+  padding: 0;
+  border: 0;
+}
+
+/* ------------------------------------------------------------ group rows */
+
+.qt-group-row > th,
+.qt-group-row > td {
+  height: auto;
+  padding-block: 0.5rem;
+  color: var(--qt-muted);
+  font-weight: var(--qt-header-font-weight);
+  background-color: var(--qt-subtable-bg);
+}
+
+/* ----------------------------------------------------------------- filters */
+
+.qt-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-block: 0.375rem 0.5rem;
+}
+
+.qt-filter-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--qt-input-height);
+  padding: 0 0.5rem;
+  font: inherit;
+  font-weight: normal;
+  color: var(--qt-fg);
+  background-color: var(--qt-control-bg);
+  border: 1px solid var(--qt-control-border);
+  border-radius: var(--qt-control-radius);
+}
+
+.qt-filter-input::placeholder {
+  color: var(--qt-muted);
+}
+
+.qt-filter-input[aria-invalid='true'] {
+  border-color: var(--qt-danger);
+}
+
+.qt-filter-button,
+.qt-clear-all-button {
+  display: grid;
+  place-items: center;
+  height: var(--qt-input-height);
+  min-width: var(--qt-input-height);
+  padding: 0 0.375rem;
+  font: inherit;
+  color: var(--qt-icon);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+.qt-filter-button:hover,
+.qt-clear-all-button:hover {
+  color: var(--qt-fg);
+  background-color: var(--qt-row-hover);
+}
+
+.qt-filter-button[data-filtered] {
+  color: var(--qt-accent);
+}
+
+.qt-filter-condition {
+  display: block;
+  margin-block-start: -0.25rem;
+  font-size: var(--qt-small-font-size);
+  font-weight: normal;
+  color: var(--qt-muted);
+}
+
+/* ------------------------------------------------ resizing and reordering */
+
+.qt-resize-handle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 0.375rem;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.qt-resize-handle:hover,
+.qt-resize-handle:focus-visible {
+  background-color: var(--qt-border);
+}
+
+.qt-reorder-handle {
+  margin-inline-end: 0.25rem;
+  padding: 0;
+  color: var(--qt-icon);
+  background: none;
+  border: 0;
+  cursor: grab;
+  vertical-align: middle;
+}
+
+th[data-dragging] {
+  opacity: 0.5;
+}
+
+th[data-drop] {
+  box-shadow: inset 2px 0 0 var(--qt-accent);
+}
+
+/* ------------------------------------------------------------------ pinning */
+
+.qt-table [data-pinned] {
+  position: sticky;
+  inset-inline-start: var(--qt-pin-left);
+  z-index: 1;
+}
+
+.qt-table [data-pinned='right'] {
+  inset-inline-start: auto;
+  inset-inline-end: var(--qt-pin-right);
+}
+
+.qt-table > thead [data-pinned] {
+  z-index: 2;
+}
+
+/* ------------------------------------------------------------------- footer */
+
+.qt-footer td {
+  font-weight: var(--qt-header-font-weight);
+  border-block-start: 1px solid var(--qt-border);
+  border-block-end: 0;
+}
+
+/* ------------------------------------------------------------------- pager */
+
+.qt-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-block-start: 1px solid var(--qt-border);
+}
+
+/* -------------------------------------------------------------------- flash */
+
+@keyframes qt-product-flash {
+  from {
+    background-color: var(--qt-flash);
+  }
+}
+
+.qt-table > tbody > tr[data-flash] > td,
+.qt-table > tbody > tr > td[data-flash] {
+  animation: qt-product-flash var(--qt-flash-duration) ease-out;
+  animation-delay: calc(-1 * var(--qt-flash-elapsed, 0ms));
+}
+
+/* -------------------------------------------------------------------- focus */
+
+.qt-datatable :is(button, input, select):focus-visible {
+  outline: var(--qt-focus-width) solid var(--qt-accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qt-table > tbody > tr[data-flash] > td,
+  .qt-table > tbody > tr > td[data-flash] {
+    animation: none;
+  }
+}

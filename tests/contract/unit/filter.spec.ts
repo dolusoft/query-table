@@ -1566,3 +1566,108 @@ describe('C-118 IP column type', () => {
     expect(parseFilterInput('*1.70*', column)).toEqual([])
   })
 })
+
+describe('C-120 No value on a bool column', () => {
+  const nulls: FilterCondition[] = ['IsNotNull', 'Equal', 'IsNull']
+  const select = (m: Mounted) =>
+    m.wrapper.find('th[data-field="active"] select')
+  const options = (m: Mounted) =>
+    select(m)
+      .findAll('option')
+      .map(option => [
+        (option.element as HTMLOptionElement).value,
+        option.text()
+      ])
+  const selected = (m: Mounted) =>
+    (select(m).element as HTMLSelectElement).value
+  const mountBool = (
+    column: Partial<Column> = {},
+    props: Record<string, unknown> = {}
+  ) =>
+    mountIt({
+      ...base,
+      columns: [{ field: 'active', type: 'bool', ...column }],
+      ...props
+    })
+
+  it('offers no more than All, True and False without filterConditions, as in 3.18', () => {
+    const m = mountBool()
+    expect(options(m)).toEqual([
+      ['', 'All'],
+      ['true', 'True'],
+      ['false', 'False']
+    ])
+  })
+
+  it('adds the conditions without a value of filterConditions, in their order', () => {
+    const m = mountBool({ filterConditions: nulls })
+    expect(options(m)).toEqual([
+      ['', 'All'],
+      ['true', 'True'],
+      ['false', 'False'],
+      ['IsNotNull', 'Is Not Null'],
+      ['IsNull', 'Is Null']
+    ])
+    expect(m.wrapper.find('.qt-filter-button').exists()).toBe(false)
+  })
+
+  it('picking one emits one rule without a value; True after it emits one Equal rule', async () => {
+    const m = mountBool(
+      { filterConditions: nulls },
+      { query: makeQuery({ page: 3 }), totalRows: 100 }
+    )
+    await select(m).setValue('IsNull')
+    await flush()
+    expect(m.events).toEqual([
+      [
+        makeQuery({ filters: [{ field: 'active', condition: 'IsNull' }] }),
+        'filter'
+      ]
+    ])
+    expect(Object.keys(m.query().filters[0])).toEqual(['field', 'condition'])
+    expect(selected(m)).toBe('IsNull')
+
+    await select(m).setValue('true')
+    await flush()
+    expect(m.events).toHaveLength(2)
+    expect(m.query().filters).toEqual([rule('active', 'Equal', true)])
+    expect(selected(m)).toBe('true')
+
+    await select(m).setValue('IsNotNull')
+    await select(m).setValue('')
+    await flush()
+    expect(m.events).toHaveLength(4)
+    expect(m.events[2][0].filters).toEqual([
+      { field: 'active', condition: 'IsNotNull' }
+    ])
+    expect(m.query().filters).toEqual([])
+    expect(selected(m)).toBe('')
+  })
+
+  it('goes from a condition without a value to False in one update without a debounce', async () => {
+    const m = mountBool({ filterConditions: nulls }, { filterDebounce: 0 })
+    await select(m).setValue('IsNotNull')
+    await select(m).setValue('false')
+    await flush()
+    expect(m.events.map(([query]) => query.filters)).toEqual([
+      [{ field: 'active', condition: 'IsNotNull' }],
+      [rule('active', 'Equal', false)]
+    ])
+  })
+
+  it('shows an outside rule without a value as picked, also when the column does not list it', async () => {
+    const m = mountBool()
+    await m.setQuery(
+      makeQuery({ filters: [{ field: 'active', condition: 'IsNull' }] })
+    )
+    await flush()
+    expect(selected(m)).toBe('IsNull')
+    expect(options(m).at(-1)).toEqual(['IsNull', 'Is Null'])
+    expect(m.events).toEqual([])
+
+    await m.setQuery(makeQuery())
+    await flush()
+    expect(selected(m)).toBe('')
+    expect(options(m)).toHaveLength(3)
+  })
+})

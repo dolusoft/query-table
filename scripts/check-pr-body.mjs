@@ -15,15 +15,19 @@ import { fileURLToPath } from 'node:url'
 
 const required = ['İlkeler', 'Katman']
 
-/** The required labels that have no value in `body`. */
-export const missingLines = body => {
-  const text = (body ?? '')
+/** `body` without its HTML comments and fenced code blocks. */
+export const bodyText = body =>
+  (body ?? '')
     .replace(/<!--[\s\S]*?-->/g, '')
     // Fenced blocks (``` or ~~~), including an unclosed one to the end.
     .replace(
       /^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\1[`~]*[ \t]*$|(?![\s\S]))/gm,
       ''
     )
+
+/** The required labels that have no value in `body`. */
+export const missingLines = body => {
+  const text = bodyText(body)
   return required.filter(
     label => !new RegExp(`^\\s*${label}:[ \\t]*\\S`, 'mu').test(text)
   )

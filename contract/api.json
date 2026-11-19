@@ -142,6 +142,13 @@
       "description": "Which rows can expand, with `hasSubtable` (C-98): called with the row and\nits index in `rows`. A row it returns `false` for gets an empty expand\ncell (no button), never draws the `subtable` slot, is skipped by\n`expandAll()` and ignores its `isExpanded` field. Absent, every row can\nexpand."
     },
     {
+      "name": "expandMode",
+      "type": "ExpandMode",
+      "required": false,
+      "default": "\"multiple\"",
+      "description": "How many rows may be open, with `hasSubtable` (C-123). `'single'` is an\naccordion: opening a row closes the open one (`rowExpansionChange` tells\nthe closed row first), the `isExpanded` seed opens only the first row\nthat asks, and `expandAll()` does nothing. Defaults to `'multiple'`."
+    },
+    {
       "name": "rowKind",
       "type": "((row: T, index: number) => string | null | undefined)",
       "required": false,
@@ -196,6 +203,13 @@
       "required": false,
       "default": "false",
       "description": "Draw the header, the body and the footer as three tables in\n`.qt-table-head`, `.qt-table-body` and `.qt-table-foot`, so the body\nscrolls under a header that stays outside it (C-101, C-102). The columns\nof the body and footer take the widths of the header cells, and the\nthree scroll sideways together. In your CSS give the three wrappers\n`overflow-y: scroll`, the body a height and `overflow-x: auto`, the\nheader and footer `overflow-x: hidden` and a transparent scrollbar, and\nthe body and footer tables `table-layout: fixed`. Defaults to `false`."
+    },
+    {
+      "name": "header",
+      "type": "boolean",
+      "required": false,
+      "default": "true",
+      "description": "Draw the header row (C-121). With `false` the table draws no `thead`, so\nnothing of it either: no sort by a click, no filter row, no resize or\nreorder handle, no clear-all button, no `headerContextMenu`. The sort\nand the filters of `query` still apply, and the `toolbar` slot still\nclears filters. What is measured from the header cells is off:\n`pinned` (columns are drawn unpinned, in `columns` order),\n`scrollBody` (one table) and `autoWidth`; `Column.width` applies\nthrough a `col`. Defaults to `true`."
     },
     {
       "name": "infinite",
@@ -264,6 +278,11 @@
       "name": "rowFocus",
       "type": "[payload: RowFocusPayload<T>]",
       "description": "With `rowNavigation`: a key moved the focus to another row (C-109),\nonce the focus is there. Once per key press; a click or Tab does not\nemit it."
+    },
+    {
+      "name": "rowExpansionChange",
+      "type": "[payload: RowExpansionPayload<T>]",
+      "description": "With `hasSubtable`: the user opened or closed a row with its expand\nbutton (C-122), once per press; with `expandMode: 'single'` a press\nthat closes the open row emits for it first (C-123). The state stays\nthe table's (C-26):\n`isExpanded`, the pruning when `rows` change, `expandAll()`,\n`collapseAll()` and a row leaving the window of a `virtual` body emit\nnothing."
     }
   ],
   "slots": [
@@ -375,6 +394,70 @@
       "name": "useLocalQuery",
       "type": "(options: UseLocalQueryOptions<T>) => LocalQuery<T>",
       "description": "Evaluates locally without rerunning filtering, search or sorting for a page-only change."
+    }
+  ],
+  "components": [
+    {
+      "name": "DataTable",
+      "entry": "@dolusoft/query-table/data-table",
+      "description": "Rows held in the page: `useLocalQuery` and `QueryTable` composed (ADR 0021). It takes the surface of `QueryTable` with the props, the left-out props and the slot below (C-124).",
+      "props": [
+        {
+          "name": "query",
+          "type": "TableQuery",
+          "required": false,
+          "description": "The query, used with `v-model:query`. Optional: without it the table\nholds the query for as long as it lives (C-125)."
+        },
+        {
+          "name": "rows",
+          "type": "readonly T[]",
+          "required": true,
+          "description": "Every row of the source, not one page. Changes inside a deeply reactive\narray are seen; replace a shallowRef's array to have them seen."
+        },
+        {
+          "name": "rowKey",
+          "type": "keyof T & string",
+          "required": true,
+          "description": "The field that identifies a row: a top-level field, a column of type\n`string` or `integer` (it may be `hide: true`). It breaks sort ties and\nkeys selection and expansion across pages."
+        },
+        {
+          "name": "profile",
+          "type": "SemanticsProfile",
+          "required": false,
+          "description": "The semantics profile of the evaluation. Defaults to `'tr-2'`, and that default never moves."
+        },
+        {
+          "name": "search",
+          "type": "string[]",
+          "required": false,
+          "description": "The fields of the global search: `string` columns (C-126). Defaults to none."
+        },
+        {
+          "name": "paginate",
+          "type": "boolean",
+          "required": false,
+          "description": "`false` draws every matching row and passes no `pagination` slot, so no\npagination block is drawn. Defaults to `true`."
+        },
+        {
+          "name": "dataset",
+          "type": "Dataset<T>",
+          "required": false,
+          "description": "Replaces the dataset built from the columns, whole (C-126): for a field\nthat needs `get` or `offset`, or a queryable field with no column. Keep\nthe same object: a new one evaluates every row again and is a new\ncontext for the flash."
+        }
+      ],
+      "omitted": [
+        "totalRows",
+        "cursors",
+        "infinite",
+        "rowsUpdate"
+      ],
+      "slots": [
+        {
+          "name": "error",
+          "props": "ErrorSlotProps",
+          "description": "Drawn in the empty row while the evaluator reports an error. Without it\nthe `empty` slot is drawn."
+        }
+      ]
     }
   ],
   "types": [
@@ -524,6 +607,16 @@
       "description": "Payload of the `rowFocus` event (C-109)."
     },
     {
+      "name": "ExpandMode",
+      "kind": "type",
+      "description": "How many rows may be open at once (C-123)."
+    },
+    {
+      "name": "RowExpansionPayload",
+      "kind": "interface",
+      "description": "Payload of the `rowExpansionChange` event (C-122)."
+    },
+    {
       "name": "InfiniteOptions",
       "kind": "interface",
       "description": "Options of `infinite` (C-88)."
@@ -632,6 +725,31 @@
       "name": "QueryTableExpose",
       "kind": "interface",
       "description": "What a template ref to the table exposes."
+    },
+    {
+      "name": "DataTableOmittedProp",
+      "kind": "type",
+      "description": "The props of `QueryTable` that `DataTable` does not take (C-124): it knows\nthe total, pages by `page` and `pageSize` only, has no next page to ask a\nserver for and gives the flash its own hint."
+    },
+    {
+      "name": "DataTableProps",
+      "kind": "interface",
+      "description": "Props of `DataTable`: those of `QueryTable`, with its rows held in the page (C-124)."
+    },
+    {
+      "name": "DataTableEmits",
+      "kind": "type",
+      "description": "Events of `DataTable`: those of `QueryTable`."
+    },
+    {
+      "name": "ErrorSlotProps",
+      "kind": "interface",
+      "description": "Props of the `error` slot."
+    },
+    {
+      "name": "DataTableSlots",
+      "kind": "interface",
+      "description": "Slots of `DataTable`: those of `QueryTable`, and `error`."
     }
   ],
   "rules": [
@@ -803,7 +921,7 @@
     {
       "id": "C-34",
       "title": "Filter menu slot",
-      "text": "The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions` (the conditions of the column type in menu order, or the column's own `filterConditions` (C-112), each `label` from `labels.filterCondition`, C-44), `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select with no condition to pick, so it has no filter button and no menu (the header click still sorts it)."
+      "text": "The table draws no popover and no tooltip. The `filter-menu` slot renders right after the filter input, as its sibling, and receives `column`, `rules`, `condition`, `conditions` (the conditions of the column type in menu order, or the column's own `filterConditions` (C-112), each `label` from `labels.filterCondition`, C-44), `setCondition`, `clear`, `sortable`, `sortDirection`, `setSort` and `trigger`. `trigger` is a component that renders one `button.qt-filter-button` and merges the attributes it is given, so it can sit inside a popover trigger. The component stays the same across renders, and its name (`aria-label` and `title`, from `labels.filterOptions`) follows the current `title` of the column. Without the slot there is no filter button. A `bool` column does not render the slot at all: its filter is a select (C-16, C-120), so it has no filter button and no menu (the header click still sorts it)."
     },
     {
       "id": "C-35",
@@ -908,7 +1026,7 @@
     {
       "id": "C-55",
       "title": "expandAll",
-      "text": "`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable`. It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing."
+      "text": "`expandAll()` opens the rows currently in `rows` that can expand (C-98), by their key (C-26), and does nothing without `hasSubtable` or with `expandMode: 'single'` (C-123). It never asks for other rows: rows that arrive later (another page, a new answer) are not opened, and with `rowKey` the rows that leave `rows` are dropped as usual. It emits nothing."
     },
     {
       "id": "C-56",
@@ -1193,7 +1311,7 @@
     {
       "id": "C-112",
       "title": "Column filterConditions",
-      "text": "`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date`, `datetime` and `ip` (C-118), the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value or with two. A `bool` column has no menu (C-34), so the list changes nothing there. The list only drives the menu: `setCondition` of the slot, `setFilterCondition` of the core and `parseFilterInput` take any condition, so calling them with one of the 3.13 conditions is an explicit opt-in. Source: own"
+      "text": "`filterConditions` on a column replaces the conditions its menu offers (`conditions` of the `filter-menu` slot, C-34), in the order given and without repeats. A condition the column type does not take is left out: `IsNull` and `IsNotNull` go with every type, `Between` with `number`, `integer`, `date`, `datetime` and `ip` (C-118), the others as in `conditionOptions`. Without it the menu is the one of the type, as in 3.12, and the table never emits a rule without a value, nor one with two except the `Between` rule of a CIDR prefix typed into an `ip` column (C-118). A `bool` column has no menu (C-34): of the list it takes only `IsNull` and `IsNotNull`, as options of its select (C-120). The list only drives the menu: `setCondition` of the slot, `setFilterCondition` of the core and `parseFilterInput` take any condition, so calling them with one of the 3.13 conditions is an explicit opt-in. Source: own"
     },
     {
       "id": "C-113",
@@ -1229,6 +1347,46 @@
       "id": "C-119",
       "title": "Keeping the anchor",
       "text": "With `virtual.keepAnchor` and `rowKey`, rows that come in above the view, or leave it, do not move the rows in view. When `rows` change, the table reads the anchor in the drawn body before the update: the first data row that is not pinned and whose top is at or below the top of the scroll container (C-85), below a sticky header that covers it, and the distance of its top from the top of the container. After the update it finds the row with the anchor's key in `rows` and moves the scroll position of the container by as much as the row moved, so the row keeps its distance. A row that is not drawn at its new place is scrolled to from the counted heights (C-84) and, once drawn, corrected once from its measured position, as `scrollToIndex` is (C-87). Nothing is kept while the first row that is not pinned is the anchor, so rows added above it are shown; nor when the anchor's key left `rows`, while the page prints, without `rowKey` (an index names another row after the change) or without `virtual`. A `scrollToIndex` called after the change wins. Off by default: without it a change of `rows` moves the rows in view as in 3.17. Nothing here emits `update:query`. Source: own"
+    },
+    {
+      "id": "C-120",
+      "title": "No value on a bool column",
+      "text": "A `bool` column whose `filterConditions` (C-112) lists `IsNull` or `IsNotNull` offers them in its select after `All`, `True` and `False`, in the order of the list, each named by `labels.filterCondition` (C-44). Picking one applies at once, as in a menu (C-113): one rule `{ field, condition }`, with no `value` key, that replaces the rules of the column. Picking `True` or `False` after it emits one `Equal` rule, and `All` removes the rules of the column, each in one update. An outside rule of such a condition shows as picked; the select draws its option even when the column does not list it. The other conditions of the list change nothing on a `bool` column, and it still renders no `filter-menu` slot (C-34). Without the list the select is the one of 3.18. The DOM contract gains no entry. Source: own"
+    },
+    {
+      "id": "C-121",
+      "title": "A table without a header",
+      "text": "With `header: false` the table draws no `thead`, and nothing that sits in it: no sort by a click on a header (C-07), no filter row, no resize or reorder handle, no clear-all button (C-22) and no `headerContextMenu` (C-96). The sort and the filters of `query` still apply, `toolbar` still receives `clearFilters()`, and `focusFilter` finds no input. What is measured from the header cells is off: a column's `pinned` is ignored and the columns are drawn unpinned, in the order of `columns` (C-47, C-71); `scrollBody` is ignored and the table is one table, not three (C-101); `autoWidth` draws no width (C-100), and `measureColumnWidths` returns an empty map. A `Column.width` applies through a `colgroup` with one `col` per utility column and per visible column, in drawing order; the `col` of a column without a width has no style. No cell is a column header: a name for the table is the consumer's `aria-label`. With `virtual` the row count has no header row: the first body row is `aria-rowindex` 1 and `aria-rowcount` counts the body and footer rows only (C-86), and `scrollToIndex` and `keepAnchor` align to the top of the view, with no header to cover it (C-87, C-119). Defaults to `true`: with it the table is the one of 3.18. The DOM contract gains no entry. Source: own"
+    },
+    {
+      "id": "C-122",
+      "title": "Telling the consumer about expansion",
+      "text": "With `hasSubtable`, a press of a row's expand button emits `rowExpansionChange` once, after the state changed (with `expandMode: 'single'` a press that also closes the open row emits for that row first, C-123), with `{ row, rowIndex, rowKey, expanded }`: the row, its index in `rows`, its identity in the expansion state (`rowKey`, else its index, C-26) and whether it is open now. The state stays the table's (C-26); the event tells, it does not ask, and nothing waits for the consumer. Nothing else emits it: the `isExpanded` seed, the pruning when `rows` change, `expandAll()` and `collapseAll()` (C-55), and with `virtual` a row that leaves the drawn window and unmounts its `subtable` content (C-83), whose state does not change. A row that cannot expand has no button (C-98) and emits nothing. Without `rowKey` the key is the row's index and every change of `rows` closes every row without an event (C-26), so a list kept from the events holds only until `rows` change. `useQueryTable` calls its `onRowExpansionChange` option the same way, once per `expansion.toggle` that opened or closed a row; the component's `rowExpansionChange` is that call. Without a listener nothing changes. Source: own"
+    },
+    {
+      "id": "C-123",
+      "title": "One row open at a time",
+      "text": "With `hasSubtable` and `expandMode: 'single'` at most one row is open. A press of a closed row's expand button opens it and closes the open row, in one change of the expansion state; a press of the open row closes it. `rowExpansionChange` (C-122) is emitted for the row that closed, with `expanded: false`, and then for the row that opened, so a list kept from the events never holds two rows. The `isExpanded` seed (C-26) opens the first row of `rows`, in their order, that asks for it, and that row replaces the one that was open; when no row asks, the open row stays open if it is still in `rows`. `expandAll()` does nothing; `collapseAll()` closes the open row (C-55). Turning `expandMode` to `'single'` while several rows are open keeps the first of them in the order of `rows` and closes the others, and emits nothing. A row that leaves `rows` closes as in C-26 and no other row opens in its place. The button, `aria-expanded`, `data-expanded`, the `subtable` slot and the keys are those of C-26, and the DOM contract gains no entry. `useQueryTable` takes the same `expandMode` option. Defaults to `'multiple'`: with it expansion is the one of 3.18. Source: own"
+    },
+    {
+      "id": "C-124",
+      "title": "DataTable: the rows it draws",
+      "text": "`DataTable`, from `@dolusoft/query-table/data-table`, draws `QueryTable` with the page that `useLocalQuery` (C-81) evaluates from its `rows`, its query (C-125), its dataset (C-126), `profile` (default `'tr-2'`) and `paginate` (default `true`), and with the total of that evaluation as `totalRows`. It takes the props, events, slots and exposed methods of `QueryTable`, with these differences: `rows` is every row of the source; `rowKey` is required and names a top-level field; `query` is optional (C-125); `totalRows`, `cursors`, `infinite` and `rowsUpdate` are not props; `profile`, `search`, `paginate` and `dataset` are new; the slot `error` is new. A prop, listener, class or attribute the consumer gives reaches `QueryTable` as given, under the name it was given (`data-testid`, `aria-label`), and one it leaves out is left out, so `QueryTable` applies its own default. `update:query` and `update:columns`, `.once` listeners included, are emitted by `DataTable` itself, once per user action. `rowsUpdate` is `'snapshot'` when the query (compared by value, as `sameQuery` does), the dataset object, `profile` or `paginate` changed since the page last drawn, and `'live'` when only the source changed, so the flash (C-94) marks rows that changed in the source and not rows a sort or a page moved. While the evaluator reports an error the body has no rows, `totalRows` is `0` and the empty row draws the `error` slot with `{ error }`, or the `empty` slot when there is no `error` slot. `paginate: false` draws every matching row and passes no `pagination` slot, so no pagination block is drawn. The exposed methods are those of `QueryTable` (C-33); `scrollToIndex` takes an index into the drawn rows. `DataTable` never filters, searches, sorts or pages on its own: the evaluator does, with the meaning of the profile (P1, C-76). Source: own"
+    },
+    {
+      "id": "C-125",
+      "title": "DataTable: the query it holds",
+      "text": "With `query` given (`v-model:query`) the query is the consumer's, as with `QueryTable`: an `update:query` the consumer does not apply changes nothing (C-19). Without it `DataTable` holds the query. It starts at `{ page: 1, pageSize, sort: null, filters: [] }`, where `pageSize` is the first of `pagination.pageSizeOptions` or `10`, read again while the start query is held (options that arrive after the mount count), and each `update:query` replaces it with the query emitted. `update:query` is emitted in both cases, once per user action. The held query lives as long as the component and is written nowhere (P2). A `query` given later is used from then on and the held query is dropped; when `query` is taken away again, the held query starts again from the start query. The page is never corrected: a page past the end draws no rows (C-76). Source: own"
+    },
+    {
+      "id": "C-126",
+      "title": "DataTable: the dataset from the columns",
+      "text": "Without `dataset`, `DataTable` builds one with `defineDataset`. `key` is `rowKey`. Each column of `columns`, hidden ones included, is a field named by its `field`, with the column type as C-39 reads it, `sortable` only while the table's `sortable` is on and the column's is not `false`, `filterable` only while the table's `filterable` is on and the column's is not `false`, and the default reader of the dotted path (C-30). The fields named in `search` are the fields of the global search. A second column with the same `field` adds nothing. An `ip` column is not a field, since the local profiles give it no meaning (C-118), so `DataTable` draws it with `sortable: false` and `filterable: false`: its header offers no sort and no filter. `update:columns` (C-68) gives such a column back with the consumer's own `sortable` and `filterable`, so the change never reaches the consumer's columns. A rule or a sort on it in a given `query` is `unsupported-field`. The dataset is built again only when `rowKey`, `search`, the table's `sortable` or `filterable`, or the `field`, type, `sortable` or `filterable` of a column changes; reordering, resizing, hiding or renaming a column keeps it. A `dataset` prop replaces the built one whole. A `rowKey` that is a dotted path or not a column of type `string` or `integer`, and a `search` field that is not a `string` column, throw a `TypeError`, as `defineDataset` does for a malformed definition. Source: own"
+    },
+    {
+      "id": "C-127",
+      "title": "DataTable: the DOM of QueryTable",
+      "text": "For the same columns, the same page of rows, the same total and the same other props, `DataTable` renders the markup `QueryTable` renders, root included; an `ip` column is drawn as `QueryTable` draws it with `sortable: false` and `filterable: false` (C-126). It adds no element, class, attribute or inline style, and the DOM contract gains no entry. Source: own"
     }
   ]
 }

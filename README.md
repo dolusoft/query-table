@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.18.0
+pnpm add @dolusoft/query-table@3.19.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -60,6 +60,30 @@ function onUpdate(next: TableQuery) {
   void load(next)
 }
 ```
+
+## Rows held in the page: `DataTable`
+
+When every row is already in the page (a list of a few hundred, a lookup table), `DataTable` from `@dolusoft/query-table/data-table` sorts, filters, searches and pages it for you. It is `useLocalQuery` and `QueryTable` composed (ADR 0021): the same props, events, slots, methods and DOM, so the same skin and every feature. It builds the dataset from the columns, and without `v-model:query` it holds the query itself.
+
+```vue
+<script setup lang="ts">
+import { DataTable } from '@dolusoft/query-table/data-table'
+
+const columns = [
+  { field: 'id', title: 'ID', type: 'integer' as const },
+  { field: 'name', title: 'Name' }
+]
+const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Işık' }]
+</script>
+
+<template>
+  <DataTable :columns="columns" :rows="people" row-key="id" :search="['name']" sortable filterable>
+    <template #error="{ error }">Query error: {{ error.code }}</template>
+  </DataTable>
+</template>
+```
+
+`rows` is every row, `rowKey` is required and names a `string` or `integer` column (it may be hidden). It takes no `totalRows`, `cursors`, `infinite` or `rowsUpdate`: it knows the total, and it tells the change flash whether a new page comes from a new query or from changed rows. `profile` (default `'tr-2'`) is the meaning of the evaluation, `paginate: false` draws every match, and `dataset` replaces the built dataset for a field that needs `get` or `offset`. A list too large to hold in the page stays on a server with `QueryTable`. The rules are C-124 to C-127.
 
 ## Sorting
 
@@ -223,6 +247,22 @@ A sticky header scrolls inside the same container as the rows, so the vertical s
 
 The body and footer tables get a `col` per header cell with the header cell's measured `width`, so with the fixed layout their columns are as wide as the header's. The fixed layout needs a width that is a length or a percentage: under `width: auto` or `max-content` (the `.qt-table` rule above, under Large tables) the browser lays the table out automatically whatever `table-layout` says, a cell wider than its column widens it, and the body drifts from the header as its rows change. With `width: 100%` a fixed table still grows to the sum of its columns. A development build warns once when the body is laid out automatically. The three scroll sideways together: the table keeps the header and footer at the body's `scrollLeft`, and the body at the header's when a filter input out of view takes the focus. Pinned columns, resizing, `virtual`, `scrollToIndex` and infinite scroll work as in one table; `.qt-table-body` is the scroll container a virtual body finds. For assistive technology the three tables are one: `.qt-table-responsive` has `role="table"` and the rows and cells carry ARIA roles (C-101, C-102). The DOM without `scroll-body` is the same as before.
 
+## Without a header
+
+A list that needs no column titles, such as one column of messages, turns the header off with `:header="false"`. The table then draws no `thead` and nothing that sits in it: no sort by a click, no filter row, no resize or reorder handle and no clear-all button. The sort and the filters of `query` still apply, and the `toolbar` slot still clears filters. Pinning, `scroll-body` and `auto-width` measure the header cells, so they are off: pinned columns are drawn unpinned, in `columns` order, in one table. A column `width` goes on a `col` of a `colgroup`. No cell names a column, so give the table its name with `aria-label`. With `virtual` the row count has no header row, and `scrollToIndex` aligns to the top of the view (C-121).
+
+```vue
+<QueryTable
+  v-model:query="query"
+  :columns="[{ field: 'text' }]"
+  :rows="messages"
+  :header="false"
+  aria-label="Messages"
+  virtual
+  row-key="id"
+/>
+```
+
 ## Resizing columns
 
 With `resizable` the table draws a `qt-resize-handle` separator at the right edge of every header cell (opt a column out with `resizable: false`). Drag it, or focus it and use the arrow keys (10 px, 50 px with Shift); Enter or a double click fits the column to its widest rendered content, Escape cancels a drag. Widths stay between `minWidth` (default 40) and `maxWidth`. The table keeps no width: it emits `column-resize` with `{ field, width }` and you write it back:
@@ -323,11 +363,12 @@ const cursors = ref<PageCursors>({ next: null, prev: null })
 
 ## No value and ranges
 
-A column offers `IsNull`, `IsNotNull` and `Between` when it lists them in `filterConditions`; the list replaces the conditions of its type in the filter menu, and a column without it keeps the menu of 3.12 (C-112). Picking `IsNull` or `IsNotNull` applies at once and hides the input (C-113). `Between` draws two inputs, named by `labels.filterInputFrom` and `labels.filterInputTo`, and emits one rule once both bounds read; with one bound the last applied filter stays (C-114).
+A column offers `IsNull`, `IsNotNull` and `Between` when it lists them in `filterConditions`; the list replaces the conditions of its type in the filter menu, and a column without it keeps the menu of 3.12 (C-112). Picking `IsNull` or `IsNotNull` applies at once and hides the input (C-113). `Between` draws two inputs, named by `labels.filterInputFrom` and `labels.filterInputTo`, and emits one rule once both bounds read; with one bound the last applied filter stays (C-114). A `bool` column has no menu: its select offers the `IsNull` and `IsNotNull` of the list after `All`, `True` and `False` (C-120).
 
 ```ts
 const columns: Column[] = [
-  { field: 'due', type: 'date', filterConditions: ['Between', 'Equal', 'IsNull', 'IsNotNull'] }
+  { field: 'due', type: 'date', filterConditions: ['Between', 'Equal', 'IsNull', 'IsNotNull'] },
+  { field: 'verified', type: 'bool', filterConditions: ['IsNull', 'IsNotNull'] }
 ]
 // { field: 'due', condition: 'IsNull' }
 // { field: 'due', condition: 'Between', value: '2026-10-01', value2: '2026-10-31' }
@@ -417,6 +458,10 @@ A template ref exposes `focusFilter(field)` (returns `false` when the column has
 
 Pass `row-key` when rows can reorder or change between pages and you use `has-subtable`: the expanded state and the state of the components in the `subtable` slot then follow the row. A string `row-key` is a direct property read (`row[rowKey]`), not a dotted path; for a nested value pass a function, `(row) => row.meta.id`. Keys must be unique. Without `row-key` rows are matched by index and the expanded state resets whenever `rows` changes. With `row-key` only the rows currently in `rows` keep their expanded state: a row that leaves (another page) and comes back is closed.
 
+The expanded state stays the table's. To know which rows are open, listen to `rowExpansionChange`: each press of an expand button emits `{ row, rowIndex, rowKey, expanded }` once. Nothing else emits it, so keep your list in step with what you do yourself (`expandAll()`, `collapseAll()`, `isExpanded`, a page change that closes rows). Give `row-key` when you keep such a list: without it `rowKey` in the payload is the row's index, and every change of `rows` (a sort, a refetch of the same page) closes every row without an event, so the list must be emptied then. With `virtual` a row that scrolls out of view unmounts its `subtable` content but stays open and emits nothing, so do not read the open rows from that content (C-122).
+
+For an accordion pass `expand-mode="single"`: opening a row closes the one that was open. One press then emits twice, first `expanded: false` for the row that closed, then `expanded: true` for the row that opened, so a list kept from the events never holds two rows. `isExpanded` opens only the first row that asks, `expandAll()` does nothing and `collapseAll()` closes the open row (C-123).
+
 A row may carry an `isExpanded` boolean to start open or closed (a print or report view opens every row this way): each time `rows` changes, `true` opens the row, `false` closes it and a row without the field keeps its state. It is a seed, not a binding: the table never writes it back, and the user's toggles stand until `rows` changes again.
 
 ## Labels
@@ -432,6 +477,10 @@ Every text the table writes itself (accessible names of its buttons and filter i
   ...
 />
 ```
+
+## Changelog
+
+[`CHANGELOG.md`](./CHANGELOG.md) lists what each 3.x release added, changed and fixed, with the rule behind each entry, and says what to check when you upgrade. Read the sections between your version and the one you install.
 
 ## Guides
 

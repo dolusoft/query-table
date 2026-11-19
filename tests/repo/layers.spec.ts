@@ -368,10 +368,59 @@ import { useLocalQuery } from './use-local-query'`
           file,
           `import { profiles } from '@dolusoft/query-protocol/local'
 import { useLocalQuery } from '@dolusoft/query-table/local'
-import { QueryTable } from '@dolusoft/query-table'`
+import { QueryTable } from '@dolusoft/query-table'
+import { DataTable } from '@dolusoft/query-table/data-table'`
         )
       ),
       invalid: []
+    }
+  )
+})
+
+describe('DataTable layers (ADR 0021, K319-7)', () => {
+  const dataTableFence =
+    'DataTable is reached only through its own entry (ADR 0021)'
+
+  tester.run(
+    'lets DataTable import the table, the binding, vue and the protocol entries',
+    layers.rules.boundaries,
+    {
+      valid: [
+        ok(
+          `${vue}/data-table/x.ts`,
+          `import { computed } from 'vue'
+import { columnTypeOf } from '@dolusoft/query-protocol'
+import { defineDataset } from '@dolusoft/query-protocol/local'
+import { QueryTable } from '../index'
+import type { Column } from '../contract'
+import { useLocalQuery } from '../local'
+import { datasetOf } from './derive-dataset'`
+        )
+      ],
+      invalid: [
+        `import { serverQueryFeature } from '@dolusoft/query-table-core'`,
+        `import { useVueTable } from '@tanstack/vue-table'`,
+        `import { useLocalQuery } from '@dolusoft/query-table/local'`
+      ].map(code => bad(`${vue}/data-table/x.ts`, code, 1))
+    }
+  )
+
+  tester.run(
+    'keeps the table and the binding away from DataTable',
+    layers.rules.boundaries,
+    {
+      valid: [],
+      invalid: [
+        [`${vue}/x.ts`, './data-table'],
+        [`${vue}/body/x.ts`, '../data-table'],
+        [`${vue}/local/x.ts`, '../data-table']
+      ].flatMap(([file, dir]) =>
+        [
+          `import { DataTable } from '${dir}'`,
+          `export { DataTable } from '${dir}/index'`,
+          `void import('${dir}/data-table.vue')`
+        ].map(code => bad(file, code, dataTableFence))
+      )
     }
   )
 })

@@ -3,7 +3,7 @@
 
 /** The kinds of API member a page lists, as keyed in contract/api.json. */
 export type MemberKind =
-  'props' | 'emits' | 'slots' | 'exposed' | 'functions' | 'types'
+  'props' | 'emits' | 'slots' | 'exposed' | 'functions' | 'components' | 'types'
 
 const slug = (text: string) =>
   text.replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')

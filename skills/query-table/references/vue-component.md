@@ -7,7 +7,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | Prop | Meaning |
 | --- | --- |
 | `query` (required) | The query, with `v-model:query`. A `CursorQuery` (a `cursor` key) pages by cursor. |
-| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`, `filterConditions` (the conditions its filter menu offers, in place of its type's; the way to offer `IsNull`, `IsNotNull` and `Between`, which draws two inputs named by `labels.filterInputFrom` and `labels.filterInputTo`). With `v-model:columns` when the user may change the layout. |
+| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`, `filterConditions` (the conditions its filter menu offers, in place of its type's; the way to offer `IsNull`, `IsNotNull` and `Between`, which draws two inputs named by `labels.filterInputFrom` and `labels.filterInputTo`; on a `bool` column `IsNull` and `IsNotNull` become options of its select). With `v-model:columns` when the user may change the layout. |
 | `rows`, `totalRows` | Rows of the current page; the total on the server, `null` when unknown. |
 | `sortable`, `filterable`, `resizable` | Turn on the sort buttons, the filter row, the resize handles (each also needs the column to allow it). |
 | `filterDebounce` | ms before typed filter text applies (default 100; `0` applies every key). |
@@ -18,16 +18,18 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages, and for row pinning. |
 | `hasSubtable`, `hasRightPanel` | Expand button with the `subtable` slot; a button that emits `rowRightPanelClick`. |
 | `rowExpandable` | `(row, index) => boolean`, with `hasSubtable`: a row it returns `false` for has no expand button and never opens (C-98). |
+| `expandMode` | `'multiple'` (default) or `'single'`, with `hasSubtable`: `'single'` is an accordion, opening a row closes the open one and `rowExpansionChange` tells the closed row first; `expandAll()` does nothing (C-123). |
 | `rowKind` | `(row, index) => string \| null \| undefined`: written as `data-row-kind` on the row, for your CSS (a totals or "Others" row); the table takes no row class or style (C-97). |
 | `loading` | You are fetching: rows stay, `data-loading` and `aria-busy` are set, no empty state. |
 | `footerRows`, `pagination`, `labels` | Totals row, pager options, replaceable texts. `labels.filterCondition(condition, type)` names a condition: the label under a filter input and each `label` of the `filter-menu` slot's `conditions` (default: the English names of the protocol's `conditionOptions`). |
 | `virtual` | `true` or `{ rowHeight, estimateRowHeight, overscan, scrollElement, keepAnchor }`: draw only the rows in view of the scroll container (C-83). |
 | `scrollBody` | Draw header, body and footer as three tables in `.qt-table-head`, `.qt-table-body`, `.qt-table-foot`, so only the body scrolls and the vertical scrollbar starts below the header. Give the three `overflow-y: scroll`, the body `overflow-x: auto` and a height, head and foot `overflow-x: hidden; scrollbar-color: transparent transparent` (with `overflow: hidden` their columns end shifted by the scrollbar's width), and the body and footer tables `table-layout: fixed` (C-101, C-102). |
+| `header` | `false` draws no `thead`: no sort click, filter row, resize or reorder handle or clear-all button; `pinned`, `scrollBody` and `autoWidth` are off; a column `width` goes on a `col`; name the table with `aria-label` (C-121). Defaults to `true`. |
 | `infinite` | `true` or `{ threshold }`: emit the next page action as the end of `rows` comes near; you append the rows (C-88). Needs `rowKey`. |
 | `flash` | `true` or `{ rows, cells }`: mark a new row and a changed cell with `data-flash` while the query stays the same; the skin draws it (C-93, C-94). Off by default. Needs `rowKey`. |
 | `rowsUpdate` | What produced `rows`: `live` may flash; `snapshot`, `append` and `reset` never do (C-93). Without it the table guesses from the query and `loading`. |
 
-Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`. The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
+Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`, `rowExpansionChange { row, rowIndex, rowKey, expanded }` (one per press of an expand button only; `expandAll`, `collapseAll`, `isExpanded`, pruning and a virtual row leaving the view emit nothing, C-122). The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
 Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `load-more`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
 

@@ -45,6 +45,10 @@ export default defineConfig({
         replacement: resolve(packages, 'vue/src/local/index.ts')
       },
       {
+        find: /^@dolusoft\/query-table\/data-table$/,
+        replacement: resolve(packages, 'vue/src/data-table/index.ts')
+      },
+      {
         find: /^@dolusoft\/query-protocol$/,
         replacement: resolve(packages, 'query-protocol/src/index.ts')
       },
@@ -75,6 +79,14 @@ export default defineConfig({
   },
   build: {
     outDir: resolve(import.meta.dirname, 'dist'),
-    emptyOutDir: true
+    emptyOutDir: true,
+    // product.html: the product skin on its own page, without the test skin
+    // and Tailwind (#203).
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        product: resolve(import.meta.dirname, 'product.html')
+      }
+    }
   }
 })

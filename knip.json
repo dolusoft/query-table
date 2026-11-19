@@ -8,6 +8,7 @@
         "oxlint-plugins/*.mjs",
         "apps/playground/examples/*.vue",
         "apps/playground/skin/gen-skin.ts",
+        "apps/playground/product/main.ts",
         "fixtures/packages/*.ts",
         "docs/guide/examples/*.ts"
       ],
@@ -40,7 +41,11 @@
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     "packages/vue": {
-      "entry": ["src/index.ts", "src/local/index.ts"],
+      "entry": [
+        "src/index.ts",
+        "src/local/index.ts",
+        "src/data-table/index.ts"
+      ],
       "project": ["src/**/*.{ts,vue}"]
     }
   },

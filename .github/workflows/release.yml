@@ -8,9 +8,10 @@ name: Release
 #            minor or patch of the latest release (ADR 0019).
 #   ci       read-only token: every check of CI (ci.yml, called as is).
 #   pack     read-only token: builds, packs one tarball per package and the
-#            conformance suite (conformance-<revision>.tgz and the release
-#            notes that pin it, C-79), and uploads them as a workflow
-#            artifact.
+#            conformance suite (conformance-<revision>.tgz and the note
+#            that pins it, C-79), writes the release notes (the version's
+#            section of CHANGELOG.md, then that pin), and uploads them as a
+#            workflow artifact.
 #   npm      no install and no repository code: publishes the same tarballs
 #            to npm with trusted publishing (OIDC: no token, no OTP).
 #            Each package on npmjs.com lists this repository and
@@ -123,6 +124,19 @@ jobs:
             exit 1
           fi
 
+      # The notes a consumer reads: the version's section of CHANGELOG.md,
+      # then the conformance pin. Fails when the version has no section.
+      - name: Release notes
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          node scripts/changelog-notes.mjs "$VERSION" > release-extra/changelog.md
+          {
+            cat release-extra/changelog.md
+            printf '\n### Conformance suite\n\n'
+            cat release-extra/release-notes.md
+          } > release-extra/notes.md
+
       - uses: actions/upload-artifact@v4
         with:
           name: tarballs
@@ -190,8 +204,9 @@ jobs:
           name: tarballs
           path: .
 
-      # Only the conformance suite is attached to the release; the notes
-      # that pin it come before the generated ones. Packages go to npm.
+      # Only the conformance suite is attached to the release; the notes are
+      # the version's CHANGELOG.md section and the conformance pin, not notes
+      # generated from pull request titles. Packages go to npm.
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -207,7 +222,7 @@ jobs:
             gh release upload "$TAG" release-extra/*.tgz --clobber
           else
             gh release create "$TAG" release-extra/*.tgz --title "$TAG" \
-              --notes-file release-extra/release-notes.md --generate-notes --verify-tag
+              --notes-file release-extra/notes.md --verify-tag
           fi
 
       # The conformance asset answers.

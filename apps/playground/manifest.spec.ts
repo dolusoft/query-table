@@ -17,6 +17,7 @@ const kinds = [
   'slots',
   'exposed',
   'functions',
+  'components',
   'types'
 ] as const satisfies Array<keyof PageApi>
 

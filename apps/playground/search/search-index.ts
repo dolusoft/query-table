@@ -22,6 +22,7 @@ export type DocKind =
   | 'slot'
   | 'method'
   | 'function'
+  | 'component'
   | 'type'
   | 'rule'
   | 'feature'
@@ -55,6 +56,7 @@ export const memberKinds: Record<MemberKind, DocKind> = {
   slots: 'slot',
   exposed: 'method',
   functions: 'function',
+  components: 'component',
   types: 'type'
 }
 
@@ -64,6 +66,7 @@ const groupHeadings: Record<MemberKind, string> = {
   slots: 'Slots',
   exposed: 'Exposed',
   functions: 'Functions',
+  components: 'Components',
   types: 'Types'
 }
 
@@ -75,6 +78,11 @@ const memberSignature = (kind: MemberKind, name: string): string => {
   }
   if (kind === 'types') {
     return api.types.find(type => type.name === name)?.kind ?? ''
+  }
+  if (kind === 'components') {
+    return (
+      api.components.find(component => component.name === name)?.entry ?? ''
+    )
   }
   return api[kind].find(member => member.name === name)?.type ?? ''
 }
