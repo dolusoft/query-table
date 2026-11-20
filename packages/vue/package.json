@@ -1,6 +1,6 @@
 {
   "name": "@dolusoft/query-table",
-  "version": "3.19.0",
+  "version": "3.20.0",
   "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter, search and paging changes. Built on TanStack Table.",
   "private": false,
   "type": "module",
@@ -22,6 +22,10 @@
     "./data-table": {
       "types": "./dist/types/data-table/index.d.ts",
       "default": "./dist/data-table.js"
+    },
+    "./cells": {
+      "types": "./dist/types/cells/index.d.ts",
+      "default": "./dist/cells.js"
     }
   },
   "engines": {

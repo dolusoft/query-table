@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest'
 
 // PRINCIPLES.md P11: the protocol depends on nothing, the core on the
 // protocol and an exact @tanstack/table-core, the Vue package on both plus an
-// exact @tanstack/vue-table, with `vue` as its only peer. P9: the three are
-// versioned together. The root is a private workspace that publishes nothing.
+// exact @tanstack/vue-table, with `vue` as its only peer; the reference skin
+// on nothing (ADR 0023). P9: the four are versioned together. The root is a
+// private workspace that publishes nothing.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (...path: string[]) =>
@@ -66,13 +67,23 @@ const packages = [
       '@tanstack/vue-table': '9.2.6'
     },
     peers: { vue: '^3.5.0' },
-    subpaths: ['.', './local', './data-table']
+    subpaths: ['.', './local', './data-table', './cells']
+  },
+  {
+    // The reference skin: one stylesheet, no script (ADR 0023). A CSS import
+    // is a side effect, so the bundler must keep it.
+    dir: 'query-table-skin',
+    name: '@dolusoft/query-table-skin',
+    dependencies: {},
+    peers: {},
+    subpaths: ['./table.css'],
+    sideEffects: ['*.css']
   }
 ]
 
 describe.each(packages)(
   '$name manifest',
-  ({ dir, name, dependencies, peers, subpaths }) => {
+  ({ dir, name, dependencies, peers, subpaths, sideEffects = false }) => {
     const pkg = read('packages', dir, 'package.json')
 
     it('has its name and the version of the workspace', () => {
@@ -89,10 +100,10 @@ describe.each(packages)(
       expect(pkg.bundleDependencies ?? []).toEqual([])
     })
 
-    it('publishes only dist, ESM only, without side effects', () => {
+    it('publishes only dist, ESM only, without side effects but a stylesheet', () => {
       expect(pkg.files).toEqual(['dist'])
       expect(pkg.type).toBe('module')
-      expect(pkg.sideEffects).toBe(false)
+      expect(pkg.sideEffects).toEqual(sideEffects)
       expect(pkg.engines).toEqual({ node: '>=22.12' })
       expect(JSON.stringify(pkg)).not.toMatch(/\.c?cjs|\.d\.cts|"require"/)
     })
@@ -132,6 +143,13 @@ describe('README install lines', () => {
 
   it('installs the Vue package at the version of the workspace', () => {
     expect(installs.map(([, version]) => version)).toEqual([workspace.version])
+  })
+
+  it('installs the reference skin at the same version', () => {
+    const skins = [
+      ...readme.matchAll(/^pnpm add @dolusoft\/query-table-skin@(\S+)$/gm)
+    ]
+    expect(skins.map(([, version]) => version)).toEqual([workspace.version])
   })
 
   it('contains no GitHub Release download URL', () => {

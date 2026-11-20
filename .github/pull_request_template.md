@@ -19,4 +19,4 @@
 <!-- Aşağıdaki iki satır zorunlu; CI ikisi yoksa düşer (scripts/check-pr-body.mjs). -->
 
 İlkeler: <!-- dokunulan ilkeler, ör. P3, P12; yoksa "yok" -->
-Katman: <!-- protocol, core, vue, playground, test, repo — dokunulanlar -->
+Katman: <!-- protocol, core, vue, skin, playground, test, repo — dokunulanlar -->

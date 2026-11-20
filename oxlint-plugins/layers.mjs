@@ -18,7 +18,10 @@
 //     local/                                       itself, vue and the two protocol entries only (C-75)
 //     data-table/                                  itself, the rest, local/, vue, the protocol and its
 //                                                  local entry (ADR 0021, K319-7)
-//     the rest                                     never local/, data-table/ nor the local evaluator
+//     cells/                                       itself, vue and, of the rest, core/table-labels
+//                                                  only (ADR 0022, K320-6)
+//     the rest                                     never local/, data-table/, cells/ nor the local
+//                                                  evaluator
 import { readFileSync } from 'node:fs'
 import { dirname, posix, relative, resolve, sep } from 'node:path'
 
@@ -64,8 +67,12 @@ const allowedSpecifiers = {
     'vue',
     '@dolusoft/query-protocol',
     '@dolusoft/query-protocol/local'
-  ]
+  ],
+  'vue:cells': ['vue']
 }
+
+/** The one module of the main part the cell components import (K320-6). */
+const tableLabels = /^core\/table-labels(\.[jt]s)?$/
 
 /** The packages whose src/local/ is a part of its own. */
 const localParts = new Set(['query-protocol', 'vue'])
@@ -82,7 +89,7 @@ const toPosix = path => path.split(sep).join(posix.sep)
  * Where a file sits: its package, its path under src/ (`rest`) and its part:
  * in query-table-core `shared`, `feature:<name>` or `entry`; in the protocol
  * and vue `local` (src/local/) or `main`, and in vue `data-table`
- * (src/data-table/). `null` outside packages/*\/src.
+ * (src/data-table/) and `cells` (src/cells/). `null` outside packages/*\/src.
  */
 export const layerOf = file => {
   const path = toPosix(relative(root, resolve(file)))
@@ -93,6 +100,9 @@ export const layerOf = file => {
   const [, pkg, rest] = match
   if (pkg === 'vue' && /^data-table(\/|$)/.test(rest)) {
     return { pkg, rest, part: 'data-table' }
+  }
+  if (pkg === 'vue' && /^cells(\/|$)/.test(rest)) {
+    return { pkg, rest, part: 'cells' }
   }
   if (localParts.has(pkg)) {
     return { pkg, rest, part: /^local(\/|$)/.test(rest) ? 'local' : 'main' }
@@ -127,7 +137,7 @@ export const violation = (file, specifier) => {
     return specifier === '@dolusoft/query-protocol' ? null : rowChanges
   }
   if (isBare(specifier)) {
-    const own = from.part === 'local' || from.part === 'data-table'
+    const own = ['local', 'data-table', 'cells'].includes(from.part)
     const allowed =
       allowedSpecifiers[own ? `${from.pkg}:${from.part}` : from.pkg]
     if ((allowed ?? []).includes(specifier)) {
@@ -142,6 +152,15 @@ export const violation = (file, specifier) => {
   const target = layerOf(resolve(dirname(file), specifier))
   if (!target || target.pkg !== from.pkg) {
     return `"${specifier}" leaves packages/${from.pkg}/src: import another package by its name`
+  }
+  if (target.part === 'cells' && from.part !== 'cells') {
+    return `the ${from.part} part may not import "${specifier}": the cell components are reached only through their own entry (ADR 0022)`
+  }
+  if (from.part === 'cells') {
+    if (target.part === 'cells' || tableLabels.test(target.rest)) {
+      return null
+    }
+    return `the cell components may not import "${specifier}": they reach only themselves and core/table-labels (ADR 0022, K320-6)`
   }
   if (target.part === 'data-table' && from.part !== 'data-table') {
     return `the ${from.part === 'local' ? 'local' : 'main'} part may not import "${specifier}": DataTable is reached only through its own entry (ADR 0021)`

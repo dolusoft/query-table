@@ -225,7 +225,26 @@ Also on the result: `filters` (`draftOf`, `apply`, `flushAll`, `setCondition`, `
 
 ## Styling
 
-No CSS ships and there are no styling props. Select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Inline styles: `width` on a header cell (and, with `scrollBody`, on the `col`s of the body and footer tables), `--qt-pin-left` on cells pinned to the left, `--qt-pin-right` on cells pinned to the right (`data-pinned="right"`) and `height` on a `tr.qt-virtual-spacer` (give its cell `padding: 0; border: 0`); sticky positioning is your CSS. One rule serves both sides, since the unset property leaves the other side `auto` (LTR layout): `.qt-table [data-pinned] { position: sticky; left: var(--qt-pin-left); right: var(--qt-pin-right) }`. The utility cells are pinned only with a column pinned to the left. Every header, body and footer cell of a column carries `data-type` (`string`, `number`, `integer`, `date`, `datetime`, `bool`; C-82); alignment is yours, by it: `.qt-table :is([data-type='number'], [data-type='integer']) { text-align: end; font-variant-numeric: tabular-nums }`. For large tables set `table-layout: fixed` and give every column a `width`.
+The product's table design is the reference skin, a package of CSS alone (ADR 0023). Install it at the exact version of `@dolusoft/query-table` (`pnpm add @dolusoft/query-table-skin@<that version>`; nothing in the manifests ties the two), then `import '@dolusoft/query-table-skin/table.css'` once. It dresses `QueryTable`, `DataTable` and the cell components in a light and a dark theme (by `prefers-color-scheme`, or `data-theme="light|dark"` on `<html>`). Change its look by setting its `--qt-*` tokens (listed in `packages/query-table-skin/etc/tokens.md`), not by overriding its rules: on `:root`, and a dark color also under both `@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) }` and `:root[data-theme='dark']`, loaded after the skin. It does not draw the toolbar or the pager's controls: what a slot draws is yours.
+
+The table packages ship no CSS and there are no styling props. Without the skin, select the `qt-*` classes and the `data-*` attributes listed in `contract/dom.ts` (`data-pinned`, `data-sort`, `data-loading`, ...). Inline styles: `width` on a header cell (and, with `scrollBody`, on the `col`s of the body and footer tables), `--qt-pin-left` on cells pinned to the left, `--qt-pin-right` on cells pinned to the right (`data-pinned="right"`) and `height` on a `tr.qt-virtual-spacer` (give its cell `padding: 0; border: 0`); sticky positioning is your CSS. One rule serves both sides, since the unset property leaves the other side `auto` (LTR layout): `.qt-table [data-pinned] { position: sticky; left: var(--qt-pin-left); right: var(--qt-pin-right) }`. The utility cells are pinned only with a column pinned to the left. Every header, body and footer cell of a column carries `data-type` (`string`, `number`, `integer`, `date`, `datetime`, `bool`; C-82); alignment is yours, by it: `.qt-table :is([data-type='number'], [data-type='integer']) { text-align: end; font-variant-numeric: tabular-nums }`. For large tables set `table-layout: fixed` and give every column a `width`.
+
+## Cell components
+
+`@dolusoft/query-table/cells` (ADR 0022) draws the common cell patterns as unstyled components for a `cell-<field>` slot; their hooks are `qt-cell-*`, `data-tone` and `data-kind` in `contract/dom.ts` (C-128).
+
+| Component | Props | Draws |
+| --- | --- | --- |
+| `CellStack` | `primary`, `secondary` (or slots) | `span.qt-cell-stack` > `.qt-cell-primary` and, when given, `.qt-cell-secondary` |
+| `CellCopy` | `value`; emits `copy(value)` | `code.qt-cell-copy-text` and `button.qt-cell-copy-button` |
+| `CellPreview` | `text`; emits `preview(text)` | `span.qt-cell-preview-text` and `button.qt-cell-preview-button` |
+| `CellBadge` | `text` (or slot), `tone`: `neutral`, `info`, `success`, `warning`, `danger` | `span.qt-cell-badge[data-tone]` |
+| `CellValue` | `value` | the value as text, or `span.qt-cell-empty` with `labels.emptyValue` for `null`, `undefined`, `''` |
+| `CellActions` / `CellAction` | `kind`: `default`, `primary`, `danger` | `span.qt-cell-actions` > `button.qt-cell-action[data-kind]`; attributes and `@click` go to the button |
+
+- The components only emit: write the clipboard in your `@copy` handler, open the preview in `@preview` (C-129).
+- Button names and the empty text come from the table's `labels` (`copyValue`, `previewValue`, `emptyValue`), so a localised table localises its cells. Give a `CellAction` an `aria-label` that names the row (`Edit AnaOfis`): every row has the same text.
+- `tone` and `kind` are meanings; the skin picks the colours.
 
 ## Rules to remember
 

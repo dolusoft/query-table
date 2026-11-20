@@ -2,18 +2,24 @@
 
 A thin Vue 3 table for server-side data. It renders the rows you give it and tells you, through `v-model:query`, what the user asked for: a page, a page size, a sort or a filter. Fetching and ordering the data is up to you.
 
-The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system.
+The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system, or import the [reference skin](#reference-skin).
 
 ![Query Table v3 architecture: the Vue package on the core features, the core on the protocol and TanStack Table, and the two consumer paths](apps/playground/public/architecture.svg)
 
-Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)).
+Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)). A fourth package, `@dolusoft/query-table-skin`, is the reference skin: one stylesheet and no code, which a consumer adds by choice.
 
 ## Install
 
-The three packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
+The packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.19.0
+pnpm add @dolusoft/query-table@3.20.0
+```
+
+The table ships no CSS. For the product's table design, add the reference skin at the same version and import its stylesheet once (see [Reference skin](#reference-skin)):
+
+```bash
+pnpm add @dolusoft/query-table-skin@3.20.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -84,6 +90,43 @@ const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Işık' }]
 ```
 
 `rows` is every row, `rowKey` is required and names a `string` or `integer` column (it may be hidden). It takes no `totalRows`, `cursors`, `infinite` or `rowsUpdate`: it knows the total, and it tells the change flash whether a new page comes from a new query or from changed rows. `profile` (default `'tr-2'`) is the meaning of the evaluation, `paginate: false` draws every match, and `dataset` replaces the built dataset for a field that needs `get` or `offset`. A list too large to hold in the page stays on a server with `QueryTable`. The rules are C-124 to C-127.
+
+## Cell components
+
+The cells of a product's tables repeat a few patterns: a bold line over a small one, an ID to copy, a text to preview, a status, a dash for no value, the row's actions. `@dolusoft/query-table/cells` draws them as unstyled components with `qt-cell-*` hooks, so one skin dresses them in every table (ADR 0022).
+
+```vue
+<script setup lang="ts">
+import { CellAction, CellActions, CellBadge, CellCopy, CellStack, CellValue } from '@dolusoft/query-table/cells'
+</script>
+
+<template>
+  <DataTable :columns="columns" :rows="sites" row-key="id">
+    <template #cell-name="{ row }"><CellStack :primary="row.name" :secondary="row.note" /></template>
+    <template #cell-mappingId="{ row }"><CellCopy :value="row.mappingId" @copy="copyToClipboard" /></template>
+    <template #cell-status="{ row }"><CellBadge tone="warning" :text="row.status" /></template>
+    <template #cell-api="{ row }"><CellValue :value="row.api" /></template>
+    <template #cell-actions="{ row }">
+      <CellActions>
+        <CellAction kind="primary" @click="edit(row)">Edit</CellAction>
+        <CellAction kind="danger" @click="remove(row)">Delete</CellAction>
+      </CellActions>
+    </template>
+  </DataTable>
+</template>
+```
+
+They draw only what their props give them and hold no state. `CellCopy` and `CellPreview` emit `copy` and `preview`; writing the clipboard or opening a preview is yours. Their button names and the empty-value text come from the table's `labels` (`copyValue`, `previewValue`, `emptyValue`). `tone` and `kind` say what a badge or an action means; how that looks is the skin's. The rules are C-128 and C-129.
+
+## Reference skin
+
+`@dolusoft/query-table-skin` is the product's table design as one stylesheet: plain CSS over the `qt-*` DOM contract, a light and a dark theme, for `QueryTable`, `DataTable` and the cell components (ADR 0023). It has no JavaScript and no dependencies; the table packages never import it.
+
+```ts
+import '@dolusoft/query-table-skin/table.css'
+```
+
+Every color, size and font is a `--qt-*` custom property on `:root`; map your design system onto them and the rules stay. The theme follows the operating system unless `data-theme="light"` or `"dark"` is set on `<html>`; a dark color of yours goes under both of the skin's dark selectors (see the [skin's README](packages/query-table-skin/README.md#theme)). The tokens and their defaults are listed in [`packages/query-table-skin/etc/tokens.md`](packages/query-table-skin/etc/tokens.md); a token is never renamed or removed. Use the skin of the same version as the table: it dresses that version's DOM. The playground's `product.html` page draws with it alone.
 
 ## Sorting
 

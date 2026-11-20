@@ -12,7 +12,14 @@ export interface DocLink {
 const groups = [
   {
     title: 'Getting started',
-    ids: ['overview', 'local-query', 'data-table', 'tanstack-path']
+    ids: [
+      'overview',
+      'local-query',
+      'data-table',
+      'data-table-variations',
+      'cell-components',
+      'tanstack-path'
+    ]
   },
   {
     title: 'Data & query',

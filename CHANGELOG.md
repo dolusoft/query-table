@@ -1,12 +1,31 @@
 # Changelog
 
-What each 3.x release of `@dolusoft/query-protocol`, `@dolusoft/query-table-core` and `@dolusoft/query-table` added, changed and fixed. The three packages are released together under one version.
+What each 3.x release of `@dolusoft/query-protocol`, `@dolusoft/query-table-core`, `@dolusoft/query-table` and, from 3.20.0, the reference skin `@dolusoft/query-table-skin` added, changed and fixed. The packages are released together under one version.
 
 **To upgrade**, read the **Upgrade notes** of every version after yours, up to the one you install: they list each change to the markup, to an emitted `update:query`, to a public type or to behavior a skin or a backend can observe, and say what to check. A version is always the next minor or the next patch, never a major ([ADR 0019](docs/decisions/0019-release-version-policy.md)). Coming from 2.2.x, start with the [migration guide](docs/guide/migration-v3.md).
 
 Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`](contract/rules.md)) and the decision record behind it, when there is one. The full API is in [`CONTRACT.md`](CONTRACT.md). The layout follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
+
+## [3.20.0] - 2026-11-20
+
+Cell components for what a cell draws, and the product's table design as a package of its own, `@dolusoft/query-table-skin`.
+
+### Added
+
+- Cell components from the new entry `@dolusoft/query-table/cells`: `CellStack` (two lines), `CellCopy` (a value and a copy button), `CellPreview` (a text and a preview button), `CellBadge` (a status with `tone`), `CellValue` (a value, or `-` when there is none), `CellActions` and `CellAction` (the row's buttons, with `kind`). They are unstyled and draw `qt-cell-*` hooks of the DOM contract, so a skin dresses them in every table. `CellCopy` and `CellPreview` emit `copy` and `preview`; the clipboard and the preview are the consumer's. The default entry, `/local` and `/data-table` do not import them ([C-128](contract/rules.md#c-128-cell-components-markup-and-dom), [C-129](contract/rules.md#c-129-cell-components-events-and-labels)).
+- `labels.copyValue`, `labels.previewValue` and `labels.emptyValue`: the names of the copy and preview buttons and the empty-value text of the cell components, read from the table they sit in. Optional, so a complete `TableLabels` of 3.19 still type-checks ([C-129](contract/rules.md#c-129-cell-components-events-and-labels), [C-44](contract/rules.md#c-44-labels)).
+- A fourth package, `@dolusoft/query-table-skin`: the product's table design as one stylesheet, `import '@dolusoft/query-table-skin/table.css'`. Plain CSS over the DOM contract, a light and a dark theme, for `QueryTable`, `DataTable` and the cell components. Every color, size and font is a `--qt-*` token on `:root`; a token is never renamed or removed ([`etc/tokens.md`](packages/query-table-skin/etc/tokens.md)). It has no JavaScript and no dependencies, the table packages do not import it and still ship no CSS, and it is released at the same version as they are ([ADR 0023](docs/decisions/0023-skin-package.md)).
+
+### Changed
+
+- The default entry and `/cells` share one more small chunk of the built Vue package (`table-context-*.js`: the table context and the default cell labels, about 1 kB, importing only `vue`). The exports and their behavior are unchanged.
+
+### Upgrade notes
+
+- Additive: no change is needed to upgrade. The cell components and the skin are opt-in; a table that uses neither draws as in 3.19.
+- To use the skin, install `@dolusoft/query-table-skin` at the version of `@dolusoft/query-table` and import its stylesheet once ([README](README.md#reference-skin)).
 
 ## [3.19.0] - 2026-11-19
 
@@ -429,7 +448,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.19.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.20.0...HEAD
+[3.20.0]: https://github.com/dolusoft/query-table/compare/v3.19.0...v3.20.0
 [3.19.0]: https://github.com/dolusoft/query-table/compare/v3.18.0...v3.19.0
 [3.18.0]: https://github.com/dolusoft/query-table/compare/v3.17.0...v3.18.0
 [3.17.0]: https://github.com/dolusoft/query-table/compare/v3.16.0...v3.17.0

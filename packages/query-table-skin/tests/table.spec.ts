@@ -6,12 +6,12 @@ import { describe, expect, it } from 'vitest'
 
 import { domAttributes, domClasses } from '../../../contract/dom'
 
-// The product skin (#203) holds to the DOM contract as the test skin does
-// (C-41): it selects only the listed classes and attributes, plus
+// The reference skin (ADR 0023) holds to the DOM contract as the test skin
+// does (C-41): it selects only the listed classes and attributes, plus
 // `data-theme` on <html>, and every token it reads is defined.
 
 const here = dirname(fileURLToPath(import.meta.url))
-const css = readFileSync(join(here, 'skin.css'), 'utf8')
+const css = readFileSync(join(here, '..', 'src', 'table.css'), 'utf8')
   .replace(/\r\n/g, '\n')
   .replace(/\/\*[\s\S]*?\*\//g, '')
 
@@ -53,7 +53,7 @@ const writtenByTable = new Set([
   '--qt-flash-elapsed'
 ])
 
-describe('product skin', () => {
+describe('reference skin table.css', () => {
   it('reads its rules', () => {
     expect(selectors.length).toBeGreaterThan(40)
   })

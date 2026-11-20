@@ -13,6 +13,8 @@ Three packages, versioned together, layered one way (protocol -> core -> vue):
 - `@dolusoft/query-table-core`: two TanStack Table v9 features, `serverQueryFeature` and `filterInputFeature`.
 - `@dolusoft/query-table`: the `QueryTable` component and `useQueryTable()`.
 
+Beside them, at the same version, `@dolusoft/query-table-skin` is the reference skin: one stylesheet (`import '@dolusoft/query-table-skin/table.css'`), no code, opt-in ([styling](references/vue-component.md#styling)).
+
 The packages are on npm (`@dolusoft/query-table`; the protocol and the core come with it as dependencies). The current version is in the repository README; do not guess one.
 
 ## Which path
@@ -25,6 +27,7 @@ The packages are on npm (`@dolusoft/query-table`; the protocol and the core come
 | Only the query types, the grammar or the schema (a backend, a URL codec) | `@dolusoft/query-protocol` |
 | Evaluate a query over all rows already loaded in the browser | `defineDataset` + `useLocalQuery` from the opt-in `/local` entries; [local query reference](references/local-query.md) |
 | A table for rows already in the page, with no query or dataset to wire | `DataTable` from `@dolusoft/query-table/data-table`; [local query reference](references/local-query.md#datatable) |
+| Common cell content (two lines, an ID to copy, a status badge, a dash for no value, row actions) | `CellStack`, `CellCopy`, `CellPreview`, `CellBadge`, `CellValue`, `CellActions` and `CellAction` from `@dolusoft/query-table/cells`, in a `cell-<field>` slot; [component reference](references/vue-component.md#cell-components) |
 
 Start with `QueryTable`. Move to `useQueryTable()` when the markup must be yours; move to the TanStack path when there is no Vue component layer at all. Details: [references/vue-component.md](references/vue-component.md), [references/tanstack-path.md](references/tanstack-path.md).
 
@@ -109,7 +112,7 @@ The query is plain JSON with `pageSize`, `sort`, `filters`, optional `search`, a
 | Treating `reason` as part of the query JSON | It is not; send it yourself (header or key) if the server needs it |
 | Expecting `!foo*` to arrive as a "not starts with" rule | It arrives as `NotContains` with value `foo` |
 | Adding `onSortingChange` / `manualPagination` options to the TanStack table | `serverQueryFeature` owns them (C-61); the table throws at construction |
-| Styling with props or expecting bundled CSS | No CSS ships; select the `qt-*` classes and `data-*` attributes of the DOM contract |
+| Styling with props or expecting bundled CSS | The table packages ship no CSS; import `@dolusoft/query-table-skin/table.css` and set its `--qt-*` tokens, or select the `qt-*` classes and `data-*` attributes of the DOM contract yourself |
 | Forgetting `dispose(table)` on the TanStack path | Call it in your scope cleanup; `useQueryTable()` does it for you |
 | Using a `rowKey` that is not unique, or a dotted string path | A string `rowKey` is a direct property read; use a function for nested values |
 

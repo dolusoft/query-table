@@ -1,7 +1,8 @@
 // `pnpm measure:package-size`: how much an application that imports a v3
 // package ships (P8). Builds each fixture of fixtures/packages into a
 // minified app (TanStack bundled) against the built `dist/` of the packages,
-// through their `exports` maps, and subtracts the empty baseline app. Writes
+// through their `exports` maps, and subtracts the empty baseline app. The
+// reference skin (`skin`) is its built stylesheet, measured as it is. Writes
 // node_modules/.cache/measure/package-size.json. Run after
 // `pnpm build`.
 //
@@ -9,7 +10,7 @@
 // and exits 1 when one is over its budget or a budget is over the ceiling
 // of its fixture. Ceilings guard against silent drift (P8); a deliberate
 // growth raises budget and ceiling in the same change, with its reason.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
 
@@ -53,6 +54,22 @@ costs['core - tanstack'] = Object.fromEntries(
   ])
 )
 
+// The reference skin (ADR 0023, P8): its stylesheet as a consumer downloads
+// it. There is no app to build: the file is the cost.
+const skinCss = join(root, 'packages', 'query-table-skin', 'dist', 'table.css')
+if (!existsSync(skinCss)) {
+  console.error(
+    '[package-size] packages/query-table-skin/dist/table.css is missing: run `pnpm build` first'
+  )
+  process.exit(1)
+}
+const css = readFileSync(skinCss)
+costs.skin = {
+  bytes: css.length,
+  gzipBytes: gzipSync(css).length,
+  brotliBytes: brotliCompressSync(css).length
+}
+
 const outDir = join(root, 'node_modules', '.cache', 'measure')
 mkdirSync(outDir, { recursive: true })
 const file = join(outDir, 'package-size.json')
@@ -83,7 +100,7 @@ if (process.argv.includes('--check')) {
     readFileSync(join(root, 'scripts', 'package-size-budget.json'), 'utf8')
   )
   let failed = false
-  for (const name of names) {
+  for (const name of [...names, 'skin']) {
     const entry = budget.fixtures?.[name]
     if (typeof entry?.maxGzipBytes !== 'number') {
       console.error(

@@ -1,16 +1,18 @@
 /*
- * Product skin: the design of the product's tables drawn on the table's DOM
- * contract (contract/dom.ts, #203). Plain CSS, no build step and no utility
- * classes: every color, size and font is a `--qt-*` token on `:root`, so a
- * design system maps its own values onto the tokens and keeps the rules.
+ * @dolusoft/query-table-skin/table.css: the reference skin of
+ * @dolusoft/query-table, the product's table design drawn on the table's DOM
+ * contract (contract/dom.ts, ADR 0023). Plain CSS, no build step and no
+ * utility classes: every color, size and font is a `--qt-*` token on
+ * `:root`, so a design system maps its own values onto the tokens and keeps
+ * the rules. A token is never renamed or removed (etc/tokens.md).
  *
  * It selects only what the DOM contract lists (C-41), plus `:root` for the
  * tokens and `data-theme` on <html> for a fixed theme. The theme follows the
  * OS (`prefers-color-scheme`) unless `data-theme` says `light` or `dark`.
  *
- * Out of the skin: what slots draw (the toolbar, the pager's controls, the
- * cell content). Those are the consumer's markup; the cell patterns get
- * hooks of their own with the cell components of ADR 0022.
+ * It dresses the table's own parts and the cell components of
+ * `@dolusoft/query-table/cells` (ADR 0022). What other slots draw (the
+ * toolbar, the pager's controls) is the consumer's markup and CSS.
  */
 
 /* ---------------------------------------------------------------- tokens */
@@ -62,6 +64,23 @@
   --qt-danger: #c93434;
   --qt-flash: rgb(43 143 214 / 0.18);
   --qt-flash-duration: 1500ms;
+
+  /* The cell components of /cells (ADR 0022): chips, badge tones and the
+     action kinds. Text on each fill keeps 4.5:1 (WCAG 1.4.3). */
+  --qt-chip-bg: #f0f0f0;
+  --qt-tone-neutral-bg: #f0f0f0;
+  --qt-tone-neutral-fg: #262626;
+  --qt-tone-info-bg: #dbeafe;
+  --qt-tone-info-fg: #1e3a8a;
+  --qt-tone-success-bg: #dcfce7;
+  --qt-tone-success-fg: #14532d;
+  --qt-tone-warning-bg: #f6b04b;
+  --qt-tone-warning-fg: #3d2600;
+  --qt-tone-danger-bg: #fee2e2;
+  --qt-tone-danger-fg: #7f1d1d;
+  --qt-action-primary-bg: #1f78b4;
+  --qt-action-primary-fg: #ffffff;
+  --qt-action-danger-fg: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -79,6 +98,15 @@
     --qt-control-bg: #141414;
     --qt-control-border: #666666;
     --qt-flash: rgb(43 143 214 / 0.22);
+    --qt-chip-bg: #1c1c1c;
+    --qt-tone-neutral-bg: #262626;
+    --qt-tone-neutral-fg: #e5e5e5;
+    --qt-tone-info-bg: #172554;
+    --qt-tone-info-fg: #bfdbfe;
+    --qt-tone-success-bg: #14532d;
+    --qt-tone-success-fg: #bbf7d0;
+    --qt-tone-danger-bg: #450a0a;
+    --qt-tone-danger-fg: #fecaca;
   }
 }
 
@@ -96,6 +124,15 @@
   --qt-control-bg: #141414;
   --qt-control-border: #666666;
   --qt-flash: rgb(43 143 214 / 0.22);
+  --qt-chip-bg: #1c1c1c;
+  --qt-tone-neutral-bg: #262626;
+  --qt-tone-neutral-fg: #e5e5e5;
+  --qt-tone-info-bg: #172554;
+  --qt-tone-info-fg: #bfdbfe;
+  --qt-tone-success-bg: #14532d;
+  --qt-tone-success-fg: #bbf7d0;
+  --qt-tone-danger-bg: #450a0a;
+  --qt-tone-danger-fg: #fecaca;
 }
 
 /* ------------------------------------------------------------------ frame */
@@ -490,9 +527,142 @@ th[data-drop] {
   border-block-start: 1px solid var(--qt-border);
 }
 
+/* ------------------------------------------------------------------ cells */
+
+/* The cell components of /cells (ADR 0022, C-128). */
+
+.qt-cell-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.qt-cell-primary {
+  font-weight: 600;
+  color: var(--qt-fg-strong);
+}
+
+.qt-cell-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--qt-small-font-size);
+  line-height: 1rem;
+}
+
+.qt-cell-copy,
+.qt-cell-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.5rem;
+  padding: 0 0.25rem 0 0.5rem;
+  white-space: nowrap;
+  background-color: var(--qt-chip-bg);
+  border-radius: 999px;
+}
+
+.qt-cell-copy-text {
+  font: inherit;
+}
+
+.qt-cell-copy-button,
+.qt-cell-preview-button {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  color: var(--qt-icon);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.qt-cell-copy-button:hover,
+.qt-cell-preview-button:hover {
+  color: var(--qt-fg-strong);
+}
+
+.qt-cell-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.qt-cell-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  font-size: var(--qt-small-font-size);
+  font-weight: 500;
+  color: var(--qt-tone-neutral-fg);
+  background-color: var(--qt-tone-neutral-bg);
+  border-radius: 999px;
+}
+
+.qt-cell-badge[data-tone='info'] {
+  color: var(--qt-tone-info-fg);
+  background-color: var(--qt-tone-info-bg);
+}
+
+.qt-cell-badge[data-tone='success'] {
+  color: var(--qt-tone-success-fg);
+  background-color: var(--qt-tone-success-bg);
+}
+
+.qt-cell-badge[data-tone='warning'] {
+  color: var(--qt-tone-warning-fg);
+  background-color: var(--qt-tone-warning-bg);
+}
+
+.qt-cell-badge[data-tone='danger'] {
+  color: var(--qt-tone-danger-fg);
+  background-color: var(--qt-tone-danger-bg);
+}
+
+.qt-cell-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+
+.qt-cell-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  font: inherit;
+  font-weight: 500;
+  color: var(--qt-fg);
+  white-space: nowrap;
+  background-color: var(--qt-control-bg);
+  border: 1px solid var(--qt-control-border);
+  border-radius: var(--qt-control-radius);
+  cursor: pointer;
+}
+
+.qt-cell-action > svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.qt-cell-action[data-kind='primary'] {
+  color: var(--qt-action-primary-fg);
+  background-color: var(--qt-action-primary-bg);
+  border-color: var(--qt-action-primary-bg);
+}
+
+.qt-cell-action[data-kind='danger'] {
+  color: var(--qt-action-danger-fg);
+  background-color: var(--qt-danger);
+  border-color: var(--qt-danger);
+}
+
 /* -------------------------------------------------------------------- flash */
 
-@keyframes qt-product-flash {
+@keyframes qt-skin-flash {
   from {
     background-color: var(--qt-flash);
   }
@@ -500,7 +670,7 @@ th[data-drop] {
 
 .qt-table > tbody > tr[data-flash] > td,
 .qt-table > tbody > tr > td[data-flash] {
-  animation: qt-product-flash var(--qt-flash-duration) ease-out;
+  animation: qt-skin-flash var(--qt-flash-duration) ease-out;
   animation-delay: calc(-1 * var(--qt-flash-elapsed, 0ms));
 }
 

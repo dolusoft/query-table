@@ -78,12 +78,15 @@ const groups = computed(() => {
         component => ({
           name: component.name,
           type: component.entry,
-          description: `${component.description} Not taken: ${component.omitted.map(name => `\`${name}\``).join(', ')}.`
+          description:
+            component.omitted.length > 0
+              ? `${component.description} Not taken: ${component.omitted.map(name => `\`${name}\``).join(', ')}.`
+              : component.description
         })
       )
     },
-    // A component of an opt-in entry lists the props and slots it adds to
-    // the surface of QueryTable.
+    // A component of an opt-in entry lists its own props, events and slots:
+    // for DataTable what it adds to the surface of QueryTable.
     ...pick(contractApi.components, props.members.components).flatMap(
       component => [
         {
@@ -98,11 +101,21 @@ const groups = computed(() => {
         },
         {
           kind: 'components' as const,
+          title: `${component.name} events`,
+          typeLabel: 'Arguments',
+          rows: component.emits.map<Row>(event => ({
+            name: `${component.name}.${event.name}`,
+            type: event.type,
+            description: event.description
+          }))
+        },
+        {
+          kind: 'components' as const,
           title: `${component.name} slots`,
           typeLabel: 'Slot props',
           rows: component.slots.map<Row>(slot => ({
             name: `${component.name}.${slot.name}`,
-            type: slot.props,
+            type: slot.props || 'none',
             description: slot.description
           }))
         }

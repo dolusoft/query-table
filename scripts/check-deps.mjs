@@ -28,7 +28,9 @@ const allowed = {
       '@tanstack/vue-table': '9.2.6'
     },
     peerDependencies: { vue: '^3.5.0' }
-  }
+  },
+  // The reference skin is a stylesheet: nothing to depend on (ADR 0023).
+  'packages/query-table-skin': { dependencies: {}, peerDependencies: {} }
 }
 
 const problems = []

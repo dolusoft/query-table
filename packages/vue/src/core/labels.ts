@@ -1,5 +1,6 @@
 import { conditionLabel } from '@dolusoft/query-protocol'
 
+import { cellLabelDefaults } from './cell-labels'
 import type { Column, TableLabels } from '../contract'
 
 /** The labels the table reads: every entry filled, the optional ones too. */
@@ -21,7 +22,9 @@ const defaultLabels: ResolvedLabels = {
   boolTrue: 'True',
   boolFalse: 'False',
   selectRow: 'Select row',
-  selectAllRows: 'Select all rows'
+  selectAllRows: 'Select all rows',
+  // The cell components' three, one source for the table and for /cells.
+  ...cellLabelDefaults
 }
 
 export const resolveLabels = (

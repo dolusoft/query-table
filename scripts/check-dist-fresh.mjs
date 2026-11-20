@@ -23,7 +23,8 @@ for (const dir of packages) {
   const manifest = JSON.parse(
     readFileSync(join(root, dir, 'package.json'), 'utf8')
   )
-  const entry = join(dir, manifest.main)
+  // The reference skin has no `main`: its one export is its stylesheet.
+  const entry = join(dir, manifest.main ?? Object.values(manifest.exports)[0])
   let built
   try {
     built = statSync(join(root, entry)).mtimeMs

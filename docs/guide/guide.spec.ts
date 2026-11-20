@@ -10,6 +10,13 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
 
 import { cursorTour, filterInputTour } from './examples/api-tour'
+import {
+  paginationRequestOf,
+  selectedKeys,
+  selectionOf,
+  sortOf,
+  sortText
+} from './examples/app-data-table'
 import { createCursorPager } from './examples/cursor-stack'
 import { typeIntoName } from './examples/filter-input-alone'
 import { mountAndLeave } from './examples/lifecycle'
@@ -339,5 +346,55 @@ describe('the other examples', () => {
 
   it('a disposed table is inert', () => {
     expect(mountAndLeave()).toHaveLength(1)
+  })
+})
+
+describe('app-data-table.ts: an AppDataTable page on QueryTable', () => {
+  it('reads the list request off the query', () => {
+    expect(
+      paginationRequestOf(
+        {
+          page: 3,
+          pageSize: 20,
+          sort: { field: 'source', direction: 'asc' },
+          filters: [],
+          search: 'ada'
+        },
+        { userType: 'local' },
+        { source: 'Name' }
+      )
+    ).toEqual({
+      SearchText: 'ada',
+      OrderDirection: 'asc',
+      OrderColumnName: 'Name',
+      Page: 2,
+      PageSize: 20,
+      FilterColumns: { userType: 'local' }
+    })
+    expect(
+      paginationRequestOf({ page: 1, pageSize: 10, sort: null, filters: [] })
+    ).toEqual({
+      SearchText: '',
+      OrderDirection: 'desc',
+      OrderColumnName: '',
+      Page: 0,
+      PageSize: 10,
+      FilterColumns: {}
+    })
+  })
+
+  it('turns the URL form of the sort into the query sort and back', () => {
+    expect(sortOf('')).toBeNull()
+    expect(sortOf('name')).toEqual({ field: 'name', direction: 'asc' })
+    expect(sortOf('-name')).toEqual({ field: 'name', direction: 'desc' })
+    for (const text of ['', 'name', '-name']) {
+      expect(sortText(sortOf(text))).toBe(text)
+    }
+  })
+
+  it('turns the selection map into keys and back', () => {
+    expect(selectedKeys({ 1: true, 2: false, 7: true })).toEqual(['1', '7'])
+    expect(selectionOf([1, 'b'])).toEqual({ 1: true, b: true })
+    expect(selectedKeys(selectionOf([3, 4]))).toEqual(['3', '4'])
   })
 })

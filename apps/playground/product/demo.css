@@ -1,18 +1,15 @@
 /*
- * The page around the table and the content its slots draw (toolbar, cell
- * content, pager). This is consumer CSS, not the skin: it uses the skin's
- * tokens so it follows the theme. The cell patterns move to the cell
- * components of ADR 0022 and their `qt-cell-*` hooks.
+ * The page around the table and what its toolbar, subtable and pagination
+ * slots draw. This is consumer CSS, not the skin: it uses the skin's tokens
+ * so it follows the theme. The cells are the cell components of ADR 0022,
+ * dressed by the reference skin (`@dolusoft/query-table-skin`) through their
+ * `qt-cell-*` hooks.
  */
 
 :root {
   --qt-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --demo-button-height: 1.75rem;
   --demo-chip-bg: #f0f0f0;
-  --demo-badge-warning-bg: #f6b04b;
-  --demo-badge-warning-fg: #3d2600;
-  /* 4.5:1 against white text; the design's #2b8fd6 gives 3.5:1. */
-  --demo-edit: #1f78b4;
   --demo-primary-bg: #0a0a0a;
   --demo-primary-fg: #fafafa;
   color-scheme: light;
@@ -169,18 +166,6 @@ svg {
   border-color: var(--demo-primary-bg);
 }
 
-.button-edit {
-  color: #ffffff;
-  background-color: var(--demo-edit);
-  border-color: var(--demo-edit);
-}
-
-.button-danger {
-  color: #ffffff;
-  background-color: var(--qt-danger);
-  border-color: var(--qt-danger);
-}
-
 .button-icon {
   justify-content: center;
   min-width: var(--demo-button-height);
@@ -193,85 +178,7 @@ svg {
   border-color: var(--demo-primary-bg);
 }
 
-/* ----------------------------------------------------------- cell content */
-
-.stack {
-  display: flex;
-  flex-direction: column;
-}
-
-.stack strong {
-  font-weight: 600;
-  color: var(--qt-fg-strong);
-}
-
-.stack small {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: var(--qt-small-font-size);
-  line-height: 1rem;
-  color: var(--qt-fg);
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 1.5rem;
-  padding: 0 0.25rem 0 0.5rem;
-  white-space: nowrap;
-  background-color: var(--demo-chip-bg);
-  border-radius: 999px;
-}
-
-.chip code {
-  font-family: inherit;
-  font-size: inherit;
-}
-
-.chip button {
-  display: grid;
-  place-items: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  padding: 0;
-  color: var(--qt-icon);
-  background: none;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.chip button:hover {
-  color: var(--qt-fg-strong);
-}
-
-.chip svg {
-  width: 0.75rem;
-  height: 0.75rem;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  height: 1.25rem;
-  padding: 0 0.5rem;
-  font-size: var(--qt-small-font-size);
-  font-weight: 500;
-  border-radius: 999px;
-}
-
-.badge[data-tone='warning'] {
-  color: var(--demo-badge-warning-fg);
-  background-color: var(--demo-badge-warning-bg);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.375rem;
-}
+/* --------------------------------------------------------- page columns */
 
 .sites :is(th, td)[data-field='actions'] {
   width: 1px;

@@ -122,6 +122,20 @@ Rows held in the page: `useLocalQuery` and `QueryTable` composed (ADR 0021). It 
 | --- | --- | --- |
 | `error` | `ErrorSlotProps` | Drawn in the empty row while the evaluator reports an error. Without it the `empty` slot is drawn. |
 
+### Cell components (`@dolusoft/query-table/cells`)
+
+Unstyled components for a `cell-<field>` slot or any other place (ADR 0022). Their texts come from the `labels` of the table they sit in (C-129).
+
+| Component | Props | Events | Description |
+| --- | --- | --- | --- |
+| `CellStack` | `primary?: string \| number \| null`, `secondary?: string \| number \| null` |  | Two lines: `span.qt-cell-stack` with `.qt-cell-primary` and, when given, `.qt-cell-secondary` (C-128). |
+| `CellCopy` | `value: string \| number` | `copy: [value: string]` | A value in `code.qt-cell-copy-text` and `button.qt-cell-copy-button`, named by `labels.copyValue`. A press emits `copy` with the value as a string; the clipboard is the consumer's (C-128, C-129). |
+| `CellPreview` | `text: string \| number` | `preview: [text: string]` | A text in `span.qt-cell-preview-text` and `button.qt-cell-preview-button`, named by `labels.previewValue`. A press emits `preview` with the text as a string (C-128, C-129). |
+| `CellBadge` | `text?: string \| number`, `tone?: CellBadgeTone` |  | A short status: `span.qt-cell-badge` with `data-tone` (C-128). |
+| `CellValue` | `value?: unknown` |  | The value as a cell draws it, or `span.qt-cell-empty` with `labels.emptyValue` for `null`, `undefined` and `''` (C-128, C-129). |
+| `CellActions` |  |  | The group of actions: `span.qt-cell-actions` around its slot (C-128). |
+| `CellAction` | `kind?: CellActionKind` |  | One action: `button.qt-cell-action` with `type="button"` and `data-kind`; attributes and listeners go to the button (C-128). |
+
 ## Types
 
 Exported from the package entry point (`packages/vue/src/contract.ts`).
@@ -656,6 +670,22 @@ export interface TableLabels {
   selectRow: string
   /** Name of the checkbox that selects every row of the page. Default `'Select all rows'`. */
   selectAllRows: string
+  /**
+   * Name of the copy button of `CellCopy` (`/cells`, C-129). Default
+   * `` value => `Copy ${value}` ``. Optional (3.20), so a complete
+   * `TableLabels` of 3.19 still type-checks.
+   */
+  copyValue?: (value: string) => string
+  /**
+   * Name of the preview button of `CellPreview` (`/cells`, C-129). Default
+   * `` text => `Preview ${text}` ``. Optional (3.20), like `copyValue`.
+   */
+  previewValue?: (text: string) => string
+  /**
+   * The text `CellValue` (`/cells`, C-129) draws for an empty value. Default
+   * `'-'`. Optional (3.20), like `copyValue`.
+   */
+  emptyValue?: string
 }
 
 /** Payload of the `cellContextMenu` event. */
@@ -1086,6 +1116,64 @@ export interface DataTableSlots<T> extends TableSlots<T> {
 }
 ```
 
+Exported from `@dolusoft/query-table/cells` (`packages/vue/src/cells/contract.ts`).
+
+```ts
+/**
+ * Public contract of the cell components (`@dolusoft/query-table/cells`,
+ * ADR 0022). Unstyled markup for what the product's cells draw; each
+ * component's hooks are in `contract/dom.ts` (C-128) and its texts come from
+ * the `labels` of the table it sits in (C-129).
+ */
+
+/** What a `CellBadge` says, not how it looks (C-128). */
+export type CellBadgeTone =
+  'neutral' | 'info' | 'success' | 'warning' | 'danger'
+
+/** What a `CellAction` does, not how it looks (C-128). */
+export type CellActionKind = 'default' | 'primary' | 'danger'
+
+/** Props of `CellStack`: two lines, a primary over a secondary. */
+export interface CellStackProps {
+  /** The first line. The `primary` slot replaces it. */
+  primary?: string | number | null
+  /** The second line, drawn only when given. The `secondary` slot replaces it. */
+  secondary?: string | number | null
+}
+
+/** Props of `CellCopy`: a value with a button that asks to copy it. */
+export interface CellCopyProps {
+  /** The value shown and emitted with `copy`. */
+  value: string | number
+}
+
+/** Props of `CellPreview`: a text with a button that asks to preview it. */
+export interface CellPreviewProps {
+  /** The text shown and emitted with `preview`. */
+  text: string | number
+}
+
+/** Props of `CellBadge`: a short status. */
+export interface CellBadgeProps {
+  /** The text. The default slot replaces it. */
+  text?: string | number
+  /** Defaults to `'neutral'`. */
+  tone?: CellBadgeTone
+}
+
+/** Props of `CellValue`: a value, or the empty-value label when there is none. */
+export interface CellValueProps {
+  /** `null`, `undefined` and `''` draw `labels.emptyValue` (C-129). */
+  value?: unknown
+}
+
+/** Props of `CellAction`: one button of a `CellActions` group. */
+export interface CellActionProps {
+  /** Defaults to `'default'`. */
+  kind?: CellActionKind
+}
+```
+
 The query types below are declared by `@dolusoft/query-protocol` (`packages/query-protocol/src/protocol/types.ts`); `contract.ts` exports them again, so they are also exported from this package.
 
 ```ts
@@ -1476,7 +1564,7 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 #### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and of the two bounds of a range, resize handles, reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter ${name} from` ``, `` `Filter ${name} to` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`, and `'Is Null'`, `'Is Not Null'` and `'Between'` for the conditions of C-112). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and of the two bounds of a range, resize handles, reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter ${name} from` ``, `` `Filter ${name} to` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`, and `'Is Null'`, `'Is Not Null'` and `'Between'` for the conditions of C-112). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. The cell components read three more entries, `copyValue`, `previewValue` and `emptyValue`, from the `labels` of the table they sit in (C-129). No component template holds a literal `aria-label`.
 
 #### C-45 Header semantics
 
@@ -1956,6 +2044,18 @@ For the same columns, the same page of rows, the same total and the same other p
 
 Source: own
 
+#### C-128 Cell components: markup and DOM
+
+`@dolusoft/query-table/cells` exports `CellStack`, `CellCopy`, `CellPreview`, `CellBadge`, `CellValue`, `CellActions` and `CellAction`: unstyled components for a `cell-<field>` slot of `QueryTable` or `DataTable`, or for any other place. Each draws only what its props and slots give it; none reads a row, holds table state or writes an inline style. `CellStack` draws `span.qt-cell-stack` holding `span.qt-cell-primary` and, when `secondary` or the `secondary` slot is given, `span.qt-cell-secondary`. `CellCopy` draws `span.qt-cell-copy` holding `code.qt-cell-copy-text` with the value and `button.qt-cell-copy-button` with an `svg.qt-cell-icon`. `CellPreview` draws `span.qt-cell-preview` holding `span.qt-cell-preview-text` with the text and `button.qt-cell-preview-button` with an `svg.qt-cell-icon`. `CellBadge` draws `span.qt-cell-badge` with its text or default slot and `data-tone`: `neutral` by default, `info`, `success`, `warning` or `danger`, what the status means and not how it looks. `CellValue` draws the value as C-30 draws a cell (the value as a string, escaped, whole), or, when the value is `null`, `undefined` or `''`, `span.qt-cell-empty` with the empty-value label (C-129); it takes no attributes, so its markup is the same for every row. The table's own cells keep C-30 and C-82. `CellActions` draws `span.qt-cell-actions` around its slot; `CellAction` draws `button.qt-cell-action` with `type="button"`, `data-kind` (`default` by default, `primary` or `danger`) and its slot, and passes its attributes and listeners to the button. Every class and attribute named here is in the DOM contract. The default entry, `/local` and `/data-table` do not import the cell components (ADR 0022).
+
+Source: own
+
+#### C-129 Cell components: events and labels
+
+A press of the button of `CellCopy` emits `copy` with the value as a string, and a press of the button of `CellPreview` emits `preview` with the text as a string. Neither writes the clipboard, opens anything or stops the click: it bubbles from the cell as any control in a cell slot does (C-27). The name (`aria-label` and `title`) of the copy button is `labels.copyValue(value)` and of the preview button `labels.previewValue(text)`, and the text of an empty `CellValue` is `labels.emptyValue`. Inside a `QueryTable` or a `DataTable` these come from that table's `labels` and follow it when it changes, and an entry left out or given as `undefined` is the default; outside one they are the English defaults (`` `Copy ${value}` ``, `` `Preview ${value}` `` and `'-'`). The three entries are optional in `TableLabels`, so a complete `TableLabels` of 3.19 still type-checks. No cell component takes a prop for these texts.
+
+Source: own
+
 ## DOM contract
 
 The classes and attributes below are the only hooks a skin can select. The table writes no stylesheet.
@@ -1992,6 +2092,20 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-group-row` | `tbody > tr` | With `groupBy`: the row above the first row of a group, one `th scope="row"` that spans every column and holds the `group` slot (C-103). It is not a row of `rows`: no `data-row-index`. Make it sticky in your CSS (`tr.qt-group-row > th { position: sticky; top: <the height of your sticky header> }`), on the cell, not on the `tr`; with `virtual` the group row of the top group stays drawn (C-104). Without `virtual` the stuck cell of the last group stays over ungrouped rows after it until the `tbody` ends. The slot content is for reading; no focus is kept in it. |
 | `qt-footer` | `tfoot` | Totals block. |
 | `qt-pagination` | `div` | Block around the `pagination` slot. |
+| `qt-cell-stack` | `span` | `CellStack`: a primary line over a secondary one (C-128). |
+| `qt-cell-primary` | `.qt-cell-stack > span` | The first line of a `CellStack`. |
+| `qt-cell-secondary` | `.qt-cell-stack > span` | The second line of a `CellStack`, when there is one. |
+| `qt-cell-copy` | `span` | `CellCopy`: a value with a copy button (C-128). |
+| `qt-cell-copy-text` | `.qt-cell-copy > code` | The value of a `CellCopy`. |
+| `qt-cell-copy-button` | `.qt-cell-copy > button` | The copy button of a `CellCopy`; a press emits `copy` (C-129). |
+| `qt-cell-preview` | `span` | `CellPreview`: a text with a preview button (C-128). |
+| `qt-cell-preview-text` | `.qt-cell-preview > span` | The text of a `CellPreview`. |
+| `qt-cell-preview-button` | `.qt-cell-preview > button` | The preview button of a `CellPreview`; a press emits `preview` (C-129). |
+| `qt-cell-icon` | `button > svg` | The icon of a copy or preview button. |
+| `qt-cell-badge` | `span` | `CellBadge`: a short status with `data-tone` (C-128). |
+| `qt-cell-empty` | `span` | `CellValue` with no value: holds `labels.emptyValue` (C-128, C-129). |
+| `qt-cell-actions` | `span` | `CellActions`: the group of `CellAction` buttons (C-128). |
+| `qt-cell-action` | `button` | `CellAction`: one button of the group, with `data-kind`. |
 
 ### Attributes
 
@@ -2019,6 +2133,8 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `aria-rowcount` | `table` | With `virtual`: the number of rows of the table, the ones not drawn included; `-1` while an infinite list of unknown total has more to load (C-86). |
 | `aria-rowcount` | `.qt-table-responsive[role="table"]` | With `scrollBody` and `virtual`: the count of C-86, on the element that is the table for assistive technology (C-102). |
 | `aria-rowindex` | `tr` | With `virtual`: the position of a drawn header, body or footer row among all rows, from 1 (C-86). |
+| `data-tone` | `span.qt-cell-badge` | What a `CellBadge` says: `neutral`, `info`, `success`, `warning` or `danger` (C-128). |
+| `data-kind` | `button.qt-cell-action` | What a `CellAction` does: `default`, `primary` or `danger` (C-128). |
 
 ### Inline style
 

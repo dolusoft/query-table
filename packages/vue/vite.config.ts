@@ -27,7 +27,8 @@ export default defineConfig({
       entry: {
         'query-table': resolve(import.meta.dirname, 'src/index.ts'),
         local: resolve(import.meta.dirname, 'src/local/index.ts'),
-        'data-table': resolve(import.meta.dirname, 'src/data-table/index.ts')
+        'data-table': resolve(import.meta.dirname, 'src/data-table/index.ts'),
+        cells: resolve(import.meta.dirname, 'src/cells/index.ts')
       },
       // ESM only: every maintained bundler and Node (`require(esm)`) reads it.
       formats: ['es']
