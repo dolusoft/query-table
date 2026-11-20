@@ -69,10 +69,18 @@ const show = async (choice: Partial<Record<AxisId, string>>) => {
 }
 
 /**
- * The table's markup without the ids Vue's `useId` gives the slot content
- * (`v-0`, `v-11-2`): the filter menu's popover counts up with every mount.
+ * The table's markup without its comments and without the ids Vue's `useId`
+ * gives the slot content (`v-0`, `v-11-2`): the filter menu's popover counts
+ * up with every mount. Comments are no part of the DOM contract, and a
+ * development build writes them where a production build writes `<!---->`;
+ * `scripts/equivalence.mjs` points only the default entry at a built
+ * package, so `DataTable` (from `/data-table`) and `QueryTable` may come from
+ * two builds.
  */
-const markup = () => root().outerHTML.replace(/\bv-\d+(-\d+)*\b/g, 'v-#')
+const markup = () =>
+  root()
+    .outerHTML.replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\bv-\d+(-\d+)*\b/g, 'v-#')
 
 /** Where two markups part, with some context, or null when they are equal. */
 const difference = (received: string, expected: string) => {
@@ -124,9 +132,15 @@ describe('C-124 DataTable variations: paging (#204)', () => {
     await expect.poll(() => dataRows().length).toBeGreaterThan(0)
     expect(dataRows().length).toBeLessThan(200)
     expect(own('tr.qt-virtual-spacer').length).toBeGreaterThan(0)
+    // The body's height changes as the rows in view are measured, so one
+    // scroll to the bottom may stop short of it: scroll again on each poll.
     const box = document.querySelector<HTMLElement>('.variation-box')!
-    box.scrollTop = box.scrollHeight
-    await expect.poll(() => ids().includes(200)).toBe(true)
+    await expect
+      .poll(() => {
+        box.scrollTop = box.scrollHeight
+        return ids().includes(200)
+      })
+      .toBe(true)
   })
 })
 
