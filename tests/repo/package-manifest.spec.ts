@@ -36,7 +36,11 @@ describe('workspace root manifest', () => {
     expect(workspace.devEngines).toEqual({
       runtime: { name: 'node', version: '>=24', onFail: 'error' }
     })
-    expect(workspace.packageManager).toMatch(/^pnpm@\d+\.\d+\.\d+$/)
+    // An exact version with its tarball digest, as in the other Dolusoft
+    // frontend repositories.
+    expect(workspace.packageManager).toMatch(
+      /^pnpm@\d+\.\d+\.\d+\+sha512\.[0-9a-f]{128}$/
+    )
   })
 })
 
