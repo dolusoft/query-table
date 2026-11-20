@@ -1,12 +1,16 @@
 # Changelog
 
-What each 3.x release of `@dolusoft/query-protocol`, `@dolusoft/query-table-core` and `@dolusoft/query-table` added, changed and fixed. The three packages are released together under one version.
+What each 3.x release of `@dolusoft/query-protocol`, `@dolusoft/query-table-core`, `@dolusoft/query-table` and, from 3.20.0, the reference skin `@dolusoft/query-table-skin` added, changed and fixed. The packages are released together under one version.
 
 **To upgrade**, read the **Upgrade notes** of every version after yours, up to the one you install: they list each change to the markup, to an emitted `update:query`, to a public type or to behavior a skin or a backend can observe, and say what to check. A version is always the next minor or the next patch, never a major ([ADR 0019](docs/decisions/0019-release-version-policy.md)). Coming from 2.2.x, start with the [migration guide](docs/guide/migration-v3.md).
 
 Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`](contract/rules.md)) and the decision record behind it, when there is one. The full API is in [`CONTRACT.md`](CONTRACT.md). The layout follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
+
+## [3.20.0] - 2026-11-20
+
+Cell components for what a cell draws, and the product's table design as a package of its own, `@dolusoft/query-table-skin`.
 
 ### Added
 
@@ -17,6 +21,11 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 ### Changed
 
 - The default entry and `/cells` share one more small chunk of the built Vue package (`table-context-*.js`: the table context and the default cell labels, about 1 kB, importing only `vue`). The exports and their behavior are unchanged.
+
+### Upgrade notes
+
+- Additive: no change is needed to upgrade. The cell components and the skin are opt-in; a table that uses neither draws as in 3.19.
+- To use the skin, install `@dolusoft/query-table-skin` at the version of `@dolusoft/query-table` and import its stylesheet once ([README](README.md#reference-skin)).
 
 ## [3.19.0] - 2026-11-19
 
@@ -439,7 +448,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.19.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.20.0...HEAD
+[3.20.0]: https://github.com/dolusoft/query-table/compare/v3.19.0...v3.20.0
 [3.19.0]: https://github.com/dolusoft/query-table/compare/v3.18.0...v3.19.0
 [3.18.0]: https://github.com/dolusoft/query-table/compare/v3.17.0...v3.18.0
 [3.17.0]: https://github.com/dolusoft/query-table/compare/v3.16.0...v3.17.0
