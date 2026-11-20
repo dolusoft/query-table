@@ -16,6 +16,7 @@ const groups = [
       'overview',
       'local-query',
       'data-table',
+      'data-table-variations',
       'cell-components',
       'tanstack-path'
     ]

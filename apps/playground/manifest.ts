@@ -93,6 +93,18 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-124', 'C-125', 'C-126', 'C-127']
   },
   {
+    id: 'data-table-variations',
+    title: 'DataTable variations',
+    navTitle: 'Variations',
+    summary:
+      'The forms a table of rows already in the page takes, one select per axis: paging, expanding rows, selection, sort and filter, columns, rows, header, state and texts. Each is a prop or a slot, and QueryTable with useLocalQuery draws the same table.',
+    example: 'DataTableVariations',
+    // Each prop of a variation has its own page; listing them here too would
+    // put this page first in the search for every one of them.
+    api: { components: ['DataTable'], functions: ['useLocalQuery'] },
+    rules: ['C-124', 'C-127']
+  },
+  {
     id: 'cell-components',
     title: 'Cell components',
     navTitle: 'Cells',
