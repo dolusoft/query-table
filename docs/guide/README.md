@@ -9,6 +9,7 @@ Short, example-first guides for the v3 packages. Every code sample is a file und
 | [TanStack plugins](tanstack-plugins.md)    | you use TanStack Table and want `serverQueryFeature` and `filterInputFeature`                   |
 | [Architecture](architecture.md)            | you want the layers, the state ownership, the size budgets and the reasons behind them          |
 | [Migrating to 3.0](migration-v3.md)        | you run 2.2.x today (draft; includes the Vue package)                       |
+| [Moving an AppDataTable page](migration-app-data-table.md) | you move a frontendx list from `AppDataTable` to `QueryTable` or `DataTable`: every prop, slot and event, and what has no counterpart yet |
 | [Changelog](../../CHANGELOG.md)            | you upgrade within 3.x: what each release added, changed and fixed, and what to check            |
 
 Where to start: a backend developer reads the protocol guide; a TanStack user reads the plugin guide; a `QueryTable` user reads the migration guide, and the changelog for every later 3.x release.
