@@ -8,6 +8,15 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Added
+
+- `rowSelectable(row, index)`, with `selection`: a row it returns `false` for cannot be selected. Its checkbox is `disabled`, and checked when its key is selected. The header checkbox is checked, indeterminate, selects and deselects over the rows that can be selected only, and is `disabled` while none can. The table never adds or drops the key of such a row, so leave those rows out of a bulk action yourself. `DataTable` passes it on. In the composable: the `rowSelectable` option, `selection.canSelect` and `selection.canToggleAll` ([C-130](contract/rules.md#c-130-rows-that-cannot-be-selected), [C-64](contract/rules.md#c-64-selection-column)).
+- The reference skin draws a `disabled` selection checkbox dimmed, with a `not-allowed` cursor.
+
+### Upgrade notes
+
+- Additive: without `rowSelectable` the table and its markup are the ones of 3.20.
+
 ## [3.20.0] - 2026-11-20
 
 Cell components for what a cell draws, and the product's table design as a package of its own, `@dolusoft/query-table-skin`.

@@ -172,6 +172,14 @@ export interface TableProps<
    */
   selection?: RowSelection
   /**
+   * Which rows can be selected, with `selection` (C-130): called with the row
+   * and its index in `rows`. A row it returns `false` for gets a `disabled`
+   * checkbox, is skipped by the header checkbox and keeps its key in
+   * `selection` as given: the table neither adds nor drops it. Absent, every
+   * row can be selected.
+   */
+  rowSelectable?: (row: T, index: number) => boolean
+  /**
    * Rows pinned to the top or the bottom of the page, used with
    * `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs
    * `rowKey`. Keys of rows not in `rows` stay and are not drawn.

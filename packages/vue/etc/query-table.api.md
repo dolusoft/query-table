@@ -335,11 +335,12 @@ export interface QueryTableSearch {
 // @public
 export interface QueryTableSelection<T extends object> {
     allSelected: ComputedRef<boolean>;
+    canSelect: (row: T, index: number) => boolean;
+    canToggleAll: ComputedRef<boolean>;
     enabled: ComputedRef<boolean>;
     // (undocumented)
     isSelected: (row: T, index: number) => boolean;
     someSelected: ComputedRef<boolean>;
-    // (undocumented)
     toggle: (row: T, index: number) => void;
     toggleAll: (value: boolean) => void;
 }
@@ -495,6 +496,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     rowNavigation?: boolean | RowNavigationOptions<T>;
     rowPinning?: RowPinning;
     rows?: T[];
+    rowSelectable?: (row: T, index: number) => boolean;
     rowsUpdate?: RowsUpdate;
     scrollBody?: boolean;
     searchDebounce?: number;
@@ -551,6 +553,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     rowKey?: MaybeRefOrGetter<RowKey<T>>;
     rowPinning?: MaybeRefOrGetter<RowPinning | undefined>;
     rows?: MaybeRefOrGetter<T[] | undefined>;
+    rowSelectable?: MaybeRefOrGetter<TableProps<T>['rowSelectable']>;
     searchDebounce?: MaybeRefOrGetter<number | undefined>;
     selection?: MaybeRefOrGetter<RowSelection | undefined>;
     sortable?: MaybeRefOrGetter<boolean | undefined>;

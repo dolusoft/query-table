@@ -158,6 +158,7 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           :aria-label="labels().selectAllRows"
           :checked="selection.allSelected.value"
           :indeterminate="selection.someSelected.value"
+          :disabled="!selection.canToggleAll.value"
           @change="
             selection.toggleAll(($event.target as HTMLInputElement).checked)
           "

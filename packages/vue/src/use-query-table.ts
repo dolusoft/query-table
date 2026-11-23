@@ -125,6 +125,12 @@ export interface UseQueryTableOptions<
   /** The selected rows; `undefined` turns selection off. */
   selection?: MaybeRefOrGetter<RowSelection | undefined>
   /**
+   * Which rows can be selected (C-130); without it every row can. Give a
+   * getter or a ref that holds the function (`() => fn`): a bare function is
+   * read as a getter.
+   */
+  rowSelectable?: MaybeRefOrGetter<TableProps<T>['rowSelectable']>
+  /**
    * The pinned rows (C-74); `undefined`, or no `rowKey`, turns row pinning
    * off.
    */
@@ -267,13 +273,27 @@ export interface QueryTableExpansion<T extends object> {
 export interface QueryTableSelection<T extends object> {
   /** A `selection` was given: the table offers selection. */
   enabled: ComputedRef<boolean>
+  /** `rowSelectable` lets the row be selected; without it every row can (C-130). */
+  canSelect: (row: T, index: number) => boolean
   isSelected: (row: T, index: number) => boolean
+  /** Selects or deselects the row; nothing for a row that cannot be selected (C-130). */
   toggle: (row: T, index: number) => void
-  /** Every row of the page is selected (and there is one). */
+  /**
+   * Every row of the page that can be selected is selected (and there is
+   * one).
+   */
   allSelected: ComputedRef<boolean>
-  /** Some but not every row of the page is selected. */
+  /** Some but not every row of the page that can be selected is selected. */
   someSelected: ComputedRef<boolean>
-  /** Select or deselect every row of the page. */
+  /**
+   * The header checkbox can be used: without `rowSelectable` always, with it
+   * while some row of the page can be selected (C-130).
+   */
+  canToggleAll: ComputedRef<boolean>
+  /**
+   * Select or deselect every row of the page that can be selected; the keys
+   * of the other rows stay as they are (C-130).
+   */
   toggleAll: (value: boolean) => void
 }
 
@@ -356,6 +376,19 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     const expandable = toValue(options.rowExpandable)
     return expandable === undefined || expandable(row, index)
   }
+  // C-130: a row can be selected unless `rowSelectable` says no.
+  const canSelect = (row: T, index: number) => {
+    const selectable = toValue(options.rowSelectable)
+    return selectable === undefined || selectable(row, index)
+  }
+  // TanStack keeps the page selection state (`getIsAllPageRowsSelected`) by
+  // the identity of `enableRowSelection`, so a new `rowSelectable` gives a new
+  // function. Without one it stays `true`, as in 3.20.
+  const enableRowSelection = computed(() =>
+    toValue(options.rowSelectable) === undefined
+      ? true
+      : (row: Row<QueryTableFeatures, T>) => canSelect(row.original, row.index)
+  )
   const pinnedRows = () => toValue(options.rowPinning)
   // C-74: without a row identity an index would pin another row on the next
   // page, so the map needs `rowKey`.
@@ -457,7 +490,9 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     get filterDebounce() {
       return toValue(options.filterDebounce) ?? 100
     },
-    enableRowSelection: true,
+    get enableRowSelection() {
+      return enableRowSelection.value
+    },
     // P15: the expansion is TanStack's; the table resets it itself (C-26).
     manualExpanding: true,
     getRowCanExpand: (row: Row<QueryTableFeatures, T>) =>
@@ -977,9 +1012,13 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   const selection: QueryTableSelection<T> = {
     enabled: computed(() => toValue(options.selection) !== undefined),
+    canSelect,
     isSelected: (row, index) =>
       !!toValue(options.selection)?.[idOf(row, index)],
     toggle: (row, index) => {
+      if (!canSelect(row, index)) {
+        return
+      }
       const id = idOf(row, index)
       table.setRowSelection(old => {
         const next = { ...old }
@@ -993,6 +1032,11 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     },
     allSelected: computed(() => table.getIsAllPageRowsSelected()),
     someSelected: computed(() => table.getIsSomePageRowsSelected()),
+    canToggleAll: computed(
+      () =>
+        toValue(options.rowSelectable) === undefined ||
+        rows().some((row, index) => canSelect(row, index))
+    ),
     toggleAll: value => table.toggleAllPageRowsSelected(value)
   }
 

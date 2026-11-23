@@ -235,7 +235,15 @@ const ADDED_AFTER_BASELINE = [
   // labels they read from the table (C-128, C-129), which a 3.19 build does
   // not have. The table draws nothing new.
   'tests/contract/unit/cells.spec.ts',
-  'tests/contract/browser/dom-contract-cells.browser.spec.ts'
+  'tests/contract/browser/dom-contract-cells.browser.spec.ts',
+  // 3.21 addition (C-130, #225): `rowSelectable`, which a 3.20 build does not
+  // read. Without it the selection is the one of 3.20. The variations page
+  // also draws its "some rows" selection with the baseline's `QueryTable`,
+  // which ignores `rowSelectable`, so its two tests of it are listed too.
+  'tests/contract/unit/row-selectable.spec.ts',
+  'tests/contract/browser/row-selectable.browser.spec.ts',
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-124 DataTable variations: selection (#204) > some rows: a locked row is disabled and select all skips it (C-130)',
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-127 DataTable variations: QueryTable with useLocalQuery draws the same table (#204) > selection: some'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

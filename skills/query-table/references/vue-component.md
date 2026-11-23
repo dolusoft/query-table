@@ -13,6 +13,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | `filterDebounce` | ms before typed filter text applies (default 100; `0` applies every key). |
 | `searchDebounce` | ms before typed search text applies (default 300). |
 | `selection` | `v-model:selection`; adds a checkbox column. |
+| `rowSelectable` | `(row, index) => boolean`, with `selection`: a row it returns `false` for has a `disabled` checkbox and select all skips it; its key stays in `selection` as given, so leave such rows out of a bulk action yourself (C-130). |
 | `cursors` | `{ next, prev }` of the page shown, cursor mode only. |
 | `rowPinning` | `v-model:rowPinning`: `{ top, bottom }` row keys pinned to the top or the bottom of the page. Needs `rowKey`. |
 | `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages, and for row pinning. |

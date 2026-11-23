@@ -49,6 +49,7 @@ const groups = [
     ids: [
       'row-expansion',
       'row-kind',
+      'row-selectable',
       'row-pinning',
       'grouped-rows',
       'headerless-list',
