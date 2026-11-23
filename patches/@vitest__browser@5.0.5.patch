@@ -2,7 +2,7 @@ diff --git a/dist/client.js b/dist/client.js
 index 36a12dcc4bd3afc1b7af2571e32a87487c442892..d47d63339252a8daaae86d0390738f4e5a7aaae5 100644
 --- a/dist/client.js
 +++ b/dist/client.js
-@@ -430,6 +430,22 @@ function createClient() {
+@@ -439,6 +439,22 @@ function createClient() {
  		timeout: -1
  	});
  	let openPromise;
@@ -25,7 +25,7 @@ index 36a12dcc4bd3afc1b7af2571e32a87487c442892..d47d63339252a8daaae86d0390738f4e
  	function reconnect(reset = false) {
  		if (reset) {
  			tries = reconnectTries;
-@@ -438,19 +454,25 @@ function createClient() {
+@@ -447,19 +463,25 @@ function createClient() {
  		registerWS();
  	}
  	function registerWS() {
