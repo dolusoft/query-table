@@ -144,6 +144,25 @@ describe('C-64 Selection column [tanstack] [own]', () => {
     expect(m.wrapper.emitted('update:selection')?.[1]).toEqual([{}])
   })
 
+  it('the header checkbox is checked, not indeterminate, while every row is selected', async () => {
+    const { m } = mountK6({
+      selection: { '1': true, '2': true, '3': true, '4': true },
+      rowKey: 'id'
+    })
+    const all = m.wrapper.find<HTMLInputElement>('.qt-select-all')
+    expect(all.element.checked).toBe(false)
+    expect(all.element.indeterminate).toBe(true)
+    // The last row of the page joins: every row is selected.
+    await m.wrapper.setProps({
+      selection: { '1': true, '2': true, '3': true, '4': true, '5': true }
+    })
+    expect(all.element.checked).toBe(true)
+    expect(all.element.indeterminate).toBe(false)
+    await m.wrapper.setProps({ selection: {} })
+    expect(all.element.checked).toBe(false)
+    expect(all.element.indeterminate).toBe(false)
+  })
+
   it('keys rows by index without rowKey', async () => {
     const { m } = mountK6({ selection: {} })
     await m.wrapper.findAll('.qt-select-row')[2].setValue(true)
