@@ -236,6 +236,9 @@ const ADDED_AFTER_BASELINE = [
   // not have. The table draws nothing new.
   'tests/contract/unit/cells.spec.ts',
   'tests/contract/browser/dom-contract-cells.browser.spec.ts',
+  // 3.20.1 fix (#236): the header checkbox is not indeterminate while every
+  // row is selected, which a 3.20.0 build draws indeterminate.
+  'tests/contract/unit/k6.spec.ts > C-64 Selection column [tanstack] [own] the header checkbox is checked, not indeterminate, while every row is selected',
   // 3.21 addition (C-130, #225): `rowSelectable`, which a 3.20 build does not
   // read. Without it the selection is the one of 3.20. The variations page
   // also draws its "some rows" selection with the baseline's `QueryTable`,
