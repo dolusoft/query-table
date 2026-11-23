@@ -31,4 +31,15 @@ minimumReleaseAgeExclude:
   - oxlint@1.94.0
 
 patchedDependencies:
-  '@vitest/browser@5.0.3': patches/@vitest__browser@5.0.3.patch
+  '@vitest/browser@5.0.5': patches/@vitest__browser@5.0.5.patch
+
+# Development tools only; the published packages do not depend on these (#233).
+overrides:
+  # GHSA for minimatch below 11.0.1 (Dependabot #34). @microsoft/api-extractor
+  # still pins 10.2.3, and @ts-morph/common and js-beautify ask for 10.x.
+  'minimatch@>=7.0.0 <11.0.1': ^11.0.5
+  # stylus comes in only as an optional peer of vite, and nothing here uses
+  # it. Through css and source-map-resolve it brings decode-uri-component
+  # 0.2.2 (Dependabot #2, #32), whose fixed versions are ESM only and cannot
+  # be required by source-map-resolve.
+  stylus: '-'
