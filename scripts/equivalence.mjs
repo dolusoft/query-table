@@ -242,8 +242,8 @@ const ADDED_AFTER_BASELINE = [
   // which ignores `rowSelectable`, so its two tests of it are listed too.
   'tests/contract/unit/row-selectable.spec.ts',
   'tests/contract/browser/row-selectable.browser.spec.ts',
-  'tests/contract/browser/data-table-variations.browser.spec.ts > C-124 DataTable variations: selection (#204) > some rows: a locked row is disabled and select all skips it (C-130)',
-  'tests/contract/browser/data-table-variations.browser.spec.ts > C-127 DataTable variations: QueryTable with useLocalQuery draws the same table (#204) > selection: some'
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-124 DataTable variations: selection (#204) some rows: a locked row is disabled and select all skips it (C-130)',
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-127 DataTable variations: QueryTable with useLocalQuery draws the same table (#204) selection: some'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
