@@ -975,6 +975,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   // ---- selection (C-59) -----------------------------------------------------
 
+  const allSelected = computed(() => table.getIsAllPageRowsSelected())
   const selection: QueryTableSelection<T> = {
     enabled: computed(() => toValue(options.selection) !== undefined),
     isSelected: (row, index) =>
@@ -991,8 +992,13 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
         return next
       })
     },
-    allSelected: computed(() => table.getIsAllPageRowsSelected()),
-    someSelected: computed(() => table.getIsSomePageRowsSelected()),
+    allSelected,
+    // TanStack's `getIsSomePageRowsSelected` stays `true` while every row is
+    // selected; this is the header checkbox's indeterminate state, which is
+    // off then (C-64).
+    someSelected: computed(
+      () => !allSelected.value && table.getIsSomePageRowsSelected()
+    ),
     toggleAll: value => table.toggleAllPageRowsSelected(value)
   }
 

@@ -8,6 +8,14 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Fixed
+
+- The header checkbox of the selection column was drawn indeterminate, a dash instead of a check, while every row of the page was selected: after the last row was selected with its own checkbox, or when `selection` came in with every row. It is now only checked, and `selection.someSelected` of the composable is `false` then, as its description says. Selecting every row with the header checkbox itself did not show it ([C-64](contract/rules.md#c-64-selection-column)).
+
+### Upgrade notes
+
+- A test or a skin that read `indeterminate` on `qt-select-all` while every row was selected now sees `false`.
+
 ## [3.20.0] - 2026-11-20
 
 Cell components for what a cell draws, and the product's table design as a package of its own, `@dolusoft/query-table-skin`.
