@@ -182,7 +182,7 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
 | `total` | `totalRows` |
 | `loading` | `loading`; the rows stay drawn and the `loading` slot draws a row for a skeleton (C-52) |
 | `selectable` | `v-model:selection` |
-| `rowSelectable` | no counterpart yet ([#225](https://github.com/dolusoft/query-table/issues/225)) |
+| `rowSelectable` (`row => boolean`) | `rowSelectable` (`(row, index) => boolean`): the row's checkbox is `disabled` and the header checkbox leaves the row out; the key of such a row stays in `selection` when it is there, so the bulk action leaves it out itself (C-130) |
 | `expandable` | `hasSubtable`, with the `subtable` slot |
 | `expandMode` (default `'single'`) | `expandMode` (default `'multiple'`): pass `'single'` to keep the accordion (C-123) |
 | `getChildren`, `rowHasChildren`, `rowIsCycle` | no counterpart yet ([#226](https://github.com/dolusoft/query-table/issues/226)) |
@@ -237,7 +237,6 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
 
 ## No counterpart yet
 
-- **A row that cannot be selected** (`rowSelectable`): [#225](https://github.com/dolusoft/query-table/issues/225).
 - **Tree rows** (`getChildren`): [#226](https://github.com/dolusoft/query-table/issues/226). Until it is decided, a level can be a `QueryTable` in the `subtable` slot, with its own columns.
 - **Dragging rows into an order** (`reorderable`): [#227](https://github.com/dolusoft/query-table/issues/227).
 - **The details band** (`details`): a strip of `Label: value` under every row, always open. The nearest forms are a second line in the cell (`CellStack`'s `secondary`) or a `subtable` that starts open (`isExpanded: true`), which draws an expand button as well.
