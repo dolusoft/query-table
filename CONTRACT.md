@@ -13,6 +13,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `query` | `Q` | yes |  | The table state, used with `v-model:query`. Required: the table is always controlled. A `CursorQuery` (a `cursor` key) pages by cursor. |
 | `cursors` | `PageCursors \| null` |  | `null` | Cursor mode: the cursors of the page shown (C-56). The next and previous page controls step to them; without the one on a side there is no page on that side. |
 | `selection` | `RowSelection` |  | `undefined` | Rows the user selected, used with `v-model:selection`. Given, a column of checkboxes is drawn after the other utility columns; absent, there is no selection. Keys are the row identity (`rowKey`) as a string. |
+| `rowSelectable` | `((row: T, index: number) => boolean)` |  | `undefined` | Which rows can be selected, with `selection` (C-130): called with the row and its index in `rows`. A row it returns `false` for gets a `disabled` checkbox, is skipped by the header checkbox and keeps its key in `selection` as given: the table neither adds nor drops it. Absent, every row can be selected. |
 | `rowPinning` | `RowPinning` |  | `undefined` | Rows pinned to the top or the bottom of the page, used with `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs `rowKey`. Keys of rows not in `rows` stay and are not drawn. |
 | `searchDebounce` | `number` |  | `300` | Milliseconds between the last key of a search typed through the `toolbar` slot and the search being applied (C-58). `0` applies every call at once, for a consumer that debounces on its own. Defaults to `300`. |
 | `columns` | `Column[]` | yes |  | Column definitions, used with `v-model:columns` when the user may change the layout. Never mutated. |
@@ -314,6 +315,14 @@ export interface TableProps<
    * no selection. Keys are the row identity (`rowKey`) as a string.
    */
   selection?: RowSelection
+  /**
+   * Which rows can be selected, with `selection` (C-130): called with the row
+   * and its index in `rows`. A row it returns `false` for gets a `disabled`
+   * checkbox, is skipped by the header checkbox and keeps its key in
+   * `selection` as given: the table neither adds nor drops it. Absent, every
+   * row can be selected.
+   */
+  rowSelectable?: (row: T, index: number) => boolean
   /**
    * Rows pinned to the top or the bottom of the page, used with
    * `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs
@@ -1662,7 +1671,7 @@ Source: own
 
 #### C-64 Selection column
 
-With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row given is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows given and keeps the keys of other pages. The rows given are the page, or with infinite scroll (C-88) every row loaded so far. The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
+With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row given is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows given and keeps the keys of other pages. The rows given are the page, or with infinite scroll (C-88) every row loaded so far. With `rowSelectable` some rows cannot be selected, and the header checkbox works on the others only (C-130). The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
 
 Source: tanstack, own
 
@@ -2055,6 +2064,12 @@ Source: own
 A press of the button of `CellCopy` emits `copy` with the value as a string, and a press of the button of `CellPreview` emits `preview` with the text as a string. Neither writes the clipboard, opens anything or stops the click: it bubbles from the cell as any control in a cell slot does (C-27). The name (`aria-label` and `title`) of the copy button is `labels.copyValue(value)` and of the preview button `labels.previewValue(text)`, and the text of an empty `CellValue` is `labels.emptyValue`. Inside a `QueryTable` or a `DataTable` these come from that table's `labels` and follow it when it changes, and an entry left out or given as `undefined` is the default; outside one they are the English defaults (`` `Copy ${value}` ``, `` `Preview ${value}` `` and `'-'`). The three entries are optional in `TableLabels`, so a complete `TableLabels` of 3.19 still type-checks. No cell component takes a prop for these texts.
 
 Source: own
+
+#### C-130 Rows that cannot be selected
+
+With `selection` and `rowSelectable`, a row for which `rowSelectable(row, index)` (its index in `rows`) returns `false` cannot be selected: its `qt-select-row` checkbox is `disabled`, and checked when the row's key is in `selection`, so the row shows both that it is left out and whether it is selected. The header checkbox (C-64) works on the rows given that can be selected: it is checked when every one of them is selected and there is one, indeterminate when some are, and selecting or deselecting with it adds or removes only their keys. A key of a row that cannot be selected stays in `selection` as given: the table never adds it and never drops it, whatever the user does on the other rows (C-59). While no row given can be selected, an empty page too, the header checkbox is `disabled`. This holds for a pinned row (C-74), in a virtual body (C-83) and with infinite scroll, where the rows given are every row loaded (C-88). Without `rowSelectable` every row can be selected and the markup is the one of 3.20; without `selection` the function is not called. In the composable, `selection.canSelect(row, index)` answers the same question, `selection.toggle` does nothing for such a row, `selection.canToggleAll` says whether the header checkbox can be used, and TanStack's `getCanSelect` gives the answer of `canSelect`. The DOM contract gains no entry: `disabled` is plain HTML (C-41).
+
+Source: tanstack, own
 
 ## DOM contract
 

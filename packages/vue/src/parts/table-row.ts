@@ -113,7 +113,7 @@ const rowDynamic = [
 ]
 const panelDynamic = ['aria-label', 'onClick']
 const expandDynamic = ['aria-expanded', 'aria-label', 'onClick']
-const selectDynamic = ['aria-label', 'checked', 'onChange']
+const selectDynamic = ['aria-label', 'checked', 'disabled', 'onChange']
 
 /** Text of a cell, whole: the table never cuts it. */
 const cellText = (row: object, column: Column) =>
@@ -147,6 +147,8 @@ export const tableRow = defineComponent({
     /** `data-row-kind` (C-97); `undefined` for none. */
     kind: value<string | undefined>(),
     selected: needed<boolean>(),
+    /** The checkbox can be used; `disabled` otherwise (C-130). */
+    selectable: needed<boolean>(),
     expanded: needed<boolean>(),
     /** An expand button is drawn (C-98). */
     expandable: needed<boolean>(),
@@ -275,6 +277,10 @@ export const tableRow = defineComponent({
                         class: 'qt-select-row',
                         'aria-label': props.labelSelect,
                         checked: props.selected,
+                        // A DOM property: `false` writes no attribute, so
+                        // without `rowSelectable` the markup is the one of
+                        // 3.20 (C-108, C-130).
+                        disabled: !props.selectable,
                         onChange: onSelect
                       },
                       null,

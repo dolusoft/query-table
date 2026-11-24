@@ -48,6 +48,8 @@ const props = defineProps<{
   /** Draw the selection checkbox column (C-59). */
   hasSelection: boolean
   isSelected: (row: T, index: number) => boolean
+  /** The row can be selected: its checkbox is `disabled` otherwise (C-130). */
+  canSelect: (row: T, index: number) => boolean
   toggleSelected: (row: T, index: number) => void
   /** Some column is pinned to the left: the utilities get `data-pinned` (C-46). */
   hasPinned: boolean
@@ -285,6 +287,7 @@ const isRowExpanded = (item: BodyItem<T>) => {
         :pinned="item.pinned"
         :kind="kindOf(item)"
         :selected="hasSelection && isSelected(item.row, item.index)"
+        :selectable="!hasSelection || canSelect(item.row, item.index)"
         :expanded="isRowExpanded(item)"
         :expandable="hasSubtable && canExpand(item.row, item.index)"
         :flash="flash ? flash.of(keyOf(item.row, item.index)) : undefined"

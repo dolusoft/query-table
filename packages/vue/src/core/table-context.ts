@@ -24,10 +24,10 @@ export interface TableContext {
   resize: ColumnResize
   /** The reorder handles: drag, keys and the drag preview (C-73). */
   reorder: ColumnReorder
-  /** The select-all checkbox of the selection column (C-59). */
+  /** The select-all checkbox of the selection column (C-59, C-130). */
   selection: Pick<
     QueryTableSelection<object>,
-    'allSelected' | 'someSelected' | 'toggleAll'
+    'allSelected' | 'someSelected' | 'canToggleAll' | 'toggleAll'
   >
   labels: () => ResolvedLabels
 }

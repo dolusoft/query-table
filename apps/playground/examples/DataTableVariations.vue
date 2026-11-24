@@ -188,6 +188,7 @@ const turkish: Partial<TableLabels> = {
 }
 
 const selection = ref<RowSelection>({})
+const selecting = computed(() => choice.selection !== 'none')
 const selected = computed(
   () => Object.values(selection.value).filter(Boolean).length
 )
@@ -219,10 +220,14 @@ const shared = computed(() =>
       choice.expand === 'some'
         ? (row: DemoRow) => Number(row.id) % 2 === 1
         : undefined,
-    selection: choice.selection === 'many' ? selection.value : undefined,
-    'onUpdate:selection':
-      choice.selection === 'many'
-        ? (next: RowSelection) => (selection.value = next)
+    selection: selecting.value ? selection.value : undefined,
+    'onUpdate:selection': selecting.value
+      ? (next: RowSelection) => (selection.value = next)
+      : undefined,
+    // Every third row is locked: its checkbox is disabled (C-130).
+    rowSelectable:
+      choice.selection === 'some'
+        ? (row: DemoRow) => Number(row.id) % 3 !== 0
         : undefined,
     autoWidth: choice.columns === 'auto' || undefined,
     autoWidthMax: choice.columns === 'auto' ? 240 : undefined,
@@ -382,11 +387,8 @@ const linkCell = computed(
       </div>
     </div>
 
-    <div
-      v-if="choice.selection === 'many' || opened"
-      class="flex items-center gap-3 text-sm"
-    >
-      <template v-if="choice.selection === 'many'">
+    <div v-if="selecting || opened" class="flex items-center gap-3 text-sm">
+      <template v-if="selecting">
         <span data-testid="selected-count">{{ selected }} selected</span>
         <Button
           size="sm"

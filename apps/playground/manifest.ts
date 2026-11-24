@@ -561,6 +561,16 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-56', 'C-57', 'C-58', 'C-59', 'C-63', 'C-64', 'C-65', 'C-66']
   },
   {
+    id: 'row-selectable',
+    title: 'Rows that cannot be selected',
+    navTitle: 'Locked rows',
+    summary:
+      'Administrators with locked accounts: `rowSelectable` gives a locked row a disabled checkbox and select all skips it. Locking a selected account keeps its key in the selection, so the bulk action leaves locked rows out itself.',
+    example: 'RowSelectable',
+    api: { props: ['rowSelectable'] },
+    rules: ['C-130']
+  },
+  {
     id: 'tanstack-path',
     title: 'TanStack path',
     summary:

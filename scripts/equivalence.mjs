@@ -238,7 +238,15 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/dom-contract-cells.browser.spec.ts',
   // 3.20.1 fix (#236): the header checkbox is not indeterminate while every
   // row is selected, which a 3.20.0 build draws indeterminate.
-  'tests/contract/unit/k6.spec.ts > C-64 Selection column [tanstack] [own] the header checkbox is checked, not indeterminate, while every row is selected'
+  'tests/contract/unit/k6.spec.ts > C-64 Selection column [tanstack] [own] the header checkbox is checked, not indeterminate, while every row is selected',
+  // 3.21 addition (C-130, #225): `rowSelectable`, which a 3.20 build does not
+  // read. Without it the selection is the one of 3.20. The variations page
+  // also draws its "some rows" selection with the baseline's `QueryTable`,
+  // which ignores `rowSelectable`, so its two tests of it are listed too.
+  'tests/contract/unit/row-selectable.spec.ts',
+  'tests/contract/browser/row-selectable.browser.spec.ts',
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-124 DataTable variations: selection (#204) some rows: a locked row is disabled and select all skips it (C-130)',
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-127 DataTable variations: QueryTable with useLocalQuery draws the same table (#204) selection: some'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

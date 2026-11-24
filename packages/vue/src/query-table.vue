@@ -44,6 +44,7 @@ defineOptions({ name: 'QueryTable' })
 const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   cursors: null,
   selection: undefined,
+  rowSelectable: undefined,
   rowPinning: undefined,
   searchDebounce: 300,
   rows: () => [],
@@ -109,6 +110,7 @@ const state = useQueryTable<T, Q>({
   filterDebounce: () => props.filterDebounce,
   searchDebounce: () => props.searchDebounce,
   selection: () => props.selection,
+  rowSelectable: () => props.rowSelectable,
   rowPinning: () => props.rowPinning,
   rowKey: () => props.rowKey,
   hasSubtable: () => props.hasSubtable,
@@ -508,6 +510,7 @@ defineExpose(exposed)
               :has-right-panel="hasRightPanel"
               :has-selection="rowSelection.enabled.value"
               :is-selected="rowSelection.isSelected"
+              :can-select="rowSelection.canSelect"
               :toggle-selected="rowSelection.toggle"
               :has-pinned="hasPinned"
               :offsets="offsets"
@@ -617,6 +620,7 @@ defineExpose(exposed)
           :has-right-panel="hasRightPanel"
           :has-selection="rowSelection.enabled.value"
           :is-selected="rowSelection.isSelected"
+          :can-select="rowSelection.canSelect"
           :toggle-selected="rowSelection.toggle"
           :has-pinned="hasPinned"
           :offsets="offsets"

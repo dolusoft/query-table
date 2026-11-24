@@ -341,6 +341,13 @@ th[data-sort] .qt-sort-icon {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E");
 }
 
+/* A row that cannot be selected, and the header while no row can (C-130). */
+.qt-select-row:disabled,
+.qt-select-all:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .qt-select-all:indeterminate {
   background-color: var(--qt-accent);
   border-color: var(--qt-accent);

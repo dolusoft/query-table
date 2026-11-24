@@ -8,12 +8,18 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Added
+
+- `rowSelectable(row, index)`, with `selection`: a row it returns `false` for cannot be selected. Its checkbox is `disabled`, and checked when its key is selected. The header checkbox is checked, indeterminate, selects and deselects over the rows that can be selected only, and is `disabled` while none can. The table never adds or drops the key of such a row, so leave those rows out of a bulk action yourself. `DataTable` passes it on. In the composable: the `rowSelectable` option, `selection.canSelect` and `selection.canToggleAll` ([C-130](contract/rules.md#c-130-rows-that-cannot-be-selected), [C-64](contract/rules.md#c-64-selection-column)).
+- The reference skin draws a `disabled` selection checkbox dimmed, with a `not-allowed` cursor.
+
 ### Fixed
 
 - The header checkbox of the selection column was drawn indeterminate, a dash instead of a check, while every row of the page was selected: after the last row was selected with its own checkbox, or when `selection` came in with every row. It is now only checked, and `selection.someSelected` of the composable is `false` then, as its description says. Selecting every row with the header checkbox itself did not show it ([C-64](contract/rules.md#c-64-selection-column)).
 
 ### Upgrade notes
 
+- Additive: without `rowSelectable` the table and its markup are the ones of 3.20.
 - A test or a skin that read `indeterminate` on `qt-select-all` while every row was selected now sees `false`.
 
 ## [3.20.0] - 2026-11-20

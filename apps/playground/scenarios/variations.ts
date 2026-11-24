@@ -67,6 +67,10 @@ export const axes = {
     many: {
       label: 'Several rows',
       note: '`v-model:selection`; the count and the bulk action are the page’s.'
+    },
+    some: {
+      label: 'Some rows',
+      note: '`rowSelectable`: a locked row has a disabled checkbox, and select all skips it (C-130).'
     }
   }),
   query: axis('Sort, filter, search', {
