@@ -8,6 +8,10 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+## [3.21.0] - 2026-11-24
+
+Rows that cannot be selected, slots for the table's icons and columns that take the room of a wide container; and a fix for the header checkbox of the selection column.
+
 ### Added
 
 - `rowSelectable(row, index)`, with `selection`: a row it returns `false` for cannot be selected. Its checkbox is `disabled`, and checked when its key is selected. The header checkbox is checked, indeterminate, selects and deselects over the rows that can be selected only, and is `disabled` while none can. The table never adds or drops the key of such a row, so leave those rows out of a bulk action yourself. `DataTable` passes it on. In the composable: the `rowSelectable` option, `selection.canSelect` and `selection.canToggleAll` ([C-130](contract/rules.md#c-130-rows-that-cannot-be-selected), [C-64](contract/rules.md#c-64-selection-column)).
@@ -21,9 +25,8 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ### Upgrade notes
 
-- Additive: without `rowSelectable` the table and its markup are the ones of 3.20.
-- Additive: without `grow` the table is the one of 3.20.
-- Additive: without `icon-*` slots the markup is the one of 3.20. With one, the skin's rules for the built-in icon (`.qt-sort-icon`, `.qt-cell-icon`) do not reach what the slot draws; size and color it yourself.
+- Additive: no change is needed to upgrade. `rowSelectable`, the `icon-*` slots and `Column.grow` are opt-in; a table that uses none of them draws as in 3.20.
+- With an `icon-*` slot, the skin's rules for the built-in icon (`.qt-sort-icon`, `.qt-cell-icon`) do not reach what the slot draws; size and color it yourself.
 - A test or a skin that read `indeterminate` on `qt-select-all` while every row was selected now sees `false`.
 
 ## [3.20.0] - 2026-11-20
@@ -466,7 +469,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.20.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.21.0...HEAD
+[3.21.0]: https://github.com/dolusoft/query-table/compare/v3.20.0...v3.21.0
 [3.20.0]: https://github.com/dolusoft/query-table/compare/v3.19.0...v3.20.0
 [3.19.0]: https://github.com/dolusoft/query-table/compare/v3.18.0...v3.19.0
 [3.18.0]: https://github.com/dolusoft/query-table/compare/v3.17.0...v3.18.0
