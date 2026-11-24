@@ -14,8 +14,8 @@ afterEach(() => {
   cleanup()
 })
 
-/** A decorative icon of the consumer's set. */
-const svgIcon = (name: string) => () =>
+/** A decorative icon of the consumer's set; a slot returns a list of vnodes. */
+const svgIcon = (name: string) => () => [
   h(
     'svg',
     {
@@ -27,6 +27,7 @@ const svgIcon = (name: string) => () =>
     },
     [h('circle', { cx: 8, cy: 8, r: 4 })]
   )
+]
 
 const header = (field: string) =>
   document.querySelector<HTMLElement>(`thead th[data-field="${field}"]`)!
