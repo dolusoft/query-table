@@ -420,6 +420,27 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-51']
   },
   {
+    id: 'icon-slots',
+    title: 'Icon slots',
+    navTitle: 'Icons',
+    summary:
+      'The table’s icons from your own set: one `icon-*` slot per icon replaces the built-in svg and nothing else. Sort, filter, clear-all, reorder, expand and right panel, and the icons of `CellCopy` and `CellPreview`, here from lucide.',
+    example: 'IconSlots',
+    api: {
+      slots: [
+        'icon-sort',
+        'icon-filter',
+        'icon-clear-all',
+        'icon-reorder',
+        'icon-expand',
+        'icon-right-panel',
+        'icon-copy',
+        'icon-preview'
+      ]
+    },
+    rules: ['C-131']
+  },
+  {
     id: 'header-context-menu',
     title: 'Header context menu',
     summary:

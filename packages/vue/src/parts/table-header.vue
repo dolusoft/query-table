@@ -16,6 +16,7 @@ import SortButton from './sort-button.vue'
 import { sideOf } from '../columns/column-layout'
 import { columnTypeOf } from '../core/column'
 import { useTableContext } from '../core/table-context'
+import { IconSlot } from '../core/table-labels'
 import { focusFirstFilter } from '../filter/focus-filter'
 import { pinAttrs, utilityKey, type Utility } from '../pin/pin'
 import { ariaSort } from '../sort/sort'
@@ -183,20 +184,23 @@ const headerSlotProps = (column: Column): HeaderSlotProps => ({
           :disabled="!canClearAll"
           @click.stop="onClearAll"
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <!-- C-131: the `icon-clear-all` slot replaces the cross only. -->
+          <icon-slot name="clear-all">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </icon-slot>
         </button>
       </th>
     </template>

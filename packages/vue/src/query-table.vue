@@ -3,7 +3,13 @@
   lang="ts"
   generic="T extends object, Q extends Query = TableQuery"
 >
-import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  onBeforeUpdate,
+  shallowRef,
+  useSlots
+} from 'vue'
 
 import { useRowNavigation } from './body/use-row-navigation'
 import { applyWidth, sideOf, type PinSide } from './columns/column-layout'
@@ -20,7 +26,7 @@ import type {
   ToolbarSlotProps
 } from './contract'
 import { resolveLabels } from './core/labels'
-import { provideTableContext } from './core/table-context'
+import { provideTableContext, type TableIcons } from './core/table-context'
 import { focusFilterOf } from './filter/focus-filter'
 import { useChangeFlash } from './flash/use-change-flash'
 import { useHeaderContextMenu } from './header/use-header-context-menu'
@@ -79,6 +85,23 @@ const emit = defineEmits<TableEmits<T, Q>>()
 
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
+
+// C-131: the `icon-<name>` slots given, read again before every render, so
+// the parts that draw an icon follow a slot given or removed later. A string,
+// so an unchanged set triggers nothing.
+const iconSlotNames = () =>
+  Object.keys(rawSlots)
+    .filter(name => name.startsWith('icon-'))
+    .sort()
+    .join('\n')
+const givenIcons = shallowRef(iconSlotNames())
+onBeforeUpdate(() => {
+  givenIcons.value = iconSlotNames()
+})
+const icons: TableIcons = {
+  has: name => givenIcons.value.split('\n').includes(`icon-${name}`),
+  slots: rawSlots
+}
 
 // Without the header nothing measures the pin offsets, the widths of the
 // split tables or the automatic widths, so those are off (C-121). The columns
@@ -362,7 +385,8 @@ provideTableContext({
   resize,
   reorder,
   selection: rowSelection,
-  labels: () => labels.value
+  labels: () => labels.value,
+  icons
 })
 
 const showPagination = computed(

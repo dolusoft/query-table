@@ -246,7 +246,11 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/unit/row-selectable.spec.ts',
   'tests/contract/browser/row-selectable.browser.spec.ts',
   'tests/contract/browser/data-table-variations.browser.spec.ts > C-124 DataTable variations: selection (#204) some rows: a locked row is disabled and select all skips it (C-130)',
-  'tests/contract/browser/data-table-variations.browser.spec.ts > C-127 DataTable variations: QueryTable with useLocalQuery draws the same table (#204) selection: some'
+  'tests/contract/browser/data-table-variations.browser.spec.ts > C-127 DataTable variations: QueryTable with useLocalQuery draws the same table (#204) selection: some',
+  // 3.21 addition (C-131, #100): the `icon-*` slots, which a 3.20 build does
+  // not draw. Without them the markup is the one of 3.20.
+  'tests/contract/unit/icon-slots.spec.ts',
+  'tests/contract/browser/icon-slots.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(

@@ -339,6 +339,46 @@
       "description": "With `groupBy`: the content of a group row, one `th` that spans every\ncolumn above the rows of the group (C-103). Without it the cell shows\nthe key."
     },
     {
+      "name": "icon-sort",
+      "props": "{ direction: SortDirection | false }",
+      "description": "The sort icon of a sortable header, for its direction; `false` when the\ncolumn is not sorted (C-131). Each `icon-*` slot replaces the built-in\n`svg` only: the button keeps its class, attributes and its name from\n`labels`, so draw decoration with no name of its own."
+    },
+    {
+      "name": "icon-filter",
+      "props": "{ filled: boolean }",
+      "description": "The funnel of the filter button a `filter-menu` slot receives; `filled`\nwhile the column has a rule (C-131)."
+    },
+    {
+      "name": "icon-clear-all",
+      "props": "",
+      "description": "The cross of the clear-all button (C-131)."
+    },
+    {
+      "name": "icon-reorder",
+      "props": "",
+      "description": "The grip of a reorder handle (C-131)."
+    },
+    {
+      "name": "icon-expand",
+      "props": "{ expanded: boolean }",
+      "description": "The chevron of a row's expand button (C-131)."
+    },
+    {
+      "name": "icon-right-panel",
+      "props": "",
+      "description": "The plus sign of a row's right panel button (C-131)."
+    },
+    {
+      "name": "icon-copy",
+      "props": "",
+      "description": "The icon of `CellCopy`'s button inside this table (C-131)."
+    },
+    {
+      "name": "icon-preview",
+      "props": "",
+      "description": "The icon of `CellPreview`'s button inside this table (C-131)."
+    },
+    {
       "name": "header-<field>",
       "props": "HeaderSlotProps",
       "description": "Header content of one column: `header-${column.field}`. It replaces the\nsort button or the title only; the header cell, its filter row and its\nresize handle stay. Draw a sort control with `toggleSort` if you want one."
@@ -1608,6 +1648,11 @@
       "id": "C-130",
       "title": "Rows that cannot be selected",
       "text": "With `selection` and `rowSelectable`, a row for which `rowSelectable(row, index)` (its index in `rows`) returns `false` cannot be selected: its `qt-select-row` checkbox is `disabled`, and checked when the row's key is in `selection`, so the row shows both that it is left out and whether it is selected. The header checkbox (C-64) works on the rows given that can be selected: it is checked when every one of them is selected and there is one, indeterminate when some are, and selecting or deselecting with it adds or removes only their keys. A key of a row that cannot be selected stays in `selection` as given: the table never adds it and never drops it, whatever the user does on the other rows (C-59). While no row given can be selected, an empty page too, the header checkbox is `disabled`. This holds for a pinned row (C-74), in a virtual body (C-83) and with infinite scroll, where the rows given are every row loaded (C-88). Without `rowSelectable` every row can be selected and the markup is the one of 3.20; without `selection` the function is not called. In the composable, `selection.canSelect(row, index)` answers the same question, `selection.toggle` does nothing for such a row, `selection.canToggleAll` says whether the header checkbox can be used, and TanStack's `getCanSelect` gives the answer of `canSelect`. The DOM contract gains no entry: `disabled` is plain HTML (C-41). Source: tanstack, own"
+    },
+    {
+      "id": "C-131",
+      "title": "Icon slots",
+      "text": "The table draws its icons as inline `svg`, and a slot named after each one replaces it: `icon-sort` the icon of a sort button (`svg.qt-sort-icon`), with `{ direction }`, `'asc'`, `'desc'` or `false` while the column is not sorted; `icon-filter` the funnel of the filter button a `filter-menu` slot receives as `trigger` (C-34), with `{ filled }`, `true` while the column has a rule; `icon-clear-all` the cross of the clear-all button (C-22); `icon-reorder` the grip of a reorder handle (C-73); `icon-expand` the chevron of a row's expand button (C-26), with `{ expanded }`; `icon-right-panel` the plus sign of a row's right panel button; `icon-copy` and `icon-preview` the icons of the buttons of `CellCopy` and `CellPreview` (C-128) inside that table, which read them from the table they sit in as they read their labels (C-129); outside a table they draw their own. A slot replaces the `svg` only: the button keeps its element, class, attributes, listeners and the name `labels` gives it (C-44), so what the slot draws is decoration and carries no name. A slot given or removed after the table is mounted replaces the icons or brings the built-in ones back. Without these slots the markup is the one of 3.20. `DataTable` passes them on (C-124). The DOM contract gains no entry. Source: own"
     }
   ]
 }

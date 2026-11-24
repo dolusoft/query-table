@@ -11,6 +11,7 @@ import type {
 } from '../contract'
 import { tableRow, type RowCell, type RowUtilities } from './table-row'
 import { columnTypeOf } from '../core/column'
+import { useTableContext } from '../core/table-context'
 import type { FlashView } from '../flash/use-change-flash'
 import { pinAttrs, utilityKey } from '../pin/pin'
 import type { ColumnEntry } from '../use-query-table'
@@ -159,16 +160,20 @@ const cells = computed<readonly RowCell[]>(previous => {
 })
 
 // Utilities are pinned only with a left-pinned column (C-46, C-71); kept by
-// value like the cells.
+// value like the cells. Whether the consumer draws the row icons (C-131) is
+// read here, so a row reads it from its props, not from shared state.
+const { icons } = useTableContext()
 const utilities = computed<RowUtilities>(previous => {
   const role = cellRole()
   const side = props.hasPinned ? 'left' : false
   const offsetOf = (utility: string) => props.offsets[utilityKey(utility)]
+  const panelSlot = props.hasRightPanel && icons.has('right-panel')
+  const expandSlot = props.hasSubtable && icons.has('expand')
   const signature = [
     role,
     side,
-    props.hasRightPanel && `p${offsetOf('right-panel')}`,
-    props.hasSubtable && `e${offsetOf('subtable')}`,
+    props.hasRightPanel && `p${offsetOf('right-panel')}${panelSlot ? 'i' : ''}`,
+    props.hasSubtable && `e${offsetOf('subtable')}${expandSlot ? 'i' : ''}`,
     props.hasSelection && `s${offsetOf('select')}`
   ].join('|')
   if (previous?.signature === signature) {
@@ -180,6 +185,9 @@ const utilities = computed<RowUtilities>(previous => {
     panel: attrs(props.hasRightPanel, 'right-panel'),
     expand: attrs(props.hasSubtable, 'subtable'),
     select: attrs(props.hasSelection, 'select'),
+    iconSlots: panelSlot || expandSlot ? icons.slots : null,
+    panelSlot,
+    expandSlot,
     signature
   }
 })
