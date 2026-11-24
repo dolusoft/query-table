@@ -3,6 +3,7 @@ import { inject, provide, type InjectionKey, type Slots } from 'vue'
 import type { ResolvedLabels } from './labels'
 import type { ColumnReorder } from '../reorder/use-column-reorder'
 import type { ColumnResize } from '../resize/use-column-resize'
+import type { GrowingColumns } from '../resize/use-growing-columns'
 import type {
   QueryTableFilters,
   QueryTableLayout,
@@ -32,6 +33,8 @@ export interface TableContext {
   labels: () => ResolvedLabels
   /** The consumer's icon slots (C-131). */
   icons: TableIcons
+  /** The widths of the growing columns (C-132). */
+  grow: Pick<GrowingColumns, 'widthOf'>
 }
 
 /** The icons a slot can replace: the slot of each is `icon-<name>` (C-131). */

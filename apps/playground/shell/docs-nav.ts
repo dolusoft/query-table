@@ -40,6 +40,7 @@ const groups = [
       'column-pinning',
       'column-resizing',
       'column-auto-width',
+      'growing-columns',
       'header-slot',
       'header-context-menu'
     ]

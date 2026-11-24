@@ -339,6 +339,8 @@ Together with the sizing above:
 }
 ```
 
+With that CSS a table narrower than its container is stretched to it, and the browser spreads the rest over every column, the expand and selection columns included. `Column.grow` sends the rest to the columns you name instead: a weight, as in CSS `flex-grow`, so `grow: 1` on a message column gives it all the room, and `grow: 3` and `grow: 1` on two columns divide it three to one. A growing column takes its share on top of its `width` (or its automatic width with `auto-width`), up to its `maxWidth`, and gives it back first when the container narrows; the other columns keep their width. The shares are drawn on the header cells and never emitted. Every visible column that does not grow needs a width, given or automatic, or nothing grows (a development build warns). A dragged growing column stays where you leave it: the table emits the `width` that keeps it there (C-132).
+
 ## Reordering columns
 
 With `reorderable` every header cell starts with a `qt-reorder-handle` button (opt a column out with `reorderable: false`). Drag it onto another header of the same region (pinned left, not pinned, pinned right), or focus it and press ArrowLeft or ArrowRight to move one position, Home or End to go to the ends of the region; Escape cancels a drag. The table emits `update:columns` with reason `order` and draws the new order once you write it back (`v-model:columns`); the focus stays on the moved handle. While dragging, the dragged header carries `data-dragging` and the target `data-drop="before"` or `"after"`: draw the indicator with your CSS, and give the handle `touch-action: none` so a touch drag does not scroll the page. The table announces nothing: say the new position from your `update:columns` listener.
