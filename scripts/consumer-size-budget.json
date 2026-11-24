@@ -21,7 +21,8 @@
     "3.14.0 (#95, 2026-10-24): component 46497 B (+218 B): number lists and negation in the filter input of a number or integer column (`80,443`, `!80,!443`), parsed and written back. It leaves 3 B under the 46500 B ceiling, so the ceiling is raised as #171 proposed: measure x 1.05 rounded up to the next 500 B, 49000 B (K7: size is not a blocker). Budget set to measure plus 5%.",
     "3.16.0 (#180, 2026-10-27): composable 23805 B (+150 B over the 23655 B of 3.15, which had 130 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, read by the parser. Budget set to measure plus 5%; that is over the 24000 B ceiling, which is raised as #171 proposed, measure x 1.05 rounded up to the next 500 B, 25000 B (K7: size is not a blocker). component 46801 B stays within its budget.",
     "3.19.0 (ADR 0021, #202, 2026-11-17): data-table 55126 B. The `/data-table` entry: `QueryTable` with `useLocalQuery` and the evaluator, plus the dataset built from the columns, the held query and the forwarding of props and slots (about 600 B over component 48413 B and local-composable 6087 B). Budget 57882 B (measure plus 5%), ceiling 66500 B (measure times 1.2 rounded up to 500 B, as for local-composable). The other fixtures do not import it and stay in their budgets.",
-    "3.20.0 (ADR 0022, #203, 2026-11-19): cells 1789 B. The `/cells` entry: seven unstyled cell components and the module that reads the cell labels of the enclosing table, with their English defaults in a module that imports only types, so no protocol code comes along (a chunk of about 1 kB shared with the default entry, not the table). Budget 1878 B (measure plus 5%), ceiling 2500 B (measure times 1.2 rounded up to 500 B). component 48464 B, composable 24880 B and data-table 55460 B stay within their budgets."
+    "3.20.0 (ADR 0022, #203, 2026-11-19): cells 1789 B. The `/cells` entry: seven unstyled cell components and the module that reads the cell labels of the enclosing table, with their English defaults in a module that imports only types, so no protocol code comes along (a chunk of about 1 kB shared with the default entry, not the table). Budget 1878 B (measure plus 5%), ceiling 2500 B (measure times 1.2 rounded up to 500 B). component 48464 B, composable 24880 B and data-table 55460 B stay within their budgets.",
+    "3.21.0 (#100, C-131, 2026-11-24): component 48870 B (+256 B over next at 48614 B; cells 1870 B, +81 B, and data-table 55875 B stay within their budgets). The eight `icon-*` slots: the set of icon slots the table follows after mount, the icon reader the header parts and the cell components share, and the row's two icons drawn from the table's slots, each with the built-in svg as its default. Measure plus 5% is over the 49000 B ceiling, so the ceiling is raised as #171 proposed, measure x 1.05 rounded up to the next 500 B, 51500 B (K7: size is not a blocker). Budget set to measure plus 5%."
   ],
   "fixtures": {
     "composable": {
@@ -30,9 +31,9 @@
       "ceilingGzipBytes": 25000
     },
     "component": {
-      "measuredGzipBytes": 46497,
-      "maxGzipBytes": 48822,
-      "ceilingGzipBytes": 49000
+      "measuredGzipBytes": 48870,
+      "maxGzipBytes": 51314,
+      "ceilingGzipBytes": 51500
     },
     "local-composable": {
       "measuredGzipBytes": 6054,

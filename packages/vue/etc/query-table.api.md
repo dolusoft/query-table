@@ -512,6 +512,20 @@ export { TableQuery }
 export interface TableSlots<T> {
     'filter-datetime'?(props: FilterDatetimeSlotProps): unknown;
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
+    'icon-clear-all'?(): unknown;
+    'icon-copy'?(): unknown;
+    'icon-expand'?(props: {
+        expanded: boolean;
+    }): unknown;
+    'icon-filter'?(props: {
+        filled: boolean;
+    }): unknown;
+    'icon-preview'?(): unknown;
+    'icon-reorder'?(): unknown;
+    'icon-right-panel'?(): unknown;
+    'icon-sort'?(props: {
+        direction: SortDirection | false;
+    }): unknown;
     'load-more'?(props: LoadMoreSlotProps): unknown;
     [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;

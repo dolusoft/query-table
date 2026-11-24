@@ -66,6 +66,7 @@ const groups = [
     title: 'Cells & display',
     ids: [
       'custom-cells',
+      'icon-slots',
       'change-flash',
       'empty-state',
       'loading-state',

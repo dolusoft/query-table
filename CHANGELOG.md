@@ -12,6 +12,7 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 - `rowSelectable(row, index)`, with `selection`: a row it returns `false` for cannot be selected. Its checkbox is `disabled`, and checked when its key is selected. The header checkbox is checked, indeterminate, selects and deselects over the rows that can be selected only, and is `disabled` while none can. The table never adds or drops the key of such a row, so leave those rows out of a bulk action yourself. `DataTable` passes it on. In the composable: the `rowSelectable` option, `selection.canSelect` and `selection.canToggleAll` ([C-130](contract/rules.md#c-130-rows-that-cannot-be-selected), [C-64](contract/rules.md#c-64-selection-column)).
 - The reference skin draws a `disabled` selection checkbox dimmed, with a `not-allowed` cursor.
+- Icon slots, to draw the table's icons from your own set: `icon-sort` (with `direction`: `'asc'`, `'desc'` or `false`), `icon-filter` (with `filled`), `icon-clear-all`, `icon-reorder`, `icon-expand` (with `expanded`) and `icon-right-panel`, and `icon-copy` and `icon-preview` for the buttons of `CellCopy` and `CellPreview` inside the table. Each replaces the built-in `svg` only: the button keeps its class, attributes and its name from `labels`, so draw decoration with no name of its own. A slot given or removed later is followed. `DataTable` passes them on ([C-131](contract/rules.md#c-131-icon-slots)).
 
 ### Fixed
 
@@ -20,6 +21,7 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 ### Upgrade notes
 
 - Additive: without `rowSelectable` the table and its markup are the ones of 3.20.
+- Additive: without `icon-*` slots the markup is the one of 3.20. With one, the skin's rules for the built-in icon (`.qt-sort-icon`, `.qt-cell-icon`) do not reach what the slot draws; size and color it yourself.
 - A test or a skin that read `indeterminate` on `qt-select-all` while every row was selected now sees `false`.
 
 ## [3.20.0] - 2026-11-20

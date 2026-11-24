@@ -837,6 +837,30 @@ export interface TableSlots<T> {
    */
   group?(props: GroupSlotProps<T>): unknown
   /**
+   * The sort icon of a sortable header, for its direction; `false` when the
+   * column is not sorted (C-131). Each `icon-*` slot replaces the built-in
+   * `svg` only: the button keeps its class, attributes and its name from
+   * `labels`, so draw decoration with no name of its own.
+   */
+  'icon-sort'?(props: { direction: SortDirection | false }): unknown
+  /**
+   * The funnel of the filter button a `filter-menu` slot receives; `filled`
+   * while the column has a rule (C-131).
+   */
+  'icon-filter'?(props: { filled: boolean }): unknown
+  /** The cross of the clear-all button (C-131). */
+  'icon-clear-all'?(): unknown
+  /** The grip of a reorder handle (C-131). */
+  'icon-reorder'?(): unknown
+  /** The chevron of a row's expand button (C-131). */
+  'icon-expand'?(props: { expanded: boolean }): unknown
+  /** The plus sign of a row's right panel button (C-131). */
+  'icon-right-panel'?(): unknown
+  /** The icon of `CellCopy`'s button inside this table (C-131). */
+  'icon-copy'?(): unknown
+  /** The icon of `CellPreview`'s button inside this table (C-131). */
+  'icon-preview'?(): unknown
+  /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its
    * resize handle stay. Draw a sort control with `toggleSort` if you want one.
