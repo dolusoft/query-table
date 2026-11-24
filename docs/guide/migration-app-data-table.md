@@ -185,7 +185,7 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
 | `rowSelectable` (`row => boolean`) | `rowSelectable` (`(row, index) => boolean`): the row's checkbox is `disabled` and the header checkbox leaves the row out; the key of such a row stays in `selection` when it is there, so the bulk action leaves it out itself (C-130) |
 | `expandable` | `hasSubtable`, with the `subtable` slot |
 | `expandMode` (default `'single'`) | `expandMode` (default `'multiple'`): pass `'single'` to keep the accordion (C-123) |
-| `getChildren`, `rowHasChildren`, `rowIsCycle` | no counterpart yet ([#226](https://github.com/dolusoft/query-table/issues/226)) |
+| `getChildren`, `rowHasChildren`, `rowIsCycle` | no counterpart: deferred ([#226](https://github.com/dolusoft/query-table/issues/226)); the page can flatten the tree into `rows`, see [No counterpart yet](#no-counterpart-yet) |
 | `reorderable` | no counterpart yet ([#227](https://github.com/dolusoft/query-table/issues/227)) |
 | `searchable`, `searchPlaceholder`, `searchPosition` | the page's input in the `toolbar` slot |
 | `searchDebounceMs` (300) | `searchDebounce` (300) |
@@ -233,16 +233,21 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
 | `@row-click` | no row event: a link or button in a cell slot opens the row; `rowNavigation` moves between rows with the keyboard (C-109) |
 | `@row-expand(row, expanded)` | `@row-expansion-change({ row, rowIndex, rowKey, expanded })` (C-122) |
 | `@row-reorder` | no counterpart yet ([#227](https://github.com/dolusoft/query-table/issues/227)) |
-| `expandRows(rows)` | `expandAll()` and `collapseAll()`; opening tree branches belongs to [#226](https://github.com/dolusoft/query-table/issues/226) |
+| `expandRows(rows)` | `expandAll()` and `collapseAll()`; the open branches of a flattened tree are the page's state ([No counterpart yet](#no-counterpart-yet)) |
 
 ## No counterpart yet
 
-- **Tree rows** (`getChildren`): [#226](https://github.com/dolusoft/query-table/issues/226). Until it is decided, a level can be a `QueryTable` in the `subtable` slot, with its own columns.
+- **Tree rows** (`getChildren`): deferred ([#226](https://github.com/dolusoft/query-table/issues/226), D-01). Its one use, the schema table of the API reference panel, stays on `AppDataTable`; the decision is looked at again when a second page needs tree rows, or when that table needs something only `QueryTable` has. A page can draw a tree today by flattening it into `rows`:
+  - the children of an open row come right after it, and each row carries its depth;
+  - a `cell-<field>` slot draws the indent and the open and close button;
+  - the set of open rows is the page's state.
+
+  The columns stay aligned, unlike a `QueryTable` in the `subtable` slot. What it lacks is accessibility: the table writes no `aria-level` and does not present itself as a `treegrid`, so a screen reader does not hear a row's level.
 - **Dragging rows into an order** (`reorderable`): [#227](https://github.com/dolusoft/query-table/issues/227).
 - **The details band** (`details`): a strip of `Label: value` under every row, always open. The nearest forms are a second line in the cell (`CellStack`'s `secondary`) or a `subtable` that starts open (`isExpanded: true`), which draws an expand button as well.
 - **A row click** (`@row-click`): a link or button in a cell is the way; the table cancels no click and emits no row event (C-27).
 
-A page that needs one of these stays on `AppDataTable` until the issue is decided.
+A page that needs one of these and has no way around it stays on `AppDataTable` until its issue gives it a counterpart.
 
 ## The look
 
