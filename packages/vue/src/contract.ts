@@ -109,6 +109,16 @@ export interface Column {
    */
   maxWidth?: number
   /**
+   * A weight, as in CSS `flex-grow` (C-132): in a container wider than the
+   * table, the room goes to the columns with `grow`, divided by their
+   * weights, on top of their width (`width`, else the automatic width, else
+   * `minWidth`), up to `maxWidth`. The other columns and the utility
+   * columns keep their width. Drawn as the header cell's width, never
+   * emitted. Needs a width, given or automatic, on every visible column
+   * that does not grow. Not a finite number above `0` counts as unset.
+   */
+  grow?: number
+  /**
    * Not rendered in the header or the body; its rules in `query` still
    * apply. The table emits `update:columns` with `hide: true` when the user
    * hides it (`control.hide()`).

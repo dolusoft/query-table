@@ -40,6 +40,7 @@ import { useColumnReorder } from './reorder/use-column-reorder'
 import { measureColumnWidths } from './resize/measure-widths'
 import { useAutoWidth } from './resize/use-auto-width'
 import { useColumnResize } from './resize/use-column-resize'
+import { useGrowingColumns } from './resize/use-growing-columns'
 import { useScrollBody } from './scroll/use-scroll-body'
 import { useQueryTable } from './use-query-table'
 import { useLoadMore } from './virtual/use-load-more'
@@ -256,7 +257,11 @@ const resize = useColumnResize({
     if (next) {
       emit('update:columns', next, 'resize')
     }
-  }
+  },
+  // C-132: growing columns take the room, and a growing column emits its
+  // base (D-05). Read when a resize starts, after `grow` exists.
+  growing: () => grow.active.value,
+  emitted: (field, drawn) => grow.emitted(field, drawn)
 })
 
 // Automatic widths of the columns without a width (C-100): drawn on the
@@ -270,6 +275,18 @@ const autoWidth = useAutoWidth({
   rows: () => props.rows,
   query: () => props.query,
   rowsUpdate: () => props.rowsUpdate
+})
+
+// Growing columns (C-132, ADR 0024): the room of a wider container goes to
+// the columns with `grow`, drawn on the header cells, never emitted.
+const grow = useGrowingColumns({
+  enabled: () => props.header,
+  table: tableEl,
+  columns: () => visibleColumns.value,
+  autoWidth: () => props.autoWidth,
+  autoWidths: () => autoWidth.widths.value,
+  utilities: () => utilities.value.join(' '),
+  preview: () => resize.preview.value
 })
 
 // The virtual body (C-83 to C-87) and infinite scroll (C-88 to C-90).
@@ -386,7 +403,8 @@ provideTableContext({
   reorder,
   selection: rowSelection,
   labels: () => labels.value,
-  icons
+  icons,
+  grow
 })
 
 const showPagination = computed(

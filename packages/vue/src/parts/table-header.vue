@@ -54,7 +54,7 @@ defineSlots<{
 
 const given = (name: string) => props.slotNames.split('\n').includes(name)
 
-const { filters, sort, layout, resize, reorder, selection, labels } =
+const { filters, sort, layout, resize, reorder, selection, labels, grow } =
   useTableContext()
 
 // C-73: the drag preview is attributes only; nothing moves until release.
@@ -115,6 +115,11 @@ const utilityAttrs = (utility: Utility) =>
 // preview, C-49, or the automatic width, C-100) and the pin offset (C-47,
 // C-71), with `data-pinned`.
 const widthOf = (column: Column) => {
+  // C-132: a growing column is drawn at its base and its share of the room.
+  const grown = grow.widthOf(column.field)
+  if (grown !== undefined) {
+    return `${grown}px`
+  }
   if (column.width) {
     return column.width
   }

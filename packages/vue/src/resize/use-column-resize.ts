@@ -2,7 +2,11 @@ import { onBeforeUnmount, shallowRef } from 'vue'
 
 import type { Column, ColumnResizePayload } from '../contract'
 import { measureColumnWidths } from './measure-widths'
-import { measureWidthScale, type WidthScale } from './width-scale'
+import {
+  identityScale,
+  measureWidthScale,
+  type WidthScale
+} from './width-scale'
 
 /** Default `Column.minWidth`, in pixels. */
 const defaultMinWidth = 40
@@ -17,6 +21,13 @@ export interface ColumnResizeOptions {
   /** With `scrollBody`: the table of the body rows (C-101), else `null`. */
   body: () => HTMLTableElement | null
   emit: (payload: ColumnResizePayload) => void
+  /**
+   * Growing columns take the room (C-132): the table is as wide as its
+   * container, so a dragged column is drawn at its declared width.
+   */
+  growing?: () => boolean
+  /** The width emitted for a drawn width: the base of a growing column (D-05). */
+  emitted?: (field: string, drawn: number) => number
 }
 
 /**
@@ -74,13 +85,6 @@ const cellOf = (event: Event) =>
 const edgeOf = (column: Column) => (column.pinned === 'right' ? -1 : 1)
 
 /**
- * The scale of a column's widths, read from the layout once per drag or key:
- * a table stretched to its container draws a column wider than declared.
- */
-const scaleOf = (th: HTMLElement, column: Column) =>
-  measureWidthScale(th, clampWidth(column, 0))
-
-/**
  * Resizing a column (C-48 to C-50). The table holds a width only while a
  * drag is under way (the preview, P2); every committed width goes out as a
  * `columnResize` event and comes back, if the consumer wants it, as
@@ -101,16 +105,39 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
   const isResizable = (column: Column) =>
     options.resizable() && column.resizable !== false
 
+  /**
+   * The scale of a column's widths, read from the layout once per drag or
+   * key: a table stretched to its container draws a column wider than
+   * declared. A table whose growing columns take the room is not stretched:
+   * they take the difference instead (C-132).
+   */
+  const scaleOf = (th: HTMLElement, column: Column) =>
+    options.growing?.()
+      ? identityScale
+      : measureWidthScale(th, clampWidth(column, 0))
+
   /** The width the header shows: the preview while dragging, else measured. */
   const widthOf = (column: Column) =>
     preview.value?.field === column.field
       ? preview.value.rendered
       : Math.round(options.measuredWidth(column.field) ?? 0)
 
-  /** Emits the declared width `width`, unless it is the declared `from`. */
-  const commit = (column: Column, from: number, width: number) => {
-    const next = clampWidth(column, width)
-    if (next !== Math.round(from)) {
+  /** What a declared width `width` is emitted as (C-132, D-05). */
+  const out = (column: Column, width: number) =>
+    options.emitted ? options.emitted(column.field, width) : width
+
+  /**
+   * Emits the declared width `width`, unless it is the declared `from`.
+   * `fitted` is a width already emitted as it is: autofit's.
+   */
+  const commit = (
+    column: Column,
+    from: number,
+    width: number,
+    fitted = false
+  ) => {
+    const next = clampWidth(column, fitted ? width : out(column, width))
+    if (next !== Math.round(out(column, from))) {
       options.emit({ field: column.field, width: next })
     }
   }
@@ -222,7 +249,7 @@ export const useColumnResize = (options: ColumnResizeOptions) => {
             { filters: true }
           )[column.field]
       if (to !== undefined) {
-        commit(column, from, to)
+        commit(column, from, to, !sign)
       }
     }
   }

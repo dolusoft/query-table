@@ -411,6 +411,16 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-100']
   },
   {
+    id: 'growing-columns',
+    title: 'Growing columns',
+    navTitle: 'Growing columns',
+    summary:
+      '`Column.grow` sends the room of a wide container to the columns you name, by weight, on top of their width; the short columns and the expand column keep theirs. A dragged growing column stays where it is left.',
+    example: 'GrowingColumns',
+    api: { types: ['Column'] },
+    rules: ['C-132']
+  },
+  {
     id: 'header-slot',
     title: 'Header slot',
     summary:

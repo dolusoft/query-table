@@ -250,7 +250,10 @@ const ADDED_AFTER_BASELINE = [
   // 3.21 addition (C-131, #100): the `icon-*` slots, which a 3.20 build does
   // not draw. Without them the markup is the one of 3.20.
   'tests/contract/unit/icon-slots.spec.ts',
-  'tests/contract/browser/icon-slots.browser.spec.ts'
+  'tests/contract/browser/icon-slots.browser.spec.ts',
+  // 3.21 addition (C-132, ADR 0024, #136): growing columns, which a 3.20
+  // build does not draw. Without `grow` the table is the one of 3.20.
+  'tests/contract/browser/growing-columns.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
