@@ -1,6 +1,6 @@
 # 0024 Growing columns: the room of a wide container goes where the consumer says (3.21)
 
-Status: Proposed, [query-table#136](https://github.com/dolusoft/query-table/issues/136). Decided by Enes on 2026-11-24: a column's share of the room is a weight, `Column.grow` (#136 D-01), and a width the user gave a growing column is its base (#136 D-02) ([comment](https://github.com/dolusoft/query-table/issues/136#issuecomment-7125070614)). Amends P2 and P5: the shares are widths the table draws and keeps for a while, as the automatic widths of [ADR 0014](0014-automatic-column-widths.md) are. Changes C-49 for a growing column. Two questions below are open until the record is accepted.
+Status: Proposed, [query-table#136](https://github.com/dolusoft/query-table/issues/136). Decided by Enes on 2026-11-24: a column's share of the room is a weight, `Column.grow` (#136 D-01), and a width the user gave a growing column is its base (#136 D-02) ([comment](https://github.com/dolusoft/query-table/issues/136#issuecomment-7125070614)); a drag on a growing column changes its base and nothing jumps (#136 D-03), and the table draws no shares while a column that does not grow has no width (#136 D-04) ([comment](https://github.com/dolusoft/query-table/issues/136#issuecomment-7125762417)). Amends P2 and P5: the shares are widths the table draws and keeps for a while, as the automatic widths of [ADR 0014](0014-automatic-column-widths.md) are. Changes C-49 for a growing column.
 
 ## Context
 
@@ -19,26 +19,8 @@ Grids solve it with a weight on the column: CSS flexbox's `flex-grow`, AG Grid's
 - **When (K321-5).** The table reads its natural width in one synchronous read, as C-99 measures: inline styles set for the length of the read and put back before it returns, so nothing of it is painted. It reads after the drawn columns change (set, order, pinning, widths, automatic widths, utilities) and once the table is displayed, each time after the DOM update. A change of the container's width alone only divides the room again: one `ResizeObserver` on the container, no read of the table. A table that is not displayed keeps its shares.
 - **Layouts (K321-6).** With `scrollBody` the shares are drawn on the header cells, the body and footer tables follow through their `col` widths (C-101), and the container is the header's wrapper: C-101's CSS gives the three wrappers `overflow-y: scroll`, so they are as wide. A growing column may be pinned; the pin offsets are measured from the drawn widths, so they follow (C-47, C-71). With `header: false` there are no shares, as there are no automatic widths (C-121): nothing is drawn on header cells. `virtual` and `infinite` change nothing.
 - **Vue code (K321-7).** Reading widths needs the DOM, so the behavior lives next to `autoWidth` in the Vue package (P10).
-
-## Open questions
-
-To be answered before the record is accepted.
-
-**Q1. What does a drag on a growing column's resize handle do?** D-02 keeps the width the user gives as the base, and the column still takes its share. A single growing column is then drawn as wide as the room leaves, whatever its base, as long as the base is narrower than that: narrowing it frees room that comes back to it.
-
-- **(a)** The drag works on the base. While the pointer moves the shares stay as they are and the column follows the pointer (C-49's preview). On release the table emits the drawn width minus the column's share, the new base, and divides the room again. With one growing column and room to spare, the column does not change after the release; with several, the drag moves room between them by their weights. Widening a column past what the room leaves makes the table scroll sideways, as today.
-- **(b)** The drag emits the drawn width, as C-49 does today. That width becomes the base and the share comes on top of it, so the column jumps wider by its share on release.
-- **(c)** A growing column has no resize handle while there is room. The user cannot size it, which D-02 assumed they can.
-
-[Proposal] (a): it is what D-02 asks for, and the only option where nothing jumps.
-
-**Q2. What if a column that does not grow has no width?** Without `autoWidth`, a column without `Column.width` takes what is left in a fixed layout, so it and the growing columns would claim the same room.
-
-- **(a)** The table draws no shares while a visible column that does not grow has neither a `width` nor an automatic width, and a development build warns once. A consumer gives those columns a width or turns `autoWidth` on.
-- **(b)** The table measures such a column as `autoWidth` would and uses that width in the sum, without drawing it. The column is then drawn wider by the browser's own spread, so the sum is wrong as soon as it is drawn.
-- **(c)** The growing columns take the room and such a column gets what the browser leaves it, which can be nothing.
-
-[Proposal] (a): the sum is only right when every column that does not grow has a width the table knows, and Data View, the case of #136, uses `autoWidth`.
+- **A drag on a growing column changes its base (K321-8, #136 D-03).** While the pointer moves, the shares stay as they are and the column follows the pointer (C-49's preview). On release the table emits the drawn width minus the column's share, which is the new base, and divides the room again, so nothing jumps. A single growing column is drawn as wide as the room leaves whatever its base, as long as the base is narrower than that: while there is room, narrowing it has no lasting effect. With several growing columns a drag moves room between them by their weights. Widening a column past what the room leaves makes the table scroll sideways, as today. C-49's reading of the browser's stretch stays for the tables that do not grow.
+- **No shares while a column without a width does not grow (K321-9, #136 D-04).** Without `autoWidth`, a column without `Column.width` takes what is left in a fixed layout, so it and the growing columns would claim the same room. While a visible column that does not grow has neither a `width` nor an automatic width, the table draws no shares and the layout is the browser's, as today; a development build warns once. A consumer gives those columns a width or turns `autoWidth` on.
 
 ## Options considered
 
@@ -47,11 +29,16 @@ To be answered before the record is accepted.
 - **Emit the shares as `update:columns` (reason `resize`).** For: the table keeps no width. Against: the shares depend on the screen; a saved view would fill with them and a share could no longer be told from a width the user chose. Rejected, as K37-2 rejected the automatic widths.
 - **A table prop that names one column (`growColumn: 'message'`).** For: one string. Against: one column only and no ratios; the weight on the column covers both. Rejected.
 - **A percentage `Column.width`.** For: no new field. Against: the table's own width is its content's (`max-content`), so a percentage of it is circular, and a percentage does not leave the other columns at their content's width. Rejected.
+- **A drag that emits the drawn width, as C-49 does today.** For: no change to C-49. Against: that width becomes the base and the share comes on top of it, so the column jumps wider by its share on release. Rejected by #136 D-03.
+- **No resize handle on a growing column while there is room.** For: no drag to explain. Against: the user cannot size the column, which #136 D-02 assumes they can. Rejected by #136 D-03.
+- **Measure a column without a width as `autoWidth` would, only for the sum.** For: shares without asking the consumer for widths. Against: the browser then draws that column wider by its own spread, so the sum is wrong as soon as it is drawn. Rejected by #136 D-04.
+- **Let the growing columns take the room and a column without a width take what is left.** For: no warning. Against: what is left can be nothing. Rejected by #136 D-04.
 
 ## Consequences
 
-- New rule C-132; `Column` gains `grow` (`contract/api.json`, `CONTRACT.md`). C-49 changes for a growing column (Q1), and C-31 and P5 list the shares among the header cell's `width`; P2 lists them among the UI state.
+- New rule C-132; `Column` gains `grow` (`contract/api.json`, `CONTRACT.md`). C-49 changes for a growing column (K321-8), and C-31 and P5 list the shares among the header cell's `width`; P2 lists them among the UI state.
 - One synchronous read per change of the drawn columns; resizing the window costs no read.
+- A development build gains one warning, for a growing table with a column that neither grows nor has a width (K321-9).
 - A growing column's drawn width depends on the screen. A consumer that saves the drawn header widths (none should; `columnResize` carries the width the user chose) would save shares.
 - The utility columns and the columns that do not grow stay at their width on every screen, which is the point of #136; in a container wider than the columns they no longer widen.
 - With every growing column at its `maxWidth`, the browser spreads the rest over all columns, as today.
