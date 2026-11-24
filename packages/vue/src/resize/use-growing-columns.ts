@@ -41,7 +41,7 @@ export interface GrowingColumnsOptions {
 }
 
 /** `Column.grow` when it is a weight above `0`, else `0` (K321-1). */
-export const growOf = (column: Column) =>
+const growOf = (column: Column) =>
   typeof column.grow === 'number' &&
   Number.isFinite(column.grow) &&
   column.grow > 0
