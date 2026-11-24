@@ -77,6 +77,7 @@ export interface Column {
     filterable?: boolean;
     filterConditions?: FilterCondition[];
     filterDefaultCondition?: FilterCondition;
+    grow?: number;
     hide?: boolean;
     maxWidth?: number;
     minWidth?: number;
@@ -335,11 +336,12 @@ export interface QueryTableSearch {
 // @public
 export interface QueryTableSelection<T extends object> {
     allSelected: ComputedRef<boolean>;
+    canSelect: (row: T, index: number) => boolean;
+    canToggleAll: ComputedRef<boolean>;
     enabled: ComputedRef<boolean>;
     // (undocumented)
     isSelected: (row: T, index: number) => boolean;
     someSelected: ComputedRef<boolean>;
-    // (undocumented)
     toggle: (row: T, index: number) => void;
     toggleAll: (value: boolean) => void;
 }
@@ -495,6 +497,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     rowNavigation?: boolean | RowNavigationOptions<T>;
     rowPinning?: RowPinning;
     rows?: T[];
+    rowSelectable?: (row: T, index: number) => boolean;
     rowsUpdate?: RowsUpdate;
     scrollBody?: boolean;
     searchDebounce?: number;
@@ -510,6 +513,20 @@ export { TableQuery }
 export interface TableSlots<T> {
     'filter-datetime'?(props: FilterDatetimeSlotProps): unknown;
     'filter-menu'?(props: FilterMenuSlotProps): unknown;
+    'icon-clear-all'?(): unknown;
+    'icon-copy'?(): unknown;
+    'icon-expand'?(props: {
+        expanded: boolean;
+    }): unknown;
+    'icon-filter'?(props: {
+        filled: boolean;
+    }): unknown;
+    'icon-preview'?(): unknown;
+    'icon-reorder'?(): unknown;
+    'icon-right-panel'?(): unknown;
+    'icon-sort'?(props: {
+        direction: SortDirection | false;
+    }): unknown;
     'load-more'?(props: LoadMoreSlotProps): unknown;
     [key: `header-${string}`]: ((props: HeaderSlotProps) => unknown) | undefined;
     [key: `cell-${string}`]: ((props: CellSlotProps<T>) => unknown) | undefined;
@@ -551,6 +568,7 @@ export interface UseQueryTableOptions<T extends object, Q extends Query = TableQ
     rowKey?: MaybeRefOrGetter<RowKey<T>>;
     rowPinning?: MaybeRefOrGetter<RowPinning | undefined>;
     rows?: MaybeRefOrGetter<T[] | undefined>;
+    rowSelectable?: MaybeRefOrGetter<TableProps<T>['rowSelectable']>;
     searchDebounce?: MaybeRefOrGetter<number | undefined>;
     selection?: MaybeRefOrGetter<RowSelection | undefined>;
     sortable?: MaybeRefOrGetter<boolean | undefined>;

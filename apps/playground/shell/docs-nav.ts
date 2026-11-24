@@ -40,6 +40,7 @@ const groups = [
       'column-pinning',
       'column-resizing',
       'column-auto-width',
+      'growing-columns',
       'header-slot',
       'header-context-menu'
     ]
@@ -49,6 +50,7 @@ const groups = [
     ids: [
       'row-expansion',
       'row-kind',
+      'row-selectable',
       'row-pinning',
       'grouped-rows',
       'headerless-list',
@@ -65,6 +67,7 @@ const groups = [
     title: 'Cells & display',
     ids: [
       'custom-cells',
+      'icon-slots',
       'change-flash',
       'empty-state',
       'loading-state',

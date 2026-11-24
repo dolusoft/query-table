@@ -7,12 +7,13 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 | Prop | Meaning |
 | --- | --- |
 | `query` (required) | The query, with `v-model:query`. A `CursorQuery` (a `cursor` key) pages by cursor. |
-| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `hide`, `filterable`, `sortable`, `filterConditions` (the conditions its filter menu offers, in place of its type's; the way to offer `IsNull`, `IsNotNull` and `Between`, which draws two inputs named by `labels.filterInputFrom` and `labels.filterInputTo`; on a `bool` column `IsNull` and `IsNotNull` become options of its select). With `v-model:columns` when the user may change the layout. |
+| `columns` (required) | `Column[]`: `field`, `title`, `type`, `width`, `pinned: 'left' \| 'right'`, `resizable`, `minWidth`, `maxWidth`, `grow` (a weight, as in `flex-grow`: the room of a wider container goes to the growing columns on top of their width; every other visible column needs a width, given or automatic, C-132), `hide`, `filterable`, `sortable`, `filterConditions` (the conditions its filter menu offers, in place of its type's; the way to offer `IsNull`, `IsNotNull` and `Between`, which draws two inputs named by `labels.filterInputFrom` and `labels.filterInputTo`; on a `bool` column `IsNull` and `IsNotNull` become options of its select). With `v-model:columns` when the user may change the layout. |
 | `rows`, `totalRows` | Rows of the current page; the total on the server, `null` when unknown. |
 | `sortable`, `filterable`, `resizable` | Turn on the sort buttons, the filter row, the resize handles (each also needs the column to allow it). |
 | `filterDebounce` | ms before typed filter text applies (default 100; `0` applies every key). |
 | `searchDebounce` | ms before typed search text applies (default 300). |
 | `selection` | `v-model:selection`; adds a checkbox column. |
+| `rowSelectable` | `(row, index) => boolean`, with `selection`: a row it returns `false` for has a `disabled` checkbox and select all skips it; its key stays in `selection` as given, so leave such rows out of a bulk action yourself (C-130). |
 | `cursors` | `{ next, prev }` of the page shown, cursor mode only. |
 | `rowPinning` | `v-model:rowPinning`: `{ top, bottom }` row keys pinned to the top or the bottom of the page. Needs `rowKey`. |
 | `rowKey` | Property name, or `(row, index) => key`. Needed for expansion and selection across pages, and for row pinning. |
@@ -31,7 +32,7 @@ Everything here is from `packages/vue/src/contract.ts` and `use-query-table.ts`;
 
 Events: `update:query (query, reason)`, `update:selection`, `update:columns (columns, reason)`, `update:rowPinning`, `rowRightPanelClick`, `cellContextMenu`, `columnResize { field, width }`, `rowExpansionChange { row, rowIndex, rowKey, expanded }` (one per press of an expand button only; `expandAll`, `collapseAll`, `isExpanded`, pruning and a virtual row leaving the view emit nothing, C-122). The table keeps no width: write `columnResize` back to `Column.width` (`'180px'`), or the column returns to its old width; with `v-model:columns` the `update:columns` that follows does it for you.
 
-Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `load-more`, `header-<field>`, `cell-<field>`. The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
+Slots: `toolbar`, `filter-menu`, `filter-datetime`, `subtable`, `empty`, `loading`, `pagination`, `load-more`, `header-<field>`, `cell-<field>`, and the icon slots `icon-sort` (`{ direction }`), `icon-filter` (`{ filled }`), `icon-clear-all`, `icon-reorder`, `icon-expand` (`{ expanded }`), `icon-right-panel`, `icon-copy` and `icon-preview`: each replaces one built-in `svg` and nothing else, the button keeps its name from `labels`, so give your icon `aria-hidden="true"` (C-131). The pager is drawn only when you give the `pagination` slot. A `filter-menu` slot is how a filter button exists at all; its `trigger` component goes in your popover trigger.
 
 Template ref methods: `focusFilter(field)`, `expandAll()`, `collapseAll()`, `flushPendingFilters()`, `scrollToIndex(index, { align })`, `loadMore()`.
 

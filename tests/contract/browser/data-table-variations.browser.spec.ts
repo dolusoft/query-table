@@ -230,6 +230,28 @@ describe('C-124 DataTable variations: selection (#204)', () => {
     await page.getByRole('button', { name: 'Clear selection' }).click()
     await expect.poll(count).toBe('0 selected')
   })
+
+  test('some rows: a locked row is disabled and select all skips it (C-130)', async () => {
+    await show({ selection: 'some' })
+    const boxes = () => own<HTMLInputElement>('.qt-select-row')
+    await expect.poll(() => boxes().length).toBe(5)
+    expect(
+      dataRows()
+        .filter(
+          row => row.querySelector<HTMLInputElement>('.qt-select-row')?.disabled
+        )
+        .map(idOf)
+    ).toEqual([3])
+    const all = own<HTMLInputElement>('.qt-select-all')[0]
+    await userEvent.click(all)
+    await expect.poll(count).toBe('4 selected')
+    expect(
+      dataRows()
+        .filter(row => row.hasAttribute('data-selected'))
+        .map(idOf)
+    ).toEqual([1, 2, 4, 5])
+    expect(all.checked).toBe(true)
+  })
 })
 
 describe('C-124 DataTable variations: sort, filter, search (#204)', () => {

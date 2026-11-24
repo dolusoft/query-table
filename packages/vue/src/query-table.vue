@@ -3,7 +3,13 @@
   lang="ts"
   generic="T extends object, Q extends Query = TableQuery"
 >
-import { computed, getCurrentInstance, shallowRef, useSlots } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  onBeforeUpdate,
+  shallowRef,
+  useSlots
+} from 'vue'
 
 import { useRowNavigation } from './body/use-row-navigation'
 import { applyWidth, sideOf, type PinSide } from './columns/column-layout'
@@ -20,7 +26,7 @@ import type {
   ToolbarSlotProps
 } from './contract'
 import { resolveLabels } from './core/labels'
-import { provideTableContext } from './core/table-context'
+import { provideTableContext, type TableIcons } from './core/table-context'
 import { focusFilterOf } from './filter/focus-filter'
 import { useChangeFlash } from './flash/use-change-flash'
 import { useHeaderContextMenu } from './header/use-header-context-menu'
@@ -34,6 +40,7 @@ import { useColumnReorder } from './reorder/use-column-reorder'
 import { measureColumnWidths } from './resize/measure-widths'
 import { useAutoWidth } from './resize/use-auto-width'
 import { useColumnResize } from './resize/use-column-resize'
+import { useGrowingColumns } from './resize/use-growing-columns'
 import { useScrollBody } from './scroll/use-scroll-body'
 import { useQueryTable } from './use-query-table'
 import { useLoadMore } from './virtual/use-load-more'
@@ -44,6 +51,7 @@ defineOptions({ name: 'QueryTable' })
 const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   cursors: null,
   selection: undefined,
+  rowSelectable: undefined,
   rowPinning: undefined,
   searchDebounce: 300,
   rows: () => [],
@@ -79,6 +87,23 @@ const emit = defineEmits<TableEmits<T, Q>>()
 const slots = defineSlots<TableSlots<T>>()
 const rawSlots = useSlots()
 
+// C-131: the `icon-<name>` slots given, read again before every render, so
+// the parts that draw an icon follow a slot given or removed later. A string,
+// so an unchanged set triggers nothing.
+const iconSlotNames = () =>
+  Object.keys(rawSlots)
+    .filter(name => name.startsWith('icon-'))
+    .sort()
+    .join('\n')
+const givenIcons = shallowRef(iconSlotNames())
+onBeforeUpdate(() => {
+  givenIcons.value = iconSlotNames()
+})
+const icons: TableIcons = {
+  has: name => givenIcons.value.split('\n').includes(`icon-${name}`),
+  slots: rawSlots
+}
+
 // Without the header nothing measures the pin offsets, the widths of the
 // split tables or the automatic widths, so those are off (C-121). The columns
 // go to the composable unpinned: they keep `columns` order. No layout update
@@ -109,6 +134,7 @@ const state = useQueryTable<T, Q>({
   filterDebounce: () => props.filterDebounce,
   searchDebounce: () => props.searchDebounce,
   selection: () => props.selection,
+  rowSelectable: () => props.rowSelectable,
   rowPinning: () => props.rowPinning,
   rowKey: () => props.rowKey,
   hasSubtable: () => props.hasSubtable,
@@ -231,7 +257,11 @@ const resize = useColumnResize({
     if (next) {
       emit('update:columns', next, 'resize')
     }
-  }
+  },
+  // C-132: growing columns take the room, and a growing column emits its
+  // base (D-05). Read when a resize starts, after `grow` exists.
+  growing: () => grow.active.value,
+  emitted: (field, drawn) => grow.emitted(field, drawn)
 })
 
 // Automatic widths of the columns without a width (C-100): drawn on the
@@ -245,6 +275,18 @@ const autoWidth = useAutoWidth({
   rows: () => props.rows,
   query: () => props.query,
   rowsUpdate: () => props.rowsUpdate
+})
+
+// Growing columns (C-132, ADR 0024): the room of a wider container goes to
+// the columns with `grow`, drawn on the header cells, never emitted.
+const grow = useGrowingColumns({
+  enabled: () => props.header,
+  table: tableEl,
+  columns: () => visibleColumns.value,
+  autoWidth: () => props.autoWidth,
+  autoWidths: () => autoWidth.widths.value,
+  utilities: () => utilities.value.join(' '),
+  preview: () => resize.preview.value
 })
 
 // The virtual body (C-83 to C-87) and infinite scroll (C-88 to C-90).
@@ -360,7 +402,9 @@ provideTableContext({
   resize,
   reorder,
   selection: rowSelection,
-  labels: () => labels.value
+  labels: () => labels.value,
+  icons,
+  grow
 })
 
 const showPagination = computed(
@@ -508,6 +552,7 @@ defineExpose(exposed)
               :has-right-panel="hasRightPanel"
               :has-selection="rowSelection.enabled.value"
               :is-selected="rowSelection.isSelected"
+              :can-select="rowSelection.canSelect"
               :toggle-selected="rowSelection.toggle"
               :has-pinned="hasPinned"
               :offsets="offsets"
@@ -617,6 +662,7 @@ defineExpose(exposed)
           :has-right-panel="hasRightPanel"
           :has-selection="rowSelection.enabled.value"
           :is-selected="rowSelection.isSelected"
+          :can-select="rowSelection.canSelect"
           :toggle-selected="rowSelection.toggle"
           :has-pinned="hasPinned"
           :offsets="offsets"

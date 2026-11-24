@@ -45,6 +45,12 @@ export interface RowUtilities {
   panel: Record<string, unknown> | null
   expand: Record<string, unknown> | null
   select: Record<string, unknown> | null
+  /** The table's slots when it draws `icon-right-panel` or `icon-expand` (C-131). */
+  iconSlots: Slots | null
+  /** The consumer's `icon-right-panel` replaces the plus sign. */
+  panelSlot: boolean
+  /** The consumer's `icon-expand` replaces the chevron. */
+  expandSlot: boolean
   /** What the attributes were made from: equal keys, equal cells. */
   signature: string
 }
@@ -113,7 +119,7 @@ const rowDynamic = [
 ]
 const panelDynamic = ['aria-label', 'onClick']
 const expandDynamic = ['aria-expanded', 'aria-label', 'onClick']
-const selectDynamic = ['aria-label', 'checked', 'onChange']
+const selectDynamic = ['aria-label', 'checked', 'disabled', 'onChange']
 
 /** Text of a cell, whole: the table never cuts it. */
 const cellText = (row: object, column: Column) =>
@@ -147,6 +153,8 @@ export const tableRow = defineComponent({
     /** `data-row-kind` (C-97); `undefined` for none. */
     kind: value<string | undefined>(),
     selected: needed<boolean>(),
+    /** The checkbox can be used; `disabled` otherwise (C-130). */
+    selectable: needed<boolean>(),
     expanded: needed<boolean>(),
     /** An expand button is drawn (C-98). */
     expandable: needed<boolean>(),
@@ -208,7 +216,12 @@ export const tableRow = defineComponent({
               ? (openBlock(),
                 createElementBlock(
                   'td',
-                  mergeProps({ key: 0 }, utilities.panel),
+                  // C-131: a cell of another key with the consumer's icon,
+                  // so the two never patch into each other.
+                  mergeProps(
+                    { key: utilities.panelSlot ? 3 : 0 },
+                    utilities.panel
+                  ),
                   [
                     createElementVNode(
                       'button',
@@ -218,7 +231,9 @@ export const tableRow = defineComponent({
                         'aria-label': props.labelPanel,
                         onClick: onPanel
                       },
-                      [...(panelCache ??= [panelIcon()])],
+                      utilities.panelSlot
+                        ? [renderSlot(utilities.iconSlots!, 'icon-right-panel')]
+                        : [...(panelCache ??= [panelIcon()])],
                       8 /* PROPS */,
                       panelDynamic
                     )
@@ -230,7 +245,11 @@ export const tableRow = defineComponent({
               ? (openBlock(),
                 createElementBlock(
                   'td',
-                  mergeProps({ key: 1 }, utilities.expand),
+                  // C-131: another key with the consumer's icon, as above.
+                  mergeProps(
+                    { key: utilities.expandSlot ? 4 : 1 },
+                    utilities.expand
+                  ),
                   [
                     props.expandable
                       ? (openBlock(),
@@ -245,14 +264,28 @@ export const tableRow = defineComponent({
                             onClick: onToggle
                           },
                           [
-                            (openBlock(),
-                            createElementBlock('svg', expandIcon, [
-                              props.expanded
-                                ? (openBlock(),
-                                  createElementBlock('polyline', chevronDown))
-                                : (openBlock(),
-                                  createElementBlock('polyline', chevronRight))
-                            ]))
+                            utilities.expandSlot
+                              ? renderSlot(
+                                  utilities.iconSlots!,
+                                  'icon-expand',
+                                  {
+                                    expanded: props.expanded
+                                  }
+                                )
+                              : (openBlock(),
+                                createElementBlock('svg', expandIcon, [
+                                  props.expanded
+                                    ? (openBlock(),
+                                      createElementBlock(
+                                        'polyline',
+                                        chevronDown
+                                      ))
+                                    : (openBlock(),
+                                      createElementBlock(
+                                        'polyline',
+                                        chevronRight
+                                      ))
+                                ]))
                           ],
                           8 /* PROPS */,
                           expandDynamic
@@ -275,6 +308,10 @@ export const tableRow = defineComponent({
                         class: 'qt-select-row',
                         'aria-label': props.labelSelect,
                         checked: props.selected,
+                        // A DOM property: `false` writes no attribute, so
+                        // without `rowSelectable` the markup is the one of
+                        // 3.20 (C-108, C-130).
+                        disabled: !props.selectable,
                         onChange: onSelect
                       },
                       null,

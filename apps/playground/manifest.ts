@@ -411,6 +411,16 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-100']
   },
   {
+    id: 'growing-columns',
+    title: 'Growing columns',
+    navTitle: 'Growing columns',
+    summary:
+      '`Column.grow` sends the room of a wide container to the columns you name, by weight, on top of their width; the short columns and the expand column keep theirs. A dragged growing column stays where it is left.',
+    example: 'GrowingColumns',
+    api: { types: ['Column'] },
+    rules: ['C-132']
+  },
+  {
     id: 'header-slot',
     title: 'Header slot',
     summary:
@@ -418,6 +428,27 @@ export const pages: PlaygroundPage[] = [
     example: 'HeaderSlot',
     api: { slots: ['header-<field>'], types: ['HeaderSlotProps'] },
     rules: ['C-51']
+  },
+  {
+    id: 'icon-slots',
+    title: 'Icon slots',
+    navTitle: 'Icons',
+    summary:
+      'The table’s icons from your own set: one `icon-*` slot per icon replaces the built-in svg and nothing else. Sort, filter, clear-all, reorder, expand and right panel, and the icons of `CellCopy` and `CellPreview`, here from lucide.',
+    example: 'IconSlots',
+    api: {
+      slots: [
+        'icon-sort',
+        'icon-filter',
+        'icon-clear-all',
+        'icon-reorder',
+        'icon-expand',
+        'icon-right-panel',
+        'icon-copy',
+        'icon-preview'
+      ]
+    },
+    rules: ['C-131']
   },
   {
     id: 'header-context-menu',
@@ -559,6 +590,16 @@ export const pages: PlaygroundPage[] = [
       ]
     },
     rules: ['C-56', 'C-57', 'C-58', 'C-59', 'C-63', 'C-64', 'C-65', 'C-66']
+  },
+  {
+    id: 'row-selectable',
+    title: 'Rows that cannot be selected',
+    navTitle: 'Locked rows',
+    summary:
+      'Administrators with locked accounts: `rowSelectable` gives a locked row a disabled checkbox and select all skips it. Locking a selected account keeps its key in the selection, so the bulk action leaves locked rows out itself.',
+    example: 'RowSelectable',
+    api: { props: ['rowSelectable'] },
+    rules: ['C-130']
   },
   {
     id: 'tanstack-path',

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import type { CellPreviewProps } from './contract'
-import { useCellLabels } from '../core/table-labels'
+import { IconSlot, useCellLabels } from '../core/table-labels'
 
 defineOptions({ name: 'CellPreview' })
 
@@ -29,23 +29,26 @@ const name = computed(() => labels().previewValue(value()))
       :title="name"
       @click="emit('preview', value())"
     >
-      <svg
-        class="qt-cell-icon"
-        width="14"
-        height="14"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path
-          d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"
-        />
-        <circle cx="8" cy="8" r="1.75" />
-      </svg>
+      <!-- C-131: the table's `icon-preview` slot, else the built-in icon. -->
+      <icon-slot name="preview">
+        <svg
+          class="qt-cell-icon"
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"
+          />
+          <circle cx="8" cy="8" r="1.75" />
+        </svg>
+      </icon-slot>
     </button>
   </span>
 </template>

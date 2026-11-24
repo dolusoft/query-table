@@ -2,6 +2,7 @@
 import type { Column } from '../contract'
 import { columnName } from '../core/labels'
 import { useTableContext } from '../core/table-context'
+import { IconSlot } from '../core/table-labels'
 
 const props = defineProps<{ column: Column }>()
 
@@ -21,19 +22,22 @@ const on = reorder.listeners(() => props.column)
     aria-keyshortcuts="ArrowLeft ArrowRight Home End"
     v-on="on"
   >
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <circle cx="9" cy="6" r="1.5" />
-      <circle cx="15" cy="6" r="1.5" />
-      <circle cx="9" cy="12" r="1.5" />
-      <circle cx="15" cy="12" r="1.5" />
-      <circle cx="9" cy="18" r="1.5" />
-      <circle cx="15" cy="18" r="1.5" />
-    </svg>
+    <!-- C-131: the `icon-reorder` slot replaces the grip only. -->
+    <icon-slot name="reorder">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <circle cx="9" cy="6" r="1.5" />
+        <circle cx="15" cy="6" r="1.5" />
+        <circle cx="9" cy="12" r="1.5" />
+        <circle cx="15" cy="12" r="1.5" />
+        <circle cx="9" cy="18" r="1.5" />
+        <circle cx="15" cy="18" r="1.5" />
+      </svg>
+    </icon-slot>
   </button>
 </template>

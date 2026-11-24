@@ -8,12 +8,25 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+## [3.21.0] - 2026-11-24
+
+Rows that cannot be selected, slots for the table's icons and columns that take the room of a wide container; and a fix for the header checkbox of the selection column.
+
+### Added
+
+- `rowSelectable(row, index)`, with `selection`: a row it returns `false` for cannot be selected. Its checkbox is `disabled`, and checked when its key is selected. The header checkbox is checked, indeterminate, selects and deselects over the rows that can be selected only, and is `disabled` while none can. The table never adds or drops the key of such a row, so leave those rows out of a bulk action yourself. `DataTable` passes it on. In the composable: the `rowSelectable` option, `selection.canSelect` and `selection.canToggleAll` ([C-130](contract/rules.md#c-130-rows-that-cannot-be-selected), [C-64](contract/rules.md#c-64-selection-column)).
+- The reference skin draws a `disabled` selection checkbox dimmed, with a `not-allowed` cursor.
+- Icon slots, to draw the table's icons from your own set: `icon-sort` (with `direction`: `'asc'`, `'desc'` or `false`), `icon-filter` (with `filled`), `icon-clear-all`, `icon-reorder`, `icon-expand` (with `expanded`) and `icon-right-panel`, and `icon-copy` and `icon-preview` for the buttons of `CellCopy` and `CellPreview` inside the table. Each replaces the built-in `svg` only: the button keeps its class, attributes and its name from `labels`, so draw decoration with no name of its own. A slot given or removed later is followed. `DataTable` passes them on ([C-131](contract/rules.md#c-131-icon-slots)).
+- `Column.grow`, a weight as in CSS `flex-grow`: in a container wider than the table, the room goes to the growing columns, divided by their weights, on top of their `width` (or automatic width), up to `maxWidth`; the other columns and the utility columns keep their width. The shares are drawn on the header cells, never emitted and never written to `columns`. Every visible column that does not grow needs a width, given or automatic, or nothing grows and a development build warns once. In such a table a dragged column follows the pointer while the growing columns take the difference, and a dragged growing column stays where it is left: the release emits the base that keeps it there ([C-132](contract/rules.md#c-132-growing-columns), [ADR 0024](docs/decisions/0024-growing-columns.md)).
+
 ### Fixed
 
 - The header checkbox of the selection column was drawn indeterminate, a dash instead of a check, while every row of the page was selected: after the last row was selected with its own checkbox, or when `selection` came in with every row. It is now only checked, and `selection.someSelected` of the composable is `false` then, as its description says. Selecting every row with the header checkbox itself did not show it ([C-64](contract/rules.md#c-64-selection-column)).
 
 ### Upgrade notes
 
+- Additive: no change is needed to upgrade. `rowSelectable`, the `icon-*` slots and `Column.grow` are opt-in; a table that uses none of them draws as in 3.20.
+- With an `icon-*` slot, the skin's rules for the built-in icon (`.qt-sort-icon`, `.qt-cell-icon`) do not reach what the slot draws; size and color it yourself.
 - A test or a skin that read `indeterminate` on `qt-select-all` while every row was selected now sees `false`.
 
 ## [3.20.0] - 2026-11-20
@@ -456,7 +469,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.20.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.21.0...HEAD
+[3.21.0]: https://github.com/dolusoft/query-table/compare/v3.20.0...v3.21.0
 [3.20.0]: https://github.com/dolusoft/query-table/compare/v3.19.0...v3.20.0
 [3.19.0]: https://github.com/dolusoft/query-table/compare/v3.18.0...v3.19.0
 [3.18.0]: https://github.com/dolusoft/query-table/compare/v3.17.0...v3.18.0

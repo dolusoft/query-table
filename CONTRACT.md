@@ -13,6 +13,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `query` | `Q` | yes |  | The table state, used with `v-model:query`. Required: the table is always controlled. A `CursorQuery` (a `cursor` key) pages by cursor. |
 | `cursors` | `PageCursors \| null` |  | `null` | Cursor mode: the cursors of the page shown (C-56). The next and previous page controls step to them; without the one on a side there is no page on that side. |
 | `selection` | `RowSelection` |  | `undefined` | Rows the user selected, used with `v-model:selection`. Given, a column of checkboxes is drawn after the other utility columns; absent, there is no selection. Keys are the row identity (`rowKey`) as a string. |
+| `rowSelectable` | `((row: T, index: number) => boolean)` |  | `undefined` | Which rows can be selected, with `selection` (C-130): called with the row and its index in `rows`. A row it returns `false` for gets a `disabled` checkbox, is skipped by the header checkbox and keeps its key in `selection` as given: the table neither adds nor drops it. Absent, every row can be selected. |
 | `rowPinning` | `RowPinning` |  | `undefined` | Rows pinned to the top or the bottom of the page, used with `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs `rowKey`. Keys of rows not in `rows` stay and are not drawn. |
 | `searchDebounce` | `number` |  | `300` | Milliseconds between the last key of a search typed through the `toolbar` slot and the search being applied (C-58). `0` applies every call at once, for a consumer that debounces on its own. Defaults to `300`. |
 | `columns` | `Column[]` | yes |  | Column definitions, used with `v-model:columns` when the user may change the layout. Never mutated. |
@@ -72,6 +73,14 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `pagination` | `PaginationSlotProps` | Paging controls. The block is drawn only when this slot is given. |
 | `load-more` | `LoadMoreSlotProps` | With `infinite`: the last row of the body while `loading` is off, in a `tr.qt-load-more-row`, for a "load more" or "try again" control (C-89). |
 | `group` | `GroupSlotProps<T>` | With `groupBy`: the content of a group row, one `th` that spans every column above the rows of the group (C-103). Without it the cell shows the key. |
+| `icon-sort` | `{ direction: SortDirection \| false }` | The sort icon of a sortable header, for its direction; `false` when the column is not sorted (C-131). Each `icon-*` slot replaces the built-in `svg` only: the button keeps its class, attributes and its name from `labels`, so draw decoration with no name of its own. |
+| `icon-filter` | `{ filled: boolean }` | The funnel of the filter button a `filter-menu` slot receives; `filled` while the column has a rule (C-131). |
+| `icon-clear-all` | `none` | The cross of the clear-all button (C-131). |
+| `icon-reorder` | `none` | The grip of a reorder handle (C-131). |
+| `icon-expand` | `{ expanded: boolean }` | The chevron of a row's expand button (C-131). |
+| `icon-right-panel` | `none` | The plus sign of a row's right panel button (C-131). |
+| `icon-copy` | `none` | The icon of `CellCopy`'s button inside this table (C-131). |
+| `icon-preview` | `none` | The icon of `CellPreview`'s button inside this table (C-131). |
 | `header-<field>` | `((props: HeaderSlotProps) => unknown)` | Header content of one column: `header-${column.field}`. It replaces the sort button or the title only; the header cell, its filter row and its resize handle stay. Draw a sort control with `toggleSort` if you want one. |
 | `cell-<field>` | `((props: CellSlotProps<T>) => unknown)` | Cell content of one column: `cell-${column.field}`. |
 
@@ -252,6 +261,16 @@ export interface Column {
    */
   maxWidth?: number
   /**
+   * A weight, as in CSS `flex-grow` (C-132): in a container wider than the
+   * table, the room goes to the columns with `grow`, divided by their
+   * weights, on top of their width (`width`, else the automatic width, else
+   * `minWidth`), up to `maxWidth`. The other columns and the utility
+   * columns keep their width. Drawn as the header cell's width, never
+   * emitted. Needs a width, given or automatic, on every visible column
+   * that does not grow. Not a finite number above `0` counts as unset.
+   */
+  grow?: number
+  /**
    * Not rendered in the header or the body; its rules in `query` still
    * apply. The table emits `update:columns` with `hide: true` when the user
    * hides it (`control.hide()`).
@@ -314,6 +333,14 @@ export interface TableProps<
    * no selection. Keys are the row identity (`rowKey`) as a string.
    */
   selection?: RowSelection
+  /**
+   * Which rows can be selected, with `selection` (C-130): called with the row
+   * and its index in `rows`. A row it returns `false` for gets a `disabled`
+   * checkbox, is skipped by the header checkbox and keeps its key in
+   * `selection` as given: the table neither adds nor drops it. Absent, every
+   * row can be selected.
+   */
+  rowSelectable?: (row: T, index: number) => boolean
   /**
    * Rows pinned to the top or the bottom of the page, used with
    * `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs
@@ -972,6 +999,30 @@ export interface TableSlots<T> {
    */
   group?(props: GroupSlotProps<T>): unknown
   /**
+   * The sort icon of a sortable header, for its direction; `false` when the
+   * column is not sorted (C-131). Each `icon-*` slot replaces the built-in
+   * `svg` only: the button keeps its class, attributes and its name from
+   * `labels`, so draw decoration with no name of its own.
+   */
+  'icon-sort'?(props: { direction: SortDirection | false }): unknown
+  /**
+   * The funnel of the filter button a `filter-menu` slot receives; `filled`
+   * while the column has a rule (C-131).
+   */
+  'icon-filter'?(props: { filled: boolean }): unknown
+  /** The cross of the clear-all button (C-131). */
+  'icon-clear-all'?(): unknown
+  /** The grip of a reorder handle (C-131). */
+  'icon-reorder'?(): unknown
+  /** The chevron of a row's expand button (C-131). */
+  'icon-expand'?(props: { expanded: boolean }): unknown
+  /** The plus sign of a row's right panel button (C-131). */
+  'icon-right-panel'?(): unknown
+  /** The icon of `CellCopy`'s button inside this table (C-131). */
+  'icon-copy'?(): unknown
+  /** The icon of `CellPreview`'s button inside this table (C-131). */
+  'icon-preview'?(): unknown
+  /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its
    * resize handle stay. Draw a sort control with `toggleSort` if you want one.
@@ -1512,7 +1563,7 @@ Cell text is the value as a string, whole: the table never cuts it and sets no `
 
 #### C-31 No styling
 
-The table ships no CSS and takes no styling props. It writes six inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49, or of a column drawn at its automatic width, C-100), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83), `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94) and, with `scrollBody`, `width` on a `col` of the body and footer tables (C-101). The pin offsets and the `col` widths carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-99) is the one moment the table writes other declarations: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count (with `autoWidth`, C-100, and for autofit, C-50, also `position`, `container-type`, `contain`, `box-sizing` and `width` on a `.qt-filter`, `flex`, `min-width`, `width` and `box-sizing` on its `.qt-filter-input` and `flex` and `position` on its `.qt-filter-button`), and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin.
+The table ships no CSS and takes no styling props. It writes six inline styles and no other: `width` on the header cell of a column that defines it (or of the column being dragged, C-49, or of a column drawn at its automatic width, C-100, or of a growing column drawn at its base and its share of the room, C-132), the custom property `--qt-pin-left` on a cell pinned to the left (C-47), `--qt-pin-right` on a cell pinned to the right (C-71), `height` on a `tr.qt-virtual-spacer` (C-83), `--qt-flash-elapsed` on a flashing row or cell bound after its flash began (C-94) and, with `scrollBody`, `width` on a `col` of the body and footer tables (C-101). The pin offsets and the `col` widths carry a measured number, the spacer's height the height of the rows it stands for and `--qt-flash-elapsed` a time, not geometry. For the flash the table reads one style value, `--qt-flash-duration` (C-94). `position: sticky`, `z-index`, backgrounds and the look of a flash are the consumer's CSS. Measuring column widths (C-99) and reading the width of a table whose columns grow (C-132) are the two moments the table writes other declarations. Measuring: for one synchronous read it sets `table-layout`, `width` and `min-width` on the table, `width` on the header cells and `display: none` on the parts that do not count (with `autoWidth`, C-100, and for autofit, C-50, also `position`, `container-type`, `contain`, `box-sizing` and `width` on a `.qt-filter`, `flex`, `min-width`, `width` and `box-sizing` on its `.qt-filter-input` and `flex` and `position` on its `.qt-filter-button`), and puts every `style` attribute back as it was, absent included, before the call returns, so none of it is painted or seen by the skin. Reading a growing table: `width` and `min-width` on the table and `width` on the growing header cells, put back the same way.
 
 #### C-32 State attributes
 
@@ -1584,7 +1635,7 @@ With the table's `resizable` and the column's `resizable` not `false`, the heade
 
 #### C-49 Dragging a handle
 
-Pressing the primary button on a handle focuses it and captures the pointer. While it moves, the header cell's inline `width` shows the preview, at most once per animation frame; nothing is emitted. The rendered width follows the pointer: the column is drawn as much wider or narrower as the pointer moved, wider to the right, except on a right-pinned column, where moving it to the left widens it (C-71). The preview and the emitted width are the declared width that draws the column so. With the CSS of C-50 in a container wider than the columns, the browser spreads the rest of the container over the columns by their declared widths, so a column is drawn wider than its declared width: the table reads that stretch from the layout when the drag starts, drawing the column at its rendered width and, when that is not stretched, once more at its minimum width, and puts every style back before it paints (as C-99 does). A layout that draws a column at its declared width, or that the stretch does not describe (a column without a width that takes what is left, a layout that spreads the space otherwise), takes the declared width as the rendered one. In a stretched table the columns before the dragged one share the stretch, so they narrow as it widens: only the first column's handle stays exactly under the pointer. Releasing emits one `columnResize` with `field` and the new `width`: whole pixels, clamped to `minWidth` and `maxWidth`. A `minWidth` or `maxWidth` that is not a finite number above `0` (`''`, `NaN`, `0`, a negative) counts as unset: the minimum is then 40 and there is no maximum, so a bad value never clamps a width to 0. The default minimum gives way to a smaller `maxWidth`; an explicit `minWidth` above `maxWidth` wins, so the column keeps its `minWidth`. `aria-valuemin` and `aria-valuemax` (C-48) follow the same limits. A release at the starting width emits nothing. Escape, or a lost pointer capture, ends the drag without an event and drops the preview. The table keeps no width after the drag: the column shows `Column.width`, so a consumer that does not write the width back sees the column return.
+Pressing the primary button on a handle focuses it and captures the pointer. While it moves, the header cell's inline `width` shows the preview, at most once per animation frame; nothing is emitted. The rendered width follows the pointer: the column is drawn as much wider or narrower as the pointer moved, wider to the right, except on a right-pinned column, where moving it to the left widens it (C-71). The preview and the emitted width are the declared width that draws the column so. With the CSS of C-50 in a container wider than the columns, the browser spreads the rest of the container over the columns by their declared widths, so a column is drawn wider than its declared width: the table reads that stretch from the layout when the drag starts, drawing the column at its rendered width and, when that is not stretched, once more at its minimum width, and puts every style back before it paints (as C-99 does). A layout that draws a column at its declared width, or that the stretch does not describe (a column without a width that takes what is left, a layout that spreads the space otherwise), takes the declared width as the rendered one. In a stretched table the columns before the dragged one share the stretch, so they narrow as it widens: only the first column's handle stays exactly under the pointer. In a table whose columns grow (C-132) nothing is stretched: the dragged column is drawn at its declared width, the growing columns take the difference while the pointer moves, and a growing column emits the base that keeps it where it is left (C-132). Releasing emits one `columnResize` with `field` and the new `width`: whole pixels, clamped to `minWidth` and `maxWidth`. A `minWidth` or `maxWidth` that is not a finite number above `0` (`''`, `NaN`, `0`, a negative) counts as unset: the minimum is then 40 and there is no maximum, so a bad value never clamps a width to 0. The default minimum gives way to a smaller `maxWidth`; an explicit `minWidth` above `maxWidth` wins, so the column keeps its `minWidth`. `aria-valuemin` and `aria-valuemax` (C-48) follow the same limits. A release at the starting width emits nothing. Escape, or a lost pointer capture, ends the drag without an event and drops the preview. The table keeps no width after the drag: the column shows `Column.width`, so a consumer that does not write the width back sees the column return.
 
 #### C-50 Keyboard and autofit
 
@@ -1662,7 +1713,7 @@ Source: own
 
 #### C-64 Selection column
 
-With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row given is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows given and keeps the keys of other pages. The rows given are the page, or with infinite scroll (C-88) every row loaded so far. The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
+With a `selection` prop the table draws a column of checkboxes after the other utility columns: one per row (`qt-select-row`, its row carrying `data-selected` when selected) and one in the header (`qt-select-all`) that is checked when every row given is selected and indeterminate when some are. Toggling a checkbox emits `update:selection` with the new map (C-59); the header checkbox selects or deselects the rows given and keeps the keys of other pages. The rows given are the page, or with infinite scroll (C-88) every row loaded so far. With `rowSelectable` some rows cannot be selected, and the header checkbox works on the others only (C-130). The row key is `rowKey` as a string, else the row index. Without `selection` there is no column and no event.
 
 Source: tanstack, own
 
@@ -2053,6 +2104,24 @@ Source: own
 #### C-129 Cell components: events and labels
 
 A press of the button of `CellCopy` emits `copy` with the value as a string, and a press of the button of `CellPreview` emits `preview` with the text as a string. Neither writes the clipboard, opens anything or stops the click: it bubbles from the cell as any control in a cell slot does (C-27). The name (`aria-label` and `title`) of the copy button is `labels.copyValue(value)` and of the preview button `labels.previewValue(text)`, and the text of an empty `CellValue` is `labels.emptyValue`. Inside a `QueryTable` or a `DataTable` these come from that table's `labels` and follow it when it changes, and an entry left out or given as `undefined` is the default; outside one they are the English defaults (`` `Copy ${value}` ``, `` `Preview ${value}` `` and `'-'`). The three entries are optional in `TableLabels`, so a complete `TableLabels` of 3.19 still type-checks. No cell component takes a prop for these texts.
+
+Source: own
+
+#### C-130 Rows that cannot be selected
+
+With `selection` and `rowSelectable`, a row for which `rowSelectable(row, index)` (its index in `rows`) returns `false` cannot be selected: its `qt-select-row` checkbox is `disabled`, and checked when the row's key is in `selection`, so the row shows both that it is left out and whether it is selected. The header checkbox (C-64) works on the rows given that can be selected: it is checked when every one of them is selected and there is one, indeterminate when some are, and selecting or deselecting with it adds or removes only their keys. A key of a row that cannot be selected stays in `selection` as given: the table never adds it and never drops it, whatever the user does on the other rows (C-59). While no row given can be selected, an empty page too, the header checkbox is `disabled`. This holds for a pinned row (C-74), in a virtual body (C-83) and with infinite scroll, where the rows given are every row loaded (C-88). Without `rowSelectable` every row can be selected and the markup is the one of 3.20; without `selection` the function is not called. In the composable, `selection.canSelect(row, index)` answers the same question, `selection.toggle` does nothing for such a row, `selection.canToggleAll` says whether the header checkbox can be used, and TanStack's `getCanSelect` gives the answer of `canSelect`. The DOM contract gains no entry: `disabled` is plain HTML (C-41).
+
+Source: tanstack, own
+
+#### C-131 Icon slots
+
+The table draws its icons as inline `svg`, and a slot named after each one replaces it: `icon-sort` the icon of a sort button (`svg.qt-sort-icon`), with `{ direction }`, `'asc'`, `'desc'` or `false` while the column is not sorted; `icon-filter` the funnel of the filter button a `filter-menu` slot receives as `trigger` (C-34), with `{ filled }`, `true` while the column has a rule; `icon-clear-all` the cross of the clear-all button (C-22); `icon-reorder` the grip of a reorder handle (C-73); `icon-expand` the chevron of a row's expand button (C-26), with `{ expanded }`; `icon-right-panel` the plus sign of a row's right panel button; `icon-copy` and `icon-preview` the icons of the buttons of `CellCopy` and `CellPreview` (C-128) inside that table, which read them from the table they sit in as they read their labels (C-129); outside a table they draw their own. A slot replaces the `svg` only: the button keeps its element, class, attributes, listeners and the name `labels` gives it (C-44), so what the slot draws is decoration and carries no name. A slot given or removed after the table is mounted replaces the icons or brings the built-in ones back. Without these slots the markup is the one of 3.20. `DataTable` passes them on (C-124). The DOM contract gains no entry.
+
+Source: own
+
+#### C-132 Growing columns
+
+A visible column whose `grow` is a finite number above `0` grows (ADR 0024). In a container wider than the table its room goes to the growing columns. The container is the table's parent (with `scrollBody` the header's wrapper, C-101), measured inside its scrollbar and padding; the room is its width minus the table's width with every column at its declared width and every growing column at its base: its `width`, a width the user gave it included, else its automatic width (C-100), else its minimum width as a resize clamps it (C-49). The room is divided by the weights in whole pixels, the pixels of the rounding going to the last growing column in drawing order; a column stops at its `maxWidth` and the others divide what it leaves, and when every growing column is at its `maxWidth` the rest is not given out. Each growing column is drawn at its base plus its share as its header cell's inline `width` (C-31), so the table is as wide as its container and the columns that do not grow and the utility columns keep their width. Without room there are no shares. The shares are never emitted and never written to `columns`, and the slot props carry the column as given (P2). While a visible column that does not grow has neither a `width` nor an automatic width there are no shares, and a development build warns once. The table reads its width at the bases in one synchronous read (C-31) after the drawn columns change (their fields, widths, weights, limits and automatic widths, and the utility columns) and once it is displayed; a change of the container's width only divides the room again. With `header: false` there are no shares (C-121). A drag on a resize handle (C-49) draws the dragged column at the width the pointer gives and divides the room again among the other growing columns while the pointer moves; on release a column that does not grow emits that width, and a growing column emits the base that keeps it there once the room is divided again with it growing (the amendment of ADR 0024), so a single growing column narrowed below the room fills it again. The arrow keys step the drawn width and emit the same way; autofit (C-50) emits the content's width as the base. `DataTable` passes `columns` on (C-124).
 
 Source: own
 

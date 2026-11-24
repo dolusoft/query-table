@@ -109,6 +109,16 @@ export interface Column {
    */
   maxWidth?: number
   /**
+   * A weight, as in CSS `flex-grow` (C-132): in a container wider than the
+   * table, the room goes to the columns with `grow`, divided by their
+   * weights, on top of their width (`width`, else the automatic width, else
+   * `minWidth`), up to `maxWidth`. The other columns and the utility
+   * columns keep their width. Drawn as the header cell's width, never
+   * emitted. Needs a width, given or automatic, on every visible column
+   * that does not grow. Not a finite number above `0` counts as unset.
+   */
+  grow?: number
+  /**
    * Not rendered in the header or the body; its rules in `query` still
    * apply. The table emits `update:columns` with `hide: true` when the user
    * hides it (`control.hide()`).
@@ -171,6 +181,14 @@ export interface TableProps<
    * no selection. Keys are the row identity (`rowKey`) as a string.
    */
   selection?: RowSelection
+  /**
+   * Which rows can be selected, with `selection` (C-130): called with the row
+   * and its index in `rows`. A row it returns `false` for gets a `disabled`
+   * checkbox, is skipped by the header checkbox and keeps its key in
+   * `selection` as given: the table neither adds nor drops it. Absent, every
+   * row can be selected.
+   */
+  rowSelectable?: (row: T, index: number) => boolean
   /**
    * Rows pinned to the top or the bottom of the page, used with
    * `v-model:rowPinning` (C-74). Keys are `rowKey` as a string; needs
@@ -828,6 +846,30 @@ export interface TableSlots<T> {
    * the key.
    */
   group?(props: GroupSlotProps<T>): unknown
+  /**
+   * The sort icon of a sortable header, for its direction; `false` when the
+   * column is not sorted (C-131). Each `icon-*` slot replaces the built-in
+   * `svg` only: the button keeps its class, attributes and its name from
+   * `labels`, so draw decoration with no name of its own.
+   */
+  'icon-sort'?(props: { direction: SortDirection | false }): unknown
+  /**
+   * The funnel of the filter button a `filter-menu` slot receives; `filled`
+   * while the column has a rule (C-131).
+   */
+  'icon-filter'?(props: { filled: boolean }): unknown
+  /** The cross of the clear-all button (C-131). */
+  'icon-clear-all'?(): unknown
+  /** The grip of a reorder handle (C-131). */
+  'icon-reorder'?(): unknown
+  /** The chevron of a row's expand button (C-131). */
+  'icon-expand'?(props: { expanded: boolean }): unknown
+  /** The plus sign of a row's right panel button (C-131). */
+  'icon-right-panel'?(): unknown
+  /** The icon of `CellCopy`'s button inside this table (C-131). */
+  'icon-copy'?(): unknown
+  /** The icon of `CellPreview`'s button inside this table (C-131). */
+  'icon-preview'?(): unknown
   /**
    * Header content of one column: `header-${column.field}`. It replaces the
    * sort button or the title only; the header cell, its filter row and its

@@ -13,13 +13,13 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.20.0
+pnpm add @dolusoft/query-table@3.21.0
 ```
 
 The table ships no CSS. For the product's table design, add the reference skin at the same version and import its stylesheet once (see [Reference skin](#reference-skin)):
 
 ```bash
-pnpm add @dolusoft/query-table-skin@3.20.0
+pnpm add @dolusoft/query-table-skin@3.21.0
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -338,6 +338,8 @@ Together with the sizing above:
   min-width: 100%;
 }
 ```
+
+With that CSS a table narrower than its container is stretched to it, and the browser spreads the rest over every column, the expand and selection columns included. `Column.grow` sends the rest to the columns you name instead: a weight, as in CSS `flex-grow`, so `grow: 1` on a message column gives it all the room, and `grow: 3` and `grow: 1` on two columns divide it three to one. A growing column takes its share on top of its `width` (or its automatic width with `auto-width`), up to its `maxWidth`, and gives it back first when the container narrows; the other columns keep their width. The shares are drawn on the header cells and never emitted. Every visible column that does not grow needs a width, given or automatic, or nothing grows (a development build warns). A dragged growing column stays where you leave it: the table emits the `width` that keeps it there (C-132).
 
 ## Reordering columns
 
