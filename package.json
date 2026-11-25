@@ -1,6 +1,6 @@
 {
   "name": "query-table-workspace",
-  "version": "3.21.0",
+  "version": "3.22.0",
   "description": "Workspace of Query Table: the protocol, core and Vue packages and the reference skin in packages/, the playground in apps/.",
   "private": true,
   "type": "module",

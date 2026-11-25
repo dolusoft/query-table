@@ -8,9 +8,13 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+## [3.22.0] - 2026-11-25
+
+Rows reordered with a handle, by a drag or by the keyboard, in one event that names the rows by their keys.
+
 ### Added
 
-- `rowReorderable`, with `rowKey`: a utility column before the others holds a reorder handle, `button.qt-row-reorder-handle`, on every row that is not pinned. Dragging it, or ↑, ↓, Home and End on it, emits one `rowReorder` per drop or key with `row`, `rowIndex`, `rowKey`, `target` (the key of the row it goes next to) and `place` (`'before'` or `'after'`). The table moves no row: put it in its place in `rows` yourself. While a row is dragged, it carries `data-dragging` and the row it would go next to `data-drop`. The focus comes back to the handle after you write the order back, and the row navigation leaves the handle's keys alone. Name it with `labels.moveRow` (`'Move row'`); `icon-reorder` replaces its grip too. `DataTable` passes it on ([C-133](contract/rules.md#c-133-row-reorder-handle)).
+- `rowReorderable`, with `rowKey`: a utility column before the others holds a reorder handle, `button.qt-row-reorder-handle`, on every row that is not pinned. Dragging it, or ↑, ↓, Home and End on it, emits one `rowReorder` per drop or key with `row`, `rowIndex`, `rowKey`, `target` (the key of the row it goes next to) and `place` (`'before'` or `'after'`). The table moves no row: put it in its place in `rows` yourself. While a row is dragged, it carries `data-dragging` and the row it would go next to `data-drop`. After a key, the focus comes back to the handle once you write the order back, and the row is scrolled into view; the row navigation leaves the handle's keys alone. Name it with `labels.moveRow` (`'Move row'`); `icon-reorder` replaces its grip too. `DataTable` passes it on ([C-133](contract/rules.md#c-133-row-reorder-handle)).
 - The reference skin draws the row handle as the other row buttons, the dragged row dimmed and a line where it would go.
 
 ### Upgrade notes
@@ -479,7 +483,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.21.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.22.0...HEAD
+[3.22.0]: https://github.com/dolusoft/query-table/compare/v3.21.0...v3.22.0
 [3.21.0]: https://github.com/dolusoft/query-table/compare/v3.20.0...v3.21.0
 [3.20.0]: https://github.com/dolusoft/query-table/compare/v3.19.0...v3.20.0
 [3.19.0]: https://github.com/dolusoft/query-table/compare/v3.18.0...v3.19.0
