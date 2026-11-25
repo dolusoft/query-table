@@ -1,22 +1,21 @@
 # @dolusoft/query-table-skin
 
-The reference skin of [`@dolusoft/query-table`](https://github.com/dolusoft/query-table): one stylesheet that draws the table's DOM contract (the `qt-*` classes and `data-*` attributes) in the product's table design, with a light and a dark theme. Plain CSS, no build step, no JavaScript.
+**This package has moved into `@dolusoft/query-table`.** From 3.23.0 the reference skin ships with the table itself, at `@dolusoft/query-table/table.css` ([ADR 0025](https://github.com/dolusoft/query-table/blob/main/docs/decisions/0025-skin-subpath.md)). This package is published one last time, in 3.23.0, with the same file, and is then deprecated; from 3.24.0 it is no longer published.
 
-The table packages ship no CSS (P5); this package is where the look ships, and only if you import it.
-
-## Install
-
-Use the same version as `@dolusoft/query-table`: the skin of a version dresses the DOM of that version. Nothing in the manifests ties the two together, so name the version when you add the skin to a table you already have:
+To move, remove this package and change one import. The stylesheet, its `--qt-*` tokens and its selectors are the same, and the skin is now always the version of your table:
 
 ```bash
-pnpm add @dolusoft/query-table-skin@<the version of @dolusoft/query-table>
+pnpm remove @dolusoft/query-table-skin
 ```
 
-```ts
-import '@dolusoft/query-table-skin/table.css'
+```diff
+- import '@dolusoft/query-table-skin/table.css'
++ import '@dolusoft/query-table/table.css'
 ```
 
-It dresses `QueryTable`, `DataTable` and the cell components of `@dolusoft/query-table/cells`.
+## What it is
+
+The reference skin of [`@dolusoft/query-table`](https://github.com/dolusoft/query-table): one stylesheet that draws the table's DOM contract (the `qt-*` classes and `data-*` attributes) in the product's table design, with a light and a dark theme. Plain CSS, no build step, no JavaScript. It dresses `QueryTable`, `DataTable` and the cell components of `@dolusoft/query-table/cells`.
 
 ## Theme
 
@@ -46,7 +45,7 @@ The theme follows the operating system (`prefers-color-scheme`). Set `data-theme
 
 Only colors have a dark value. A size, a font, or a color the dark theme leaves alone (such as `--qt-accent`) set on `:root` holds in both themes; a color the dark theme sets keeps the skin's dark value until you give yours.
 
-The tokens and their defaults for the version you installed are the first rules of `table.css`, on `:root`. The report of the latest version, with light and dark side by side, is [`etc/tokens.md`](https://github.com/dolusoft/query-table/blob/main/packages/query-table-skin/etc/tokens.md); a token listed there may be newer than your version. A token is never renamed or removed; a release may add new ones ([ADR 0023](https://github.com/dolusoft/query-table/blob/main/docs/decisions/0023-skin-package.md)).
+The tokens and their defaults for the version you installed are the first rules of `table.css`, on `:root`. The report of the latest version, with light and dark side by side, is [`packages/vue/etc/tokens.md`](https://github.com/dolusoft/query-table/blob/main/packages/vue/etc/tokens.md); a token listed there may be newer than your version. A token is never renamed or removed; a release may add new ones ([ADR 0023](https://github.com/dolusoft/query-table/blob/main/docs/decisions/0023-skin-package.md)).
 
 ## What it does not style
 

@@ -3,7 +3,9 @@
 // each specifier resolves through the `default` target of the package's
 // `exports`. Used by `scripts/package-size.mjs` (the cost of each fixture)
 // and `scripts/check-entry-graph.mjs` (the modules each fixture bundles).
-// Run after `pnpm build`.
+// A fixture imports script entries only, so its build gives no CSS: a CSS
+// asset means a module imports a stylesheet, which none may (P5, ADR 0025),
+// and fails the build. Run after `pnpm build`.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -58,7 +60,16 @@ export const buildFixture = async (name, directory = 'packages') => {
       }
     }
   })
-  return (Array.isArray(result) ? result : [result])
-    .flatMap(entry => entry.output)
-    .filter(file => file.type === 'chunk')
+  const outputs = (Array.isArray(result) ? result : [result]).flatMap(
+    entry => entry.output
+  )
+  const styles = outputs.filter(
+    file => file.type === 'asset' && file.fileName.endsWith('.css')
+  )
+  if (styles.length > 0) {
+    throw new Error(
+      `[fixture-build] fixtures/${directory}/${name}.ts builds ${styles.map(file => file.fileName).join(', ')}: no module may import a stylesheet (P5, ADR 0025)`
+    )
+  }
+  return outputs.filter(file => file.type === 'chunk')
 }

@@ -2,11 +2,11 @@
 
 A thin Vue 3 table for server-side data. It renders the rows you give it and tells you, through `v-model:query`, what the user asked for: a page, a page size, a sort or a filter. Fetching and ordering the data is up to you.
 
-The table ships no CSS. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system, or import the [reference skin](#reference-skin).
+The table adds no CSS to your app. It renders plain markup with a small, stable set of `qt-` classes and `data-*` attributes; style them with your own design system, or import the [reference skin](#reference-skin), a stylesheet that comes with the package.
 
 ![Query Table v3 architecture: the Vue package on the core features, the core on the protocol and TanStack Table, and the two consumer paths](apps/playground/public/architecture.svg)
 
-Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)). A fourth package, `@dolusoft/query-table-skin`, is the reference skin: one stylesheet and no code, which a consumer adds by choice.
+Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar and the JSON Schema; no dependencies), `@dolusoft/query-table-core` (two TanStack Table features: `serverQueryFeature` keeps TanStack's state and the query in step, `filterInputFeature` turns typed filter text into rules) and `@dolusoft/query-table` (the Vue component and `useQueryTable()`). A consumer either uses the component or builds its own markup on TanStack Table with the two features ([advanced usage](#advanced-usage-usequerytable)). The Vue package also carries the reference skin, `@dolusoft/query-table/table.css`: one stylesheet and no code, which a consumer imports by choice and no module imports.
 
 ## Install
 
@@ -16,10 +16,10 @@ The packages are released together on npm. Add the Vue package by name and versi
 pnpm add @dolusoft/query-table@3.22.0
 ```
 
-The table ships no CSS. For the product's table design, add the reference skin at the same version and import its stylesheet once (see [Reference skin](#reference-skin)):
+The table adds no CSS. For the product's table design, import the reference skin once; it comes with the Vue package, so it is always the version of the table (see [Reference skin](#reference-skin)):
 
-```bash
-pnpm add @dolusoft/query-table-skin@3.22.0
+```ts
+import '@dolusoft/query-table/table.css'
 ```
 
 A TanStack consumer without the component installs only the protocol and the core. Peer dependency: `vue` 3.5+. The package is ESM only (`import`; Node 22.12+ also loads it with `require`) and needs Node 22.12 or newer (`engines`). Working on the package itself needs Node 24 (`devEngines`).
@@ -120,13 +120,39 @@ They draw only what their props give them and hold no state. `CellCopy` and `Cel
 
 ## Reference skin
 
-`@dolusoft/query-table-skin` is the product's table design as one stylesheet: plain CSS over the `qt-*` DOM contract, a light and a dark theme, for `QueryTable`, `DataTable` and the cell components (ADR 0023). It has no JavaScript and no dependencies; the table packages never import it.
+`@dolusoft/query-table/table.css` is the product's table design as one stylesheet: plain CSS over the `qt-*` DOM contract, a light and a dark theme, for `QueryTable`, `DataTable` and the cell components (ADR 0023, ADR 0025). It comes with the Vue package, so it is always the version of the table whose DOM it dresses. It has no JavaScript and no module imports it: an app that does not import it gets no CSS and the same JavaScript.
 
 ```ts
-import '@dolusoft/query-table-skin/table.css'
+import '@dolusoft/query-table/table.css'
 ```
 
-Every color, size and font is a `--qt-*` custom property on `:root`; map your design system onto them and the rules stay. The theme follows the operating system unless `data-theme="light"` or `"dark"` is set on `<html>`; a dark color of yours goes under both of the skin's dark selectors (see the [skin's README](packages/query-table-skin/README.md#theme)). The tokens and their defaults are listed in [`packages/query-table-skin/etc/tokens.md`](packages/query-table-skin/etc/tokens.md); a token is never renamed or removed. Use the skin of the same version as the table: it dresses that version's DOM. The playground's `product.html` page draws with it alone.
+Every color, size and font is a `--qt-*` custom property on `:root`; map your design system onto them and the rules stay. The theme follows the operating system (`prefers-color-scheme`) unless `data-theme="light"` or `"dark"` is set on `<html>`. The skin sets its dark colors in two places, under the media query and under `data-theme="dark"`, so a dark value of yours goes in both. Load your rules after the stylesheet: the selectors weigh the same, so the later rule wins.
+
+```css
+:root {
+  --qt-font-family: 'Inter', system-ui, sans-serif;
+  --qt-radius: 0.5rem;
+  --qt-accent: var(--brand-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --qt-bg: var(--surface-900);
+    --qt-border: var(--surface-700);
+  }
+}
+
+:root[data-theme='dark'] {
+  --qt-bg: var(--surface-900);
+  --qt-border: var(--surface-700);
+}
+```
+
+Only colors have a dark value: a size, a font, or a color the dark theme leaves alone (such as `--qt-accent`) set on `:root` holds in both themes. The tokens and their defaults are listed in [`packages/vue/etc/tokens.md`](packages/vue/etc/tokens.md); a token is never renamed or removed. What your slots draw (the toolbar, the controls of the `pagination` slot, the content of `subtable`) is yours to style. The playground's `product.html` page draws with the skin alone.
+
+Up to 3.22 the skin shipped only as a package of its own, `@dolusoft/query-table-skin`. It is published one last time in 3.23.0, with the same file, and then deprecated: remove it and change the import to `@dolusoft/query-table/table.css`.
+
+In a TypeScript app, the import is typed by `vite/client` or by a `declare module '*.css'`. With webpack, the package's `sideEffects` (`["*.css"]`) keeps the import in the bundle.
 
 ## Sorting
 

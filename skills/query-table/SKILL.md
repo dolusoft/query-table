@@ -13,7 +13,7 @@ Three packages, versioned together, layered one way (protocol -> core -> vue):
 - `@dolusoft/query-table-core`: two TanStack Table v9 features, `serverQueryFeature` and `filterInputFeature`.
 - `@dolusoft/query-table`: the `QueryTable` component and `useQueryTable()`.
 
-Beside them, at the same version, `@dolusoft/query-table-skin` is the reference skin: one stylesheet (`import '@dolusoft/query-table-skin/table.css'`), no code, opt-in ([styling](references/vue-component.md#styling)).
+The Vue package also carries the reference skin: one stylesheet (`import '@dolusoft/query-table/table.css'`), no code, opt-in, always the table's version ([styling](references/vue-component.md#styling)). Up to 3.23.0 it was also the package `@dolusoft/query-table-skin`; move to the new import.
 
 The packages are on npm (`@dolusoft/query-table`; the protocol and the core come with it as dependencies). The current version is in the repository README; do not guess one.
 
@@ -112,7 +112,7 @@ The query is plain JSON with `pageSize`, `sort`, `filters`, optional `search`, a
 | Treating `reason` as part of the query JSON | It is not; send it yourself (header or key) if the server needs it |
 | Expecting `!foo*` to arrive as a "not starts with" rule | It arrives as `NotContains` with value `foo` |
 | Adding `onSortingChange` / `manualPagination` options to the TanStack table | `serverQueryFeature` owns them (C-61); the table throws at construction |
-| Styling with props or expecting bundled CSS | The table packages ship no CSS; import `@dolusoft/query-table-skin/table.css` and set its `--qt-*` tokens, or select the `qt-*` classes and `data-*` attributes of the DOM contract yourself |
+| Styling with props or expecting bundled CSS | The table loads no CSS by itself; import `@dolusoft/query-table/table.css` and set its `--qt-*` tokens, or select the `qt-*` classes and `data-*` attributes of the DOM contract yourself |
 | Forgetting `dispose(table)` on the TanStack path | Call it in your scope cleanup; `useQueryTable()` does it for you |
 | Using a `rowKey` that is not unique, or a dotted string path | A string `rowKey` is a direct property read; use a function for nested values |
 

@@ -6,12 +6,13 @@ import { describe, expect, it } from 'vitest'
 
 import { domAttributes, domClasses } from '../../../contract/dom'
 
-// The reference skin (ADR 0023) holds to the DOM contract as the test skin
-// does (C-41): it selects only the listed classes and attributes, plus
-// `data-theme` on <html>, and every token it reads is defined.
+// The reference skin, `@dolusoft/query-table/table.css` (ADR 0023, ADR
+// 0025), holds to the DOM contract as the test skin does (C-41): it selects
+// only the listed classes and attributes, plus `data-theme` on <html>, and
+// every token it reads is defined.
 
 const here = dirname(fileURLToPath(import.meta.url))
-const css = readFileSync(join(here, '..', 'src', 'table.css'), 'utf8')
+const css = readFileSync(join(here, '..', 'styles', 'table.css'), 'utf8')
   .replace(/\r\n/g, '\n')
   .replace(/\/\*[\s\S]*?\*\//g, '')
 

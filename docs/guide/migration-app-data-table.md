@@ -250,4 +250,4 @@ A page that needs one of these and has no way around it stays on `AppDataTable` 
 
 ## The look
 
-`@dolusoft/query-table-skin` is the product's table design as one stylesheet, for `QueryTable`, `DataTable` and the cell components: install it at the version of `@dolusoft/query-table` and import `@dolusoft/query-table-skin/table.css` once. Its `--qt-*` tokens map the design system's colors and sizes ([its README](../../packages/query-table-skin/README.md)). The two-line, copy, badge and action cells of `AppDataTable` pages have counterparts in `@dolusoft/query-table/cells` (ADR 0022).
+The reference skin is the product's table design as one stylesheet, for `QueryTable`, `DataTable` and the cell components. It comes with `@dolusoft/query-table`: import `@dolusoft/query-table/table.css` once. Its `--qt-*` tokens map the design system's colors and sizes ([Reference skin](../../README.md#reference-skin); the tokens in [`packages/vue/etc/tokens.md`](../../packages/vue/etc/tokens.md)). The two-line, copy, badge and action cells of `AppDataTable` pages have counterparts in `@dolusoft/query-table/cells` (ADR 0022).
