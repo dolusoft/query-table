@@ -8,6 +8,14 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Changed
+
+- `@dolusoft/query-table-skin` is no longer published. Its last version is 3.23.0, deprecated on npm; the reference skin is `@dolusoft/query-table/table.css` since 3.23.0, the same file ([ADR 0025](docs/decisions/0025-skin-subpath.md)).
+
+### Upgrade notes
+
+- Still on `@dolusoft/query-table-skin`: remove it and import `@dolusoft/query-table/table.css`. Its 3.23.0 keeps installing and working, but no later version of it comes.
+
 ## [3.23.0] - 2026-11-25
 
 The reference skin ships with the table: `import '@dolusoft/query-table/table.css'`.

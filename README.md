@@ -150,7 +150,7 @@ Every color, size and font is a `--qt-*` custom property on `:root`; map your de
 
 Only colors have a dark value: a size, a font, or a color the dark theme leaves alone (such as `--qt-accent`) set on `:root` holds in both themes. The tokens and their defaults are listed in [`packages/vue/etc/tokens.md`](packages/vue/etc/tokens.md); a token is never renamed or removed. What your slots draw (the toolbar, the controls of the `pagination` slot, the content of `subtable`) is yours to style. The playground's `product.html` page draws with the skin alone.
 
-Up to 3.22 the skin shipped only as a package of its own, `@dolusoft/query-table-skin`. It is published one last time in 3.23.0, with the same file, and then deprecated: remove it and change the import to `@dolusoft/query-table/table.css`.
+Up to 3.22 the skin shipped only as a package of its own, `@dolusoft/query-table-skin`. That package was last published in 3.23.0, with the same file, and is deprecated: remove it and change the import to `@dolusoft/query-table/table.css`.
 
 In a TypeScript app, the import is typed by `vite/client` or by a `declare module '*.css'`. With webpack, the package's `sideEffects` (`["*.css"]`) keeps the import in the bundle.
 
