@@ -6,14 +6,15 @@ import { sideOf } from '../columns/column-layout'
 import type {
   CellContextMenuPayload,
   LoadMoreSlotProps,
-  TableLabels,
   TableSlots
 } from '../contract'
 import { tableRow, type RowCell, type RowUtilities } from './table-row'
 import { columnTypeOf } from '../core/column'
+import type { ResolvedLabels } from '../core/labels'
 import { useTableContext } from '../core/table-context'
 import type { FlashView } from '../flash/use-change-flash'
 import { pinAttrs, utilityKey } from '../pin/pin'
+import type { RowDrag, RowHandleListeners } from '../reorder/use-row-reorder'
 import type { ColumnEntry } from '../use-query-table'
 import type {
   BodyItem,
@@ -46,6 +47,12 @@ const props = defineProps<{
   columnCount: number
   hasSubtable: boolean
   hasRightPanel: boolean
+  /** Draw the row reorder column (C-133). */
+  hasReorder: boolean
+  /** The row being dragged by its handle, or `null` (C-133). */
+  dragging: RowDrag | null
+  /** Makes the listeners of a row's reorder handle; stable. */
+  handle: (key: () => string | number) => RowHandleListeners
   /** Draw the selection checkbox column (C-59). */
   hasSelection: boolean
   isSelected: (row: T, index: number) => boolean
@@ -63,7 +70,7 @@ const props = defineProps<{
   toggle: (row: T, index: number) => void
   /** `data-row-kind` of a row (C-97); absent, no row carries it. */
   rowKind?: (row: T, index: number) => string | null | undefined
-  labels: TableLabels
+  labels: ResolvedLabels
   /** The consumer listens to `cellContextMenu` (C-28); read at event time. */
   hasContextMenuListener: () => boolean
   /** With `infinite`: what the `load-more` slot receives, else `null` (C-89). */
@@ -167,11 +174,13 @@ const utilities = computed<RowUtilities>(previous => {
   const role = cellRole()
   const side = props.hasPinned ? 'left' : false
   const offsetOf = (utility: string) => props.offsets[utilityKey(utility)]
+  const reorderSlot = props.hasReorder && icons.has('reorder')
   const panelSlot = props.hasRightPanel && icons.has('right-panel')
   const expandSlot = props.hasSubtable && icons.has('expand')
   const signature = [
     role,
     side,
+    props.hasReorder && `r${offsetOf('reorder')}${reorderSlot ? 'i' : ''}`,
     props.hasRightPanel && `p${offsetOf('right-panel')}${panelSlot ? 'i' : ''}`,
     props.hasSubtable && `e${offsetOf('subtable')}${expandSlot ? 'i' : ''}`,
     props.hasSelection && `s${offsetOf('select')}`
@@ -182,10 +191,12 @@ const utilities = computed<RowUtilities>(previous => {
   const attrs = (on: boolean, utility: string) =>
     on ? { role, ...pinAttrs(side, offsetOf(utility)) } : null
   return {
+    reorder: attrs(props.hasReorder, 'reorder'),
     panel: attrs(props.hasRightPanel, 'right-panel'),
     expand: attrs(props.hasSubtable, 'subtable'),
     select: attrs(props.hasSelection, 'select'),
-    iconSlots: panelSlot || expandSlot ? icons.slots : null,
+    iconSlots: reorderSlot || panelSlot || expandSlot ? icons.slots : null,
+    reorderSlot,
     panelSlot,
     expandSlot,
     signature
@@ -203,6 +214,16 @@ const itemKey = (item: BodyItem<T>) =>
 /** `data-row-kind` of a drawn row (C-97): no attribute for an empty kind. */
 const kindOf = (item: DrawnRow<T>) =>
   props.rowKind ? props.rowKind(item.row, item.index) || undefined : undefined
+/** The row is the one dragged by its handle (C-133). */
+const isDragged = (item: DrawnRow<T>) =>
+  props.dragging !== null &&
+  props.dragging.key === props.keyOf(item.row, item.index)
+/** `before` or `after` on the row the dragged one would go next to (C-133). */
+const dropOf = (item: DrawnRow<T>) =>
+  props.dragging !== null &&
+  props.dragging.target === props.keyOf(item.row, item.index)
+    ? props.dragging.place
+    : undefined
 /** `aria-rowindex` of the subtable row under a drawn row (C-86). */
 const nextIndex = (aria: number | undefined) =>
   aria === undefined ? undefined : aria + 1
@@ -299,8 +320,11 @@ const isRowExpanded = (item: BodyItem<T>) => {
         :expanded="isRowExpanded(item)"
         :expandable="hasSubtable && canExpand(item.row, item.index)"
         :flash="flash ? flash.of(keyOf(item.row, item.index)) : undefined"
+        :dragging="isDragged(item)"
+        :drop="dropOf(item)"
         :cells="cells"
         :utilities="utilities"
+        :label-move="labels.moveRow"
         :label-panel="labels.openRightPanel"
         :label-expand="labels.expandRow"
         :label-select="labels.selectRow"
@@ -314,6 +338,7 @@ const isRowExpanded = (item: BodyItem<T>) => {
             position: 'top' | 'bottom' | false
           ) => void
         "
+        :handle="handle"
         @toggle="toggle(item.row, item.index)"
         @toggle-selected="toggleSelected(item.row, item.index)"
         @right-panel="emit('rowRightPanelClick', item.row)"

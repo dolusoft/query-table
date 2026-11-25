@@ -160,6 +160,13 @@ export const domClasses: ClassEntry[] = [
     addedBy: 'C-73'
   },
   {
+    name: 'qt-row-reorder-handle',
+    on: 'td > button',
+    description:
+      'With `rowReorderable` and `rowKey`: the reorder handle of a row that is not pinned, in the first utility column (C-133). Give it `touch-action: none` in your CSS.',
+    addedBy: 'C-133'
+  },
+  {
     name: 'qt-virtual-spacer',
     on: 'tbody > tr',
     description:
@@ -367,6 +374,19 @@ export const domAttributes: AttributeEntry[] = [
     description:
       '`before` or `after`: the header cell the dragged column would be placed next to (C-73).',
     addedBy: 'C-73'
+  },
+  {
+    name: 'data-dragging',
+    on: 'tbody > tr[data-row-index]',
+    description: 'On the body row being dragged by its handle (C-133).',
+    addedBy: 'C-133'
+  },
+  {
+    name: 'data-drop',
+    on: 'tbody > tr[data-row-index]',
+    description:
+      '`before` or `after`: the body row the dragged row would be placed next to (C-133).',
+    addedBy: 'C-133'
   },
   {
     name: 'data-type',

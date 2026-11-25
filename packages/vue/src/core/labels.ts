@@ -17,6 +17,7 @@ const defaultLabels: ResolvedLabels = {
   filterOptions: column => `Filter options for ${column}`,
   resizeColumn: column => `Resize ${column}`,
   moveColumn: column => `Move ${column}`,
+  moveRow: 'Move row',
   filterCondition: (condition, type) => conditionLabel(type, condition),
   boolAll: 'All',
   boolTrue: 'True',

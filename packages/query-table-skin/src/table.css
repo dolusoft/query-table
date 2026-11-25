@@ -278,7 +278,7 @@ th[data-sort] .qt-sort-icon {
 
 /* ------------------------------------------------------- utility columns */
 
-.qt-table :is(th, td):has(> :is(.qt-expand, .qt-select-row, .qt-select-all, .qt-right-panel-button)) {
+.qt-table :is(th, td):has(> :is(.qt-expand, .qt-select-row, .qt-select-all, .qt-right-panel-button, .qt-row-reorder-handle)) {
   width: 1px;
   padding-inline: var(--qt-utility-padding-inline);
 }
@@ -496,6 +496,37 @@ th[data-dragging] {
 
 th[data-drop] {
   box-shadow: inset 2px 0 0 var(--qt-accent);
+}
+
+/* A row's handle (C-133): the grip in the first utility cell. */
+.qt-row-reorder-handle {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--qt-icon);
+  background: none;
+  border: 0;
+  border-radius: var(--qt-control-radius);
+  cursor: grab;
+  touch-action: none;
+}
+
+.qt-row-reorder-handle:hover {
+  background-color: var(--qt-row-hover);
+}
+
+tbody > tr[data-dragging] {
+  opacity: 0.5;
+}
+
+tbody > tr[data-drop='before'] > td {
+  box-shadow: inset 0 2px 0 var(--qt-accent);
+}
+
+tbody > tr[data-drop='after'] > td {
+  box-shadow: inset 0 -2px 0 var(--qt-accent);
 }
 
 /* ------------------------------------------------------------------ pinning */

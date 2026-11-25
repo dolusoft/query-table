@@ -186,7 +186,7 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
 | `expandable` | `hasSubtable`, with the `subtable` slot |
 | `expandMode` (default `'single'`) | `expandMode` (default `'multiple'`): pass `'single'` to keep the accordion (C-123) |
 | `getChildren`, `rowHasChildren`, `rowIsCycle` | no counterpart: deferred ([#226](https://github.com/dolusoft/query-table/issues/226)); the page can flatten the tree into `rows`, see [No counterpart yet](#no-counterpart-yet) |
-| `reorderable` | no counterpart yet ([#227](https://github.com/dolusoft/query-table/issues/227)) |
+| `reorderable` | `rowReorderable`, with `rowKey`: a handle in the first utility column of every row that is not pinned, moved by a drag or by ↑ ↓ Home End (C-133). Keep turning it on only while the rows are sorted by their order and no search hides one, as the pages do with `canReorder` |
 | `searchable`, `searchPlaceholder`, `searchPosition` | the page's input in the `toolbar` slot |
 | `searchDebounceMs` (300) | `searchDebounce` (300) |
 | `pageSizes` | `pagination.pageSizeOptions` |
@@ -232,7 +232,7 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
 | `#detail-{key}` | belongs to the details band |
 | `@row-click` | no row event: a link or button in a cell slot opens the row; `rowNavigation` moves between rows with the keyboard (C-109) |
 | `@row-expand(row, expanded)` | `@row-expansion-change({ row, rowIndex, rowKey, expanded })` (C-122) |
-| `@row-reorder` | no counterpart yet ([#227](https://github.com/dolusoft/query-table/issues/227)) |
+| `@row-reorder(items, { oldIndex, newIndex, movedItem })` | `@row-reorder({ row, rowIndex, rowKey, target, place })` (C-133): the moved row and the key of the row it goes `before` or `after`, no index. The table moves no row; build the new order of the page from the keys and pass it as `rows`, as `items` was |
 | `expandRows(rows)` | `expandAll()` and `collapseAll()`; the open branches of a flattened tree are the page's state ([No counterpart yet](#no-counterpart-yet)) |
 
 ## No counterpart yet
@@ -243,7 +243,6 @@ The table draws no toolbar, no pager and no empty-state text of its own (P13): t
   - the set of open rows is the page's state.
 
   The columns stay aligned, unlike a `QueryTable` in the `subtable` slot. What it lacks is accessibility: the table writes no `aria-level` and does not present itself as a `treegrid`, so a screen reader does not hear a row's level.
-- **Dragging rows into an order** (`reorderable`): [#227](https://github.com/dolusoft/query-table/issues/227).
 - **The details band** (`details`): a strip of `Label: value` under every row, always open. The nearest forms are a second line in the cell (`CellStack`'s `secondary`) or a `subtable` that starts open (`isExpanded: true`), which draws an expand button as well.
 - **A row click** (`@row-click`): a link or button in a cell is the way; the table cancels no click and emits no row event (C-27).
 

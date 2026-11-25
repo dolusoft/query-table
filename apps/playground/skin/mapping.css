@@ -273,7 +273,7 @@
 .qt-table thead :is(th, td):not([data-field]),
 .qt-table
   tbody
-  td:has(> :is(.qt-select-row, .qt-expand, .qt-right-panel-button)) {
+  td:has(> :is(.qt-select-row, .qt-expand, .qt-right-panel-button, .qt-row-reorder-handle)) {
   width: 2rem;
   padding-inline: 0.5rem;
   text-align: center;
@@ -466,6 +466,43 @@
 /* own: the drop target, a line on its right: the column goes after it. */
 .qt-table th[data-drop='after'] {
   box-shadow: inset -2px 0 0 var(--ring);
+}
+/* own: a row's reorder handle, the grip in its utility cell (C-133). */
+.qt-row-reorder-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  border-radius: calc(var(--radius) - 4px);
+  color: var(--muted-foreground);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  user-select: none;
+
+  &:hover {
+    color: var(--foreground);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+}
+/* own: the row being dragged fades. */
+.qt-table tbody > tr[data-dragging] {
+  opacity: 0.5;
+
+  & .qt-row-reorder-handle {
+    cursor: grabbing;
+  }
+}
+/* own: the drop target, a line above it: the row goes before it. */
+.qt-table tbody > tr[data-drop='before'] > td {
+  box-shadow: inset 0 2px 0 var(--ring);
+}
+/* own: the drop target, a line below it: the row goes after it. */
+.qt-table tbody > tr[data-drop='after'] > td {
+  box-shadow: inset 0 -2px 0 var(--ring);
 }
 
 /* own: sorting, a ghost button around the header text. A Button would
@@ -909,7 +946,8 @@ th[data-filtered] .qt-filter-input {
   .qt-clear-all-button,
   .qt-expand,
   .qt-right-panel-button,
-  .qt-reorder-handle {
+  .qt-reorder-handle,
+  .qt-row-reorder-handle {
     min-width: 2.75rem;
     min-height: 2.75rem;
   }
