@@ -29,7 +29,9 @@ const allowed = {
     },
     peerDependencies: { vue: '^3.5.0' }
   },
-  // The reference skin is a stylesheet: nothing to depend on (ADR 0023).
+  // The skin package is a stylesheet: nothing to depend on (ADR 0023). It is
+  // published one last time in 3.23.0; the reference skin now ships in the
+  // Vue package, as a file no module imports (ADR 0025).
   'packages/query-table-skin': { dependencies: {}, peerDependencies: {} }
 }
 

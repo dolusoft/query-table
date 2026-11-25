@@ -19,9 +19,9 @@ import type {
 } from '@dolusoft/query-table'
 
 // The sites list of the product, drawn with `DataTable`, the cell components
-// of `/cells` (ADR 0022) and the reference skin (`@dolusoft/query-table-skin`,
-// ADR 0023). Only the toolbar
-// and the pager are this page's own markup (demo.css).
+// of `/cells` (ADR 0022) and the reference skin
+// (`@dolusoft/query-table/table.css`, ADR 0025). Only the toolbar and the
+// pager are this page's own markup (demo.css).
 
 interface Site {
   id: number

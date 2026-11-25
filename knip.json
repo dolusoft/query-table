@@ -47,7 +47,7 @@
         "src/data-table/index.ts",
         "src/cells/index.ts"
       ],
-      "project": ["src/**/*.{ts,vue}"]
+      "project": ["src/**/*.{ts,vue}", "tests/**/*.ts"]
     }
   },
   "ignoreIssues": {

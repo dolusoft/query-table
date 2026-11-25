@@ -6,7 +6,9 @@
 // protocol, Vue excluded. The fixtures: `composable` (`useQueryTable()` with
 // the consumer's own markup), `component` (`QueryTable`), `local-composable`
 // (`useLocalQuery`), `data-table` (`DataTable`, ADR 0021) and `cells` (the
-// cell components, ADR 0022). Writes
+// cell components, ADR 0022). A fixture imports script entries only, so its
+// build gives no CSS: a CSS asset means a module imports a stylesheet, which
+// none may (P5, ADR 0025), and fails the run. Writes
 // node_modules/.cache/measure/consumer-size.json. Run after `pnpm build`
 // (the package script does).
 //
@@ -75,6 +77,15 @@ const buildApp = async name => {
   const outputs = (Array.isArray(result) ? result : [result]).flatMap(
     entry => entry.output
   )
+  const styles = outputs.filter(
+    file => file.type === 'asset' && file.fileName.endsWith('.css')
+  )
+  if (styles.length > 0) {
+    console.error(
+      `[measure:consumer-size] fixtures/consumer/${name}.ts builds ${styles.map(file => file.fileName).join(', ')}: no module may import a stylesheet (P5, ADR 0025)`
+    )
+    process.exit(1)
+  }
   const chunks = outputs.filter(file => file.type === 'chunk')
   const code = chunks.map(chunk => chunk.code).join('\n')
   // Where the bytes come from: rendered size per package, before minifying.

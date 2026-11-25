@@ -22,7 +22,7 @@ The playground sits on top of all three and is never part of a package.
 
 A new package is opened only when it has a different dependency set or a different consumer. The three are versioned together; 3.0.0 was their first release and 3.22.0 is the current minor ([ADR 0002](../decisions/0002-three-packages.md), [ADR 0006](../decisions/0006-release-3.md)).
 
-The reference skin, `@dolusoft/query-table-skin`, is outside the layers: one stylesheet for the DOM contract, with no JavaScript and no dependencies, that no package imports. It is versioned and released with the three, and dresses the DOM of the same version ([ADR 0023](../decisions/0023-skin-package.md)).
+The reference skin is outside the layers: one stylesheet for the DOM contract, `table.css`, with no JavaScript, that the Vue package exports as `@dolusoft/query-table/table.css` and no module imports. It ships with the table, so it always dresses the DOM of its own version ([ADR 0025](../decisions/0025-skin-subpath.md)). Up to 3.23.0 it was also published as a package of its own, `@dolusoft/query-table-skin` ([ADR 0023](../decisions/0023-skin-package.md)).
 
 ### Dependency direction
 

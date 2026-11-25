@@ -1,12 +1,13 @@
-// `pnpm pack-install`: installs the four packed tarballs (the three table
-// packages and the reference skin, ADR 0023) into a new app outside the
-// workspace to simulate an npm install, then typechecks and builds that app,
-// and runs the conformance suite of the installed protocol tarball
-// (fixtures/pack-install/conformance.mjs: every hash of its manifest, two
-// runs). Catches what the workspace hides: a `workspace:*` range left in a
-// manifest, a file missing from `files`, a type that only resolves through
-// the workspace `paths`, a stylesheet export that does not resolve, a stale
-// README version.
+// `pnpm pack-install`: installs the three packed table packages into a new
+// app outside the workspace to simulate an npm install, then typechecks and
+// builds that app, and runs the conformance suite of the installed protocol
+// tarball (fixtures/pack-install/conformance.mjs: every hash of its
+// manifest, two runs). The app imports the reference skin from the Vue
+// package, `@dolusoft/query-table/table.css` (ADR 0025), and checks in a
+// browser that it is applied. Catches what the workspace hides: a
+// `workspace:*` range left in a manifest, a file missing from `files`, a type
+// that only resolves through the workspace `paths`, a stylesheet export that
+// does not resolve, a stale README version.
 //
 //   node scripts/pack-install-test.mjs   (after `pnpm build`)
 //
@@ -63,12 +64,7 @@ mkdirSync(join(app, 'src'), { recursive: true })
 try {
   // 1. Pack: pnpm turns `workspace:*` into the version.
   const packed = {}
-  for (const dir of [
-    'query-protocol',
-    'query-table-core',
-    'vue',
-    'query-table-skin'
-  ]) {
+  for (const dir of ['query-protocol', 'query-table-core', 'vue']) {
     const before = new Set(readdirSync(tarballs))
     run(
       'pnpm',
@@ -85,22 +81,18 @@ try {
     packed[manifest.name] = { file, version: manifest.version, manifest }
   }
 
-  // 2. The README installs the Vue package and the skin by name at the
-  // packed version.
+  // 2. The README installs the Vue package by name at the packed version,
+  // and takes the reference skin from it.
   const readme = readFileSync(join(root, 'README.md'), 'utf8')
   const vue = packed['@dolusoft/query-table']
-  const skin = packed['@dolusoft/query-table-skin']
   const installs = [
     ...readme.matchAll(/^pnpm add @dolusoft\/query-table@(\S+)$/gm)
   ]
   if (installs.length !== 1 || installs[0][1] !== vue.version) {
     fail(`README.md must install @dolusoft/query-table@${vue.version}`)
   }
-  const skinInstalls = [
-    ...readme.matchAll(/^pnpm add @dolusoft\/query-table-skin@(\S+)$/gm)
-  ]
-  if (skinInstalls.length !== 1 || skinInstalls[0][1] !== skin.version) {
-    fail(`README.md must install @dolusoft/query-table-skin@${skin.version}`)
+  if (!readme.includes("import '@dolusoft/query-table/table.css'")) {
+    fail("README.md must import '@dolusoft/query-table/table.css'")
   }
   const internal = Object.keys(vue.manifest.dependencies ?? {}).filter(name =>
     name.startsWith('@dolusoft/')
@@ -128,7 +120,6 @@ try {
         dependencies: {
           ...Object.fromEntries(internal.map(name => [name, tarball(name)])),
           '@dolusoft/query-table': tarball('@dolusoft/query-table'),
-          '@dolusoft/query-table-skin': tarball('@dolusoft/query-table-skin'),
           vue: tools.vue
         },
         devDependencies: {
@@ -245,7 +236,7 @@ const parsed = parseRules('a*', { field: 'name' }).length + Object.keys(serverQu
 import { defineDataset, type LocalQueryResult } from '@dolusoft/query-protocol/local'
 import { useLocalQuery } from '@dolusoft/query-table/local'
 import QueryTableDefault, { parseFilterInput, useQueryTable, type TableQuery } from '@dolusoft/query-table'
-import '@dolusoft/query-table-skin/table.css'
+import '@dolusoft/query-table/table.css'
 
 import App from './App.vue'
 

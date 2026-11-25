@@ -53,8 +53,8 @@ export default defineConfig({
         replacement: resolve(packages, 'vue/src/cells/index.ts')
       },
       {
-        find: /^@dolusoft\/query-table-skin\/table\.css$/,
-        replacement: resolve(packages, 'query-table-skin/src/table.css')
+        find: /^@dolusoft\/query-table\/table\.css$/,
+        replacement: resolve(packages, 'vue/styles/table.css')
       },
       {
         find: /^@dolusoft\/query-protocol$/,
