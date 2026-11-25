@@ -1,6 +1,6 @@
 # 0002 Three packages: protocol, core, vue
 
-Status: Accepted (2026-10-06); a fourth package, the CSS-only `@dolusoft/query-table-skin`, is added by [0023](0023-skin-package.md), within this record's rule that a new package needs a different dependency set or a different consumer.
+Status: Accepted (2026-10-06); a fourth package, the CSS-only `@dolusoft/query-table-skin`, was added by [0023](0023-skin-package.md), within this record's rule that a new package needs a different dependency set or a different consumer, and is retired by [0025](0025-skin-subpath.md): the reference skin ships in `@dolusoft/query-table` as `table.css`, so the packages are three again once the skin package's last release, 3.23.0, is out.
 
 ## Context
 

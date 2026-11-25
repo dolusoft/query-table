@@ -28,7 +28,8 @@ Changing a record, or adding one, needs the approval of a code owner (`.github/C
 | [0020](0020-null-and-range-conditions.md)   | Conditions without a value and with two: IsNull, IsNotNull, Between (3.13)      | Accepted |
 | [0021](0021-data-table.md)                  | A table for rows held in the page: `DataTable`, and one row open at a time (3.19) | Accepted |
 | [0022](0022-cell-components.md)             | Cell components: one markup for the cells the product's tables share (3.20)     | Accepted |
-| [0023](0023-skin-package.md)                | A fourth package for the reference skin: `@dolusoft/query-table-skin` (3.20)    | Accepted |
+| [0023](0023-skin-package.md)                | A fourth package for the reference skin: `@dolusoft/query-table-skin` (3.20)    | Superseded by [0025](0025-skin-subpath.md) |
 | [0024](0024-growing-columns.md)             | Growing columns: the room of a wide container goes where the consumer says (3.21) | Accepted |
+| [0025](0025-skin-subpath.md)                | The reference skin as a subpath of the Vue package: `@dolusoft/query-table/table.css` (3.23) | Accepted |
 
-Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014, K38-n in ADR 0015, K39-n in ADR 0016, K311-n in ADR 0017, K312-n in ADR 0018, K313-n in ADR 0020, K319-n in ADR 0021, K320-n in ADR 0022 and 0023, K321-n in ADR 0024.
+Decided on 2026-10-06: K0–K5 with Zahid, D1–D9 after two independent reviews. These records are the version of those decisions that lives with the code. Later records number their decisions after their minor version, so they do not collide with these: K32-n in ADR 0010, K33-n in ADR 0011 and 0012, K36-n in ADR 0013, K37-n in ADR 0014, K38-n in ADR 0015, K39-n in ADR 0016, K311-n in ADR 0017, K312-n in ADR 0018, K313-n in ADR 0020, K319-n in ADR 0021, K320-n in ADR 0022 and 0023, K321-n in ADR 0024, K323-n in ADR 0025.
