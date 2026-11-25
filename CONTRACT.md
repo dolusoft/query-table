@@ -27,6 +27,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `autoWidth` | `boolean` |  | `false` | Draw each visible column without `Column.width` at the width its content needs (C-100): `measureColumnWidths` after the drawn rows change, clamped as a resize is. The width is drawn, not emitted or written to `columns`; a column with a `width` keeps it. Within one query (paging position, page size and sort aside) the widths only grow. Defaults to `false`. |
 | `autoWidthMax` | `number` |  | `undefined` | With `autoWidth`, the widest automatic width of a column without `maxWidth`, in pixels (C-100). Absent, there is no limit. |
 | `reorderable` | `boolean` |  | `false` | Draw a reorder handle at the start of the header cells (needs column `reorderable`): dragging it, or the arrow keys, Home and End on it, move a column within its region and emit `update:columns`. Defaults to `false`. |
+| `rowReorderable` | `boolean` |  | `false` | Draw a reorder handle in a utility column before the others, on every row that is not pinned (C-133); needs `rowKey`. Dragging it, or ↑, ↓, Home and End on it, emits `rowReorder` with the row's key and the key of the row it goes next to. The table moves no row: pass `rows` in the new order. Defaults to `false`. |
 | `filterDebounce` | `number` |  | `100` | Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. |
 | `pagination` | `PaginationOptions` |  |  | Options of the `pagination` slot. Paging itself is always on. |
 | `hasSubtable` | `boolean` |  | `false` | Add a column with an expand button and render the `subtable` slot under expanded rows. A row can start expanded with its `isExpanded` field (see `rows`). Defaults to `false`. |
@@ -59,6 +60,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `update:rowPinning` | `[rowPinning: RowPinning]` | The user pinned or unpinned a row (C-74): a new map. Apply it with `v-model:rowPinning`, or the table draws the old order. |
 | `rowFocus` | `[payload: RowFocusPayload<T>]` | With `rowNavigation`: a key moved the focus to another row (C-109), once the focus is there. Once per key press; a click or Tab does not emit it. |
 | `rowExpansionChange` | `[payload: RowExpansionPayload<T>]` | With `hasSubtable`: the user opened or closed a row with its expand button (C-122), once per press; with `expandMode: 'single'` a press that closes the open row emits for it first (C-123). The state stays the table's (C-26): `isExpanded`, the pruning when `rows` change, `expandAll()`, `collapseAll()` and a row leaving the window of a `virtual` body emit nothing. |
+| `rowReorder` | `[payload: RowReorderPayload<T>]` | With `rowReorderable`: the user moved a row with its handle (C-133), on the release of a drag or on a key, once per move. Put the row before or after `target` in `rows`, or the table draws the old order. |
 
 ### Slots
 
@@ -76,7 +78,7 @@ This is the public contract of `@dolusoft/query-table`: the component surface, t
 | `icon-sort` | `{ direction: SortDirection \| false }` | The sort icon of a sortable header, for its direction; `false` when the column is not sorted (C-131). Each `icon-*` slot replaces the built-in `svg` only: the button keeps its class, attributes and its name from `labels`, so draw decoration with no name of its own. |
 | `icon-filter` | `{ filled: boolean }` | The funnel of the filter button a `filter-menu` slot receives; `filled` while the column has a rule (C-131). |
 | `icon-clear-all` | `none` | The cross of the clear-all button (C-131). |
-| `icon-reorder` | `none` | The grip of a reorder handle (C-131). |
+| `icon-reorder` | `none` | The grip of a column's or a row's reorder handle (C-131). |
 | `icon-expand` | `{ expanded: boolean }` | The chevron of a row's expand button (C-131). |
 | `icon-right-panel` | `none` | The plus sign of a row's right panel button (C-131). |
 | `icon-copy` | `none` | The icon of `CellCopy`'s button inside this table (C-131). |
@@ -414,6 +416,14 @@ export interface TableProps<
    * a column within its region and emit `update:columns`. Defaults to `false`.
    */
   reorderable?: boolean
+  /**
+   * Draw a reorder handle in a utility column before the others, on every
+   * row that is not pinned (C-133); needs `rowKey`. Dragging it, or ↑, ↓,
+   * Home and End on it, emits `rowReorder` with the row's key and the key of
+   * the row it goes next to. The table moves no row: pass `rows` in the new
+   * order. Defaults to `false`.
+   */
+  rowReorderable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -613,6 +623,20 @@ export interface RowExpansionPayload<T> {
   expanded: boolean
 }
 
+/** Payload of the `rowReorder` event (C-133). */
+export interface RowReorderPayload<T> {
+  /** The row the user moved. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The moved row's `rowKey`. */
+  rowKey: string | number
+  /** `rowKey` of the row it goes next to. */
+  target: string | number
+  /** Whether it goes before or after `target`. */
+  place: 'before' | 'after'
+}
+
 /** Options of `infinite` (C-88). */
 export interface InfiniteOptions {
   /** Ask for the next page when the last this many rows come near. Defaults to `5`. */
@@ -679,6 +703,11 @@ export interface TableLabels {
   resizeColumn: (column: string) => string
   /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
   moveColumn: (column: string) => string
+  /**
+   * Name of a row's reorder handle (C-133). Default `'Move row'`. Optional
+   * (3.22), so a complete `TableLabels` of 3.21 still type-checks.
+   */
+  moveRow?: string
   /**
    * The condition label under a filter input, and the `label` of each entry of
    * `conditions` in the `filter-menu` slot. Receives the condition and the
@@ -829,6 +858,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * nothing.
    */
   rowExpansionChange: [payload: RowExpansionPayload<T>]
+  /**
+   * With `rowReorderable`: the user moved a row with its handle (C-133), on
+   * the release of a drag or on a key, once per move. Put the row before or
+   * after `target` in `rows`, or the table draws the old order.
+   */
+  rowReorder: [payload: RowReorderPayload<T>]
 }
 
 export interface CellSlotProps<T> {
@@ -1012,7 +1047,7 @@ export interface TableSlots<T> {
   'icon-filter'?(props: { filled: boolean }): unknown
   /** The cross of the clear-all button (C-131). */
   'icon-clear-all'?(): unknown
-  /** The grip of a reorder handle (C-131). */
+  /** The grip of a column's or a row's reorder handle (C-131). */
   'icon-reorder'?(): unknown
   /** The chevron of a row's expand button (C-131). */
   'icon-expand'?(props: { expanded: boolean }): unknown
@@ -1523,7 +1558,7 @@ Source: own
 
 #### C-22 Clearing all filters
 
-The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. Text typed into a column that then leaves `columns` goes with it: it no longer enables the button and does not come back when the column does. The button sits in the first utility column of the header (the right panel column, else the subtable column), so a table with neither has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click). A disabled button cannot keep the focus: when the button holds it, is activated by a click with `detail` 0 (a key, `element.click()`, some assistive technologies) and the update that clear causes disables it, the focus moves to the first filter of the header that can take it, in column order, the way `focusFilter` finds one (C-54); with none, it stays where the browser puts it. A pointer click moves no focus, so a touch screen does not open its keyboard, and a button that the consumer's query keeps enabled keeps the focus. `clearFilters()` from the `toolbar` slot moves no focus, nor does a later update that disables the button: that clear is the consumer's (P13).
+The clear-all button removes every rule and nothing else: reason `reset`, `page: 1`, `pageSize` and `sort` kept. It is disabled while there is no filter and nothing typed. Text typed into a column that then leaves `columns` goes with it: it no longer enables the button and does not come back when the column does. The button sits in the first utility column of the header (the row reorder column, C-133, else the right panel column, else the subtable column), so a table with none of them has no such button. The action does not depend on those columns: the `toolbar` slot always receives `canClearFilters` (the button's enabled state) and `clearFilters()` (the button's click). A disabled button cannot keep the focus: when the button holds it, is activated by a click with `detail` 0 (a key, `element.click()`, some assistive technologies) and the update that clear causes disables it, the focus moves to the first filter of the header that can take it, in column order, the way `focusFilter` finds one (C-54); with none, it stays where the browser puts it. A pointer click moves no focus, so a touch screen does not open its keyboard, and a button that the consumer's query keeps enabled keeps the focus. `clearFilters()` from the `toolbar` slot moves no focus, nor does a later update that disables the button: that clear is the consumer's (P13).
 
 Source: own
 
@@ -1567,7 +1602,7 @@ The table ships no CSS and takes no styling props. It writes six inline styles a
 
 #### C-32 State attributes
 
-State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-row-kind` on a body row with a kind (C-97); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header.
+State is exposed as `data-*` attributes (the full list is in the DOM contract below): `data-empty` and `data-loading` on the root; `data-field`, `data-sort`, `data-sortable`, `data-filtered` on header cells; `data-field` on body and footer cells; `data-pinned` on the cells of a pinned column (`right` for the right side) and on the utility cells while some column is pinned to the left; `data-dragging` and `data-drop` on header cells while a column is dragged (C-73) and on body rows while a row is dragged (C-133); `data-row-index`, `data-expanded` on rows; `data-pinned-row` on a pinned row and on its subtable row (C-74); `data-row-kind` on a body row with a kind (C-97); `data-type` on the header, body and footer cells of a column (C-82); `data-flash` on a flashing body row and data cell (C-94). `aria-sort` follows the sorted header.
 
 #### C-33 Exposed surface
 
@@ -1615,15 +1650,15 @@ The input shows an outside rule as the text that reads back as it. A rule whose 
 
 #### C-44 Labels
 
-Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and of the two bounds of a range, resize handles, reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter ${name} from` ``, `` `Filter ${name} to` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`, and `'Is Null'`, `'Is Not Null'` and `'Between'` for the conditions of C-112). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. The cell components read three more entries, `copyValue`, `previewValue` and `emptyValue`, from the `labels` of the table they sit in (C-129). No component template holds a literal `aria-label`.
+Every text the table writes for people comes from the `labels` prop: the names of the clear-all, expand, right panel and filter buttons, the names of the filter inputs and of the two bounds of a range, resize handles, column and row reorder handles and selection checkboxes, the options of a bool filter and the condition label under a filter input. An entry left out keeps its English default (`'Clear all filters'`, `'Expand row'`, `'Open right panel'`, `` `Filter ${name}` ``, `` `Filter ${name} from` ``, `` `Filter ${name} to` ``, `` `Filter options for ${name}` ``, `` `Resize ${name}` ``, `` `Move ${name}` ``, `'Move row'`, `'All'`, `'True'`, `'False'`, `'Select row'`, `'Select all rows'`, and for a condition its label in the protocol's `conditionOptions`, such as `'Contains'` or `'Greater Than (>)'`, and `'Is Null'`, `'Is Not Null'` and `'Between'` for the conditions of C-112). A label function receives the column name: its `title`, else its `field`. `filterCondition` receives the condition and the column type instead, since one condition reads differently by type (`GreaterThan` is `'After (>)'` on a date); the table adds the rule count of C-42 after its text. The same text is the `label` of each entry of `conditions` in the `filter-menu` slot (C-34), so a menu and the label under the input agree. The cell components read three more entries, `copyValue`, `previewValue` and `emptyValue`, from the `labels` of the table they sit in (C-129). No component template holds a literal `aria-label`.
 
 #### C-45 Header semantics
 
-Every header cell of a column is a `th` with `scope="col"`, and so is the utility cell that holds the clear-all button. A utility header cell with nothing in it (the right panel or subtable column without that button) is an empty `td`: an empty `th` would be a header without a name. A sortable header is a `button` inside the `th` whose text is the column `title`; a column without a `title` gives the button its `field` as `aria-label`, so the button always has a name.
+Every header cell of a column is a `th` with `scope="col"`, and so is the utility cell that holds the clear-all button. A utility header cell with nothing in it (the row reorder, right panel or subtable column without that button) is an empty `td`: an empty `th` would be a header without a name. A sortable header is a `button` inside the `th` whose text is the column `title`; a column without a `title` gives the button its `field` as `aria-label`, so the button always has a name.
 
 #### C-46 Pinned columns come first
 
-A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (right panel, expand) stay in front of every column, and while some visible column is pinned to the left they are pinned too. Columns with `pinned: 'right'` are drawn after every other column (C-69).
+A visible column with `pinned: 'left'` is drawn before the columns that are not pinned, in the header, the body and the footer. Pinned columns keep their order among themselves, and so do the others. A hidden pinned column is not drawn (C-29). `columnIndex` of `cellContextMenu` stays the index into `columns`. The utility cells (row reorder, right panel, expand) stay in front of every column, and while some visible column is pinned to the left they are pinned too. Columns with `pinned: 'right'` are drawn after every other column (C-69).
 
 #### C-47 Pin offsets
 
@@ -1965,7 +2000,7 @@ Source: own
 
 #### C-106 A row is drawn again only for its own inputs
 
-A data row is drawn again only when its row object (by reference) or its key, its index in `rows`, its `aria-rowindex`, its pinned position, its `rowKind`, whether it is selected, expanded or can expand, or its live flash marks change, or when an input every row draws changes: the drawn columns (order, type, pinning and its offsets), which `cell-<field>` slots exist, the utility columns, the three row labels, `scrollBody`, and `flash` turned on or off. Its index and `aria-rowindex` change when a row is added or removed above it, when a group run above it splits or merges, and with `virtual` when a row above it expands or collapses; it is then drawn again. A new `rows` array that holds the same row objects in the same order draws no row again and mounts none. A `cell-<field>` slot of a row that is not drawn again is not called. Group rows, spacers and the subtable row are drawn by the body, as in 3.10.
+A data row is drawn again only when its row object (by reference) or its key, its index in `rows`, its `aria-rowindex`, its pinned position, its `rowKind`, whether it is selected, expanded or can expand, whether it is the dragged row or the drop target (C-133), or its live flash marks change, or when an input every row draws changes: the drawn columns (order, type, pinning and its offsets), which `cell-<field>` slots exist, the utility columns, the four row labels, `scrollBody`, and `flash` turned on or off. Its index and `aria-rowindex` change when a row is added or removed above it, when a group run above it splits or merges, and with `virtual` when a row above it expands or collapses; it is then drawn again. A new `rows` array that holds the same row objects in the same order draws no row again and mounts none. A `cell-<field>` slot of a row that is not drawn again is not called. Group rows, spacers and the subtable row are drawn by the body, as in 3.10.
 
 Source: own
 
@@ -1983,7 +2018,7 @@ Source: own
 
 #### C-109 Row navigation
 
-With `rowNavigation` the keyboard moves the focus between the data rows: `ArrowDown` to the next row, `ArrowUp` to the previous one, `Home` to the first and `End` to the last, in the order the body draws them (the top-pinned rows, the others, the bottom-pinned rows, C-74), the rows out of a virtual window included (C-83). Group rows (C-103) and subtable rows are not rows and are passed over, and so is every row for which `rowNavigation.skip(row, index)` returns `true` (a heading row of a kind, C-97). A row's focus target is the first element of the row that matches `rowNavigation.focus`, else its first link, enabled button, enabled checkbox or element with a `tabindex` other than `-1` (a utility button or checkbox included); controls that use the arrow keys themselves (text fields, `select`, radio buttons, editable content) are not a default target and keep their keys. The target must take the focus. A key acts only when the focus is on a row's focus target and no modifier key is held, the event is not composing and its default is not prevented already; it then prevents the default (the container does not scroll by the key), also at the first or last row, where nothing moves. The focus lands on the target row's focus target (`focus({ preventScroll: true })`), and once it is there the table emits `rowFocus` with `row`, `rowIndex` and `key`: one event per key press that moved the focus, none when nothing moved, none for a click or Tab, and none when the focus is put back (C-110). A row with no focus target ends the move where it is, without an event. The table writes no `tabindex` and no attribute for it, and nothing emits `update:query`.
+With `rowNavigation` the keyboard moves the focus between the data rows: `ArrowDown` to the next row, `ArrowUp` to the previous one, `Home` to the first and `End` to the last, in the order the body draws them (the top-pinned rows, the others, the bottom-pinned rows, C-74), the rows out of a virtual window included (C-83). Group rows (C-103) and subtable rows are not rows and are passed over, and so is every row for which `rowNavigation.skip(row, index)` returns `true` (a heading row of a kind, C-97). A row's focus target is the first element of the row that matches `rowNavigation.focus`, else its first link, enabled button, enabled checkbox or element with a `tabindex` other than `-1` (a utility button or checkbox included); controls that use the arrow keys themselves (text fields, `select`, radio buttons, editable content, a row's reorder handle, C-133) are not a default target and keep their keys. The target must take the focus. A key acts only when the focus is on a row's focus target and no modifier key is held, the event is not composing and its default is not prevented already; it then prevents the default (the container does not scroll by the key), also at the first or last row, where nothing moves. The focus lands on the target row's focus target (`focus({ preventScroll: true })`), and once it is there the table emits `rowFocus` with `row`, `rowIndex` and `key`: one event per key press that moved the focus, none when nothing moved, none for a click or Tab, and none when the focus is put back (C-110). A row with no focus target ends the move where it is, without an event. The table writes no `tabindex` and no attribute for it, and nothing emits `update:query`.
 
 Source: own
 
@@ -2115,13 +2150,19 @@ Source: tanstack, own
 
 #### C-131 Icon slots
 
-The table draws its icons as inline `svg`, and a slot named after each one replaces it: `icon-sort` the icon of a sort button (`svg.qt-sort-icon`), with `{ direction }`, `'asc'`, `'desc'` or `false` while the column is not sorted; `icon-filter` the funnel of the filter button a `filter-menu` slot receives as `trigger` (C-34), with `{ filled }`, `true` while the column has a rule; `icon-clear-all` the cross of the clear-all button (C-22); `icon-reorder` the grip of a reorder handle (C-73); `icon-expand` the chevron of a row's expand button (C-26), with `{ expanded }`; `icon-right-panel` the plus sign of a row's right panel button; `icon-copy` and `icon-preview` the icons of the buttons of `CellCopy` and `CellPreview` (C-128) inside that table, which read them from the table they sit in as they read their labels (C-129); outside a table they draw their own. A slot replaces the `svg` only: the button keeps its element, class, attributes, listeners and the name `labels` gives it (C-44), so what the slot draws is decoration and carries no name. A slot given or removed after the table is mounted replaces the icons or brings the built-in ones back. Without these slots the markup is the one of 3.20. `DataTable` passes them on (C-124). The DOM contract gains no entry.
+The table draws its icons as inline `svg`, and a slot named after each one replaces it: `icon-sort` the icon of a sort button (`svg.qt-sort-icon`), with `{ direction }`, `'asc'`, `'desc'` or `false` while the column is not sorted; `icon-filter` the funnel of the filter button a `filter-menu` slot receives as `trigger` (C-34), with `{ filled }`, `true` while the column has a rule; `icon-clear-all` the cross of the clear-all button (C-22); `icon-reorder` the grip of a column's or a row's reorder handle (C-73, C-133); `icon-expand` the chevron of a row's expand button (C-26), with `{ expanded }`; `icon-right-panel` the plus sign of a row's right panel button; `icon-copy` and `icon-preview` the icons of the buttons of `CellCopy` and `CellPreview` (C-128) inside that table, which read them from the table they sit in as they read their labels (C-129); outside a table they draw their own. A slot replaces the `svg` only: the button keeps its element, class, attributes, listeners and the name `labels` gives it (C-44), so what the slot draws is decoration and carries no name. A slot given or removed after the table is mounted replaces the icons or brings the built-in ones back. Without these slots the markup is the one of 3.20. `DataTable` passes them on (C-124). The DOM contract gains no entry.
 
 Source: own
 
 #### C-132 Growing columns
 
 A visible column whose `grow` is a finite number above `0` grows (ADR 0024). In a container wider than the table its room goes to the growing columns. The container is the table's parent (with `scrollBody` the header's wrapper, C-101), measured inside its scrollbar and padding; the room is its width minus the table's width with every column at its declared width and every growing column at its base: its `width`, a width the user gave it included, else its automatic width (C-100), else its minimum width as a resize clamps it (C-49). The room is divided by the weights in whole pixels, the pixels of the rounding going to the last growing column in drawing order; a column stops at its `maxWidth` and the others divide what it leaves, and when every growing column is at its `maxWidth` the rest is not given out. Each growing column is drawn at its base plus its share as its header cell's inline `width` (C-31), so the table is as wide as its container and the columns that do not grow and the utility columns keep their width. Without room there are no shares. The shares are never emitted and never written to `columns`, and the slot props carry the column as given (P2). While a visible column that does not grow has neither a `width` nor an automatic width there are no shares, and a development build warns once. The table reads its width at the bases in one synchronous read (C-31) after the drawn columns change (their fields, widths, weights, limits and automatic widths, and the utility columns) and once it is displayed; a change of the container's width only divides the room again. With `header: false` there are no shares (C-121). A drag on a resize handle (C-49) draws the dragged column at the width the pointer gives and divides the room again among the other growing columns while the pointer moves; on release a column that does not grow emits that width, and a growing column emits the base that keeps it there once the room is divided again with it growing (the amendment of ADR 0024), so a single growing column narrowed below the room fills it again. The arrow keys step the drawn width and emit the same way; autofit (C-50) emits the content's width as the base. `DataTable` passes `columns` on (C-124).
+
+Source: own
+
+#### C-133 Row reorder handle
+
+With `rowReorderable` and `rowKey` the table draws a utility column before the other utility columns (C-46): in every data row that is not pinned (C-74) it holds a `button.qt-row-reorder-handle` (`type="button"`), named by `labels.moveRow` and carrying `aria-keyshortcuts="ArrowUp ArrowDown Home End"`; a pinned row's cell is empty, and so is the column's header cell unless it holds the clear-all button (C-22, C-45). Without `rowKey` the prop is ignored and a development build warns once: an index is not a row identity across pages. A handle moves its row among the rows that are not pinned, in the order of `rows`; group rows (C-103) and subtable rows are not targets. Pressing the primary button on it focuses it and captures the pointer; while it moves, the dragged row carries `data-dragging` and the row under the pointer, at the place the handle was pressed, carries `data-drop` (`before` or `after`, by the half the pointer is over; over a row's subtable row, `after` on that row). Nothing is emitted and nothing is moved in the DOM during the drag. Releasing emits one `rowReorder` with `row`, `rowIndex` (its index in `rows`), `rowKey`, `target` (the key of the row under the pointer) and `place`; a release over no such row, or where the order stays, emits nothing, and so does one whose row or target left `rows` during the drag. Escape, a `pointercancel` or a lost pointer capture ends the drag without an event and drops the attributes; with `virtual` a dragged row that leaves the window does not end it. On a focused handle, ArrowUp and ArrowDown move the row one position, Home and End to the first and the last of those rows; each key is one `rowReorder`, and a key at the edge does nothing. The four keys are the handle's: their default is prevented, so the container does not scroll and the row navigation does not move (C-109). A key held with Alt, Ctrl or Meta is left to the browser. When the consumer writes back the order a key asked for, the focus returns to the handle of the same row while the focus is on no element, with `virtual` once the row is drawn (the window scrolls to it as `scrollToIndex` does, C-87); a click anywhere or the focus moved to another element ends that. The first order written back after the key also shows the row whole in its scroll container, as a key of the row navigation does (C-110). The table moves no row and keeps no order (P2): without a write-back the row stays where it was. The table draws no live region: announcing the new position is the consumer's, from `rowReorder`. Nothing on the handle emits `update:query`. `DataTable` passes the prop and the event on (C-124); `rowIndex` is then the index in the rows it draws. Without `rowReorderable` the body draws nothing for it: its markup is the one of 3.21 (C-108).
 
 Source: own
 
@@ -2156,6 +2197,7 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `qt-loading-row` | `tbody > tr` | Last row of the body while `loading` is on, holding the `loading` slot in one cell that spans every column. Place it over the rows in your CSS. |
 | `qt-resize-handle` | `th > div` | Resize handle of a resizable column: a focusable `role="separator"`, the last child of the header cell. Position it at the cell edge in your CSS. |
 | `qt-reorder-handle` | `th > button` | Reorder handle of a column, the first child of the header cell (C-73). Give it `touch-action: none` in your CSS. |
+| `qt-row-reorder-handle` | `td > button` | With `rowReorderable` and `rowKey`: the reorder handle of a row that is not pinned, in the first utility column (C-133). Give it `touch-action: none` in your CSS. |
 | `qt-virtual-spacer` | `tbody > tr` | With `virtual`: the row above or below the drawn rows that holds the height of the rows left out, as an inline `height` (C-83). `aria-hidden`, one empty cell. Give its cell `padding: 0; border: 0` in your CSS. |
 | `qt-load-more-row` | `tbody > tr` | With `infinite` and a `load-more` slot: the last row of the body while `loading` is off, holding the slot in one cell that spans every column (C-89). |
 | `qt-group-row` | `tbody > tr` | With `groupBy`: the row above the first row of a group, one `th scope="row"` that spans every column and holds the `group` slot (C-103). It is not a row of `rows`: no `data-row-index`. Make it sticky in your CSS (`tr.qt-group-row > th { position: sticky; top: <the height of your sticky header> }`), on the cell, not on the `tr`; with `virtual` the group row of the top group stays drawn (C-104). Without `virtual` the stuck cell of the last group stays over ungrouped rows after it until the `tbody` ends. The slot content is for reading; no focus is kept in it. |
@@ -2195,6 +2237,8 @@ The classes and attributes below are the only hooks a skin can select. The table
 | `data-pinned` | `th[data-pinned="right"], td[data-pinned="right"]` | Value `right`: a cell of a column pinned to the right (header, body, footer); it also carries `--qt-pin-right` (C-71). |
 | `data-dragging` | `th` | On the header cell of the column being dragged (C-73). |
 | `data-drop` | `th` | `before` or `after`: the header cell the dragged column would be placed next to (C-73). |
+| `data-dragging` | `tbody > tr[data-row-index]` | On the body row being dragged by its handle (C-133). |
+| `data-drop` | `tbody > tr[data-row-index]` | `before` or `after`: the body row the dragged row would be placed next to (C-133). |
 | `data-type` | `th[data-field], td[data-field]` | The column type as C-39 reads it (`string`, `number`, `integer`, `date`, `datetime` or `bool`; `string` when missing or unknown), on the header, body and footer cells of a column. The table draws no alignment; a skin aligns by it (C-82). |
 | `data-flash` | `tbody > tr[data-row-index], tbody > tr > td[data-field]` | With `flash`: `a` or `b` on a body row whose key is new and on a data cell whose value changed, while the flash runs (C-94). A flash that starts again switches the value, so an animation keyed on it starts again. The skin draws it and sets its length with `--qt-flash-duration` on `.qt-datatable` or above. |
 | `aria-invalid` | `input.qt-filter-input` | `true` on a text or number filter input whose typed text gives no rule, such as `80,abc` in a number column (C-116). |

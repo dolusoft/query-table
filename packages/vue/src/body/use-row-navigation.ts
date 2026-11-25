@@ -5,6 +5,7 @@ import type {
   RowNavigationOptions,
   ScrollToIndexOptions
 } from '../contract'
+import { rowHandleClass } from '../reorder/use-row-reorder'
 import type { BodyRow } from '../use-query-table'
 
 type NavigationKey = RowFocusPayload<object>['key']
@@ -34,11 +35,12 @@ export interface UseRowNavigationOptions<T extends object> {
 /**
  * The first focusable element of a row, when no `focus` selector is given.
  * Controls that use the arrow keys themselves (text fields, `select`, radio
- * buttons, editable content) are left out: they keep their keys (C-109).
+ * buttons, editable content, a row's reorder handle) are left out: they keep
+ * their keys (C-109, C-133).
  */
 const focusable = [
   'a[href]',
-  'button:not([disabled])',
+  `button:not([disabled], .${rowHandleClass})`,
   'input[type="checkbox"]:not([disabled])',
   '[tabindex]:not([tabindex="-1"]):not(input, select, textarea, [contenteditable])'
 ].join(', ')

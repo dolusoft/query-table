@@ -412,6 +412,15 @@ export interface RowPinning {
 }
 
 // @public
+export interface RowReorderPayload<T> {
+    place: 'before' | 'after';
+    row: T;
+    rowIndex: number;
+    rowKey: string | number;
+    target: string | number;
+}
+
+// @public
 export type RowSelection = Record<string, boolean>;
 
 export { RowsUpdate }
@@ -445,6 +454,7 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
     'update:rowPinning': [rowPinning: RowPinning];
     rowFocus: [payload: RowFocusPayload<T>];
     rowExpansionChange: [payload: RowExpansionPayload<T>];
+    rowReorder: [payload: RowReorderPayload<T>];
 };
 
 // @public
@@ -462,6 +472,7 @@ export interface TableLabels {
     filterInputTo?: (column: string) => string;
     filterOptions: (column: string) => string;
     moveColumn: (column: string) => string;
+    moveRow?: string;
     openRightPanel: string;
     previewValue?: (text: string) => string;
     resizeColumn: (column: string) => string;
@@ -496,6 +507,7 @@ export interface TableProps<T extends object = Record<string, unknown>, Q extend
     rowKind?: (row: T, index: number) => string | null | undefined;
     rowNavigation?: boolean | RowNavigationOptions<T>;
     rowPinning?: RowPinning;
+    rowReorderable?: boolean;
     rows?: T[];
     rowSelectable?: (row: T, index: number) => boolean;
     rowsUpdate?: RowsUpdate;

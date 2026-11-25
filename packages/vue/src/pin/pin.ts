@@ -1,10 +1,10 @@
 import type { PinSide } from '../columns/column-layout'
 
 /**
- * Cells before the first column, in drawing order: the right panel, the
- * expand button, the selection checkbox.
+ * Cells before the first column, in drawing order: the row reorder handle,
+ * the right panel, the expand button, the selection checkbox.
  */
-export type Utility = 'right-panel' | 'subtable' | 'select'
+export type Utility = 'reorder' | 'right-panel' | 'subtable' | 'select'
 
 /** Geometry key of a utility cell; a column's key is its `field`. */
 export const utilityKey = (utility: string) => `utility:${utility}`

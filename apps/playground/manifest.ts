@@ -602,6 +602,20 @@ export const pages: PlaygroundPage[] = [
     rules: ['C-130']
   },
   {
+    id: 'row-reorder',
+    title: 'Reordering rows',
+    navTitle: 'Row order',
+    summary:
+      'NTP servers tried in order: `rowReorderable` draws a handle on every row. Dragging it, or ↑ ↓ Home End on it, emits `rowReorder` with the row’s key and the key of the row it goes next to; the page puts the row there and numbers the order again. Sorted by the server name, the page turns the handles off.',
+    example: 'RowReorder',
+    api: {
+      props: ['rowReorderable'],
+      emits: ['rowReorder'],
+      types: ['RowReorderPayload']
+    },
+    rules: ['C-133']
+  },
+  {
     id: 'tanstack-path',
     title: 'TanStack path',
     summary:

@@ -19,6 +19,10 @@ import type { PinSide } from '../columns/column-layout'
 import type { CellSlotProps, Column } from '../contract'
 import { valueAt } from '../core/column'
 import type { RowFlash } from '../flash/use-change-flash'
+import {
+  rowHandleClass,
+  type RowHandleListeners
+} from '../reorder/use-row-reorder'
 
 /**
  * One drawn column of a data row, kept by value by the body (K311-2): the
@@ -38,15 +42,21 @@ export interface RowCell {
 }
 
 /**
- * The utility cells of a data row (C-46, C-59, C-98): the attributes of
- * each one drawn, `null` for one that is not. Kept by value by the body.
+ * The utility cells of a data row (C-46, C-59, C-98, C-133): the attributes
+ * of each one drawn, `null` for one that is not. Kept by value by the body.
  */
 export interface RowUtilities {
+  reorder: Record<string, unknown> | null
   panel: Record<string, unknown> | null
   expand: Record<string, unknown> | null
   select: Record<string, unknown> | null
-  /** The table's slots when it draws `icon-right-panel` or `icon-expand` (C-131). */
+  /**
+   * The table's slots when it draws `icon-reorder`, `icon-right-panel` or
+   * `icon-expand` (C-131).
+   */
   iconSlots: Slots | null
+  /** The consumer's `icon-reorder` replaces the grip. */
+  reorderSlot: boolean
   /** The consumer's `icon-right-panel` replaces the plus sign. */
   panelSlot: boolean
   /** The consumer's `icon-expand` replaces the chevron. */
@@ -72,6 +82,36 @@ const needed = <V>() => ({
 // The empty comment of a branch that is off, as the library build writes
 // it (a development build of a template writes `v-if`, C-108).
 const off = () => createCommentVNode('', true)
+
+// The place of a utility 3.10 did not draw (C-133): an empty fragment, a
+// block like a comment placeholder, so the row's structure stays the same
+// when it comes or goes, but two empty text nodes that the markup does not
+// show, so the body's markup stays the one of 3.10 (C-108).
+const none = () => (
+  openBlock(),
+  createElementBlock(Fragment, null, [], 64 /* STABLE_FRAGMENT */)
+)
+
+const gripIcon = () =>
+  createElementVNode(
+    'svg',
+    {
+      width: '14',
+      height: '14',
+      viewBox: '0 0 24 24',
+      fill: 'currentColor',
+      'aria-hidden': 'true'
+    },
+    [
+      createElementVNode('circle', { cx: '9', cy: '6', r: '1.5' }),
+      createElementVNode('circle', { cx: '15', cy: '6', r: '1.5' }),
+      createElementVNode('circle', { cx: '9', cy: '12', r: '1.5' }),
+      createElementVNode('circle', { cx: '15', cy: '12', r: '1.5' }),
+      createElementVNode('circle', { cx: '9', cy: '18', r: '1.5' }),
+      createElementVNode('circle', { cx: '15', cy: '18', r: '1.5' })
+    ],
+    -1 /* CACHED */
+  )
 
 const panelIcon = () =>
   createElementVNode(
@@ -115,8 +155,11 @@ const rowDynamic = [
   'data-row-kind',
   'data-expanded',
   'data-selected',
-  'data-flash'
+  'data-flash',
+  'data-dragging',
+  'data-drop'
 ]
+const handleDynamic = ['aria-label']
 const panelDynamic = ['aria-label', 'onClick']
 const expandDynamic = ['aria-expanded', 'aria-label', 'onClick']
 const selectDynamic = ['aria-label', 'checked', 'disabled', 'onChange']
@@ -160,8 +203,13 @@ export const tableRow = defineComponent({
     expandable: needed<boolean>(),
     /** The row's flash marks (C-94), or `undefined`. */
     flash: value<RowFlash | undefined>(),
+    /** The row is being dragged by its handle (C-133). */
+    dragging: needed<boolean>(),
+    /** The dragged row would go `before` or `after` this one (C-133). */
+    drop: value<'before' | 'after' | undefined>(),
     cells: needed<readonly RowCell[]>(),
     utilities: needed<RowUtilities>(),
+    labelMove: needed<string>(),
     labelPanel: needed<string>(),
     labelExpand: needed<string>(),
     labelSelect: needed<string>(),
@@ -173,7 +221,9 @@ export const tableRow = defineComponent({
     flashBind: value<
       ((el: HTMLElement, key: string | number) => void) | undefined
     >(),
-    pinRow: needed<PinRow>()
+    pinRow: needed<PinRow>(),
+    /** Makes the listeners of a row's reorder handle (C-133); stable. */
+    handle: needed<(key: () => string | number) => RowHandleListeners>()
   },
   emits: ['toggle', 'toggleSelected', 'rightPanel'],
   setup(props, { emit }) {
@@ -188,6 +238,9 @@ export const tableRow = defineComponent({
     }
     // The compiler's per-instance cache of static content (`_cache`).
     let panelCache: VNode[] | null = null
+    let gripCache: VNode[] | null = null
+    // Made when the row first draws a handle: stable for the row's life.
+    let handleOn: RowHandleListeners | null = null
 
     return () => {
       const { row, index, pinned, cells, utilities, flash, slots } = props
@@ -205,6 +258,8 @@ export const tableRow = defineComponent({
             'data-expanded': props.expanded ? '' : undefined,
             'data-selected': props.selected ? '' : undefined,
             'data-flash': flash?.row,
+            'data-dragging': props.dragging ? '' : undefined,
+            'data-drop': props.drop,
             // Read from the vnode by Vue, never patched as attributes: they
             // stay out of the dynamic props below, so no DOM listener is
             // made of them (C-108).
@@ -212,6 +267,40 @@ export const tableRow = defineComponent({
             onVnodeUpdated: props.flashBind ? bind : undefined
           },
           [
+            utilities.reorder
+              ? (openBlock(),
+                createElementBlock(
+                  'td',
+                  // C-131: another key with the consumer's icon, as below.
+                  mergeProps(
+                    { key: utilities.reorderSlot ? 6 : 5 },
+                    utilities.reorder
+                  ),
+                  [
+                    // A pinned row keeps its place: an empty cell (C-133).
+                    pinned
+                      ? off()
+                      : (openBlock(),
+                        createElementBlock(
+                          'button',
+                          {
+                            key: 0,
+                            type: 'button',
+                            class: rowHandleClass,
+                            'aria-label': props.labelMove,
+                            'aria-keyshortcuts': 'ArrowUp ArrowDown Home End',
+                            ...(handleOn ??= props.handle(() => props.rowKey))
+                          },
+                          utilities.reorderSlot
+                            ? [renderSlot(utilities.iconSlots!, 'icon-reorder')]
+                            : [...(gripCache ??= [gripIcon()])],
+                          8 /* PROPS */,
+                          handleDynamic
+                        ))
+                  ],
+                  16 /* FULL_PROPS */
+                ))
+              : none(),
             utilities.panel
               ? (openBlock(),
                 createElementBlock(

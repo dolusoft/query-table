@@ -8,6 +8,16 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Added
+
+- `rowReorderable`, with `rowKey`: a utility column before the others holds a reorder handle, `button.qt-row-reorder-handle`, on every row that is not pinned. Dragging it, or ↑, ↓, Home and End on it, emits one `rowReorder` per drop or key with `row`, `rowIndex`, `rowKey`, `target` (the key of the row it goes next to) and `place` (`'before'` or `'after'`). The table moves no row: put it in its place in `rows` yourself. While a row is dragged, it carries `data-dragging` and the row it would go next to `data-drop`. The focus comes back to the handle after you write the order back, and the row navigation leaves the handle's keys alone. Name it with `labels.moveRow` (`'Move row'`); `icon-reorder` replaces its grip too. `DataTable` passes it on ([C-133](contract/rules.md#c-133-row-reorder-handle)).
+- The reference skin draws the row handle as the other row buttons, the dragged row dimmed and a line where it would go.
+
+### Upgrade notes
+
+- Additive: no change is needed to upgrade. `rowReorderable` is opt-in; a table without it draws as in 3.21.
+- With `rowReorderable`, the clear-all button moves into the header cell of the handle column, the first utility column (C-22).
+
 ## [3.21.0] - 2026-11-24
 
 Rows that cannot be selected, slots for the table's icons and columns that take the room of a wide container; and a fix for the header checkbox of the selection column.

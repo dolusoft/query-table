@@ -253,7 +253,11 @@ const ADDED_AFTER_BASELINE = [
   'tests/contract/browser/icon-slots.browser.spec.ts',
   // 3.21 addition (C-132, ADR 0024, #136): growing columns, which a 3.20
   // build does not draw. Without `grow` the table is the one of 3.20.
-  'tests/contract/browser/growing-columns.browser.spec.ts'
+  'tests/contract/browser/growing-columns.browser.spec.ts',
+  // 3.22 addition (C-133, #227): row reorder handles, which a 3.21 build does
+  // not draw. Without `rowReorderable` the markup is the one of 3.21.
+  'tests/contract/unit/row-reorder.spec.ts',
+  'tests/contract/browser/row-reorder.browser.spec.ts'
 ]
 const isAdded = name =>
   ADDED_AFTER_BASELINE.some(
