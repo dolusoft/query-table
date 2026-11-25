@@ -37,6 +37,7 @@ import TablePagination from './parts/table-pagination.vue'
 import { utilityKey, type Utility } from './pin/pin'
 import { useHeaderGeometry } from './pin/use-header-geometry'
 import { useColumnReorder } from './reorder/use-column-reorder'
+import { useRowReorder } from './reorder/use-row-reorder'
 import { measureColumnWidths } from './resize/measure-widths'
 import { useAutoWidth } from './resize/use-auto-width'
 import { useColumnResize } from './resize/use-column-resize'
@@ -64,6 +65,7 @@ const props = withDefaults(defineProps<TableProps<T, Q>>(), {
   autoWidth: false,
   autoWidthMax: undefined,
   reorderable: false,
+  rowReorderable: false,
   filterDebounce: 100,
   hasSubtable: false,
   rowExpandable: undefined,
@@ -180,9 +182,15 @@ const { onContextMenu: onHeaderContextMenu } = useHeaderContextMenu({
   onContextMenu: payload => emit('headerContextMenu', payload)
 })
 const hasPinned = state.hasPinned
-/** Right panel first, then subtable, then selection (C-22: the first hosts clear-all). */
+/** Row handles need `rowKey` (C-133). */
+const hasRowReorder = () => props.rowReorderable && props.rowKey !== undefined
+/**
+ * The row handle first, then right panel, subtable and selection (C-22: the
+ * first hosts clear-all).
+ */
 const utilities = computed(() =>
   [
+    hasRowReorder() ? 'reorder' : null,
     props.hasRightPanel ? 'right-panel' : null,
     props.hasSubtable ? 'subtable' : null,
     rowSelection.enabled.value ? 'select' : null
@@ -314,6 +322,20 @@ const navigation = useRowNavigation<T>({
   reveal: rowWindow.reveal,
   busy: rowWindow.busy,
   onFocus: payload => emit('rowFocus', payload)
+})
+// Reordering rows by their handle (C-133): one `rowReorder` per move.
+const rowReorder = useRowReorder<T>({
+  rowReorderable: () => props.rowReorderable,
+  hasRowKey: () => props.rowKey !== undefined,
+  table: bodyTable,
+  rows: () => props.rows,
+  bodyRows: () => state.rowPinning.rows.value,
+  keyOf: expansion.keyOf,
+  virtual: rowWindow.enabled,
+  scrollToIndex: rowWindow.scrollToIndex,
+  reveal: rowWindow.reveal,
+  drawn: () => rowWindow.drawn.value,
+  onMove: payload => emit('rowReorder', payload)
 })
 /** The `tbody` listener of the navigation: none while it is off (C-111). */
 const navigationListeners = () =>
@@ -550,6 +572,9 @@ defineExpose(exposed)
               :column-count="columnCount"
               :has-subtable="hasSubtable"
               :has-right-panel="hasRightPanel"
+              :has-reorder="hasRowReorder()"
+              :dragging="rowReorder.dragging.value"
+              :handle="rowReorder.listeners"
               :has-selection="rowSelection.enabled.value"
               :is-selected="rowSelection.isSelected"
               :can-select="rowSelection.canSelect"
@@ -660,6 +685,9 @@ defineExpose(exposed)
           :column-count="columnCount"
           :has-subtable="hasSubtable"
           :has-right-panel="hasRightPanel"
+          :has-reorder="hasRowReorder()"
+          :dragging="rowReorder.dragging.value"
+          :handle="rowReorder.listeners"
           :has-selection="rowSelection.enabled.value"
           :is-selected="rowSelection.isSelected"
           :can-select="rowSelection.canSelect"

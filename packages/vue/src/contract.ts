@@ -262,6 +262,14 @@ export interface TableProps<
    * a column within its region and emit `update:columns`. Defaults to `false`.
    */
   reorderable?: boolean
+  /**
+   * Draw a reorder handle in a utility column before the others, on every
+   * row that is not pinned (C-133); needs `rowKey`. Dragging it, or ↑, ↓,
+   * Home and End on it, emits `rowReorder` with the row's key and the key of
+   * the row it goes next to. The table moves no row: pass `rows` in the new
+   * order. Defaults to `false`.
+   */
+  rowReorderable?: boolean
   /** Milliseconds between the last key and the filter being applied. `0` applies on every keystroke. Defaults to `100`. */
   filterDebounce?: number
   /** Options of the `pagination` slot. Paging itself is always on. */
@@ -461,6 +469,20 @@ export interface RowExpansionPayload<T> {
   expanded: boolean
 }
 
+/** Payload of the `rowReorder` event (C-133). */
+export interface RowReorderPayload<T> {
+  /** The row the user moved. */
+  row: T
+  /** The row's index in `rows`. */
+  rowIndex: number
+  /** The moved row's `rowKey`. */
+  rowKey: string | number
+  /** `rowKey` of the row it goes next to. */
+  target: string | number
+  /** Whether it goes before or after `target`. */
+  place: 'before' | 'after'
+}
+
 /** Options of `infinite` (C-88). */
 export interface InfiniteOptions {
   /** Ask for the next page when the last this many rows come near. Defaults to `5`. */
@@ -527,6 +549,11 @@ export interface TableLabels {
   resizeColumn: (column: string) => string
   /** Name of a column's reorder handle. Default `` name => `Move ${name}` ``. */
   moveColumn: (column: string) => string
+  /**
+   * Name of a row's reorder handle (C-133). Default `'Move row'`. Optional
+   * (3.22), so a complete `TableLabels` of 3.21 still type-checks.
+   */
+  moveRow?: string
   /**
    * The condition label under a filter input, and the `label` of each entry of
    * `conditions` in the `filter-menu` slot. Receives the condition and the
@@ -677,6 +704,12 @@ export type TableEmits<T, Q extends Query = TableQuery> = {
    * nothing.
    */
   rowExpansionChange: [payload: RowExpansionPayload<T>]
+  /**
+   * With `rowReorderable`: the user moved a row with its handle (C-133), on
+   * the release of a drag or on a key, once per move. Put the row before or
+   * after `target` in `rows`, or the table draws the old order.
+   */
+  rowReorder: [payload: RowReorderPayload<T>]
 }
 
 export interface CellSlotProps<T> {
@@ -860,7 +893,7 @@ export interface TableSlots<T> {
   'icon-filter'?(props: { filled: boolean }): unknown
   /** The cross of the clear-all button (C-131). */
   'icon-clear-all'?(): unknown
-  /** The grip of a reorder handle (C-131). */
+  /** The grip of a column's or a row's reorder handle (C-131). */
   'icon-reorder'?(): unknown
   /** The chevron of a row's expand button (C-131). */
   'icon-expand'?(props: { expanded: boolean }): unknown

@@ -52,6 +52,7 @@ const groups = [
       'row-kind',
       'row-selectable',
       'row-pinning',
+      'row-reorder',
       'grouped-rows',
       'headerless-list',
       'row-rendering',
