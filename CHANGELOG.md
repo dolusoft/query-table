@@ -1,12 +1,27 @@
 # Changelog
 
-What each 3.x release of `@dolusoft/query-protocol`, `@dolusoft/query-table-core`, `@dolusoft/query-table` and, from 3.20.0, the reference skin `@dolusoft/query-table-skin` added, changed and fixed. The packages are released together under one version.
+What each 3.x release of `@dolusoft/query-protocol`, `@dolusoft/query-table-core`, `@dolusoft/query-table` and, from 3.20.0 to 3.23.0, the skin package `@dolusoft/query-table-skin` added, changed and fixed; from 3.23.0 the reference skin ships in `@dolusoft/query-table`. The packages are released together under one version.
 
 **To upgrade**, read the **Upgrade notes** of every version after yours, up to the one you install: they list each change to the markup, to an emitted `update:query`, to a public type or to behavior a skin or a backend can observe, and say what to check. A version is always the next minor or the next patch, never a major ([ADR 0019](docs/decisions/0019-release-version-policy.md)). Coming from 2.2.x, start with the [migration guide](docs/guide/migration-v3.md).
 
 Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`](contract/rules.md)) and the decision record behind it, when there is one. The full API is in [`CONTRACT.md`](CONTRACT.md). The layout follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
+
+## [3.23.0] - 2026-11-25
+
+The reference skin ships with the table: `import '@dolusoft/query-table/table.css'`.
+
+### Changed
+
+- The reference skin moves into `@dolusoft/query-table`, at `@dolusoft/query-table/table.css`. The stylesheet, its `--qt-*` tokens and its selectors are the same, and it is now always the version of the table it dresses. No module imports it: an app that does not import it gets no CSS and the same JavaScript. Its token report is [`packages/vue/etc/tokens.md`](packages/vue/etc/tokens.md) ([ADR 0025](docs/decisions/0025-skin-subpath.md)).
+- The `sideEffects` of `@dolusoft/query-table` is `["*.css"]` instead of `false`, so webpack keeps the import of the stylesheet; the package's scripts still have no side effects.
+- `@dolusoft/query-table-skin` is published for the last time, with the same file, and is deprecated after this release; from 3.24.0 it is no longer published.
+
+### Upgrade notes
+
+- On `@dolusoft/query-table-skin`: remove it and change `import '@dolusoft/query-table-skin/table.css'` to `import '@dolusoft/query-table/table.css'`. Its 3.23.0 is the same file and keeps working, but gets no later version.
+- Without the reference skin nothing changes: the table still loads no CSS.
 
 ## [3.22.0] - 2026-11-25
 
@@ -483,7 +498,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.22.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.23.0...HEAD
+[3.23.0]: https://github.com/dolusoft/query-table/compare/v3.22.0...v3.23.0
 [3.22.0]: https://github.com/dolusoft/query-table/compare/v3.21.0...v3.22.0
 [3.21.0]: https://github.com/dolusoft/query-table/compare/v3.20.0...v3.21.0
 [3.20.0]: https://github.com/dolusoft/query-table/compare/v3.19.0...v3.20.0

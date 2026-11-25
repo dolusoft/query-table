@@ -1,9 +1,10 @@
 // `pnpm measure:package-size`: how much an application that imports a v3
 // package ships (P8). Builds each fixture of fixtures/packages into a
 // minified app (TanStack bundled) against the built `dist/` of the packages,
-// through their `exports` maps, and subtracts the empty baseline app. The
-// reference skin (`skin`) is its built stylesheet, measured as it is. Writes
-// node_modules/.cache/measure/package-size.json. Run after
+// through their `exports` maps, and subtracts the empty baseline app; a
+// fixture build that gives a CSS asset fails (scripts/fixture-build.mjs). The
+// reference skin (`skin`) is the Vue package's built stylesheet, measured as
+// it is. Writes node_modules/.cache/measure/package-size.json. Run after
 // `pnpm build`.
 //
 // `--check` (CI) compares each gzip cost with scripts/package-size-budget.json
@@ -54,12 +55,13 @@ costs['core - tanstack'] = Object.fromEntries(
   ])
 )
 
-// The reference skin (ADR 0023, P8): its stylesheet as a consumer downloads
-// it. There is no app to build: the file is the cost.
-const skinCss = join(root, 'packages', 'query-table-skin', 'dist', 'table.css')
+// The reference skin (ADR 0023, ADR 0025, P8): its stylesheet as a consumer
+// downloads it, `@dolusoft/query-table/table.css`. There is no app to build:
+// the file is the cost.
+const skinCss = join(root, 'packages', 'vue', 'dist', 'table.css')
 if (!existsSync(skinCss)) {
   console.error(
-    '[package-size] packages/query-table-skin/dist/table.css is missing: run `pnpm build` first'
+    '[package-size] packages/vue/dist/table.css is missing: run `pnpm build` first'
   )
   process.exit(1)
 }

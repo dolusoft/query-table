@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 // PRINCIPLES.md P11: the protocol depends on nothing, the core on the
 // protocol and an exact @tanstack/table-core, the Vue package on both plus an
-// exact @tanstack/vue-table, with `vue` as its only peer; the reference skin
+// exact @tanstack/vue-table, with `vue` as its only peer; the skin package
 // on nothing (ADR 0023). P9: the four are versioned together. The root is a
 // private workspace that publishes nothing.
 
@@ -71,11 +71,18 @@ const packages = [
       '@tanstack/vue-table': '9.2.6'
     },
     peers: { vue: '^3.5.0' },
-    subpaths: ['.', './local', './data-table', './cells']
+    subpaths: ['.', './local', './data-table', './cells', './table.css'],
+    // The reference skin, `./table.css`, which no module imports (ADR 0025).
+    // Importing it is a side effect: with `false`, webpack drops
+    // `import '@dolusoft/query-table/table.css'` from a script without a
+    // warning, in production and in development (#253 D-04). The list names
+    // stylesheets only, so the scripts stay free of side effects.
+    sideEffects: ['*.css']
   },
   {
-    // The reference skin: one stylesheet, no script (ADR 0023). A CSS import
-    // is a side effect, so the bundler must keep it.
+    // The skin package: one stylesheet, no script (ADR 0023), published one
+    // last time in 3.23.0 with the Vue package's file (ADR 0025). A CSS
+    // import is a side effect, so the bundler must keep it.
     dir: 'query-table-skin',
     name: '@dolusoft/query-table-skin',
     dependencies: {},
@@ -149,11 +156,9 @@ describe('README install lines', () => {
     expect(installs.map(([, version]) => version)).toEqual([workspace.version])
   })
 
-  it('installs the reference skin at the same version', () => {
-    const skins = [
-      ...readme.matchAll(/^pnpm add @dolusoft\/query-table-skin@(\S+)$/gm)
-    ]
-    expect(skins.map(([, version]) => version)).toEqual([workspace.version])
+  it('imports the reference skin from the Vue package, not from a package of its own', () => {
+    expect(readme).toContain("import '@dolusoft/query-table/table.css'")
+    expect(readme).not.toMatch(/^pnpm add @dolusoft\/query-table-skin/m)
   })
 
   it('contains no GitHub Release download URL', () => {

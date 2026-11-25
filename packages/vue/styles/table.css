@@ -1,7 +1,7 @@
 /*
- * @dolusoft/query-table-skin/table.css: the reference skin of
- * @dolusoft/query-table, the product's table design drawn on the table's DOM
- * contract (contract/dom.ts, ADR 0023). Plain CSS, no build step and no
+ * @dolusoft/query-table/table.css: the reference skin of the table, the
+ * product's table design drawn on the table's DOM contract (contract/dom.ts,
+ * ADR 0025). Plain CSS, no build step and no
  * utility classes: every color, size and font is a `--qt-*` token on
  * `:root`, so a design system maps its own values onto the tokens and keeps
  * the rules. A token is never renamed or removed (etc/tokens.md).

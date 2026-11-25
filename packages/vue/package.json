@@ -1,13 +1,15 @@
 {
   "name": "@dolusoft/query-table",
-  "version": "3.22.0",
+  "version": "3.23.0",
   "description": "A thin Vue 3 table for server-side data: it renders rows and emits sort, filter, search and paging changes. Built on TanStack Table.",
   "private": false,
   "type": "module",
   "files": [
     "dist"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "main": "./dist/query-table.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
@@ -26,7 +28,8 @@
     "./cells": {
       "types": "./dist/types/cells/index.d.ts",
       "default": "./dist/cells.js"
-    }
+    },
+    "./table.css": "./dist/table.css"
   },
   "engines": {
     "node": ">=22.12"
@@ -53,7 +56,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "build": "vite build && vue-tsc -p tsconfig.build.json && node ../../scripts/emit-type-extensions.mjs dist/types"
+    "build": "vite build && vue-tsc -p tsconfig.build.json && node ../../scripts/emit-type-extensions.mjs dist/types && node ../../scripts/copy-stylesheet.mjs"
   },
   "dependencies": {
     "@dolusoft/query-protocol": "workspace:*",

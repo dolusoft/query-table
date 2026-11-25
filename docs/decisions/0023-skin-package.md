@@ -1,6 +1,6 @@
 # 0023 A fourth package for the reference skin: `@dolusoft/query-table-skin` (3.20)
 
-Status: Accepted (2026-11-19), [query-table#99](https://github.com/dolusoft/query-table/issues/99) under [query-table#201](https://github.com/dolusoft/query-table/issues/201). Decided by Enes on 2026-11-18: the reference skin ships as a separate package (#99 D-01), written in plain CSS driven by `--qt-*` custom properties (#99 D-02) ([comment](https://github.com/dolusoft/query-table/issues/99#issuecomment-7008639821)). Amends [ADR 0002](0002-three-packages.md): a fourth package next to the three.
+Status: Accepted (2026-11-19), [query-table#99](https://github.com/dolusoft/query-table/issues/99) under [query-table#201](https://github.com/dolusoft/query-table/issues/201). Decided by Enes on 2026-11-18: the reference skin ships as a separate package (#99 D-01), written in plain CSS driven by `--qt-*` custom properties (#99 D-02) ([comment](https://github.com/dolusoft/query-table/issues/99#issuecomment-7008639821)). Amends [ADR 0002](0002-three-packages.md): a fourth package next to the three. Superseded by [ADR 0025](0025-skin-subpath.md) (2026-11-25, #253) for K320-7, the package checks of K320-10 and K320-11: the skin ships as `@dolusoft/query-table/table.css`, a subpath of the Vue package, and this package is published one last time in 3.23.0; the content (K320-8) and the token promise (K320-9) stand at the new path.
 
 ## Context
 

@@ -1,7 +1,7 @@
 {
   "name": "query-table-workspace",
-  "version": "3.22.0",
-  "description": "Workspace of Query Table: the protocol, core and Vue packages and the reference skin in packages/, the playground in apps/.",
+  "version": "3.23.0",
+  "description": "Workspace of Query Table: the protocol, core and Vue packages in packages/ (the Vue package ships the reference skin), the playground in apps/.",
   "private": true,
   "type": "module",
   "engines": {
@@ -48,7 +48,7 @@
     "check:size": "node scripts/consumer-size.mjs --check",
     "equivalence": "node scripts/equivalence.mjs",
     "check:no-css-leak": "node scripts/check-dist-fresh.mjs && node scripts/check-css-leak.mjs",
-    "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint packages/query-protocol && publint packages/query-table-core && publint packages/vue && publint packages/query-table-skin && cd packages/query-protocol && attw --pack . --profile esm-only && cd ../query-table-core && attw --pack . --profile esm-only && cd ../vue && attw --pack . --profile esm-only",
+    "check:package": "node scripts/check-dist-fresh.mjs && node scripts/check-no-css.mjs && publint packages/query-protocol && publint packages/query-table-core && publint packages/vue && cd packages/query-protocol && attw --pack . --profile esm-only && cd ../query-table-core && attw --pack . --profile esm-only && cd ../vue && attw --pack . --profile esm-only --exclude-entrypoints table.css",
     "knip": "knip",
     "contract:gen": "node scripts/gen-contract.mjs",
     "contract:check": "node scripts/gen-contract.mjs --check",

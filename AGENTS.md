@@ -24,7 +24,7 @@ protocol → core → vue → playground. Imports point only that way.
 - `@dolusoft/query-table-core`: `@tanstack/table-core` + protocol. Two plugins, `serverQueryFeature` and `filterInputFeature`, and `shared/`; pure core modules behind their own entries (P10), such as `/row-changes` (ADR 0011).
 - `@dolusoft/query-table`: Vue. `useQueryTable` + `QueryTable`; public API and DOM contract as in 2.2.x.
 
-`@dolusoft/query-table-skin` is outside the layers: one stylesheet, `table.css`, over the DOM contract; no JavaScript, no dependencies, and no package imports it. Its `--qt-*` tokens are public surface and never renamed or removed (ADR 0023).
+The reference skin is outside the layers: one stylesheet over the DOM contract, `packages/vue/styles/table.css`, that the Vue package exports as `@dolusoft/query-table/table.css` and no module imports. Its `--qt-*` tokens are public surface and never renamed or removed (ADR 0023, ADR 0025). The skin package, `@dolusoft/query-table-skin`, is published one last time in 3.23.0 with the same file.
 
 ## Plugin contract (ADR 0003, ADR 0004)
 
@@ -36,7 +36,7 @@ protocol → core → vue → playground. Imports point only that way.
 ## Do not
 
 - Add a runtime dependency, or loosen the exact TanStack version pin (P11).
-- Ship CSS or a styling prop from a table package (P5); the look ships only in `@dolusoft/query-table-skin`. Add an unlisted DOM hook (P6).
+- Put styles in the scripts of a table package or add a styling prop (P5); the look ships only in `table.css` of the Vue package, which no module imports. Add an unlisted DOM hook (P6).
 - Fetch or touch storage in library code (P1).
 - Edit `CONTRACT.md` or `contract/api.json` by hand (`pnpm contract:gen`).
 - Change `PRINCIPLES.md`, `docs/decisions/`, `contract/rules.md`, the lint layer config, the budgets or `.github/` without a code owner's review (`.github/CODEOWNERS`).
