@@ -13,7 +13,7 @@ Three packages: `@dolusoft/query-protocol` (the query types, the filter grammar 
 The packages are released together on npm. Add the Vue package by name and version; the protocol and the core come with it as dependencies:
 
 ```bash
-pnpm add @dolusoft/query-table@3.23.0
+pnpm add @dolusoft/query-table@3.24.0
 ```
 
 The table adds no CSS. For the product's table design, import the reference skin once; it comes with the Vue package, so it is always the version of the table (see [Reference skin](#reference-skin)):
