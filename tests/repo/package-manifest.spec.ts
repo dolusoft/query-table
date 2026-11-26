@@ -6,9 +6,8 @@ import { describe, expect, it } from 'vitest'
 
 // PRINCIPLES.md P11: the protocol depends on nothing, the core on the
 // protocol and an exact @tanstack/table-core, the Vue package on both plus an
-// exact @tanstack/vue-table, with `vue` as its only peer; the skin package
-// on nothing (ADR 0023). P9: the four are versioned together. The root is a
-// private workspace that publishes nothing.
+// exact @tanstack/vue-table, with `vue` as its only peer. P9: the three are
+// versioned together. The root is a private workspace that publishes nothing.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (...path: string[]) =>
@@ -77,17 +76,6 @@ const packages = [
     // `import '@dolusoft/query-table/table.css'` from a script without a
     // warning, in production and in development (#253 D-04). The list names
     // stylesheets only, so the scripts stay free of side effects.
-    sideEffects: ['*.css']
-  },
-  {
-    // The skin package: one stylesheet, no script (ADR 0023), published one
-    // last time in 3.23.0 with the Vue package's file (ADR 0025). A CSS
-    // import is a side effect, so the bundler must keep it.
-    dir: 'query-table-skin',
-    name: '@dolusoft/query-table-skin',
-    dependencies: {},
-    peers: {},
-    subpaths: ['./table.css'],
     sideEffects: ['*.css']
   }
 ]

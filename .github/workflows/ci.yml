@@ -105,7 +105,7 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      # One build of the dist/ of the four packages serves every check below.
+      # One build of the dist/ of the three packages serves every check below.
       - run: pnpm build
       # Linted as packages (publint, attw); sources and dist/ against the
       # dependency allow-list.
@@ -121,7 +121,7 @@ jobs:
       - run: pnpm api:check
       # The default entries never reach the local evaluator (C-75).
       - run: pnpm check:entry-graph
-      # The four tarballs installed into an app outside the workspace, the
+      # The three tarballs installed into an app outside the workspace, the
       # way an npm install resolves them, then typechecked, built and loaded
       # in Chromium.
       - uses: ./.github/actions/chromium

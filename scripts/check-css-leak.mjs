@@ -1,9 +1,8 @@
 // The CSS leak scan (P5): the scripts of the table packages carry no styles
 // in any form, not only as a `.css` file (scripts/check-no-css.mjs). One
 // file is left out: the reference skin, `table.css` of the Vue package
-// (ADR 0025), which is the stylesheet; so is the skin package, published
-// one last time in 3.23.0 with the same file. Every other file of each
-// table package's `dist/` and of its tarball is searched for the marks of a
+// (ADR 0025), which is the stylesheet. Every other file of each table
+// package's `dist/` and of its tarball is searched for the marks of a
 // stylesheet or an animation written by script: a keyframes block, a style
 // element, a rule inserted into a sheet, a constructed sheet, a Web
 // Animations call and the keyframe names of the test skin's flash. The look
@@ -54,13 +53,12 @@ const tarballFiles = dir => {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = join(import.meta.dirname, '..')
   const rel = path => relative(root, path).split(sep).join('/')
-  // The table packages only: the skin package (ADR 0023) is a stylesheet,
-  // where a flash's keyframes belong. check-no-css.mjs holds it to CSS alone.
   const packages = readdirSync(join(root, 'packages'), { withFileTypes: true })
-    .filter(entry => entry.isDirectory() && entry.name !== 'query-table-skin')
+    .filter(entry => entry.isDirectory())
     .map(entry => join(root, 'packages', entry.name))
   // The reference skin in the Vue package (ADR 0025): the one stylesheet,
-  // byte for byte its source (check-no-css.mjs).
+  // where a flash's keyframes belong, byte for byte its source
+  // (check-no-css.mjs).
   const stylesheet = join(root, 'packages', 'vue', 'dist', 'table.css')
   const leaks = []
   let checked = 0

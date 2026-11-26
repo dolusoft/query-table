@@ -8,6 +8,19 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+## [3.24.0] - 2026-11-26
+
+The skin package is retired: the reference skin ships only in `@dolusoft/query-table`.
+
+### Changed
+
+- `@dolusoft/query-table-skin` is no longer published. Its last version is 3.23.0, deprecated on npm; the reference skin is `@dolusoft/query-table/table.css` since 3.23.0, the same file ([ADR 0025](docs/decisions/0025-skin-subpath.md)).
+
+### Upgrade notes
+
+- No change is needed to upgrade the three packages: their code, types and stylesheet are those of 3.23.0.
+- Still on `@dolusoft/query-table-skin`: remove it and import `@dolusoft/query-table/table.css`. Its 3.23.0 keeps installing and working, but no later version of it comes.
+
 ## [3.23.0] - 2026-11-25
 
 The reference skin ships with the table: `import '@dolusoft/query-table/table.css'`.
@@ -498,7 +511,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.23.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.24.0...HEAD
+[3.24.0]: https://github.com/dolusoft/query-table/compare/v3.23.0...v3.24.0
 [3.23.0]: https://github.com/dolusoft/query-table/compare/v3.22.0...v3.23.0
 [3.22.0]: https://github.com/dolusoft/query-table/compare/v3.21.0...v3.22.0
 [3.21.0]: https://github.com/dolusoft/query-table/compare/v3.20.0...v3.21.0
