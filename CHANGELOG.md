@@ -8,6 +8,14 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+### Fixed
+
+- A number or integer filter input read every notation a JavaScript number reads, so a rule could carry a value other than the one typed: `1.0000000000000001` in an integer column filtered `Equal 1`, `0x10` `Equal 16` and `1e3` `Equal 1000`. The input now reads decimal notation only: an optional sign, digits and an optional fraction after a dot. Other notations, and a fraction that is not zeros in an integer column, make no rule, and the input is marked as for any text that gives none ([C-116](contract/rules.md#c-116-text-that-gives-no-rule)). A number from outside that JavaScript writes with an exponent, such as `5e-7`, shows as `0.0000005`, so it still reads back ([C-16](contract/rules.md#c-16-value-types)).
+
+### Upgrade notes
+
+- `parseFilterInput` now gives `[]` for `1e3`, `0x10`, `0b11`, `.5` and `5.` in a number or integer column, and for `1.0000000000000001` in an integer column. If you build rules from such text with it, write it in decimal notation.
+
 ## [3.24.0] - 2026-11-26
 
 The skin package is retired: the reference skin ships only in `@dolusoft/query-table`.

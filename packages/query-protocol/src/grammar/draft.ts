@@ -44,6 +44,16 @@ type WithoutField<R> = R extends FilterRule ? Omit<R, 'field'> : never
  */
 export type Parsed = Array<WithoutField<FilterRule>>
 
+/**
+ * Decimal notation, the only one a number or integer input reads (C-16): an
+ * optional sign, digits, and an optional fraction after a dot. `Number` also
+ * reads `1e3`, `0x10`, `0b11`, `.5` and `5.`; they make no rule.
+ */
+const decimalNotation = /^[+-]?\d+(?:\.\d+)?$/
+
+/** Decimal notation of a whole number: its fraction, if any, is zeros (`2.0`). */
+const wholeNotation = /^[+-]?\d+(?:\.0+)?$/
+
 /** One operand typed into an input of a column that is not text, or `null`. */
 const operandOf = (type: ColumnType, raw: string): FilterValue | null => {
   const text = raw.trim()
@@ -52,13 +62,14 @@ const operandOf = (type: ColumnType, raw: string): FilterValue | null => {
   }
   switch (type) {
     case 'number': {
-      const value = Number(text)
+      const value = decimalNotation.test(text) ? Number(text) : NaN
       return Number.isFinite(value) ? value : null
     }
     case 'integer': {
-      // A whole number in the safe range only: `2.5` is no rule, and neither
-      // is `2^53`, which a number cannot hold exactly (C-16).
-      const value = Number(text)
+      // A whole number in the safe range only: `2.5` is no rule, nor is
+      // `1.0000000000000001`, which a number would round to `1`, nor `2^53`,
+      // which a number cannot hold exactly (C-16).
+      const value = wholeNotation.test(text) ? Number(text) : NaN
       return Number.isSafeInteger(value) ? value : null
     }
     case 'bool':
@@ -204,6 +215,28 @@ export const rulesFromDraft = (
 ): FilterRule[] =>
   parseDraft(column, draft).map(parsed => ruleOf(column.field, parsed))
 
+/**
+ * The text of a value in an input. A number is written in decimal notation,
+ * the one its input reads (C-16): `String` writes `5e-7` and `1e+21`, so
+ * their exponent is spelled out as `0.0000005` and `1000000000000000000000`.
+ * The digits stay those of `String`, so the text reads back as the same
+ * number.
+ */
+const textOf = (value: unknown): string => {
+  const [mantissa, exponent] = String(value).split('e')
+  if (typeof value !== 'number' || exponent === undefined) {
+    return String(value)
+  }
+  // `String` uses an exponent from 1e21 up and below 1e-6 only, so the
+  // digits never reach the dot.
+  const shift = Number(exponent)
+  const digits = mantissa.replace(/\D/g, '')
+  const sign = value < 0 ? '-' : ''
+  return shift < 0
+    ? `${sign}0.${'0'.repeat(-shift - 1)}${digits}`
+    : sign + digits.padEnd(shift + 1, '0')
+}
+
 /** Text that parses as itself: no operator, no comma, no outer spaces. */
 const isPlainText = (value: string) =>
   value !== '' &&
@@ -222,18 +255,19 @@ const numberListOf = (
 ): Draft | null => {
   const [first] = rules
   const values = rules.map(rule => ('value' in rule ? rule.value : undefined))
+  const texts = values.map(textOf)
   // A value is written only when its text reads back as the same value.
   if (
     !isListed(type) ||
     !takesList(first.condition) ||
     rules.some(rule => rule.condition !== first.condition) ||
-    values.some(value => operandOf(type, String(value)) !== value)
+    values.some((value, index) => operandOf(type, texts[index]) !== value)
   ) {
     return null
   }
   return first.condition === 'NotEqual'
-    ? { text: values.map(value => `!${value}`).join(','), condition: null }
-    : { text: values.join(','), condition: first.condition }
+    ? { text: texts.map(text => `!${text}`).join(','), condition: null }
+    : { text: texts.join(','), condition: first.condition }
 }
 
 /** The draft that shows `rules` (the inverse of `parseDraft`). */
@@ -268,8 +302,8 @@ export const draftFromRules = (
         return { text: cidr, condition: null }
       }
       return {
-        text: String(first.value),
-        text2: String(first.value2),
+        text: textOf(first.value),
+        text2: textOf(first.value2),
         condition: first.condition
       }
     }
@@ -307,7 +341,7 @@ export const draftFromRules = (
     return { text: '', condition: first.condition, multi: rules.length }
   }
   return {
-    text: String(first.value),
+    text: textOf(first.value),
     condition: first.condition
   }
 }
