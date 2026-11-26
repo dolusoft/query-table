@@ -335,8 +335,6 @@ importers:
         specifier: 9.2.6
         version: 9.2.6
 
-  packages/query-table-skin: {}
-
   packages/vue:
     dependencies:
       '@dolusoft/query-protocol':

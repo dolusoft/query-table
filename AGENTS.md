@@ -24,7 +24,7 @@ protocol → core → vue → playground. Imports point only that way.
 - `@dolusoft/query-table-core`: `@tanstack/table-core` + protocol. Two plugins, `serverQueryFeature` and `filterInputFeature`, and `shared/`; pure core modules behind their own entries (P10), such as `/row-changes` (ADR 0011).
 - `@dolusoft/query-table`: Vue. `useQueryTable` + `QueryTable`; public API and DOM contract as in 2.2.x.
 
-The reference skin is outside the layers: one stylesheet over the DOM contract, `packages/vue/styles/table.css`, that the Vue package exports as `@dolusoft/query-table/table.css` and no module imports. Its `--qt-*` tokens are public surface and never renamed or removed (ADR 0023, ADR 0025). The skin package, `@dolusoft/query-table-skin`, is published one last time in 3.23.0 with the same file.
+The reference skin is outside the layers: one stylesheet over the DOM contract, `packages/vue/styles/table.css`, that the Vue package exports as `@dolusoft/query-table/table.css` and no module imports. Its `--qt-*` tokens are public surface and never renamed or removed (ADR 0023, ADR 0025). The former skin package, `@dolusoft/query-table-skin`, was last published in 3.23.0 and is deprecated on npm.
 
 ## Plugin contract (ADR 0003, ADR 0004)
 

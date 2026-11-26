@@ -1,7 +1,7 @@
 name: Release
 
-# Publishes a version of the four packages together (the three table
-# packages and the reference skin, ADR 0023): push a tag
+# Publishes a version of the three packages together (the reference skin
+# ships in the Vue package, ADR 0025): push a tag
 # `v<version>` that equals the `version` of the root and of every
 # packages/*/package.json (see CONTRIBUTING.md, "Releasing").
 #
@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The four packages are released together under one version: fails in
+  # The three packages are released together under one version: fails in
   # seconds, before any check runs, when the tag and a package.json differ.
   version:
     runs-on: ubuntu-latest
@@ -107,16 +107,15 @@ jobs:
       - name: Pack
         run: |
           mkdir -p release
-          for dir in packages/query-protocol packages/query-table-core packages/vue packages/query-table-skin; do
+          for dir in packages/query-protocol packages/query-table-core packages/vue; do
             (cd "$dir" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/release")
           done
           count="$(find release -maxdepth 1 -name '*.tgz' | wc -l)"
-          if [ "$count" -ne 4 ]; then
-            echo "::error::Expected four tarballs in release/, found $count."
+          if [ "$count" -ne 3 ]; then
+            echo "::error::Expected three tarballs in release/, found $count."
             exit 1
           fi
           test -f "release/dolusoft-query-table-${{ needs.version.outputs.version }}.tgz"
-          test -f "release/dolusoft-query-table-skin-${{ needs.version.outputs.version }}.tgz"
           # The conformance suite as an asset of its own, pinned by the notes.
           node scripts/pack-conformance.mjs release-extra
           test -f release-extra/release-notes.md
@@ -160,9 +159,9 @@ jobs:
       id-token: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      # Dependencies first, then the reference skin, which depends on nothing
-      # and dresses the table of the same version (ADR 0023).
-      PACKAGES: query-protocol query-table-core query-table query-table-skin
+      # Dependencies first. The reference skin is part of query-table (ADR
+      # 0025); @dolusoft/query-table-skin was last published in 3.23.0.
+      PACKAGES: query-protocol query-table-core query-table
     steps:
       # The artifact keeps the common root of its paths: release/ and
       # release-extra/ land side by side in the workspace.
