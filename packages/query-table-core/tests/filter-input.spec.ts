@@ -331,6 +331,36 @@ describe('C-20 Picking a condition [own]', () => {
     expect(t.query.filters).toEqual([rule('age', 1, 'GreaterThan')])
   })
 
+  it('a number that carries over is written in decimal notation (C-16)', () => {
+    // `String` would write `5e-7`, which the input does not read: the rule
+    // would be lost instead of carried over.
+    const typed = makeTable()
+    const age = typed.column('age')
+    age.setFilterInput('0.0000005,0.0000006')
+    vi.runAllTimers()
+    age.setFilterCondition('GreaterThan')
+    expect(age.getFilterInput()).toMatchObject({
+      text: '0.0000005',
+      condition: 'GreaterThan'
+    })
+    expect(typed.query.filters).toEqual([rule('age', 5e-7, 'GreaterThan')])
+
+    const outside = makeTable({
+      query: start({
+        filters: [
+          rule('age', 1e21, 'GreaterThan'),
+          rule('age', 1e22, 'LessThan')
+        ]
+      })
+    })
+    outside.column('age').setFilterCondition('Equal')
+    expect(outside.column('age').getFilterInput()).toMatchObject({
+      text: '1000000000000000000000',
+      condition: 'Equal'
+    })
+    expect(outside.query.filters).toEqual([rule('age', 1e21, 'Equal')])
+  })
+
   it('on a typed number list, Between keeps the first value as the lower bound', () => {
     const t = makeTable()
     const age = t.column('age')

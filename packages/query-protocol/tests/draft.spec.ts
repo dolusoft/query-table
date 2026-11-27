@@ -98,6 +98,43 @@ describe('C-16 Value types: a draft parses into rules', () => {
     }
   })
 
+  it('an integer column rejects a fraction that a number would round away', () => {
+    // `Number` reads it as 1, which would send `Equal 1` (#263).
+    expect(parseDraft(column('integer'), draft('1.0000000000000001'))).toEqual(
+      []
+    )
+    expect(parseDraft(column('integer'), draft('2.00'))).toEqual([
+      { condition: 'Equal', value: 2 }
+    ])
+  })
+
+  it.each(['number', 'integer'] as const)(
+    'the %s input reads decimal notation only',
+    type => {
+      // Notations `Number` also reads make no rule, alone, in a list, after
+      // `!` and as a bound.
+      for (const text of ['1e3', '0x10', '0b11', '0o7', '.5', '-.5', '5.']) {
+        expect(parseDraft(column(type), draft(text))).toEqual([])
+      }
+      expect(parseDraft(column(type), draft('80,1e3'))).toEqual([])
+      expect(parseDraft(column(type), draft('!0x10'))).toEqual([])
+      expect(
+        parseDraft(column(type), {
+          text: '1',
+          text2: '1e3',
+          condition: 'Between'
+        })
+      ).toEqual([])
+      // A sign is decimal notation.
+      expect(parseDraft(column(type), draft('-3'))).toEqual([
+        { condition: 'Equal', value: -3 }
+      ])
+      expect(parseDraft(column(type), draft('+4'))).toEqual([
+        { condition: 'Equal', value: 4 }
+      ])
+    }
+  )
+
   it('bool columns give boolean values and nothing else', () => {
     expect(parseDraft(column('bool'), draft('true'))).toEqual([
       { condition: 'Equal', value: true }
@@ -170,6 +207,26 @@ describe('C-18 The input follows outside changes: a draft shows rules', () => {
       text: '5',
       condition: 'GreaterThan'
     })
+  })
+
+  it('a number shows in decimal notation, which reads back (C-16)', () => {
+    // `String` writes these with an exponent, which the input does not read.
+    const cases: Array<[number, string]> = [
+      [5e-7, '0.0000005'],
+      [-1.5e-10, '-0.00000000015'],
+      [1e21, '1000000000000000000000'],
+      [-2.5e22, '-25000000000000000000000'],
+      [Number.MIN_VALUE, `0.${'0'.repeat(323)}5`],
+      [0.000001, '0.000001'],
+      [123.45, '123.45']
+    ]
+    for (const [value, text] of cases) {
+      const shown = draftFromRules(column('number'), [rule('Equal', value)])
+      expect(shown).toEqual({ text, condition: 'Equal' })
+      expect(rulesFromDraft(column('number'), shown)).toEqual([
+        rule('Equal', value)
+      ])
+    }
   })
 })
 
@@ -306,6 +363,16 @@ describe('C-16 Value types: number lists and negation (C-42 writes them back)', 
       expect(rulesFromDraft(ports, shown)).toEqual(rules)
     }
   })
+
+  it('a list of numbers shows them in decimal notation', () => {
+    const rules = [rule('NotEqual', 5e-7), rule('NotEqual', 1e21)]
+    const shown: Draft = {
+      text: '!0.0000005,!1000000000000000000000',
+      condition: null
+    }
+    expect(draftFromRules(column('number'), rules)).toEqual(shown)
+    expect(rulesFromDraft(column('number'), shown)).toEqual(rules)
+  })
 })
 
 describe('hasContent', () => {
@@ -423,6 +490,15 @@ describe('C-114 Between: two bounds, both needed', () => {
         { field: 'f', condition: 'Between', value: 1, value2: 2 }
       ])
     ).toEqual({ text: '1', text2: '2', condition: 'Between' })
+    expect(
+      draftFromRules(column('number'), [
+        { field: 'f', condition: 'Between', value: 1e-7, value2: 1e21 }
+      ])
+    ).toEqual({
+      text: '0.0000001',
+      text2: '1000000000000000000000',
+      condition: 'Between'
+    })
   })
 
   it('a typed upper bound alone is content', () => {

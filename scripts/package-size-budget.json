@@ -13,7 +13,8 @@
     "3.16.0 (#180, 2026-10-27): protocol 1520 B (+144 B over the 1376 B measure of 3.14), core 18554 B (+155 B over the 18399 B of 3.15, which had 43 B of room left). A column's `filterDefaultCondition` (C-117): the conditions each type offers, without their labels, so the parser can tell an offered default from one that counts as unset. Budgets set to measure plus 5%; both are over their ceilings, which are raised as #171 proposed, measure x 1.05 rounded up to the next 500 B (K7: size is not a blocker): protocol 2000 B, core 19500 B. filter-input 12316 B stays within its budget.",
     "3.17.0 (#184, 2026-10-27): protocol 2218 B (+698 B over the 1520 B of 3.16), filter-input 13108 B (+1299 B over the 11809 B of 3.13, which 3.14 to 3.16 had grown to 12316 B). The column type `ip` (C-118): IPv4 and IPv6 parsing with BigInt, a CIDR prefix to its bounds and back, and the RFC 5952 text of a bound. Budgets set to measure plus 5%; protocol is over its ceiling, raised to measure x 1.05 rounded up to the next 500 B (K7): 2500 B.",
     "3.20.0 (ADR 0023, #99, 2026-11-19): skin 4470 B, the reference skin's stylesheet (`@dolusoft/query-table-skin/table.css`, 18418 B raw) measured as it is: no app is built, the file is what a consumer downloads. 52 tokens, the table's own parts and the cell components, light and dark. Budget 4694 B (measure plus 5%), ceiling 5500 B (measure times 1.2 rounded up to 500 B).",
-    "3.23.0 (ADR 0025, #253, 2026-11-25): skin 4624 B, now measured at `packages/vue/dist/table.css`: the stylesheet moved into the Vue package as `@dolusoft/query-table/table.css`, 52 tokens unchanged (3.21 and 3.22 had grown it to 4632 B). Budget and ceiling unchanged."
+    "3.23.0 (ADR 0025, #253, 2026-11-25): skin 4624 B, now measured at `packages/vue/dist/table.css`: the stylesheet moved into the Vue package as `@dolusoft/query-table/table.css`, 52 tokens unchanged (3.21 and 3.22 had grown it to 4632 B). Budget and ceiling unchanged.",
+    "3.24.1 (#263, C-16, 2026-11-26): core 19499 B (+160 B over the 19339 B of 3.24.0). A number or integer filter input reads decimal notation only (+49 B), and a number shown in an input is written in decimal notation so that its text reads back (+111 B). It is over the 19482 B budget and 1 B under the 19500 B ceiling, so the ceiling is raised as #171 proposed, measure x 1.05 rounded up to the next 500 B, 20500 B (K7: size is not a blocker). Budget set to measure plus 5%. protocol 2259 B and filter-input 13278 B stay within their budgets."
   ],
   "fixtures": {
     "protocol": {
@@ -40,9 +41,9 @@
       "ceilingGzipBytes": 2000
     },
     "core": {
-      "measuredGzipBytes": 18554,
-      "maxGzipBytes": 19482,
-      "ceilingGzipBytes": 19500
+      "measuredGzipBytes": 19499,
+      "maxGzipBytes": 20474,
+      "ceilingGzipBytes": 20500
     },
     "skin": {
       "measuredGzipBytes": 4470,
