@@ -347,7 +347,18 @@ const setCondition = (column: AnyColumn, condition: FilterCondition | null) => {
     const first = draft.multi
       ? rulesIn(shownFilters(table), column.id)[0]
       : typed[0]
-    draft.text = first?.value === undefined ? '' : String(first.value)
+    // Written as an `Equal` rule of it shows: a number in decimal notation,
+    // the one the input reads (C-16), so `5e-7` carries over as `0.0000005`.
+    draft.text =
+      first?.value === undefined
+        ? ''
+        : draftFromRules(filterColumn, [
+            {
+              field: filterColumn.field,
+              condition: 'Equal',
+              value: first.value
+            }
+          ]).text
     draft.multi = undefined
   }
   draft.condition = condition
