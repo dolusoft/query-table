@@ -8,6 +8,10 @@ Each entry links the behavior rule it comes from (`C-nn` in [`contract/rules.md`
 
 ## [Unreleased]
 
+## [3.24.1] - 2026-11-27
+
+A fix for number and integer filter inputs, which read notations other than decimal and could send a value other than the one typed.
+
 ### Fixed
 
 - A number or integer filter input read every notation a JavaScript number reads, so a rule could carry a value other than the one typed: `1.0000000000000001` in an integer column filtered `Equal 1`, `0x10` `Equal 16` and `1e3` `Equal 1000`. The input now reads decimal notation only: an optional sign, digits and an optional fraction after a dot. Other notations, and a fraction that is not zeros in an integer column, make no rule, and the input is marked as for any text that gives none ([C-116](contract/rules.md#c-116-text-that-gives-no-rule)). A number from outside that JavaScript writes with an exponent, such as `5e-7`, shows as `0.0000005`, so it still reads back ([C-16](contract/rules.md#c-16-value-types)).
@@ -519,7 +523,8 @@ The implementation moves to TanStack Table v9 and is split into three packages, 
 - Install: the three packages are GitHub Release tarballs; map `@dolusoft/query-protocol` and `@dolusoft/query-table-core` to their tarballs with `overrides` (from 3.0.1 they are on npm).
 - The full guide is [docs/guide/migration-v3.md](docs/guide/migration-v3.md).
 
-[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.24.0...HEAD
+[Unreleased]: https://github.com/dolusoft/query-table/compare/v3.24.1...HEAD
+[3.24.1]: https://github.com/dolusoft/query-table/compare/v3.24.0...v3.24.1
 [3.24.0]: https://github.com/dolusoft/query-table/compare/v3.23.0...v3.24.0
 [3.23.0]: https://github.com/dolusoft/query-table/compare/v3.22.0...v3.23.0
 [3.22.0]: https://github.com/dolusoft/query-table/compare/v3.21.0...v3.22.0
