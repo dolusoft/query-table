@@ -64,7 +64,11 @@
     "check:entry-graph": "node scripts/check-entry-graph.mjs",
     "measure:package-size": "pnpm build && node scripts/package-size.mjs",
     "check:package-size": "node scripts/package-size.mjs --check",
-    "pack-install": "node scripts/pack-install-test.mjs"
+    "pack-install": "node scripts/pack-install-test.mjs",
+    "check:static": "node scripts/check-release-version.mjs && pnpm lint && pnpm typecheck && pnpm knip && pnpm contract:check && pnpm schema:check && pnpm conformance:check && pnpm playground:build && pnpm test:coverage",
+    "check:browser": "pnpm test:browser:headless && pnpm check:renders",
+    "check:build": "pnpm build && pnpm check:package && pnpm check:no-css-leak && pnpm check:deps && pnpm check:size && pnpm check:package-size && pnpm api:check && pnpm check:entry-graph && pnpm pack-install",
+    "check:all": "pnpm check:static && pnpm check:browser && pnpm check:build"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

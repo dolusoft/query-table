@@ -12,66 +12,75 @@ on:
 permissions:
   contents: read
 
+env:
+  # A stalled download of the pnpm store cache is given up after 2 minutes
+  # (the default is 10) and the install fetches from the registry: a run once
+  # spent 10 minutes in `setup-node` and came close to its job's limit.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
 concurrency:
   # On a workflow_call the caller's workflow name keeps the group apart from
   # the CI run of the same ref.
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
-# Three jobs run side by side; the longest sets the wall time.
-# `verify` is the required status check: it passes only when all three pass.
+# The jobs run side by side; the longest sets the wall time. Each one runs a
+# `check:*` script of package.json, the list AGENTS.md gives for a push.
+# Actions are pinned to a commit, the version they were taken at beside it.
+# `verify` is the required status check: it passes only when all jobs pass.
 jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      # The tags too: check-release-version compares the version with the
+      # latest release tag (ADR 0019); release.yml runs the same script.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      # A version set in package.json is the next minor or patch of the latest
-      # release tag (ADR 0019); release.yml runs the same script.
-      - run: node scripts/check-release-version.mjs
-
       # The pnpm version is the `packageManager` field of package.json.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm knip
-      - run: pnpm contract:check
-      # The JSON Schema of the protocol is generated from its constants.
-      - run: pnpm schema:check
-      - run: pnpm conformance:check
-      - run: pnpm playground:build
-      - run: pnpm test:coverage
+      # The release version, lint, types, unused code, the generated contract,
+      # schema and conformance manifest, the playground build and the unit
+      # tests with their coverage floors.
+      - run: pnpm check:static
 
       # The .NET sample of docs/guide/protocol.md: built and run against the
       # JSON Schema (the TypeScript samples are checked by typecheck and vitest).
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: 8.x
       - run: dotnet run --project docs/guide/examples/dotnet -- "$GITHUB_WORKSPACE"
 
+  # The browser tests are the longest part of a run: two shards of the spec
+  # files share them. A split by project would not balance, as nearly every
+  # spec is in the desktop project.
   browser:
+    name: browser (${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     # A hung browser run must not hold a runner for the 6-hour default.
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
@@ -79,9 +88,29 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - uses: ./.github/actions/chromium
-      - run: pnpm test:browser
+      - run: pnpm test:browser --shard=${{ matrix.shard }}/2
         timeout-minutes: 5
-      # Render counts against scripts/render-budget.json (PRINCIPLES.md P8).
+
+  # Render counts against scripts/render-budget.json (PRINCIPLES.md P8), beside
+  # the browser tests instead of after them.
+  renders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/chromium
       - run: pnpm check:renders
         timeout-minutes: 5
 
@@ -92,44 +121,32 @@ jobs:
     steps:
       # The tags too: api:check compares the skin's tokens with those of the
       # latest release (scripts/skin-tokens.mjs).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      # One build of the dist/ of the three packages serves every check below.
-      - run: pnpm build
-      # Linted as packages (publint, attw); sources and dist/ against the
-      # dependency allow-list.
-      - run: pnpm check:package
-      # No stylesheet or scripted animation in dist/ or the tarballs (P5).
-      - run: pnpm check:no-css-leak
-      - run: pnpm check:deps
-      # Size (P8): the Vue fixtures against scripts/consumer-size-budget.json,
-      # the protocol and core fixtures against scripts/package-size-budget.json.
-      - run: pnpm check:size
-      - run: pnpm check:package-size
-      # One API report per published TypeScript entry (etc/*.api.md).
-      - run: pnpm api:check
-      # The default entries never reach the local evaluator (C-75).
-      - run: pnpm check:entry-graph
-      # The three tarballs installed into an app outside the workspace, the
-      # way an npm install resolves them, then typechecked, built and loaded
-      # in Chromium.
+      # pack-install, the last check, loads the installed packages in Chromium.
       - uses: ./.github/actions/chromium
-      - run: pnpm pack-install
-        timeout-minutes: 5
+      # One build of the dist/ of the three packages serves every check: the
+      # packages linted as packages (publint, attw), no stylesheet in dist/
+      # or the tarballs (P5), the dependency allow-list, the size budgets
+      # (P8), the API reports, the entry graph (C-75), and the three tarballs
+      # installed into an app outside the workspace, the way an npm install
+      # resolves them, then typechecked, built and loaded in Chromium.
+      - run: pnpm check:build
+        timeout-minutes: 10
 
   verify:
-    needs: [checks, browser, package]
+    needs: [checks, browser, renders, package]
     # Runs even when a job before it failed or the run was cancelled, so the
     # required check reports a failure: branch protection counts a skipped
     # required check as passed.
@@ -141,7 +158,7 @@ jobs:
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "checks, browser, package: $RESULTS"
+          echo "checks, browser, renders, package: $RESULTS"
           for result in $RESULTS; do
             if [ "$result" != "success" ]; then
               exit 1
