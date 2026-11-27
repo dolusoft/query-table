@@ -364,6 +364,28 @@ describe('C-31 geometry of the plain markup with the test skin', () => {
       }
     })
     await shot('layout-full-table')
+    // Every part asked for is drawn, and with a size.
+    for (const css of [
+      'tbody > tr[data-row-index] .qt-expand',
+      'tbody > tr[data-row-index] .qt-right-panel-button',
+      'th[data-field="name"] .qt-filter-input',
+      'th[data-field="age"] .qt-sort',
+      'tfoot.qt-footer',
+      '.qt-pagination'
+    ]) {
+      const part = box(css)
+      expect(part.width, css).toBeGreaterThan(0)
+      expect(part.height, css).toBeGreaterThan(0)
+    }
+    // And it shows the query: the sort, the filter text and the footer.
+    expect(el('th[data-field="age"]').getAttribute('aria-sort')).toBe(
+      'descending'
+    )
+    expect(
+      (el('th[data-field="name"] .qt-filter-input') as HTMLInputElement).value
+    ).toBe('Name')
+    expect(el('tfoot.qt-footer').textContent).toContain('Total')
+    expect(el('tfoot.qt-footer').textContent).toContain('110')
   })
 })
 

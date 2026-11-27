@@ -8,8 +8,11 @@ import { renderTable, rows, rule, shot, sleep } from '../../support/helpers'
 
 describe('C-09 typing in a header filter', () => {
   test('typing a word key by key applies once, after the debounce from the last key', async () => {
+    // Long on purpose, as in C-12 below: "nothing yet" is checked right after
+    // the keys, and a slow driver round trip must not reach the debounce.
+    const DEBOUNCE = 1000
     const { filterInput, updates, t0 } = await renderTable({
-      filterDebounce: 150
+      filterDebounce: DEBOUNCE
     })
     const input = filterInput('name')
     // Take the time of the last key from the input event itself: the moment
@@ -21,13 +24,15 @@ describe('C-09 typing in a header filter', () => {
       .addEventListener('input', () => (lastKeyAt = performance.now() - t0))
     await userEvent.click(input)
     await userEvent.keyboard('ali')
-    await sleep(100)
     // Still inside the debounce window: nothing yet.
+    expect(performance.now() - t0 - lastKeyAt).toBeLessThan(DEBOUNCE)
     expect(updates).toHaveLength(0)
-    await expect.poll(() => updates.length).toBe(1)
+    await expect
+      .poll(() => updates.length, { timeout: DEBOUNCE + 2000 })
+      .toBe(1)
     await sleep(300)
     expect(updates).toHaveLength(1)
-    expect(updates[0].at - lastKeyAt).toBeGreaterThanOrEqual(140)
+    expect(updates[0].at - lastKeyAt).toBeGreaterThanOrEqual(DEBOUNCE - 10)
     expect(updates[0].reason).toBe('filter')
     expect(updates[0].query.page).toBe(1)
     expect(updates[0].query.filters).toEqual([rule('name', 'Contains', 'ali')])
