@@ -102,6 +102,8 @@ for (const count of [20_000, 100_000]) {
         await annotate(
           `median ${run.latency.p50.toFixed(3)} ms; ${String(run.latency.samplesCount)} samples`
         )
+        expect(state.rowPinning.rows.value).toHaveLength(count)
+        expect(state.table.atoms.expanded.get()).toEqual({})
       } finally {
         scope.stop()
       }
@@ -136,6 +138,11 @@ for (const count of [20_000, 100_000]) {
         await annotate(
           `median ${run.latency.p50.toFixed(3)} ms; ${String(run.latency.samplesCount)} samples`
         )
+        expect(
+          rows.value.some((row, index) =>
+            state.expansion.isExpanded(row, index)
+          )
+        ).toBe(false)
       } finally {
         scope.stop()
       }
