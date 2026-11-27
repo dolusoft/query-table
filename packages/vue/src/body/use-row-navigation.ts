@@ -57,6 +57,8 @@ interface Move {
   key: string | number
   /** Its row object: the identity when there is no `rowKey`. */
   row: object
+  /** Its position in drawing order when the key was pressed. */
+  at: number
   /** The key the user pressed, for `rowFocus`. */
   pressed: NavigationKey
   /** The element that had the focus when the key was pressed. */
@@ -98,11 +100,35 @@ export const useRowNavigation = <T extends object>(
     return tr?.hasAttribute('data-row-index') ? tr : null
   }
 
+  /**
+   * The position of the one item that passes `test`, looked at `hints` first:
+   * a key press mostly finds its row where the last move left it, or at its
+   * index (P8). `test` passes for one item at most, so the result is the one
+   * `findIndex` gives.
+   */
+  const findOne = (
+    rows: BodyRow<T>[],
+    test: (item: BodyRow<T>) => boolean,
+    ...hints: number[]
+  ) => {
+    for (const hint of hints) {
+      if (hint >= 0 && hint < rows.length && test(rows[hint])) {
+        return hint
+      }
+    }
+    return rows.findIndex(test)
+  }
+
+  /** Where the last move went, in drawing order. */
+  let lastAt = -1
+
   /** Position in drawing order of the move's row, or -1. */
   const positionOf = (rows: BodyRow<T>[], m: Move) =>
     o.hasRowKey()
-      ? rows.findIndex(item => o.keyOf(item.row, item.index) === m.key)
-      : rows.findIndex(item => item.row === m.row)
+      ? // Keys are unique among the rows (C-26).
+        findOne(rows, item => o.keyOf(item.row, item.index) === m.key, m.at)
+      : // The same row object may be given twice: the first one counts.
+        rows.findIndex(item => item.row === m.row)
 
   /** The next stop from `from` for `key`: a row `skip` does not name. */
   const stopFrom = (rows: BodyRow<T>[], from: number, key: string) => {
@@ -240,11 +266,11 @@ export const useRowNavigation = <T extends object>(
       return
     }
     const rows = o.bodyRows()
+    // A row index is in `bodyRows` once: a pinned row is not in the center.
+    const index = waiting ? -1 : Number(tr!.getAttribute('data-row-index'))
     const from = waiting
       ? positionOf(rows, waiting)
-      : rows.findIndex(
-          item => item.index === Number(tr!.getAttribute('data-row-index'))
-        )
+      : findOne(rows, item => item.index === index, lastAt, index)
     if (from < 0) {
       return
     }
@@ -254,10 +280,12 @@ export const useRowNavigation = <T extends object>(
       return
     }
     stop()
-    const { row, index } = rows[to]
+    const { row, index: rowIndex } = rows[to]
+    lastAt = to
     const m: Move = {
-      key: o.keyOf(row, index),
+      key: o.keyOf(row, rowIndex),
       row,
+      at: to,
       pressed: event.key as NavigationKey,
       origin: waiting ? waiting.origin : target!,
       landed: null,

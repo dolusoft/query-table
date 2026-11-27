@@ -79,6 +79,25 @@ export const useRowReorder = <T>(o: RowReorderOptions<T>) => {
   /** The rows a handle moves among: the ones not pinned, in `rows` order. */
   const region = () => o.bodyRows().filter(item => !item.pinned)
 
+  /** `region()` by row index, built once per `bodyRows` (P8). */
+  let byIndex: {
+    rows: readonly BodyRow<T>[]
+    items: Map<number, BodyRow<T>>
+  } | null = null
+  const regionItem = (index: number) => {
+    const rows = o.bodyRows()
+    if (byIndex?.rows !== rows) {
+      const items = new Map<number, BodyRow<T>>()
+      for (const item of rows) {
+        if (!item.pinned && !items.has(item.index)) {
+          items.set(item.index, item)
+        }
+      }
+      byIndex = { rows, items }
+    }
+    return byIndex.items.get(index)
+  }
+
   /** Emits the move, unless a row is gone or the order stays. */
   const move = (
     key: string | number,
@@ -122,10 +141,7 @@ export const useRowReorder = <T>(o: RowReorderOptions<T>) => {
       place = y < box.top + box.height / 2 ? 'before' : 'after'
     }
     const index = tr?.getAttribute('data-row-index') ?? null
-    const item =
-      index === null
-        ? undefined
-        : region().find(candidate => candidate.index === Number(index))
+    const item = index === null ? undefined : regionItem(Number(index))
     return item ? { key: keyOf(item), place } : null
   }
 
@@ -181,6 +197,7 @@ export const useRowReorder = <T>(o: RowReorderOptions<T>) => {
     }
     drag = null
     dragging.value = null
+    byIndex = null
   }
 
   /** Ends a refocus: the user clicked or moved the focus elsewhere. */

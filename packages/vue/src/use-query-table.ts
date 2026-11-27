@@ -353,6 +353,27 @@ const noPinnedRows: RowPinning = Object.freeze({
 const sameKeys = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((key, i) => key === b[i])
 
+const isEmpty = (map: object) => Object.keys(map).length === 0
+
+/** Whether two expansion states hold the same entries. */
+const sameOpenRows = (
+  a: Record<string, boolean>,
+  b: Record<string, boolean>
+) => {
+  const keys = Object.keys(a)
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every(key => Object.hasOwn(b, key) && a[key] === b[key])
+  )
+}
+
+/**
+ * Whether `selection` selects a row: TanStack reads an entry as selected when
+ * it is an own entry with a truthy value.
+ */
+const selectsAny = (selection: RowSelection | undefined) =>
+  !!selection && Object.values(selection).some(Boolean)
+
 /**
  * The state and actions of a server-side table: TanStack Table with
  * `serverQueryFeature` and `filterInputFeature`, in a Vue scope. Disposed
@@ -403,8 +424,8 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     return { top: map.top ?? [], bottom: map.bottom ?? [] }
   })
 
-  const keyOf = (row: T, index: number): string | number => {
-    const key = rowKey()
+  /** A row's key under `key`, the `rowKey` option read by the caller. */
+  const keyWith = (key: RowKey<T>, row: T, index: number): string | number => {
     if (typeof key === 'function') {
       return key(row, index)
     }
@@ -413,6 +434,7 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     }
     return index
   }
+  const keyOf = (row: T, index: number) => keyWith(rowKey(), row, index)
   const idOf = (row: T, index: number) => String(keyOf(row, index))
 
   // The query as TanStack slices (ADR 0004).
@@ -886,16 +908,29 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   const keepFirstOpen = (
     state: Record<string, boolean>,
     current: readonly T[]
-  ) => {
-    const first = current.map(idOf).find(id => state[id])
-    return first === undefined ? {} : { [first]: true }
+  ): Record<string, boolean> => {
+    if (isEmpty(state)) {
+      return {}
+    }
+    const key = rowKey()
+    for (let index = 0; index < current.length; index++) {
+      const id = String(keyWith(key, current[index], index))
+      if (state[id]) {
+        return { [id]: true }
+      }
+    }
+    return {}
   }
 
   const expansion: QueryTableExpansion<T> = {
     keyOf,
     canExpand,
+    // Without `hasSubtable` no row expands (C-98): the state is not read, so a
+    // virtual body counting the open rows does not look up every row (P8).
     isExpanded: (row, index) =>
-      !!expandedState.value[idOf(row, index)] && canExpand(row, index),
+      hasSubtable() &&
+      !!expandedState.value[idOf(row, index)] &&
+      canExpand(row, index),
     toggle: (row, index) => {
       if (!canExpand(row, index)) {
         return
@@ -963,40 +998,55 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   watch(
     rows,
     current => {
-      setExpanded(state => {
-        if (rowKey() === undefined) {
-          state = {}
-        } else {
-          const present = new Set(current.map(idOf))
-          for (const id of Object.keys(state)) {
-            if (!present.has(id)) {
-              delete state[id]
-            }
+      const subtable = hasSubtable()
+      const old = table.atoms.expanded.get()
+      // Nothing open and no row that can open: there is nothing to keep or
+      // to seed, and a live table skips the pass over its rows (P8).
+      if (!subtable && old !== true && isEmpty(old)) {
+        return
+      }
+      // The options are read once for the pass, not once per row.
+      const key = rowKey()
+      const idAt = (row: T, index: number) => String(keyWith(key, row, index))
+      const expandable = toValue(options.rowExpandable)
+      let state: Record<string, boolean> = old === true ? {} : { ...old }
+      if (key === undefined) {
+        state = {}
+      } else if (!isEmpty(state)) {
+        const present = new Set(current.map(idAt))
+        for (const id of Object.keys(state)) {
+          if (!present.has(id)) {
+            delete state[id]
           }
         }
-        // C-123: in single mode the first row that asks to start open wins.
-        let firstSeeded: string | undefined
-        if (hasSubtable()) {
-          current.forEach((row, index) => {
-            const seeded = (row as { isExpanded?: unknown }).isExpanded
-            if (!canExpand(row, index)) {
-              // C-98: a row that cannot expand keeps no state.
-              delete state[idOf(row, index)]
-            } else if (seeded === true) {
-              state[idOf(row, index)] = true
-              firstSeeded ??= idOf(row, index)
-            } else if (seeded === false) {
-              delete state[idOf(row, index)]
-            }
-          })
-        }
-        if (single()) {
-          return firstSeeded === undefined
-            ? keepFirstOpen(state, current)
-            : { [firstSeeded]: true }
-        }
-        return state
-      })
+      }
+      // C-123: in single mode the first row that asks to start open wins.
+      let firstSeeded: string | undefined
+      if (subtable) {
+        current.forEach((row, index) => {
+          const seeded = (row as { isExpanded?: unknown }).isExpanded
+          if (expandable !== undefined && !expandable(row, index)) {
+            // C-98: a row that cannot expand keeps no state.
+            delete state[idAt(row, index)]
+          } else if (seeded === true) {
+            const id = idAt(row, index)
+            state[id] = true
+            firstSeeded ??= id
+          } else if (seeded === false) {
+            delete state[idAt(row, index)]
+          }
+        })
+      }
+      const next = !single()
+        ? state
+        : firstSeeded === undefined
+          ? keepFirstOpen(state, current)
+          : { [firstSeeded]: true }
+      // The same open rows: no new state, so nothing that reads it runs again.
+      if (old !== true && sameOpenRows(old, next)) {
+        return
+      }
+      table.setExpanded(next)
     },
     { immediate: true }
   )
@@ -1010,7 +1060,14 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
 
   // ---- selection (C-59) -----------------------------------------------------
 
-  const allSelected = computed(() => table.getIsAllPageRowsSelected())
+  // With no row selected both answers are `false` whatever the rows, so
+  // TanStack's row model is not built for them (P8): `getIsAllPageRowsSelected`
+  // needs a selected row, `getIsSomePageRowsSelected` a selected row or a
+  // sub-row, and these rows have no sub-rows.
+  const anySelected = computed(() => selectsAny(toValue(options.selection)))
+  const allSelected = computed(
+    () => anySelected.value && table.getIsAllPageRowsSelected()
+  )
   const selection: QueryTableSelection<T> = {
     enabled: computed(() => toValue(options.selection) !== undefined),
     canSelect,
@@ -1036,7 +1093,10 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
     // selected; this is the header checkbox's indeterminate state, which is
     // off then (C-64).
     someSelected: computed(
-      () => !allSelected.value && table.getIsSomePageRowsSelected()
+      () =>
+        anySelected.value &&
+        !allSelected.value &&
+        table.getIsSomePageRowsSelected()
     ),
     canToggleAll: computed(
       () =>
@@ -1049,8 +1109,11 @@ export function useQueryTable<T extends object, Q extends Query = TableQuery>(
   // ---- row pinning (C-74) ---------------------------------------------------
 
   const bodyRows = computed<BodyRow<T>[]>(() => {
-    // Off: the rows as given, without TanStack's row model (the 3.0 path).
-    if (!pinningEnabled.value) {
+    // Off, or on with no row pinned: the rows as given, without TanStack's
+    // row model (P8). With no pinned id its regions are empty and its center
+    // is its core row model, `rows` in order.
+    const { top, bottom } = rowPinningState.value
+    if (top.length === 0 && bottom.length === 0) {
       return rows().map((row, index) => ({ row, index, pinned: false }))
     }
     const of = (

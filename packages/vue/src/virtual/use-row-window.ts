@@ -312,8 +312,11 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
       }
     }
     if (from >= 0) {
-      for (let i = from; i < heights.length; i++) {
-        heights[i] = withGroup(i)
+      // Without groups `heights` is `base`: the measured values are in it.
+      if (heights !== base) {
+        for (let i = from; i < heights.length; i++) {
+          heights[i] = withGroup(i)
+        }
       }
       fillOffsets(heights, offsets, from)
       version.value++
@@ -853,6 +856,9 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     removeEventListener('resize', schedule)
   }
 
+  /** The height of the items when the container was last looked for. */
+  let searchedHeight = -1
+
   const attach = () => {
     const table = o.table.value
     if (!table || !enabled()) {
@@ -862,6 +868,7 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     }
     watchShown(table)
     const next = findContainer(table)
+    searchedHeight = offsets[offsets.length - 1]
     if (next !== container) {
       detach()
       container = next
@@ -944,17 +951,31 @@ export const useRowWindow = <T extends object>(o: RowWindowOptions<T>) => {
     { immediate: true }
   )
 
-  // The container is looked for again when the rows change: a container
-  // only scrolls once its content is taller than it.
   watch(
-    [
-      () => o.table.value,
-      enabled,
-      () => settings.value?.scrollElement,
-      () => parts.value.center
-    ],
+    [() => o.table.value, enabled, () => settings.value?.scrollElement],
     attach,
     { flush: 'post', immediate: true }
+  )
+
+  // A container only scrolls once its content is taller than it, so the
+  // rows can change which ancestor is the container, but only by changing
+  // the height of the items: rows of the same heights, a live update, keep
+  // it, and the ancestors are not laid out again for it (C-85, P8). A given
+  // `scrollElement` is asked again, as it may return another element.
+  watch(
+    () => parts.value.center,
+    () => {
+      if (
+        container &&
+        !settings.value?.scrollElement &&
+        offsets[offsets.length - 1] === searchedHeight
+      ) {
+        schedule()
+        return
+      }
+      attach()
+    },
+    { flush: 'post' }
   )
 
   watch(
