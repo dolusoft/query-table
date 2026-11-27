@@ -175,8 +175,11 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      # Trusted publishing needs npm 11.5.1 or later.
-      - run: npm install --global npm@latest
+      # Trusted publishing needs npm 11.5.1 or later. The version is pinned:
+      # this job holds `id-token: write`, so a new npm reaches it only
+      # through a pull request that changes this line. 12.2.3 is the one
+      # `latest` gave the releases from 3.20.0 to 3.24.0.
+      - run: npm install --global npm@12.2.3
 
       # Trusted publishing cannot create a package: the first version of a new
       # one is published by hand from this run's tarball, and its trusted
