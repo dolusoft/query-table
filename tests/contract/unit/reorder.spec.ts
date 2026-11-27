@@ -266,10 +266,21 @@ describe('C-73 Reorder handle (unit) [own]', () => {
     expect(changes).toEqual([])
   })
 
-  it('unmounting during a drag leaves nothing behind', () => {
-    const { m } = mountIt()
-    pointer(handle(m, 'id'), 'pointerdown', 50)
+  it('unmounting during a drag leaves nothing behind', async () => {
+    const { m, changes } = mountIt()
+    const h = handle(m, 'id')
+    pointer(h, 'pointerdown', 50)
+    pointer(h, 'pointermove', 280)
+    await tick(m)
+    expect(marks(m)).toEqual({ dragging: ['id'], drop: ['age:after'] })
     m.wrapper.unmount()
     mounted = null
+    // With the table gone, a release on its handle places no column and
+    // throws nothing.
+    expect(() => {
+      pointer(h, 'pointermove', 290)
+      pointer(h, 'pointerup', 290)
+    }).not.toThrow()
+    expect(changes).toEqual([])
   })
 })

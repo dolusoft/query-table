@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { RuleTester } from 'oxlint/plugins-dev'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // The layering fence of the v3 packages (ADR 0003): the oxlint JS plugin
 // oxlint-plugins/layers.mjs on code placed at a given path. Re-exports,
@@ -16,7 +16,12 @@ const { default: layers } = (await import(
 )) as { default: { rules: { boundaries: Rule } } }
 
 RuleTester.describe = describe
-RuleTester.it = it
+// A case fails by throwing: checked with `expect`, a valid case counts as an
+// assertion for `expect.requireAssertions` (vitest.config.ts).
+RuleTester.it = (name, run) =>
+  it(name, () => {
+    expect(run).not.toThrow()
+  })
 const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: 'ts' } }
 })

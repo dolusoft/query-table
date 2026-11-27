@@ -17,14 +17,15 @@ import {
 // needs a runnable test that stands under its ID (in its own title or in the
 // title of the `describe` around it), and a test may only name IDs that exist.
 // The specs are read as syntax trees (`test-names.ts`): a `describe` that holds
-// no test, a `.skip` or a `.todo` covers nothing.
+// no test, and a test that may not run or is meant to fail (`.skip`, `.todo`,
+// `.skipIf`, `.runIf`, `.fails`, on it or on a `describe` around it), cover
+// nothing.
 //
-// v3 (ADR 0004): a rule may name where its behavior comes from, with a
+// v3 (ADR 0004): a rule names where its behavior comes from, with a
 // `Source: tanstack` / `Source: own` / `Source: tanstack, own` line under its
-// heading, and a test may carry the matching `[tanstack]` or `[own]` tag. Both
-// are optional until the core plugins land; `requireSource` turns the rule
-// side into a requirement.
-const requireSource = false
+// heading, and a test may carry the matching `[tanstack]` or `[own]` tag. The
+// rule side is required (#268); the tag stays optional.
+const requireSource = true
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -169,6 +170,30 @@ describe('contract traceability reader', () => {
     expect(
       idsOf(`describe.skip('C-09 g', () => { it.skip('x', () => {}) })`).size
     ).toBe(0)
+  })
+
+  it('does not count a test that runs on a condition or is meant to fail', () => {
+    expect(idsOf(`it.skipIf(ci)('C-12 a', () => {})`).size).toBe(0)
+    expect(idsOf(`it.runIf(ci)('C-13 b', () => {})`).size).toBe(0)
+    expect(idsOf(`it.fails('C-14 c', () => {})`).size).toBe(0)
+    expect(idsOf(`it.skipIf(ci).each([1])('C-15 d %s', () => {})`).size).toBe(0)
+  })
+
+  it('does not count a test in a describe that does not run', () => {
+    expect(
+      idsOf(`describe.skip('C-16 g', () => { it('x', () => {}) })`).size
+    ).toBe(0)
+    expect(
+      idsOf(
+        `describe.runIf(ci)('g', () => { describe('h', () => { it('C-17 x', () => {}) }) })`
+      ).size
+    ).toBe(0)
+    // A describe that runs still counts its runnable tests.
+    expect([
+      ...idsOf(
+        `describe('C-18 g', () => { it.skip('x', () => {}); it('y', () => {}) })`
+      )
+    ]).toEqual(['C-18'])
   })
 
   it('reads .each and .only calls', () => {

@@ -14,14 +14,22 @@ interface FoundTest {
 export interface FoundSuite {
   /** The titles of every `describe`, empty or not. */
   groups: string[]
-  /** Runnable tests: `it`/`test` calls that are not `.skip` or `.todo`. */
+  /**
+   * Runnable tests: `it`/`test` calls, and the `describe` blocks around them,
+   * without a modifier of `NOT_RUN`.
+   */
   tests: FoundTest[]
 }
 
 type Kind = 'describe' | 'it' | 'test'
 
 const KINDS = new Set<string>(['describe', 'it', 'test'])
-const NOT_RUN = new Set(['skip', 'todo'])
+/**
+ * Modifiers of a test that may not run or does not check its rule: `skipIf`
+ * and `runIf` run on a condition the reader cannot know, and a `fails` test
+ * passes when its body fails.
+ */
+const NOT_RUN = new Set(['skip', 'todo', 'skipIf', 'runIf', 'fails'])
 
 /** `it`, `it.only`, `it.each(rows)` ... -> the call's kind and modifiers. */
 const classify = (
@@ -64,24 +72,27 @@ export const collectSuite = (source: string, fileName = 'x.spec.ts') => {
   )
   const suite: FoundSuite = { groups: [], tests: [] }
 
-  const visit = (node: ts.Node, groups: string[]) => {
+  /** `skipped`: a `describe` around the node does not run. */
+  const visit = (node: ts.Node, groups: string[], skipped: boolean) => {
     if (ts.isCallExpression(node)) {
       const found = classify(node.expression)
       const title = found ? titleOf(node) : null
       if (found && title !== null) {
+        const runs =
+          !skipped && !found.modifiers.some(modifier => NOT_RUN.has(modifier))
         if (found.kind === 'describe') {
           suite.groups.push(title)
-          node.forEachChild(child => visit(child, [...groups, title]))
+          node.forEachChild(child => visit(child, [...groups, title], !runs))
           return
         }
-        if (!found.modifiers.some(modifier => NOT_RUN.has(modifier))) {
+        if (runs) {
           suite.tests.push({ name: title, groups })
         }
       }
     }
-    node.forEachChild(child => visit(child, groups))
+    node.forEachChild(child => visit(child, groups, skipped))
   }
-  visit(file, [])
+  visit(file, [], false)
   return suite
 }
 
