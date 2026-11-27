@@ -301,6 +301,59 @@ describe('C-85 Scroll element [own]', () => {
     expect(drawnIndexes().length).toBeLessThan(80)
   })
 
+  test('takes a nearer box once new rows make it scroll', async () => {
+    // The outer box scrolls from the start, the table's own box only once
+    // its rows are taller than it: the nearer one becomes the container.
+    let api: HostApi | null = null
+    const Wrap = defineComponent({
+      setup: () => () =>
+        h('div', { style: 'height: 300px; overflow-y: auto' }, [
+          h('div', { style: 'height: 1000px' }),
+          h(
+            ScrollHost as never,
+            {
+              rows: scrollRows(2),
+              tableProps: { virtual: true },
+              height: 200,
+              api: (given: HostApi) => {
+                api = given
+              }
+            } as never
+          )
+        ])
+    })
+    await render(Wrap)
+    await frames(4)
+    api!.setRows(scrollRows(1000))
+    await frames(6)
+    await scrollTo(api!.box(), 15000)
+    await frames(4)
+    expect(drawnIndexes()[0]).toBeGreaterThan(300)
+    expect(drawnIndexes().length).toBeLessThan(80)
+  })
+
+  test('keeps its box without looking again when new rows keep the heights', async () => {
+    // A live update: the same rows, one of them changed. Whether an ancestor
+    // scrolls depends only on the height, so no ancestor is read again.
+    const api = await mount({ height: 300 })
+    const update = async (name: string) => {
+      const rows = scrollRows(1000)
+      rows[500] = { ...rows[500], name }
+      api.setRows(rows)
+      await frames(4)
+    }
+    // The drawn rows were measured after the box was found: their heights
+    // replaced the estimate, so the first new rows look once more.
+    await update('Changed')
+    const style = vi.spyOn(window, 'getComputedStyle')
+    await update('Changed again')
+    expect(
+      style.mock.calls.filter(([element]) => element === api.box())
+    ).toEqual([])
+    await scrollTo(api.box(), 10000)
+    expect(drawnIndexes()[0]).toBeGreaterThan(100)
+  })
+
   test('warns once in development with the automatic table layout', async () => {
     restoreLayout()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
