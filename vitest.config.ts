@@ -182,22 +182,60 @@ export default defineConfig(({ mode }) => {
     }
   })
 
+  // Vue files tested mostly in a real browser (coverage below). Each name is
+  // a prefix: a file whose name starts with it belongs to that group and to no
+  // other, as `!(name)` in a glob leaves out every name that starts with it.
+  const browserTested = [
+    'use-row-window',
+    'use-load-more',
+    'use-growing-columns'
+  ]
+
   return mergeConfig(viteConfig, {
     test: {
+      // A test that checks nothing fails: a rule's test must verify it (P12).
+      expect: { requireAssertions: true },
       coverage: {
         provider: 'v8',
-        include: ['packages/vue/src/**'],
-        exclude: ['packages/vue/src/**/*.spec.ts'],
+        include: [
+          'packages/query-protocol/src/**',
+          'packages/query-table-core/src/**',
+          'packages/vue/src/**'
+        ],
+        exclude: ['packages/*/src/**/*.spec.ts'],
         reporter: ['text', 'json-summary', 'html'],
         reportsDirectory: 'coverage',
-        // Measured 2026-10-05 (unit project): lines 98.3, statements 98.39, branches 96.48,
-        // functions 97.94. Floors sit a few points below so the suite passes today and
-        // guards regressions.
+        // A floor per package (#268), so a package that loses tests fails on
+        // its own. Each floor is half a point under its measure, rounded
+        // down: measured 2026-11-27 (unit project), the lower of main and
+        // next. The Vue files tested mostly in a real browser, which this run
+        // does not measure, have their own floor, so the floor of the rest of
+        // the package follows its unit tests.
         thresholds: {
-          lines: 95,
-          statements: 95,
-          branches: 93,
-          functions: 94
+          'packages/query-protocol/src/**': {
+            lines: 98,
+            statements: 98,
+            branches: 98,
+            functions: 99
+          },
+          'packages/query-table-core/src/**': {
+            lines: 97,
+            statements: 97,
+            branches: 94,
+            functions: 98
+          },
+          [`packages/vue/src/**/!(${browserTested.join('|')}).{ts,vue}`]: {
+            lines: 98,
+            statements: 98,
+            branches: 94,
+            functions: 97
+          },
+          [`packages/vue/src/**/{${browserTested.join(',')}}*.{ts,vue}`]: {
+            lines: 93,
+            statements: 93,
+            branches: 86,
+            functions: 97
+          }
         }
       },
       projects: [

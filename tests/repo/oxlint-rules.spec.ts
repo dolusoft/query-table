@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { RuleTester } from 'oxlint/plugins-dev'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // The local oxlint JS plugin rules besides the layers (tests/repo/layers.spec.ts):
 // the tr-1 syntax fence and the Vue script checks.
@@ -22,7 +22,12 @@ const fences = await load('fences.mjs')
 const vueScript = await load('vue-script.mjs')
 
 RuleTester.describe = describe
-RuleTester.it = it
+// A case fails by throwing: checked with `expect`, a valid case counts as an
+// assertion for `expect.requireAssertions` (vitest.config.ts).
+RuleTester.it = (name, run) =>
+  it(name, () => {
+    expect(run).not.toThrow()
+  })
 const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: 'ts' } }
 })
